@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Default entitlements: nothing that needs a paid Apple Developer
+         Program team, so free (Personal Team) signing works. Without
+         aps-environment the app can't receive push notifications; pages
+         only arrive while it is open. Paid teams: set
+         PAGE_ENTITLEMENTS = Page/Page-Push.entitlements in
+         Config/Local.xcconfig (see iOS/README.md). -->
+    <!-- The widget reads the relay credentials from the shared group. The
+         app's own group comes first so its existing items stay where
+         they are. -->
+    <key>keychain-access-groups</key>
+    <array>
+        <string>$(AppIdentifierPrefix)$(PAGE_BUNDLE_ID)</string>
+        <string>$(AppIdentifierPrefix)$(PAGE_BUNDLE_ID).shared</string>
+    </array>
+</dict>
+</plist>

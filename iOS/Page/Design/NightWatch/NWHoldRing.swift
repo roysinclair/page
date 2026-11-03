@@ -1,0 +1,238 @@
+import SwiftUI
+
+/// Tracks a press-and-hold against a `HoldRingSpec` and hands the progress to
+/// its content. Fills as the finger stays down, ticks the haptics at 25%,
+/// 50% and 75% and firmly when full, calls `onComplete` once (the caller then asks
+/// for Face ID / Touch ID / passcode), and unwinds backwards on an early
+/// release with nothing sent. Under Reduce Motion the unwind is instant.
+/// `held` (optional) reports the seconds held while pressed, nil otherwise,
+/// for a caller that needs the elapsed time (the pulse tells a tap from a hold).
+struct NWHoldSurface<Content: View>: View {
+    var spec: HoldRingSpec
+    /// Draws this progress instead of tracking a press (the render harness).
+    var fixedProgress: Double? = nil
+    var held: Binding<TimeInterval?>? = nil
+    var onComplete: () -> Void
+    /// Released before the dead zone ended: a tap.
+    var onTap: (() -> Void)? = nil
+    @ViewBuilder var content: (Double) -> Content
+
+    @State private var progress = 0.0
+    @State private var pressStart: Date?
+    @State private var completed = false
+    @State private var driver: Task<Void, Never>?
+    /// True while a finger is down. A `GestureState` resets itself when the
+    /// system cancels the touch (a scroll view takes it, a call comes in), a
+    /// case `onEnded` never sees, so a cancelled hold cannot keep filling.
+    @GestureState private var fingerDown = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var shown: Double { fixedProgress ?? progress }
+
+    var body: some View {
+        content(shown)
+            .contentShape(Rectangle())
+            .gesture(DragGesture(minimumDistance: 0)
+                .updating($fingerDown) { _, down, _ in down = true }
+                .onChanged { _ in if pressStart == nil, fixedProgress == nil { begin() } }
+                .onEnded { _ in end() })
+            .onChange(of: fingerDown) { _, down in
+                // Cancelled, not lifted: unwind with nothing sent and no tap.
+                // A normal lift runs `onEnded` too, so give it the first go.
+                if !down, pressStart != nil {
+                    Task { @MainActor in
+                        await Task.yield()
+                        if pressStart != nil { end(cancelled: true) }
+                    }
+                }
+            }
+            .onDisappear { driver?.cancel(); held?.wrappedValue = nil }
+    }
+
+    private func begin() {
+        guard !completed else { return }
+        let start = Date()
+        pressStart = start
+        var last = 0.0
+        driver?.cancel()
+        driver = Task { @MainActor in
+            while !Task.isCancelled, let start = pressStart {
+                let elapsed = Date().timeIntervalSince(start)
+                let p = spec.progress(elapsed: elapsed)
+                for t in HoldRingSpec.ticksCrossed(from: last, to: p) { t >= 1 ? NWHaptics.full() : NWHaptics.tick() }
+                last = p
+                progress = p
+                held?.wrappedValue = elapsed
+                if spec.isComplete(elapsed: elapsed) {
+                    completed = true
+                    pressStart = nil
+                    onComplete()
+                    // Ready again for the next time (after biometrics).
+                    try? await Task.sleep(nanoseconds: 400_000_000)
+                    completed = false
+                    progress = 0
+                    held?.wrappedValue = nil
+                    return
+                }
+                try? await Task.sleep(nanoseconds: 16_000_000)
+            }
+        }
+    }
+
+    private func end(cancelled: Bool = false) {
+        guard let start = pressStart, !completed else { return }
+        let elapsed = Date().timeIntervalSince(start)
+        pressStart = nil
+        driver?.cancel()
+        held?.wrappedValue = nil
+        if !spec.isVisible(elapsed: elapsed) {
+            // A tap, not a hold (a cancelled touch is neither).
+            progress = 0
+            if !cancelled { onTap?() }
+            return
+        }
+        let from = progress
+        // Back the way it came, at the fill speed but never longer than maxUnwind; nothing was sent.
+        if reduceMotion || from <= 0 { progress = 0 }
+        else { withAnimation(.linear(duration: from * min(spec.fill, HoldRingSpec.maxUnwind))) { progress = 0 } }
+    }
+}
+
+/// The big press-and-hold ring (`HoldRingSpec` for the timing), board 07's
+/// "hold ring": the red button alone at first; after 300 ms a ring appears
+/// and fills clockwise over 1.2 s, amber warming to red only in its final
+/// third, with haptic ticks at 25%, 50% and 75% (firm at 100%); full, the
+/// core turns green-teal and its Face ID glyph bounces once (biometrics
+/// next); once biometrics pass (`burstStart`), a burst of light leaves the
+/// ring. The burst means committed, never delivered: the Receipt thread
+/// below says that. Letting go early unwinds the ring backwards. VoiceOver
+/// users get a "Confirm" action instead of a hold (the biometric check
+/// still follows).
+struct NWHoldRing: View {
+    var spec: HoldRingSpec
+    /// The glyph in the core, at rest too: what follows the hold.
+    var symbol = "faceid"
+    var size: CGFloat = 132
+    /// Draws this progress instead of tracking a press (the render harness).
+    var fixedProgress: Double? = nil
+    /// Biometrics passed at this moment: the burst plays and the ring stays full.
+    var burstStart: Date? = nil
+    var onComplete: () -> Void
+
+    @Environment(\.nwMotion) private var pin
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Counts the ring filling, for the glyph's one bounce (never on the way back down).
+    @State private var filled = 0
+
+    var body: some View {
+        NWHoldSurface(spec: spec, fixedProgress: burstStart != nil ? 1 : fixedProgress, onComplete: onComplete) { shown in
+            ZStack {
+                ringBody(shown)
+                if burstStart != nil || pin?.kind == .hold {
+                    NWOneShot(start: burstStart?.timeIntervalSinceReferenceDate, duration: HoldRingSpec.burstDuration,
+                              pinned: pin.flatMap { $0.kind == .hold ? $0.time : nil }) { e in
+                        burst(e.map { HoldRingSpec.burst(elapsed: $0) } ?? (1, 0, 0))
+                    }
+                }
+            }
+        }
+        .frame(width: size + 20, height: size + 20)
+        .allowsHitTesting(burstStart == nil)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(burstStart == nil ? "Hold to confirm" : "Confirmed"))
+        .accessibilityHint(Text(burstStart == nil ? "Then confirm with your device" : ""))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction(named: Text("Confirm")) { if burstStart == nil { onComplete() } }
+    }
+
+    private func ringBody(_ shown: Double) -> some View {
+        let warmth = HoldRingSpec.warmth(progress: shown)
+        let tone = NightWatch.Palette.amber.mixed(with: NightWatch.Palette.red, warmth)
+        let full = shown >= 1
+        // Red is the class colour of the button; green-teal once it is full and biometrics are next.
+        let core = full ? NightWatch.Palette.green.mixed(with: NightWatch.Palette.teal, 0.25) : NightWatch.Palette.red
+        return ZStack {
+            // The track appears only once the ring does (after the dead zone): a dim red the arc fills (board 33).
+            Circle().stroke(NightWatch.Palette.red.opacity(shown > 0 ? 0.20 : 0).color, lineWidth: 14)
+                .frame(width: size, height: size)
+            Circle()
+                .trim(from: 0, to: CGFloat(shown))
+                .stroke(tone.color, style: StrokeStyle(lineWidth: 14, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .frame(width: size, height: size)
+                .shadow(color: tone.opacity((full ? 0.75 : 0.5) * shown).color, radius: full ? 16 : 10)
+            // The core is a soft rounded square (board 33), not a disc.
+            RoundedRectangle(cornerRadius: size * 0.31 * 0.46, style: .continuous)
+                .fill(LinearGradient(colors: [core.opacity(0.98).color, core.opacity(0.84).color], startPoint: .top, endPoint: .bottom))
+                .frame(width: size * 0.62, height: size * 0.62)
+                .scaleEffect(1 + 0.04 * shown)
+                .shadow(color: core.opacity(full ? 0.5 : 0.25).color, radius: full ? 14 : 8)
+            Image(systemName: symbol)
+                .font(.system(size: size * 0.32, weight: .regular))
+                .foregroundColor(NightWatch.Palette.onBright.color)
+                // Full: one bounce as the core turns, biometrics next.
+                .symbolEffect(.bounce, value: filled)
+        }
+        .onChange(of: full) { _, now in if now, !reduceMotion { filled += 1 } }
+        .frame(width: size + 20, height: size + 20)
+    }
+
+    /// The burst: a ring of light leaves the full ring and opens as it fades;
+    /// the core flashes once.
+    private func burst(_ b: (scale: Double, opacity: Double, flash: Double)) -> some View {
+        ZStack {
+            Circle().stroke(NightWatch.Palette.red.mixed(with: .init(1, 1, 1), 0.3).opacity(b.opacity).color, lineWidth: 6)
+                .frame(width: size, height: size)
+                .scaleEffect(b.scale)
+                .blur(radius: 1.5)
+            Circle().fill(Color.white.opacity(0.35 * b.flash))
+                .frame(width: size * 0.62, height: size * 0.62)
+                .blur(radius: 6)
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+/// "Hold to approve" as a button on a card: a filled red button with the
+/// Face ID glyph (board 06); while the finger stays down a warmer fill
+/// sweeps across it (an Irreversible approve is 1.2 s, then Face ID / Touch
+/// ID / passcode). A tap does nothing but say how to use it.
+struct NWHoldButton: View {
+    var label = "Hold to approve"
+    /// What follows the hold.
+    var symbol = "faceid"
+    var fixedProgress: Double? = nil
+    var onComplete: () -> Void
+
+    var body: some View {
+        NWHoldSurface(spec: .irreversible, fixedProgress: fixedProgress, onComplete: onComplete) { p in
+            // Warmest as it starts, settling into the red as it fills.
+            let tone = NightWatch.Palette.red.mixed(with: NightWatch.Palette.amber, 0.35 * (1 - HoldRingSpec.warmth(progress: p)))
+            let shape = RoundedRectangle(cornerRadius: NightWatch.Radius.button, style: .continuous)
+            HStack(spacing: 10) {
+                Image(systemName: symbol)
+                    .font(.system(size: 20, weight: .regular))
+                    .frame(width: 24, height: 24)
+                Text(label)
+                    .font(NightWatch.Typo.button)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+            }
+            .foregroundColor(NightWatch.Palette.onBright.color)
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .background(
+                NightWatch.Palette.red.color
+                    .overlay(alignment: .leading) {
+                        GeometryReader { geo in
+                            Rectangle().fill(tone.opacity(0.85).color)
+                                .frame(width: geo.size.width * CGFloat(MotionCurve.clamp01(p)))
+                        }
+                    }
+                    .clipShape(shape))
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(label))
+        .accessibilityHint(Text("Hold, then confirm with your device"))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction(named: Text("Confirm")) { onComplete() }
+    }
+}

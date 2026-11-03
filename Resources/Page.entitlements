@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Lets Page send Apple Events to other apps (Terminal, System Events).
+         Required under hardened runtime — without this entitlement the OS
+         won't even prompt for permission, it just denies. -->
+    <key>com.apple.security.automation.apple-events</key>
+    <true/>
+    <!-- The group Page shares with its widget extension (the snapshot file the
+         widgets read). build.sh puts the signing team where $(PAGE_TEAM_ID) is
+         (e.g. ABCDE12345.app.page.shared); macOS
+         accepts a team-prefixed group for a signed app without a profile. A
+         build with no team has this key removed. -->
+    <key>com.apple.security.application-groups</key>
+    <array>
+        <string>$(PAGE_TEAM_ID).app.page.shared</string>
+    </array>
+</dict>
+</plist>

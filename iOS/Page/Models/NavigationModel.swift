@@ -1,0 +1,156 @@
+import Foundation
+
+// Navigation, as plain values: the two destinations (Now and Lanes) and the
+// one-at-a-time sheet queue. Sheets and rooms are never tabs. Foundation-only,
+// so the logic tests cover it.
+
+/// The two top-level destinations. Now is where you act; Lanes is where you are
+/// aware. Now is the launch default and the target of every deep link.
+enum NWDestination: String, Equatable, CaseIterable {
+    case now, lanes
+
+    /// A drag counts as horizontal only when it is clearly more sideways than
+    /// vertical (|dx| at least 1.5 times |dy|), so scrolling a list that drifts a
+    /// little sideways never swipes a card or switches place. Pure.
+    static func isHorizontal(dx: Double, dy: Double) -> Bool { abs(dx) >= 1.5 * abs(dy) }
+
+    /// The other one (the capsule's drag, a swipe on the Horizon).
+    var other: NWDestination { self == .now ? .lanes : .now }
+
+    /// Where a horizontal drag of `translation` points lands. Lanes lies to the
+    /// right of Now, so dragging left reveals Lanes and dragging right goes back
+    /// to Now. Short drags stay where they are. Pure.
+    static func afterDrag(from current: NWDestination, translation: Double, vertical: Double = 0, threshold: Double = 40) -> NWDestination {
+        // A mostly-vertical drag is a scroll or a pull to refresh, never a switch.
+        guard isHorizontal(dx: translation, dy: vertical) else { return current }
+        if translation <= -threshold { return .lanes }
+        if translation >= threshold { return .now }
+        return current
+    }
+}
+
+/// The old Sky/Lanes toggle stored its choice here. There is only Lanes now, so
+/// nothing reads the value any more (an old "sky" simply means Lanes); the key
+/// is cleared once so it does not linger in the app's preferences.
+enum LegacySkyMode {
+    static let storageKey = "page.skyMode"
+
+    static func forget(in defaults: UserDefaults = .standard) { defaults.removeObject(forKey: storageKey) }
+}
+
+/// What a sheet is showing. Sessions are rooms you zoom into, never tabs.
+enum NWSheet: Equatable, Identifiable {
+    /// A page's Decision sheet.
+    case decision(String)
+    /// A live session's room.
+    case session(String)
+    /// The Tower, optionally scrolled to a section (the Runway opens Budget).
+    case tower(TowerSection?)
+    /// Dispatch: start new work.
+    case dispatch
+    /// Everything Page has settled, and the day stats.
+    case history
+
+    var id: String {
+        switch self {
+        case .decision(let i): return "decision:\(i)"
+        case .session(let i): return "session:\(i)"
+        case .tower(let s): return "tower:\(s?.rawValue ?? "-")"
+        case .dispatch: return "dispatch"
+        case .history: return "history"
+        }
+    }
+}
+
+/// How a Decision sheet was asked to open: Steer on a card opens it with its
+/// message box up (one tap, not two). Asked once, and only briefly: a request
+/// older than `lifetime`, or for another page, is not this opening's. Pure.
+struct DecisionEntry: Equatable {
+    let id: String
+    let at: Date
+
+    static let lifetime: TimeInterval = 5
+
+    static func wantsComposer(_ entry: DecisionEntry?, for id: String, now: Date) -> Bool {
+        guard let entry, entry.id == id else { return false }
+        let age = now.timeIntervalSince(entry.at)
+        return age >= 0 && age < lifetime
+    }
+}
+
+/// One sheet at a time. Asking for another while one is up closes the first,
+/// and the new one appears once the first has finished dismissing (SwiftUI
+/// cannot present over a sheet that is still leaving). Pure.
+struct SheetQueue: Equatable {
+    private(set) var current: NWSheet?
+    private(set) var pending: NWSheet?
+    /// The sheet that is up holds a message its writer hasn't sent: another sheet asked for meanwhile
+    /// waits (`deferred`) for the person's answer, rather than closing the first over the text.
+    private(set) var draftHeld: NWSheet?
+    private(set) var deferred: NWSheet?
+
+    init(current: NWSheet? = nil) { self.current = current }
+
+    /// The open sheet reports whether it holds an unsent message.
+    mutating func setDraft(_ held: Bool) { draftHeld = held ? current : nil }
+
+    /// Asks for a sheet. Asking for the one already up does nothing. A sheet that holds an unsent message
+    /// is not closed by another request: that request waits for `resolveDeferred`.
+    mutating func request(_ sheet: NWSheet) {
+        if current == sheet { pending = nil; return }
+        if let cur = current, draftHeld == cur { deferred = sheet; return }
+        show(sheet)
+    }
+
+    private mutating func show(_ sheet: NWSheet) {
+        if current == sheet { pending = nil; return }
+        if current != nil { pending = sheet; current = nil } else { current = sheet; pending = nil }
+    }
+
+    /// The person answered "Discard your message?": discard shows the sheet that asked, keep drops its request.
+    mutating func resolveDeferred(discard: Bool) {
+        let next = deferred
+        deferred = nil
+        guard discard, let next else { return }
+        draftHeld = nil
+        show(next)
+    }
+
+    /// The system finished dismissing a sheet: bring up whatever was waiting.
+    mutating func dismissed() {
+        if let next = pending { pending = nil; current = next }
+        if current != draftHeld { draftHeld = nil }
+    }
+
+    /// The user dismissed the sheet (a swipe down, a close button).
+    mutating func close() { current = nil; pending = nil; draftHeld = nil; deferred = nil }
+
+    /// Binds to `.sheet(item:)`: setting nil closes.
+    mutating func set(_ sheet: NWSheet?) {
+        if let sheet { request(sheet) } else if pending == nil { current = nil; draftHeld = nil; deferred = nil }
+    }
+}
+
+/// Where a `page://` link goes.
+enum NWDeepLink: Equatable {
+    case now
+    case lanes
+    case decision(String)
+    case tower
+
+    /// `page://intervention/<id>` opens that page's Decision sheet over Now;
+    /// `page://sessions` (the widget) opens Lanes, where sessions live;
+    /// `page://now`, `page://lanes` and `page://tower` open those, and
+    /// `page://sky` (the old name, still in widgets already on a Home Screen)
+    /// opens Lanes too. Anything else is nil. Pure.
+    static func parse(_ url: URL) -> NWDeepLink? {
+        guard url.scheme == "page" else { return nil }
+        switch url.host {
+        case "sessions", "lanes", "sky": return .lanes
+        case "now": return .now
+        case "tower": return .tower
+        default:
+            return DeepLink.interventionId(from: url).map(NWDeepLink.decision)
+        }
+    }
+}

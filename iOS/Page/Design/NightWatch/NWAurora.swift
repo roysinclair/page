@@ -295,8 +295,20 @@ struct NWPulseOrb: View {
         let count = reduceMotion ? pulse.staticCount : nil
         // Reduce Motion keeps the ring and drops the ripples.
         let ripples = reduceMotion || hollow ? [] : pulse.ripples(at: t)
+        // Scalars worked out up front with explicit types: one long builder
+        // closure full of nested ternaries and mixed literals is too slow for
+        // the type checker on CI machines.
+        let working: Double = mode == .working ? 1 : 0
+        let lift: Double = (Double(breath) - 0.5) * 2 * working
+        let swellD = Double(swell)
+        let glowOpacity: Double = hollow ? 0.07 : (dusk ? 0.16 : (quiet ? 0.30 : 0.45))
+        let glowScale = CGFloat(1 + 0.10 * lift + 0.30 * swellD)
+        let ringOpacity: Double = dusk ? 0.35 : (quiet ? 0.0 : 0.85)
+        let ringScale = CGFloat(1 + 0.04 * lift + 0.06 * swellD)
+        let glyphScale = CGFloat(1 + 0.03 * lift)
+        let exhaleProgress: Double? = exhale.flatMap { e in swell > 0 ? Double(MotionCurve.clamp01(e / PulseModel.exhaleDuration)) : nil }
         return GeometryReader { geo in
-            let s = min(geo.size.width, geo.size.height)
+            let s: CGFloat = min(geo.size.width, geo.size.height)
             ZStack {
                 if halo {
                     // Ripples: thin rings that open from the core ring outwards and fade.
@@ -307,39 +319,54 @@ struct NWPulseOrb: View {
                             .scaleEffect(0.5 + 0.5 * r.progress)
                     }
                     // The exhale lets one last ring go as it turns.
-                    if let e = exhale, swell > 0 {
-                        let p = MotionCurve.clamp01(e / PulseModel.exhaleDuration)
-                        Circle().stroke(color.opacity(0.45 * (1 - p)).color, lineWidth: 1.2)
-                            .frame(width: s, height: s).scaleEffect(0.5 + 0.5 * MotionCurve.easeOut(p))
+                    if let p = exhaleProgress {
+                        exhaleRing(p, size: s)
                     }
                     // Glow.
                     Circle()
-                        .fill(RadialGradient(colors: [color.opacity(hollow ? 0.07 : (dusk ? 0.16 : (quiet ? 0.30 : 0.45))).color, color.opacity(0).color],
+                        .fill(RadialGradient(colors: [color.opacity(glowOpacity).color, color.opacity(0).color],
                                              center: .center, startRadius: 1, endRadius: s * 0.42))
                         .frame(width: s, height: s)
-                        .scaleEffect(1 + 0.10 * (breath - 0.5) * 2 * (mode == .working ? 1 : 0) + 0.30 * swell)
+                        .scaleEffect(glowScale)
                 }
                 // The ring (none when quiet: still white is just the light).
                 Circle()
-                    .stroke(color.opacity(dusk ? 0.35 : (quiet ? 0.0 : 0.85)).color, lineWidth: 1.6)
+                    .stroke(color.opacity(ringOpacity).color, lineWidth: 1.6)
                     .frame(width: s * 0.5, height: s * 0.5)
-                    .scaleEffect(1 + (mode == .working ? 0.04 * (breath - 0.5) * 2 : 0) + 0.06 * swell)
+                    .scaleEffect(ringScale)
                 if let count {
                     Text("\(count)")
                         .font(.system(size: s * 0.2, weight: .bold, design: .rounded))
                         .foregroundColor(color.color)
                         .minimumScaleFactor(0.5)
                 } else {
-                    NWPulseGlyph()
-                        .fill(hollow ? AnyShapeStyle(Color.clear)
-                              : AnyShapeStyle(RadialGradient(colors: [Color.white.opacity(dusk ? 0.4 : 1), color.opacity(dusk ? 0.3 : 0.92).color],
-                                                             center: .center, startRadius: 0, endRadius: s * 0.15)))
-                        .overlay(NWPulseGlyph().stroke(color.opacity(dusk ? 0.3 : (hollow ? 0.8 : 0.9)).color, lineWidth: hollow ? 2 : 1.4))
-                        .frame(width: s * 0.26, height: s * 0.26)
-                        .scaleEffect(1 + (mode == .working ? 0.03 * (breath - 0.5) * 2 : 0))
+                    glyph(size: s, dusk: dusk)
+                        .scaleEffect(glyphScale)
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height)
         }
+    }
+
+    private func exhaleRing(_ p: Double, size s: CGFloat) -> some View {
+        let opacity: Double = 0.45 * (1 - p)
+        let scale = CGFloat(0.5 + 0.5 * Double(MotionCurve.easeOut(p)))
+        return Circle().stroke(color.opacity(opacity).color, lineWidth: 1.2)
+            .frame(width: s, height: s).scaleEffect(scale)
+    }
+
+    private func glyph(size s: CGFloat, dusk: Bool) -> some View {
+        let core: Double = dusk ? 0.4 : 1
+        let edge: Double = dusk ? 0.3 : 0.92
+        let strokeOpacity: Double = dusk ? 0.3 : (hollow ? 0.8 : 0.9)
+        let lineWidth: CGFloat = hollow ? 2 : 1.4
+        let fill: AnyShapeStyle = hollow
+            ? AnyShapeStyle(Color.clear)
+            : AnyShapeStyle(RadialGradient(colors: [Color.white.opacity(core), color.opacity(edge).color],
+                                           center: .center, startRadius: 0, endRadius: s * 0.15))
+        return NWPulseGlyph()
+            .fill(fill)
+            .overlay(NWPulseGlyph().stroke(color.opacity(strokeOpacity).color, lineWidth: lineWidth))
+            .frame(width: s * 0.26, height: s * 0.26)
     }
 }

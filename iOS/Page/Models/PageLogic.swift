@@ -812,9 +812,13 @@ struct PageStats: Equatable {
 
         var counts: [String: Int] = [:]
         for iv in all { counts[iv.projectName, default: 0] += 1 }
-        let top = counts
-            .map { ProjectCount(name: $0.key, count: $0.value) }
-            .sorted { $0.count != $1.count ? $0.count > $1.count : $0.name < $1.name }
+        let unsorted: [ProjectCount] = counts.map { (entry: (key: String, value: Int)) -> ProjectCount in
+            ProjectCount(name: entry.key, count: entry.value)
+        }
+        let top: [ProjectCount] = unsorted.sorted { (a: ProjectCount, b: ProjectCount) -> Bool in
+            if a.count != b.count { return a.count > b.count }
+            return a.name < b.name
+        }
 
         return PageStats(
             today: all.filter { $0.openedAt >= dayStart }.count,

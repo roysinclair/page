@@ -237,7 +237,7 @@ test("SEC-5: plain http to a non-local host (or with user-info) never carries th
   assert.match(log(), /plain http for a non-local host/);
 });
 
-test("L3: a GNU stat ahead of /usr/bin doesn't make the Mac detector look dead", { skip, timeout: 30000 }, async () => {
+test("L3: a GNU stat ahead of /usr/bin doesn't make the Mac detector look dead", { skip: skip || (process.platform !== "darwin" && "macOS only: relies on BSD /usr/bin/stat"), timeout: 30000 }, async () => {
   writeFileSync(join(bin, "stat"), "#!/bin/sh\n# GNU stat: -f means --file-system\nexit 1\n");
   chmodSync(join(bin, "stat"), 0o755);
   writeFileSync(join(home, "Library", "Application Support", "ClaudePowerMode", "detector.alive"), "");

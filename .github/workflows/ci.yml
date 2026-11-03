@@ -33,6 +33,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install XcodeGen
         run: brew install xcodegen
+      - name: Select Xcode 26
+        # The project needs Xcode 26 (Metal toolchain download, iOS 26 SDK);
+        # macos-15 images ship it alongside the default Xcode.
+        run: |
+          XC=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XC" ]; then echo "No Xcode 26 on this runner"; ls -d /Applications/Xcode*.app; exit 1; fi
+          sudo xcode-select -s "$XC/Contents/Developer"
+          xcodebuild -version
       - name: Install Metal toolchain
         # The iOS target compiles Metal shaders (the Mac app embeds a prebuilt blob, so `swift build` doesn't).
         run: xcodebuild -downloadComponent MetalToolchain

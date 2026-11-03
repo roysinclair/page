@@ -102,6 +102,7 @@ enum ImageDelivery {
     /// catalog entry, Codex not yet.
     static func rowFields(backend: AgentBackendID, host: SessionHostInfo) -> (attach: String?, blocker: String?) {
         guard host.canType else { return (nil, nil) }
+        if backend == .aura { return (nil, AuraLink.photosBlocker) }
         guard backend == .claude else { return (nil, codexMessage) }
         guard let id = TerminalCatalog.id(forWireHost: host.host) else { return (nil, nil) }
         let support = TerminalCatalog.entry(id).capabilities.attach

@@ -1,0 +1,160 @@
+/* Page Studio marketing images: shared Night Watch tokens, sky and device frames.
+   Every composition is a fixed-size canvas (see shoot.mjs) screenshotted by headless Chromium. */
+
+@font-face { font-family: "Inter"; src: url("fonts/inter-var.woff2") format("woff2"); font-weight: 100 900; font-display: block; }
+@font-face { font-family: "JetBrains Mono"; src: url("fonts/jetbrains-mono-var.woff2") format("woff2"); font-weight: 100 800; font-display: block; }
+
+:root {
+  /* Night Watch tokens (iOS NWTheme.swift, Designs/_brand.md, website/tailwind.config.mjs) */
+  --night-950: #04060A;
+  --night-900: #05070D;
+  --night-850: #0A0C11;
+  --night-800: #14161C;
+  --night-700: #1B1E25;
+  --ink: rgba(255,255,255,0.96);
+  --ink-2: rgba(255,255,255,0.72);
+  --ink-3: rgba(255,255,255,0.56);
+  --teal: #5EEAD4;
+  --sky: #38BDF8;
+  --amber: #F5B14C;
+  --yellow: #F2C94C;
+  --violet: #A78BFA;
+  --red: #F26D6D;
+  --star: #FFF6E0;
+  --sans: "Inter", system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", "SF Mono", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--night-950); }
+body { font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: antialiased; overflow: hidden; }
+
+/* ---------- canvas + sky ---------- */
+.canvas { position: relative; overflow: hidden; width: 100vw; height: 100vh;
+  background:
+    radial-gradient(120% 90% at 50% 120%, #0b1a24 0%, rgba(11,26,36,0) 60%),
+    radial-gradient(90% 70% at 50% -10%, #0a0f1c 0%, rgba(10,15,28,0) 70%),
+    linear-gradient(180deg, #05070D 0%, #04060A 100%); }
+.sky, .aurora, .horizon { position: absolute; inset: 0; pointer-events: none; }
+.sky canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.aurora > i { position: absolute; display: block; border-radius: 50%; filter: blur(60px); opacity: .55; mix-blend-mode: screen; }
+.horizon { background: radial-gradient(60% 12% at 50% 100%, rgba(94,234,212,.10), rgba(94,234,212,0) 70%); }
+
+/* ---------- type ---------- */
+.eyebrow { font: 600 12px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--teal); }
+.headline { font-weight: 800; letter-spacing: -0.04em; line-height: 1.02; color: var(--ink); }
+.headline em { font-style: normal; background: linear-gradient(90deg, var(--teal), var(--sky)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.headline em.amber { background: linear-gradient(90deg, var(--yellow), var(--amber)); -webkit-background-clip: text; background-clip: text; }
+.caption { font-weight: 450; color: var(--ink-2); letter-spacing: -0.01em; line-height: 1.4; }
+.mono { font-family: var(--mono); }
+
+/* ---------- the pulse mark ---------- */
+.pulse { position: relative; display: inline-block; width: var(--s, 28px); height: var(--s, 28px); }
+.pulse::before, .pulse::after, .pulse > b { content: ""; position: absolute; border-radius: 50%; }
+.pulse > b { inset: 31%; background: radial-gradient(circle at 38% 36%, #fff 0 12%, var(--c1, var(--teal)) 40%, var(--c2, var(--sky)) 100%); box-shadow: 0 0 calc(var(--s, 28px) * .5) var(--c1, var(--teal)); }
+.pulse::before { inset: 16%; border: 1.2px solid var(--c1, var(--teal)); opacity: .55; }
+.pulse::after { inset: 0; border: 1px solid var(--c2, var(--sky)); opacity: .28; }
+.pulse.amber { --c1: #F7C561; --c2: var(--amber); }
+
+/* ---------- glass chip ---------- */
+.chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 999px;
+  background: rgba(255,255,255,.055); border: 1px solid rgba(255,255,255,.09); color: var(--ink-2);
+  font: 550 12px/1 var(--sans); letter-spacing: -.005em; white-space: nowrap; }
+.chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 8px var(--teal); }
+
+/* ---------- devices (generic, drawn; no vendor marks) ---------- */
+/* Phone: set --w. The screen image decides the height. */
+.phone { position: absolute; width: var(--w); padding: calc(var(--w) * .034); border-radius: calc(var(--w) * .165);
+  background: linear-gradient(145deg, #2a2e36 0%, #0d0f13 30%, #0b0c10 70%, #252830 100%);
+  box-shadow:
+    inset 0 0 0 calc(var(--w) * .006) rgba(255,255,255,.16),
+    inset 0 0 0 calc(var(--w) * .018) #07080b,
+    0 calc(var(--w) * .12) calc(var(--w) * .28) rgba(0,0,0,.6),
+    0 calc(var(--w) * .03) calc(var(--w) * .06) rgba(0,0,0,.5); }
+.phone .screen { position: relative; overflow: hidden; border-radius: calc(var(--w) * .132); background: #000; }
+.phone .screen img { display: block; width: 100%; }
+.phone .island { position: absolute; left: 50%; top: calc(var(--w) * .028); width: 31%; height: calc(var(--w) * .088);
+  transform: translateX(-50%); background: #000; border-radius: 999px; z-index: 2; }
+.phone::before, .phone::after { content: ""; position: absolute; width: calc(var(--w) * .014); border-radius: 2px;
+  background: linear-gradient(90deg, #1b1e24, #3a3e48); }
+.phone::before { right: calc(var(--w) * -.010); top: 27%; height: 13%; }               /* side button */
+.phone::after { left: calc(var(--w) * -.010); top: 22%; height: 8%;
+  box-shadow: 0 calc(var(--w) * .2) 0 #2c3038; }                                         /* volume */
+
+.phone.android { padding: calc(var(--w) * .028); border-radius: calc(var(--w) * .11);
+  background: linear-gradient(160deg, #1d2027 0%, #0a0b0e 40%, #0a0b0e 75%, #1a1d23 100%); }
+.phone.android .screen { border-radius: calc(var(--w) * .085); }
+.phone.android::after { left: auto; right: calc(var(--w) * -.010); top: 42%; height: 7%; box-shadow: none; }
+.phone.android .cam { position: absolute; left: 50%; top: calc(var(--w) * .022); width: calc(var(--w) * .036); height: calc(var(--w) * .036);
+  transform: translateX(-50%); border-radius: 50%; background: radial-gradient(circle at 40% 40%, #1b2230 0 30%, #000 60%); z-index: 2; }
+
+/* Reflection on the floor: add .reflect to a device */
+.reflect { -webkit-box-reflect: below calc(var(--w, 200px) * .03) linear-gradient(transparent 80%, rgba(255,255,255,.10)); }
+
+/* Laptop: set --w (screen width incl. bezel). */
+.laptop { position: absolute; width: var(--w); }
+.laptop .lid { position: relative; padding: calc(var(--w) * .018) calc(var(--w) * .018) calc(var(--w) * .026);
+  border-radius: calc(var(--w) * .032) calc(var(--w) * .032) calc(var(--w) * .008) calc(var(--w) * .008);
+  background: #0a0b0e; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.14), 0 30px 80px rgba(0,0,0,.55); }
+.laptop .display { position: relative; overflow: hidden; aspect-ratio: 16 / 10.2; border-radius: calc(var(--w) * .012);
+  background: #070a10; }
+.laptop .base { position: relative; height: calc(var(--w) * .028); margin: 0 calc(var(--w) * -.06);
+  border-radius: 0 0 calc(var(--w) * .03) calc(var(--w) * .03) / 0 0 calc(var(--w) * .02) calc(var(--w) * .02);
+  background: linear-gradient(180deg, #3b3f48 0%, #23262d 35%, #121419 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 24px 40px rgba(0,0,0,.6); }
+.laptop .base::after { content: ""; position: absolute; left: 50%; top: 0; width: 16%; height: 38%; transform: translateX(-50%);
+  border-radius: 0 0 10px 10px; background: linear-gradient(180deg, #16181d, #2a2d34); }
+
+/* macOS-style menu bar (generic: no vendor logo) */
+.menubar { position: absolute; left: 0; right: 0; top: 0; height: var(--mb, 22px); display: flex; align-items: center; justify-content: flex-end;
+  gap: calc(var(--mb, 22px) * .62); padding: 0 calc(var(--mb, 22px) * .6);
+  background: rgba(14,16,22,.62); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,.05);
+  font: 500 calc(var(--mb, 22px) * .56)/1 var(--sans); color: rgba(255,255,255,.9); z-index: 5; }
+.menubar .left { margin-right: auto; display: flex; gap: calc(var(--mb, 22px) * .85); color: rgba(255,255,255,.55); }
+.menubar .left b { color: rgba(255,255,255,.9); font-weight: 700; }
+.menubar .item { display: flex; align-items: center; gap: 4px; height: 100%; }
+.menubar .item.open { background: rgba(255,255,255,.16); border-radius: 5px; height: 78%; padding: 0 calc(var(--mb, 22px) * .3); }
+.menubar svg { display: block; }
+
+/* A real render, cropped to its own card edge and masked to its own radius */
+.render { position: absolute; display: block; overflow: hidden; }
+.render img { display: block; width: 100%; height: auto; }
+
+/* Window (for renders that are full windows) */
+.shadowed { box-shadow: 0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.06); }
+
+/* ---------- lock screen: the v4 board's wallpaper, clock and widgets, with real push text ----------
+   The board's Live Activity and island count are concepts (no ActivityKit yet), so they are painted over:
+   a plain island on top, and the lower third dimmed under real-format notifications. */
+.lock { container-type: inline-size; }
+.lock .sky-patch { position: absolute; left: 21.5%; width: 57%; top: 0; height: 6.6%; z-index: 1;
+  background: linear-gradient(180deg, #08101c, #0e1b2b); filter: blur(3px); }
+.lock .plain-island { position: absolute; left: 50%; top: 2.6cqw; width: 31cqw; height: 9cqw; transform: translateX(-50%);
+  background: #000; border-radius: 99px; z-index: 2; }
+.lock .dim { position: absolute; left: 0; right: 0; top: 57%; bottom: 0; z-index: 1;
+  background: linear-gradient(180deg, rgba(6,10,17,0) 0%, rgba(6,10,17,.93) 13%, #05080e 19%, #05080e 100%); }
+.lock .notifs { position: absolute; left: 3.4cqw; right: 3.4cqw; bottom: 10cqw; z-index: 3; display: flex; flex-direction: column; gap: 2.2cqw; }
+.notif { display: flex; gap: 3.2cqw; padding: 3.6cqw 4cqw 3.8cqw 3.6cqw; border-radius: 6cqw;
+  background: rgba(38,42,52,.78); box-shadow: inset 0 0 0 .25cqw rgba(255,255,255,.07); backdrop-filter: blur(14px); }
+.phone .screen .notif img.icon, .notif .icon { width: 10cqw; height: 10cqw; border-radius: 2.6cqw; flex: none; margin-top: .4cqw; }
+.notif .txt { flex: 1; min-width: 0; }
+.notif .top { display: flex; align-items: baseline; gap: 2cqw; }
+.notif .top b { font: 650 4.3cqw/1.25 var(--sans); color: #fff; letter-spacing: -.01em; }
+.notif .top span { margin-left: auto; font: 450 3.5cqw/1 var(--sans); color: rgba(255,255,255,.55); white-space: nowrap; }
+.notif .body code { font: inherit; white-space: nowrap; }
+.notif .body { margin-top: .8cqw; font: 420 4cqw/1.3 var(--sans); color: rgba(255,255,255,.86); letter-spacing: -.005em; }
+.notif.dim2 { opacity: .9; transform: scale(.97); }
+.lock .homebar { position: absolute; left: 50%; bottom: 2.4cqw; width: 34cqw; height: 1.3cqw; border-radius: 1cqw; transform: translateX(-50%); background: rgba(255,255,255,.75); z-index: 3; }
+
+/* ---------- feature shots (800x500 CSS, shot at 2x) ---------- */
+.feat .copy { position: absolute; left: 44px; top: var(--ct, 50%); transform: translateY(-50%); width: var(--cw, 300px); z-index: 20; }
+.feat .copy .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 22px; }
+.feat .copy .chip { font-size: 11px; padding: 6px 10px; }
+.feat .copy .eyebrow { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+.feat .copy h2 { font-size: var(--hs, 40px); }
+.feat .copy p { margin-top: 16px; font-size: 14.5px; }
+.fade-bottom { -webkit-mask-image: linear-gradient(180deg, #000 78%, transparent 100%); mask-image: linear-gradient(180deg, #000 78%, transparent 100%); }
+.glass { background: rgba(20,24,32,.72); border: 1px solid rgba(255,255,255,.08); backdrop-filter: blur(18px);
+  box-shadow: 0 20px 50px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05); }
+.label { font: 600 10.5px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
+.headline em.violet { background: linear-gradient(90deg, #C4B5FD, var(--violet) 55%, var(--sky)); -webkit-background-clip: text; background-clip: text; }

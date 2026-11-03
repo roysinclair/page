@@ -42,4 +42,4 @@ __pycache__/
 *.mobileprovision
 
 # Claude Code agent worktrees (local copies of this repo)
-.claude/worktrees/
+.claude/

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Live sessions on your phone</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .p1 { left: 560px; top: 30px; --w: 190px; z-index: 4; }
+  .p2 { left: 380px; top: 82px; --w: 196px; z-index: 5; }
+</style></head>
+<body><div class="canvas feat">
+  <div class="sky" data-seed="41"></div>
+  <div class="aurora" data-blobs="50,-30,60,70,teal,.30,70; 80,0,40,60,sky,.22,70; 30,60,40,60,violet,.12,90"></div>
+  <div class="copy" style="--cw:300px">
+    <span class="eyebrow"><span class="pulse" style="--s:18px"><b></b></span>Live sessions</span>
+    <h2 class="headline">Every session, <em>in your pocket.</em></h2>
+    <p class="caption">Follow each agent's story, its terminal screen and its changes as they happen, then steer or stop it. Live session content is end-to-end encrypted.</p>
+    <div class="chips">
+      <span class="chip"><span class="dot"></span>Claude Code</span>
+      <span class="chip"><span class="dot" style="background:var(--sky);box-shadow:0 0 8px var(--sky)"></span>Codex</span>
+      <span class="chip"><span class="dot" style="background:#34D399;box-shadow:0 0 8px #34D399"></span>Local models</span>
+    </div>
+  </div>
+  <div class="phone p1 reflect"><div class="island"></div><div class="screen"><img src="assets/ios-room-local.webp" alt=""></div></div>
+  <div class="phone p2 reflect"><div class="island"></div><div class="screen"><img src="assets/ios-room-codex.webp" alt=""></div></div>
+</div><script src="sky.js"></script></body></html>

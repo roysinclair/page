@@ -1,0 +1,24 @@
+{
+  "name": "page-studio-website",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "brochure": "astro build && node scripts/brochure.mjs",
+    "crops": "node scripts/showcase-crops.mjs"
+  },
+  "dependencies": {
+    "@astrojs/tailwind": "^5.1.2",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "astro": "^4.16.0",
+    "tailwindcss": "^3.4.13"
+  },
+  "devDependencies": {
+    "playwright": "^1.64.1"
+  },
+  "description": "The Page Studio website and printable brochure (Astro + Tailwind). Open source tools you run yourself: Page for Mac, Page for iPhone and Android, your own relay, and Page Aura."
+}

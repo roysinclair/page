@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Answer from the lock screen</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .p1 { left: 356px; top: 44px; --w: 196px; z-index: 5; }
+  .p2 { left: 572px; top: 62px; --w: 188px; z-index: 4; }
+  .p1 .screen img:first-child { width: 101.2%; margin: -.6% 0 0 -.6%; }
+</style></head>
+<body><div class="canvas feat">
+  <div class="sky" data-seed="31"></div>
+  <div class="aurora" data-blobs="45,-25,60,70,amber,.16,80; 70,-10,50,60,teal,.24,70; 85,50,40,60,sky,.18,80"></div>
+  <div class="copy" style="--cw:280px">
+    <span class="eyebrow"><span class="pulse amber" style="--s:18px"><b></b></span>Pages</span>
+    <h2 class="headline">Answer from the <em class="amber">lock screen.</em></h2>
+    <p class="caption">Approve, deny or reply from the notification. Only undoable commands approve in one tap; anything riskier opens the decision sheet, which names the exact keystroke and terminal.</p>
+  </div>
+  <div class="phone p1 reflect"><div class="screen lock">
+    <img src="assets/board-lock-screen.webp" alt="">
+    <div class="sky-patch"></div><div class="plain-island"></div><div class="dim"></div>
+    <div class="notifs">
+      <div class="notif"><img class="icon" src="assets/app-icon.webp" alt=""><div class="txt"><div class="top"><b>page paged you</b><span>now</span></div><div class="body">Approval needed: [Bash] <code>swift test --filter StuckTests</code></div></div></div>
+      <div class="notif"><img class="icon" src="assets/app-icon.webp" alt=""><div class="txt"><div class="top"><b>bottle-flip paged you</b><span>4m ago</span></div><div class="body">Approval needed: [Bash] <code>rm -rf Builds/Dev/*.app</code></div></div></div>
+    </div>
+    <div class="homebar"></div>
+  </div></div>
+  <div class="phone p2 reflect"><div class="island"></div><div class="screen"><img src="assets/ios-decision-undoable.webp" alt=""></div></div>
+</div><script src="sky.js"></script></body></html>

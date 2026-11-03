@@ -1,0 +1,128 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import Shot from '../../components/Shot.astro';
+import Showcase from '../../components/Showcase.astro';
+import { u, AURA_GITHUB, GITHUB, BLOB } from '../../data/site';
+---
+<Layout current="aura/" title="Page Aura" description="Page Aura is a bring-your-own-key chat app for Anthropic's Claude models. Linked to Page, it keeps your Mac awake while a reply streams and pages your phone when a reply finishes or a chat asks to use a tool.">
+  <PageHero label="Page Aura" title="A Claude chat you bring your own key to." lede="Page Aura is a free, community-built chat app for Anthropic’s Claude models. Linked to Page, your Mac stays awake while a reply streams, and your phone is paged when a reply finishes or a chat asks to use a tool.">
+    <Fragment slot="actions">
+      <a href="#link" class="btn-primary">The Page link</a>
+      <a href={AURA_GITHUB} rel="noopener" class="btn-ghost">Page Aura on GitHub</a>
+    </Fragment>
+    <Showcase name="showcase/feature-aura-visual" eager motion="final-approach" sizes="(min-width: 1024px) 560px, 100vw" alt="Your chats, paged too: a Page Aura chat where the model asks to read config/modem.yaml, with Deny, Always allow in this chat and Allow once; a thread runs to aura.sock, which stays on this Mac, and on to Page's Preferences, where the Page Aura agent is switched on." />
+  </PageHero>
+
+  <section id="app" class="block-section">
+    <div class="wrap">
+      <p class="label">The app</p>
+      <h2 class="h2 mt-3 max-w-3xl">A proper desktop chat for the API you already pay for.</h2>
+      <p class="lede mt-5 max-w-3xl">Page Aura talks straight to Anthropic with your own API key. No server, no account and no telemetry in between.</p>
+      <Shot class="mt-10" name="aura-hero" alt="Page Aura with three chats side by side: a web search answer with a table and numbered sources, a sales chart generated from an uploaded spreadsheet with a Download button, and an economy-mode answer researched by Haiku. The sidebar shows chats grouped by date and an estimated balance." caption="Three chats at once. Demo data from Page Aura’s own README." />
+      <div class="mt-12 grid gap-5 md:grid-cols-3">
+        <div class="card">
+          <h3 class="h3">Chat the way you work</h3>
+          <ul class="list-dots mt-4 text-[15px]">
+            <li>Up to four chats side by side, plus pop-out windows</li>
+            <li>Model and effort chosen for each chat</li>
+            <li>Edit an earlier message and resend, or branch into a new chat</li>
+            <li>Photos, PDFs, long text and data files</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="h3">Tools</h3>
+          <ul class="list-dots mt-4 text-[15px]">
+            <li>Web search and page reading, with numbered sources</li>
+            <li>Code and files: analysis, charts, and Word, Excel, PowerPoint and PDF files</li>
+            <li>Memory you can read, edit and delete, and standing notes of your own</li>
+            <li>Remote MCP apps, and on the desktop, MCP servers on your own computer, with approval for each use</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="h3">Your project, read-only</h3>
+          <ul class="list-dots mt-4 text-[15px]">
+            <li>Point a chat at a project folder, only when you choose</li>
+            <li>The model sees the files you pick and can ask for others, with your approval each time</li>
+            <li>Secret files such as <code class="code-inline">.env</code> and private keys are never offered</li>
+            <li>Chats, memory and notes can sync to a folder you choose</li>
+          </ul>
+        </div>
+      </div>
+      <div class="mt-12 grid items-start gap-6 md:grid-cols-2">
+        <Shot name="aura-approval" alt="An approval card in a Page Aura chat: the model wants to read a project file, with Deny, Always allow in this chat, and Allow once buttons." caption="Each file or tool use asks first." />
+        <Shot name="aura-desktop" alt="The Page Aura desktop app on Linux: a welcome screen with Keychain and a model shown in the sidebar." caption="The desktop app, here on Linux. It also runs on macOS and Windows." />
+      </div>
+    </div>
+  </section>
+
+  <section id="security" class="block-section border-t border-white/[0.06]">
+    <div class="wrap grid gap-10 lg:grid-cols-2">
+      <div>
+        <p class="label">Two ways to run it</p>
+        <h2 class="h2 mt-3">One HTML file, or a desktop app.</h2>
+        <p class="body mt-5">Open the standalone <code class="code-inline">page-aura.html</code> in a browser, or build the desktop app for Windows, macOS and Linux. The desktop app keeps your key in the system keychain, out of the interface’s reach; in the standalone file it can be encrypted with a passphrase.</p>
+        <p class="body mt-4">The installers aren’t code-signed, so building the desktop app yourself is the recommended route; ready-made builds come with checksums.</p>
+      </div>
+      <div>
+        <h3 class="h3">Built so the key has nowhere to go</h3>
+        <ul class="list-dots mt-4">
+          <li>The page may only connect to <code class="code-inline">api.anthropic.com</code>, under a strict content security policy.</li>
+          <li>No third-party code at runtime: every library is embedded and checked against its published fingerprint.</li>
+          <li>One optional exception, off by default: the Page link below.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="link" class="block-section border-t border-white/[0.06]">
+    <div class="wrap">
+      <p class="label">The Page link</p>
+      <h2 class="h2 mt-3 max-w-3xl">Page treats Page Aura as a third agent.</h2>
+      <p class="lede mt-5 max-w-3xl">On a Mac, Page Aura can hand its chats to Page. Page then does for them what it does for Claude Code and Codex.</p>
+      <div class="mt-12 grid gap-5 md:grid-cols-3">
+        <div class="card card-tone tone-teal"><h3 class="h3">Stays awake</h3><p class="body mt-3">The Mac stays awake while Page Aura is writing a reply, because an API stream dies if the Mac sleeps.</p></div>
+        <div class="card card-tone tone-amber"><h3 class="h3">Pages your phone</h3><p class="body mt-3">When a reply finishes while you’re away from the Mac, or when a chat asks to use an app on the Mac (a local MCP tool).</p></div>
+        <div class="card card-tone tone-sky"><h3 class="h3">Answer from the phone</h3><p class="body mt-3">Allow once or Deny a tool request, or type a message that is sent into that chat. Never “always allow”.</p></div>
+      </div>
+
+      <div class="mt-14 grid items-start gap-10 lg:grid-cols-2">
+        <div>
+          <h3 class="h3">Turn it on</h3>
+          <ol class="mt-4 list-decimal space-y-3 pl-6 text-ink-2 marker:font-mono marker:text-pulse-teal">
+            <li>Run Page on the same Mac.</li>
+            <li>In Page Aura, open Settings ▸ <strong>Page on this Mac</strong> and switch on <strong>Link Page Aura to Page</strong>.</li>
+            <li>The line under the switch reads <em>Connected to Page</em>, or <em>Waiting for Page</em> while it retries every 5 seconds.</li>
+          </ol>
+          <p class="fine mt-4">In Page, Preferences ▸ Agents ▸ <strong>Page Aura</strong> must be on. It is on by default, because it only opens a local socket. The opt-in lives in Page Aura, where the link is off by default. It exists only in the macOS desktop app.</p>
+        </div>
+        <div>
+          <h3 class="h3">What leaves the Mac</h3>
+          <p class="body mt-4">Page Aura never talks to the relay and never sees your pairing. It talks to Page over a Unix socket on the same Mac, readable only by you. Page then sends, through <strong>your own</strong> relay to <strong>your</strong> phone:</p>
+          <ul class="list-dots mt-4">
+            <li>the titles of chats that are working or waiting;</li>
+            <li>the end of a finished reply (the last 600 characters), or its error;</li>
+            <li>tool requests: the app name, the tool name and the input, clipped to 1500 characters and redacted by Page.</li>
+          </ul>
+          <p class="fine mt-4">The first 180 characters can appear in a push notification. Never sent: your API key, your history or attachments.</p>
+        </div>
+      </div>
+
+      <div class="card mt-12 !p-6">
+        <h3 class="h3">Limits</h3>
+        <ul class="list-dots mt-4 grid gap-x-10 md:grid-cols-2 [&>li]:!mt-2.5">
+          <li>A message from your phone can only go into a chat that is not busy. Otherwise the phone is told Page Aura is still working there.</li>
+          <li>Page Aura needs its API key set before a phone message can start a turn.</li>
+          <li>Battery pause isn’t part of the link yet: streams in flight normally finish within the low-battery grace period.</li>
+          <li>macOS only. On other systems the setting isn’t shown.</li>
+        </ul>
+        <p class="fine mt-5">The binding protocol, <code class="code-inline">aura-link-v1</code>, is documented in <a class="link" href={BLOB + 'docs/AURA-LINK.md'} rel="noopener">docs/AURA-LINK.md</a>.</p>
+      </div>
+
+      <div class="mt-10 flex flex-wrap gap-3">
+        <a href={AURA_GITHUB} rel="noopener" class="btn-primary">Page Aura on GitHub</a>
+        <a href={u('mac/')} class="btn-ghost">Page for Mac</a>
+      </div>
+    </div>
+  </section>
+</Layout>

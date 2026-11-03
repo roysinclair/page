@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Your own relay</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .node { position: absolute; z-index: 5; text-align: center; }
+  .node .name { margin-top: 12px; font: 650 13px/1.2 var(--sans); color: var(--ink); letter-spacing: -.01em; }
+  .node .sub { margin-top: 4px; font: 500 9.5px/1.2 var(--mono); color: var(--ink-3); }
+  .mac { left: 340px; top: 112px; width: 128px; }
+  .mac .laptop { position: relative; --w: 112px; margin: 0 auto; }
+  .mac .display { display: grid; place-items: center; background: radial-gradient(circle at 50% 60%, rgba(94,234,212,.25), transparent 60%), #070b14; }
+  .worker { left: 494px; top: 100px; width: 132px; }
+  .orb { width: 92px; height: 92px; margin: 0 auto; border-radius: 28px; display: grid; place-items: center; position: relative;
+    background: radial-gradient(circle at 40% 30%, rgba(94,234,212,.30), rgba(56,189,248,.10) 55%, rgba(10,14,22,.9) 100%);
+    border: 1px solid rgba(94,234,212,.35); box-shadow: 0 0 50px rgba(56,189,248,.30), inset 0 0 20px rgba(94,234,212,.15); }
+  .phonenode { left: 662px; top: 84px; width: 96px; }
+  .phonenode .phone { position: relative; --w: 58px; margin: 0 auto; }
+  .links { position: absolute; inset: 0; z-index: 4; }
+  .badge { position: absolute; z-index: 6; display: flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 99px;
+    background: rgba(10,14,22,.9); border: 1px solid rgba(94,234,212,.28); font: 600 9.5px/1 var(--mono); color: var(--ink-2); white-space: nowrap; }
+  .card { left: 380px; top: 302px; width: 340px; border-radius: 15px; box-shadow: 0 24px 60px rgba(0,0,0,.6); }
+  .card-label { position: absolute; left: 382px; top: 282px; z-index: 6; }
+</style></head>
+<body><div class="canvas feat">
+  <div class="sky" data-seed="81"></div>
+  <div class="aurora" data-blobs="55,-30,55,70,sky,.26,70; 80,20,40,60,teal,.22,80; 30,70,50,60,violet,.10,90"></div>
+  <div class="copy" style="--cw:276px">
+    <span class="eyebrow"><span class="pulse" style="--s:18px"><b></b></span>Your relay</span>
+    <h2 class="headline">Your relay. <em>Your keys.</em></h2>
+    <p class="caption">Pages and replies travel through a small Worker on your own Cloudflare account. Live session content is end-to-end encrypted and never stored. Nothing goes to the authors.</p>
+  </div>
+
+  <svg class="links" viewBox="0 0 800 500">
+    <defs><linearGradient id="l" gradientUnits="userSpaceOnUse" x1="460" y1="0" x2="690" y2="0"><stop offset="0" stop-color="#5EEAD4"/><stop offset="1" stop-color="#38BDF8"/></linearGradient></defs>
+    <path d="M458 152 L 514 146" stroke="url(#l)" stroke-width="1.6" stroke-dasharray="3 5" fill="none" stroke-linecap="round"/>
+    <path d="M606 146 L 680 146" stroke="url(#l)" stroke-width="1.6" stroke-dasharray="3 5" fill="none" stroke-linecap="round"/>
+    <path d="M404 106 C 420 40, 680 30, 710 80" stroke="url(#l)" stroke-width="1.6" stroke-opacity=".9" fill="none" stroke-linecap="round"/>
+    <circle cx="404" cy="106" r="2.6" fill="#5EEAD4"/><circle cx="710" cy="80" r="2.6" fill="#38BDF8"/>
+  </svg>
+
+  <div class="node mac">
+    <div class="laptop"><div class="lid"><div class="display"><span class="pulse" style="--s:26px"><b></b></span></div></div><div class="base"></div></div>
+    <div class="name">Your Mac</div><div class="sub">Page for Mac</div>
+  </div>
+  <div class="node worker">
+    <div class="orb"><svg width="40" height="40" viewBox="0 0 40 40"><rect x="10" y="17" width="20" height="15" rx="4" fill="#5EEAD4"/><path d="M14 17.5v-4a6 6 0 0 1 12 0v4" fill="none" stroke="#5EEAD4" stroke-width="3"/><circle cx="20" cy="24.5" r="2.2" fill="#062022"/></svg></div>
+    <div class="name">Your Worker</div><div class="sub">your Cloudflare account</div>
+  </div>
+  <div class="node phonenode">
+    <div class="phone"><div class="island"></div><div class="screen"><img src="assets/ios-now.webp" alt=""></div></div>
+    <div class="name">Your phone</div><div class="sub">iPhone · Android</div>
+  </div>
+  <div class="badge" style="left:468px; top:32px"><svg width="9" height="10" viewBox="0 0 20 22"><rect x="3" y="9.5" width="14" height="11" rx="2.6" fill="#5EEAD4"/><path d="M6.2 10V7a3.8 3.8 0 0 1 7.6 0v3" fill="none" stroke="#5EEAD4" stroke-width="2.2"/></svg>live sessions · end-to-end (AES-256-GCM)</div>
+
+  <span class="label card-label">On the phone · Pairing &amp; encryption</span>
+  <div class="render card fade-bottom"><img src="assets/ios-pairing.webp" alt=""></div>
+</div><script src="sky.js"></script></body></html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Works with your terminals</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .grid { position: absolute; left: 336px; top: 50%; transform: translateY(-50%); width: 432px; z-index: 5; }
+  .grid .label { margin: 0 0 10px 2px; display: flex; justify-content: space-between; }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tile { display: flex; align-items: center; gap: 11px; height: 48px; padding: 0 12px; border-radius: 13px; }
+  .tile .ico { width: 28px; height: 28px; border-radius: 8px; flex: none; display: grid; place-items: center;
+    background: rgba(94,234,212,.10); border: 1px solid rgba(94,234,212,.22); font: 700 10px/1 var(--mono); color: var(--teal); }
+  .tile b { display: block; font: 650 14.5px/1.1 var(--sans); letter-spacing: -.01em; color: var(--ink); }
+  .tile small { display: block; margin-top: 4px; font: 500 8.8px/1 var(--mono); color: var(--ink-3); letter-spacing: 0; white-space: nowrap; }
+  .ag .ico { border-radius: 50%; background: radial-gradient(circle, var(--c) 0 30%, transparent 32%), rgba(255,255,255,.04); border-color: color-mix(in srgb, var(--c) 40%, transparent); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 30%, transparent); }
+</style></head>
+<body><div class="canvas feat">
+  <div class="sky" data-seed="61"></div>
+  <div class="aurora" data-blobs="55,-30,55,70,teal,.24,70; 85,30,40,60,sky,.20,80; 40,70,50,60,violet,.12,90"></div>
+  <div class="copy" style="--cw:262px">
+    <span class="eyebrow"><span class="pulse" style="--s:18px"><b></b></span>Works with</span>
+    <h2 class="headline">The terminals <em>you already use.</em></h2>
+    <p class="caption">Page types your answer into the exact pane that asked. Stale answers are refused, and it never types over a half-written draft.</p>
+  </div>
+  <div class="grid">
+    <div class="label"><span>Terminals</span><span style="color:var(--teal)">8</span></div>
+    <div class="tiles">
+      <div class="tile glass"><span class="ico">&gt;_</span><span><b>Terminal.app</b><small>reply</small></span></div>
+      <div class="tile glass"><span class="ico">&gt;_</span><span><b>iTerm2</b><small>reply · stop</small></span></div>
+      <div class="tile glass"><span class="ico">&gt;_</span><span><b>tmux</b><small>reply · screen · stop</small></span></div>
+      <div class="tile glass"><span class="ico">&gt;_</span><span><b>cmux</b><small>reply · screen · stop · start</small></span></div>
+      <div class="tile glass"><span class="ico">&gt;_</span><span><b>WezTerm</b><small>reply · screen · stop</small></span></div>
+      <div class="tile glass"><span class="ico">&gt;_</span><span><b>kitty</b><small>reply · screen · stop</small></span></div>
+      <div class="tile glass"><span class="ico">&gt;_</span><span><b>Herdr</b><small>reply · screen · stop</small></span></div>
+      <div class="tile glass"><span class="ico">&gt;_</span><span><b>Claude Squad</b><small>reply · screen · stop</small></span></div>
+    </div>
+    <div class="label" style="margin-top:20px"><span>Agents</span></div>
+    <div class="tiles">
+      <div class="tile glass ag" style="--c:#5EEAD4"><span class="ico"></span><span><b>Claude Code</b><small>awake · approvals · replies</small></span></div>
+      <div class="tile glass ag" style="--c:#38BDF8"><span class="ico"></span><span><b>Codex</b><small>awake · pages · replies</small></span></div>
+      <div class="tile glass ag" style="--c:#34D399"><span class="ico"></span><span><b>Local models</b><small>Ollama · LM Studio · MLX</small></span></div>
+      <div class="tile glass ag" style="--c:#A78BFA"><span class="ico"></span><span><b>Page Aura</b><small>awake · pages · replies</small></span></div>
+    </div>
+  </div>
+</div><script src="sky.js"></script></body></html>

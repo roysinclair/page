@@ -1,0 +1,94 @@
+---
+import '@fontsource-variable/inter';
+import '@fontsource-variable/jetbrains-mono';
+import '../styles/global.css';
+import '../styles/motion.css';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import { u } from '../data/site';
+import { OG_IMAGE, OG_SIZE } from '../data/images';
+
+interface Props {
+  title?: string;
+  description?: string;
+  current?: string;
+  bare?: boolean; // brochure: no footer on print is handled in CSS; bare drops the footer entirely
+  motion?: boolean; // false: no signature motion at all (the brochure, which is also printed to PDF)
+}
+const {
+  title = 'Page Studio',
+  description = 'Page Studio is a family of open-source tools you run yourself: keep your Mac awake while AI coding agents work, pause them gracefully at your battery cutoff, and answer them from your phone.',
+  current = '',
+  bare = false,
+  motion = true,
+} = Astro.props;
+const full = title === 'Page Studio' ? 'Page Studio — keep watch over your AI agents' : `${title} · Page Studio`;
+const canonical = new URL(Astro.url.pathname, Astro.site).toString();
+const ogImage = new URL(u(OG_IMAGE), Astro.site).toString();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#05070D" />
+    <link rel="icon" type="image/svg+xml" href={u('favicon.svg')} />
+    <link rel="canonical" href={canonical} />
+    <title>{full}</title>
+    <meta name="description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={full} />
+    <meta property="og:description" content={description} />
+    <meta property="og:site_name" content="Page Studio" />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:type" content="image/webp" />
+    <meta property="og:image:width" content={String(OG_SIZE[0])} />
+    <meta property="og:image:height" content={String(OG_SIZE[1])} />
+    <meta property="og:image:alt" content="Page Studio: your agents keep working, you get paged only when it matters. An iPhone lock screen with two Page notifications beside Page's menu-bar popover." />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={full} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content="Page Studio: your agents keep working, you get paged only when it matters." />
+    <!--
+      SIGNATURE MOTION. Each hook is a `data-motion` attribute using the slug of a signature animation in
+      Designs/v4-night-watch-spec.json; styles/motion.css and scripts/motion.ts implement them for the web,
+      with the app's own timings (iOS/Page/Models: PulseModel, ApproachModel, ReceiptThread, HoldRing, DawnModel):
+        pulse            -> 1. The Pulse: teal breath every 4 s, one amber ripple ring per waiting item, still star-white
+                               when quiet. Nav mark and every <Pulse>.
+        final-approach   -> 2. Final Approach: arrivals descend from the pulse on spring(response .5, damping .8),
+                               520 ms, glow off once settled. Home hero composition, the kinds of page, lead visuals.
+        receipt-thread   -> 3. The Receipt Thread: a page goes Mac -> relay -> phone, the reply's thread returns, and
+                               turns green only when the Mac confirms. ConnectDiagram, and the delivery chips.
+        hold-ring        -> 4. The Hold Ring: 300 ms dead zone, fills over 1.2 s, amber warming to red in its final
+                               third; release early and it unwinds. <HoldRing> (a pressable demo).
+        dusk-dawn        -> 5. Dusk and Dawn: the page's sky (.nw-sky) shifts from working aurora to dusk to dawn as you
+                               scroll; the battery tile and box play dusk then a dawn sweep.
+      The CSS default is always the finished state. The `motion` class below is set only when motion is allowed
+      (no Reduce Motion, not printing, not opted out with motion={false}), so Reduce Motion, print, the brochure
+      and a failed script all get the static, finished design. Everything animates transform and opacity only,
+      except the hold ring's stroke, and starts from an IntersectionObserver.
+    -->
+    <script is:inline define:vars={{ allow: motion }}>
+      (function () {
+        var d = document.documentElement;
+        if (!allow || !window.matchMedia || matchMedia('(prefers-reduced-motion: reduce)').matches || matchMedia('print').matches) return;
+        d.classList.add('motion');
+        // If the motion script never starts, fall back to the finished design.
+        setTimeout(function () { if (!d.classList.contains('motion-live')) d.classList.remove('motion'); }, 2500);
+      })();
+    </script>
+  </head>
+  <body class="stars text-ink">
+    <div class="nw-sky no-print" aria-hidden="true"><i class="sky-work"></i><i class="sky-dusk"></i><i class="sky-dawn"></i></div>
+    <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-night-800 focus:px-4 focus:py-2">Skip to content</a>
+    <Nav current={current} />
+    <main id="main">
+      <slot />
+    </main>
+    {!bare && <Footer />}
+    <script>import '../scripts/motion';</script>
+  </body>
+</html>

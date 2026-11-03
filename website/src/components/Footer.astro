@@ -1,0 +1,40 @@
+---
+import { nav, u, GITHUB, AURA_GITHUB, GUIDE, PDF, BLOB } from '../data/site';
+import { imageSrc } from '../data/images';
+---
+<footer class="no-print mt-8 border-t border-white/[0.07] bg-night-950/70">
+  <div class="wrap grid gap-10 py-14 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+    <div>
+      <div class="flex items-center gap-2.5 font-extrabold tracking-tight">
+        <img src={imageSrc('app-icon')} width="32" height="32" alt="" class="rounded-[9px]" />
+        <span class="text-lg">Page Studio</span>
+      </div>
+      <p class="fine mt-4 max-w-xs">Tools you run yourself, that keep watch over your AI coding agents so you don’t have to.</p>
+      <p class="fine mt-4"><strong class="font-semibold text-ink-2">Page Studio License.</strong> Free to use and share; not to modify, sell, or sell hosting or support of it as a product.</p>
+    </div>
+    <nav aria-label="Pages">
+      <h2 class="label !text-ink-3">Explore</h2>
+      <ul class="mt-4 space-y-2.5 text-[15px]">
+        {nav.map((n) => <li><a href={u(n.href)} class="text-ink-2 hover:text-ink">{n.label}</a></li>)}
+      </ul>
+    </nav>
+    <nav aria-label="Project links">
+      <h2 class="label !text-ink-3">Project</h2>
+      <ul class="mt-4 space-y-2.5 text-[15px]">
+        <li><a href={GITHUB} rel="noopener" class="text-ink-2 hover:text-ink">GitHub: roysinclair/page</a></li>
+        <li><a href={AURA_GITHUB} rel="noopener" class="text-ink-2 hover:text-ink">GitHub: roysinclair/page-studio-apps</a></li>
+        <li><a href={GUIDE} rel="noopener" class="text-ink-2 hover:text-ink">Self-hosting guide</a></li>
+        <li><a href={BLOB + 'LICENSE'} rel="noopener" class="text-ink-2 hover:text-ink">License</a></li>
+        <li><a href={BLOB + 'SECURITY.md'} rel="noopener" class="text-ink-2 hover:text-ink">Security</a></li>
+      </ul>
+    </nav>
+    <div>
+      <h2 class="label !text-ink-3">Brochure</h2>
+      <p class="fine mt-4">The whole story on a few printable pages.</p>
+      <a href={u(PDF)} download class="btn-ghost mt-4">Download PDF</a>
+    </div>
+  </div>
+  <div class="wrap border-t border-white/[0.06] py-6">
+    <p class="fine">Page Studio is built on Anthropic’s Claude Code, OpenAI’s Codex, Cloudflare Workers and Durable Objects, and XcodeGen. No analytics, no tracking, no third-party scripts.</p>
+  </div>
+</footer>

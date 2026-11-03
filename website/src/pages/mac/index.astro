@@ -1,0 +1,306 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import Shot from '../../components/Shot.astro';
+import TerminalGrid from '../../components/TerminalGrid.astro';
+import Showcase from '../../components/Showcase.astro';
+import { u, GUIDE, BLOB, GITHUB } from '../../data/site';
+---
+<Layout current="mac/" title="Page for Mac" description="Page for Mac is a menu-bar app that keeps your Mac awake while AI coding agents work, pauses them gracefully at your battery cutoff, and delivers your phone replies into the exact terminal that asked.">
+  <PageHero label="Page for Mac" title="The menu-bar app that keeps watch." lede="Page watches your Claude Code and Codex sessions, keeps the Mac awake while they work, pauses them gracefully at your battery cutoff, and types your replies into the exact terminal that asked.">
+    <Fragment slot="actions">
+      <a href="#install" class="btn-primary">Install it</a>
+      <a href="#terminals" class="btn-ghost">Supported terminals</a>
+    </Fragment>
+    <Showcase name="showcase/feature-battery-visual" eager motion="final-approach" sizes="(min-width: 1024px) 560px, 100vw" alt="Stays awake, pauses gracefully: the Tower's Power page at 41 percent on battery, cutoff in about 1 hour 50 minutes, with lid-closed toggles for AC and battery; over it, the menu-bar popover with one item that needs you, five working, the runway to the cutoff, and an irreversible git push --force waiting behind Hold to approve." />
+  </PageHero>
+
+  <!-- POWER -->
+  <section id="power" class="block-section">
+    <div class="wrap">
+      <p class="label">Power control</p>
+      <h2 class="h2 mt-3 max-w-3xl">Awake exactly as long as the work needs.</h2>
+      <p class="lede mt-5 max-w-3xl">Real session state, not CPU guesses. Page lets go the moment nothing is mid-turn.</p>
+      <div class="mt-12 grid gap-5 md:grid-cols-2">
+        <div class="card">
+          <h3 class="h3">Real session status</h3>
+          <p class="body mt-3">Claude Code writes a status per live session: <code class="code-inline">busy</code>, <code class="code-inline">waiting</code> or <code class="code-inline">idle</code>. Page checks the process is alive and really is <code class="code-inline">claude</code>, and holds a no-idle-sleep assertion only while one is busy.</p>
+          <p class="fine mt-3">Older Claude Code builds without that file fall back to recent transcript writes. Codex state comes from its rollout files.</p>
+        </div>
+        <div class="card">
+          <h3 class="h3">Lid closed, on AC, by default</h3>
+          <p class="body mt-3">While agents work on AC power, Page also holds a <code class="code-inline">PreventSystemSleep</code> assertion, so the Mac keeps running with the lid shut. macOS honours that assertion on AC only.</p>
+        </div>
+        <div class="card md:col-span-2">
+          <h3 class="h3">Lid closed on battery: opt-in, with a watchdog</h3>
+          <p class="body mt-3">Turn on “Keep awake with the lid closed on battery” in the menu or the Tower (macOS asks for your password once, to install the power helper). Then it holds only while <strong>all</strong> of these are true:</p>
+          <ul class="list-dots mt-4 grid gap-x-10 md:grid-cols-2 [&>li]:!mt-2">
+            <li>agents are mid-turn;</li>
+            <li>you are on battery;</li>
+            <li>the charge is more than 5 points above your cutoff when it turns on (it stays on down to the cutoff, never at or below 5%);</li>
+            <li>the Mac is not running hot;</li>
+            <li>the watchdog is loaded.</li>
+          </ul>
+          <p class="body mt-4">Any condition fails and Page clears it; also on quit, on SIGTERM and at launch. A separate LaunchAgent watchdog clears it within a minute if Page dies or stops refreshing its marker for three minutes.</p>
+        </div>
+        <div class="card">
+          <h3 class="h3">Holds for pages waiting on you</h3>
+          <p class="body mt-3">A page waiting for your reply keeps the Mac awake for up to an hour by default, so your answer can still be delivered. Only when the relay is on.</p>
+        </div>
+        <div class="card">
+          <h3 class="h3">Rate limits</h3>
+          <p class="body mt-3">When a Claude session hits a usage limit, Page shows the reset time and can keep the Mac awake until it passes. See <a class="link" href="#alerts">rate limits</a>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BATTERY -->
+  <section id="battery" class="block-section border-t border-white/[0.06]">
+    <div class="wrap">
+      <p class="label">Battery cutoff</p>
+      <h2 class="h2 mt-3 max-w-3xl">A graceful pause, not a dead battery.</h2>
+      <p class="lede mt-5 max-w-3xl">At your cutoff, Page does what you chose, keeps the Mac awake for a 90-second grace period (adjustable) while agents write their summary, then lets it sleep.</p>
+      <div class="mt-12 grid items-start gap-10 lg:grid-cols-[1.1fr_1fr]">
+        <div>
+          <div class="grid gap-4">
+            <div class="card !p-5 card-tone tone-teal"><span class="tag tone-bg">Pause · default</span><p class="body mt-3">Asks busy agents to stop now and reply with a two-line summary.</p></div>
+            <div class="card !p-5 card-tone tone-sky"><span class="tag tone-bg">After step</span><p class="body mt-3">Asks them to finish the current step first. The message is queued behind the turn, never an interrupt.</p></div>
+            <div class="card !p-5"><span class="tag bg-white/10 text-ink-2">Off</span><p class="body mt-3">Only stops keeping the Mac awake. Agents get no message.</p></div>
+          </div>
+          <!-- data-motion="dusk-dawn": the aurora fades to dusk at the cutoff; dawn relights each session as its resume is confirmed. -->
+          <div data-motion="dusk-dawn" class="mt-6 rounded-2xl p-5 ring-1 ring-white/10" style="background:linear-gradient(90deg,rgba(94,234,212,.12),rgba(167,139,250,.14) 60%,rgba(245,177,76,.14))">
+            <h3 class="h3 !text-lg">And when power comes back</h3>
+            <p class="body mt-2 text-[15px]">Back above your recovery threshold (25% and on AC, by default), Page tells the sessions it paused to carry on: only ones you haven’t touched since, and never while you’re using the Mac. Or turn auto-resume off and resume from the menu.</p>
+          </div>
+        </div>
+        <Shot name="mac-tower" alt="The Tower's Power page: 41 percent on battery, cutoff in about 1 hour 50 minutes at this rate, with a gauge marking the 10 percent cutoff and the pause-early point. Toggles for lid closed on AC and on battery, hold for a waiting page, cutoff choices, what agents should do (pause, after step, off), pause early and resume on power." caption="The Tower’s Power page." />
+      </div>
+
+      <div class="mt-16 grid gap-5 md:grid-cols-3">
+        <div class="card">
+          <h3 class="h3">Battery forecast</h3>
+          <p class="body mt-3">The menu shows how long until your cutoff at the current drain (“Cutoff (10%) in about 40 min at this rate”). The phone shows the same, and you get one page when the cutoff is about 15 minutes away while agents are working.</p>
+        </div>
+        <div class="card">
+          <h3 class="h3">Pause early</h3>
+          <p class="body mt-3">Opt in to run the usual pause about 10 minutes before the cutoff, so agents have time to write a proper summary.</p>
+        </div>
+        <div class="card">
+          <h3 class="h3">Claude usage forecast</h3>
+          <p class="body mt-3">Opt in to show your 5-hour and 7-day usage. Page wraps your status line command to read the numbers and restores your settings exactly when you turn it off. You get a page about 30 minutes before you would hit the 5-hour limit at the current pace.</p>
+        </div>
+      </div>
+      <p class="fine mt-6 max-w-3xl">How a pause is delivered depends on the terminal: tmux, iTerm2 and cmux sessions are interrupted with Esc; Terminal.app sessions get the message queued. Codex sessions are interrupted only in tmux and cmux, and skipped elsewhere, because typing blind into a running Codex turn could trigger an approval hotkey.</p>
+    </div>
+  </section>
+
+  <!-- HELPER -->
+  <section id="helper" class="block-section border-t border-white/[0.06]">
+    <div class="wrap grid gap-10 lg:grid-cols-2">
+      <div>
+        <p class="label">Power helper and watchdog</p>
+        <h2 class="h2 mt-3">Two features need one narrow sudo rule.</h2>
+        <p class="body mt-5">Waking the Mac before a scheduled rate-limit resume, and keeping it awake with the lid closed on battery, need a small sudoers rule. Install it from the app (Tower ▸ Power ▸ Install…, macOS asks for your password once) or with the installer. The exact commands the rule allows are listed in the repo’s <a class="link" href={BLOB + 'SECURITY.md'} rel="noopener">SECURITY.md</a>.</p>
+        <p class="body mt-4">Page itself never uses sudo to install. Undo the rule any time.</p>
+      </div>
+      <div class="codeblock self-start">
+        <div class="c"># install the narrow rule (admin password once)</div>
+        <div>./install.sh --enable-power-helpers</div>
+        <div class="mt-3 c"># remove it, clear disablesleep, remove the watchdog</div>
+        <div>./install.sh --disable-power-helpers</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AGENTS -->
+  <section id="agents" class="block-section border-t border-white/[0.06]">
+    <div class="wrap">
+      <p class="label">Agents</p>
+      <h2 class="h2 mt-3 max-w-3xl">Claude Code, Codex and local models.</h2>
+      <div class="mt-12 grid gap-5 lg:grid-cols-2">
+        <div class="card card-tone" style="--tone:#E89E64">
+          <h3 class="h3">Claude Code</h3>
+          <p class="body mt-3">The deepest support: session state, approvals, questions, plans, idle and stuck detection, rate limits, usage forecast, and replies typed into the live session.</p>
+        </div>
+        <div class="card">
+          <h3 class="h3">Codex: real, but narrower</h3>
+          <div class="mt-3 grid gap-4 sm:grid-cols-2">
+            <div>
+              <p class="label !text-pulse-teal">Works</p>
+              <ul class="list-dots mt-3 text-[15px]">
+                <li>Keep-awake while a turn runs</li>
+                <li>Idle pages once a turn ends</li>
+                <li>Replies after the turn ends (tmux, Terminal.app, cmux, or <code class="code-inline">codex exec resume</code>)</li>
+                <li>Rate-limit display</li>
+                <li>Approvals and an opt-in Stop continuation through Codex hooks</li>
+              </ul>
+            </div>
+            <div>
+              <p class="label !text-signal-amber">Doesn’t</p>
+              <ul class="list-dots mt-3 text-[15px]">
+                <li>Detect approval prompts in the app (use the hook instead)</li>
+                <li>Phone Approve or Deny into a live Codex terminal</li>
+                <li>Typing while a turn is running (cmux with an empty composer is the exception)</li>
+                <li>Auto-resume after a Codex rate limit</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-5">
+        <h3 class="h3">Local and open-weight models</h3>
+        <p class="body mt-3">Page keeps the Mac awake while a local model is <strong>generating</strong>, and never just because one is loaded. It only looks: it never starts, stops or unloads a model.</p>
+        <div class="scroll-x mt-5">
+          <table class="w-full min-w-[560px] text-left text-[14px]">
+            <caption class="sr-only">How Page knows a local model is working</caption>
+            <thead class="text-ink-3"><tr><th scope="col" class="border-b border-white/10 py-2 pr-4 font-semibold">What you run</th><th scope="col" class="border-b border-white/10 py-2 font-semibold">How Page knows it is working</th></tr></thead>
+            <tbody class="text-ink-2">
+              <tr><th scope="row" class="border-b border-white/[0.06] py-3 pr-4 text-left font-semibold text-ink">Ollama</th><td class="border-b border-white/[0.06] py-3">The model runner’s own busy flag; GPU time as a fallback</td></tr>
+              <tr><th scope="row" class="border-b border-white/[0.06] py-3 pr-4 text-left font-semibold text-ink">llama.cpp server (also in Jan, Msty)</th><td class="border-b border-white/[0.06] py-3">The server’s slots endpoint; GPU time when that is off</td></tr>
+              <tr><th scope="row" class="border-b border-white/[0.06] py-3 pr-4 text-left font-semibold text-ink">LM Studio, MLX</th><td class="border-b border-white/[0.06] py-3">The app’s Apple-GPU time</td></tr>
+              <tr><th scope="row" class="border-b border-white/[0.06] py-3 pr-4 text-left font-semibold text-ink">opencode, aider, goose, crush, qwen-code, cline and similar</th><td class="border-b border-white/[0.06] py-3">Output to their terminal in the last two minutes</td></tr>
+              <tr><th scope="row" class="py-3 pr-4 text-left font-semibold text-ink">Claude Code or Codex pointed at Ollama or LM Studio</th><td class="py-3">Their normal session state</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="fine mt-4">GPU time needs Apple silicon. Ollama in Docker and servers on other machines aren’t detected. Claude Code sessions on a non-Anthropic model are never restarted in the background, because that would run them on your Anthropic account.</p>
+      </div>
+
+      <div class="card mt-5">
+        <h3 class="h3">Phone approvals in every app, with opt-in hooks</h3>
+        <p class="body mt-3">Terminal detection only sees sessions Page can type into. For the rest, <strong>Integrations ▸ Install agent hooks…</strong> adds hooks to the agents’ own settings: it shows the exact diff, backs the file up, asks before writing, and can uninstall. Hooks run wherever the agent runs, so approvals reach your phone from Claude Code in any terminal or cmux, local Code sessions in the Claude desktop app, the VS Code and JetBrains extensions, and the Codex CLI.</p>
+        <p class="fine mt-4">Anthropic documents hook support for the desktop app and the IDE extensions, but Page hasn’t been tested on every one of those surfaces. Whether the Codex desktop app and IDE extension run Codex hooks is undocumented.</p>
+        <ul class="list-dots mt-5 grid gap-x-10 md:grid-cols-2 [&>li]:!mt-2">
+          <li><strong>Away-only.</strong> If you touched the Mac in the last two minutes, the hook steps aside and the normal dialog appears.</li>
+          <li><strong>Never decides on its own.</strong> A decision is printed only for an explicit phone answer. Timeouts and errors hand the prompt back to the agent’s dialog.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- TERMINALS -->
+  <section id="terminals" class="block-section border-t border-white/[0.06]">
+    <div class="wrap">
+      <div class="grid items-center gap-8 lg:grid-cols-[1fr_1.1fr] lg:gap-12">
+        <Showcase name="showcase/feature-terminals-visual" motion="final-approach" class="lg:order-2" sizes="(min-width: 1024px) 580px, 100vw" alt="The terminals you already use: Terminal.app, iTerm2, tmux, cmux, WezTerm, kitty, Herdr and Claude Squad, each with what Page can do there (reply, screen, stop, start); and the agents: Claude Code, Codex, local models such as Ollama, LM Studio and MLX, and Page Aura." />
+        <div>
+          <p class="label">Terminals</p>
+          <h2 class="h2 mt-3">The terminals <span class="text-grad">you already use.</span></h2>
+          <p class="lede mt-5">Replies land in the exact terminal that asked: Page follows the session’s process to its tty to the pane, tab or surface. If any step is ambiguous, nothing is typed and you are told why.</p>
+        </div>
+      </div>
+      <div class="mt-12"><TerminalGrid /></div>
+      <p class="fine mt-5 max-w-3xl">Shown for Claude Code sessions, from Page’s own terminal catalog. Codex is narrower: see <a class="link" href="#agents">Agents</a>. A tick means Page can do it. “Answer questions” means pressing the keys of a question dialog from the phone.</p>
+
+      <div class="mt-10 grid gap-5 md:grid-cols-2">
+        <div class="card">
+          <h3 class="h3">Not supported yet</h3>
+          <p class="body mt-3">Ghostty, VS Code’s terminal, Warp and other terminals Page can’t type into show “Page can’t type into that yet.” Run the agent inside tmux, or install the hooks: approvals then work in any terminal. zellij and GNU screen are refused.</p>
+        </div>
+        <div class="card">
+          <h3 class="h3">If the session has exited</h3>
+          <p class="body mt-3">A text reply can run <code class="code-inline">claude --resume</code> in the background, but only when no live process, cmux record or recent transcript write suggests the session is still alive. Approve and Deny are refused.</p>
+        </div>
+      </div>
+
+      <div class="mt-12">
+        <h3 class="h3">Typing is the dangerous part, so the rules are strict</h3>
+        <ul class="list-dots mt-5 grid gap-x-12 md:grid-cols-2 [&>li]:!mt-3">
+          <li><strong>Exact target or nothing.</strong> Never “any claude process”, never a guess, never keystrokes aimed at whichever app is frontmost.</li>
+          <li><strong>Status-aware keys.</strong> Approve types <code class="code-inline">1</code> with no Enter. Deny is a lone Esc. Page never sends a fixed <code class="code-inline">2</code>, which can mean “don’t ask again”.</li>
+          <li><strong>No Enter on a menu.</strong> Enter would accept the highlighted “Yes”, so “no, stop” plus Enter would approve. Page never does that.</li>
+          <li><strong>Stale answers are refused.</strong> An approval aimed at a prompt that has since changed is turned down.</li>
+          <li><strong>No drafts overwritten.</strong> Text isn’t typed over a half-written message.</li>
+          <li><strong>Fail closed.</strong> Unknown status, unreadable screen or missing permission means “not delivered, here’s why”.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ALERTS -->
+  <section id="alerts" class="block-section border-t border-white/[0.06]">
+    <div class="wrap">
+      <p class="label">Alerts and rate limits</p>
+      <h2 class="h2 mt-3 max-w-3xl">Beyond “it needs you”.</h2>
+      <div class="mt-12 grid gap-5 md:grid-cols-2">
+        <div class="card card-tone tone-amber">
+          <h3 class="h3">Looks stuck</h3>
+          <p class="body mt-3">Page pages you when a working session is getting nowhere: the same command fails 3 times in a row (or 5 times in its last 12 steps), nothing has been written for 15 minutes (adjustable), or a background workflow stopped making progress. Reply to steer it, or <strong>Stop it</strong> to press Esc. Nothing is typed until you answer.</p>
+        </div>
+        <div class="card card-tone tone-teal">
+          <h3 class="h3">What changed</h3>
+          <p class="body mt-3">A finished-turn page starts with a summary such as “Changed 3 files (+120 −14) · tests passed”. Only these counts go through the relay. Tap the summary to see the file list and the diff on your phone, sent end-to-end encrypted and redacted.</p>
+        </div>
+        <div class="card">
+          <h3 class="h3">Rate limits</h3>
+          <p class="body mt-3">Page reads Claude Code’s rate-limit records, shows the reset time in the menu and on the phone, and can hold the Mac awake until the reset. Reply to a rate-limit page and Page types your message into the session when the limit resets.</p>
+        </div>
+        <div class="card">
+          <h3 class="h3">Auto-resume (off by default)</h3>
+          <p class="body mt-3">An open session gets “carry on” typed 60 seconds after the reset, only while you are away. An ended session gets a per-session scheduled job that resumes it headlessly, where tool calls needing approval are denied. With the power helper, Page can also schedule a wake a minute before.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TOWER -->
+  <section id="tower" class="block-section border-t border-white/[0.06]">
+    <div class="wrap grid items-start gap-10 lg:grid-cols-[1fr_1.1fr]">
+      <div>
+        <p class="label">Menu bar and Preferences</p>
+        <h2 class="h2 mt-3">The menu bar is the dispatcher. The Tower is the control room.</h2>
+        <p class="body mt-5">The menu-bar pulse shows at a glance whether agents are working, something needs you, or Page has paused them for battery. Click it, or press Option-Command-P, for what needs you, what’s working, and the runway of battery cutoff, usage limits and scheduled resumes. A Dispatch box starts new work.</p>
+        <p class="body mt-4">The Tower (Preferences): Power, Budget, Macs &amp; phones, Attention, Agents, Phone approvals, Terminals, Widgets, Shortcuts, Pairing &amp; encryption and About. Setup steps such as hooks, cmux and the power helper are windows in the app, never terminal chores.</p>
+      </div>
+      <Shot name="mac-menubar-states" crop={0.73} alt="Three states of Page's menu-bar popover: needs you, all quiet, and paused for battery at 10 percent." />
+    </div>
+
+    <div id="widgets" class="wrap mt-20 grid items-center gap-8 lg:mt-24 lg:grid-cols-[1.1fr_1fr] lg:gap-12">
+      <Showcase name="showcase/feature-widgets-visual" motion="final-approach" sizes="(min-width: 1024px) 580px, 100vw" alt="Widgets: a large Page widget saying 3 need you, 5 working, an irreversible item in bottle-flip and clear till 01:08 at 64 percent battery; a small Page widget with the same counts; and a Claude usage widget with rings at 62 percent of the 5-hour limit and 35 percent of the 7-day limit." />
+      <div>
+        <p class="label">At a glance</p>
+        <h2 class="h2 mt-3">Know before <span class="text-signal-amber">you unlock.</span></h2>
+        <ul class="list-dots mt-6">
+          <li><strong>Mac.</strong> Desktop widgets for Page and your Claude usage, built when Page is signed with a real identity (ad-hoc builds skip them).</li>
+          <li><strong>iPhone.</strong> Home Screen and Lock Screen widgets: what needs you, what’s working and the battery forecast.</li>
+          <li><strong>Android.</strong> A home-screen widget and a Quick Settings tile, with counts and times only.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSTALL -->
+  <section id="install" class="block-section border-t border-white/[0.06]">
+    <div class="wrap grid gap-10 lg:grid-cols-2">
+      <div>
+        <p class="label">Install</p>
+        <h2 class="h2 mt-3">Build it on your own Mac.</h2>
+        <p class="body mt-5">You need macOS 12 or later and the Xcode Command Line Tools (<code class="code-inline">xcode-select --install</code>). <code class="code-inline">jq</code> and <code class="code-inline">curl</code> ship with recent macOS and are used by the hooks.</p>
+        <p class="body mt-4">The installer builds Page.app, copies it to /Applications and registers a LaunchAgent so Page starts at login. It never uses sudo.</p>
+        <ul class="list-dots mt-6">
+          <li><strong>Signing.</strong> It uses <code class="code-inline">CODESIGN_IDENTITY</code> if set, else your first Apple Development identity, else Developer ID Application, else ad-hoc. A stable identity keeps macOS permission grants across rebuilds; ad-hoc forgets them and skips the Mac widgets.</li>
+          <li><strong>Permissions.</strong> The first time Page types into Terminal.app or iTerm2, macOS asks for Automation permission.</li>
+          <li><strong>Phone.</strong> Turn on <em>Send pages to my phone</em> under Preferences ▸ Macs &amp; phones, paste your relay URL and click Test.</li>
+        </ul>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a href={GUIDE} rel="noopener" class="btn-primary">Full self-hosting guide</a>
+          <a href={GITHUB} rel="noopener" class="btn-ghost">View the source</a>
+        </div>
+      </div>
+      <div class="self-start">
+        <div class="codeblock">
+          <div class="c"># get the code</div>
+          <div>git clone https://github.com/roysinclair/page.git</div>
+          <div>cd page</div>
+          <div class="mt-3 c"># build, install to /Applications, start at login</div>
+          <div>./install.sh</div>
+          <div class="mt-3 c"># or build without installing</div>
+          <div>./build.sh &amp;&amp; open ./Page.app</div>
+        </div>
+        <p class="fine mt-4">Settings live in a config file under <code class="code-inline">~/Library/Application Support/ClaudePowerMode/</code>. The project was renamed from “Claude Power Mode”, so some paths keep the old name. Each key is decoded on its own, and a bad value falls back to its default.</p>
+      </div>
+    </div>
+  </section>
+</Layout>

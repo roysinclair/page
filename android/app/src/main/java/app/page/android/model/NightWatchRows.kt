@@ -149,6 +149,8 @@ object DeliveryPreview {
 
     fun typeOne(route: String?, mac: String): String = line("Will type 1", route, mac)
     fun pressEsc(route: String?, mac: String): String = line("Will press Esc", route, mac)
+    /** A Page Aura chat: Page Aura's own Stop, not a key. */
+    fun stopReply(route: String?, mac: String): String = line("Will stop the reply", route, mac)
     fun tellInstead(route: String?, mac: String): String = line("Esc, then your message", route, mac)
 
     /** A message to a busy or finished session: queued behind the turn; never Esc or 1. */

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Page Studio family</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .head { position: absolute; left: 0; right: 0; top: 52px; text-align: center; z-index: 10; }
+  .head .eyebrow { display: inline-flex; align-items: center; gap: 9px; }
+  .head h1 { margin-top: 18px; font-size: 50px; }
+  .head p { margin: 16px auto 0; max-width: 700px; font-size: 16.5px; }
+
+  .laptop { left: 96px; top: 262px; --w: 610px; }
+  .wall { position: absolute; inset: 0;
+    background: radial-gradient(70% 60% at 70% 110%, rgba(56,189,248,.26), transparent 70%),
+      radial-gradient(50% 50% at 15% 105%, rgba(167,139,250,.24), transparent 70%),
+      linear-gradient(180deg, #070b16 0%, #0a1422 60%, #0b1a26 100%); }
+  .aura { position: absolute; left: 16px; top: 36px; width: 420px; border-radius: 9px; overflow: hidden; background: #0b0f17;
+    box-shadow: 0 16px 40px rgba(0,0,0,.6), 0 0 0 .5px rgba(255,255,255,.14); }
+  .aura img { display: block; width: 100%; }
+  .pop { left: 362px; top: 21px; width: 206px; height: 326px; border-radius: 10.8px; box-shadow: 0 22px 50px rgba(0,0,0,.65), 0 0 0 .5px rgba(255,255,255,.08); }
+
+  .android { left: 772px; top: 300px; --w: 174px; z-index: 6; }
+  .iphone { left: 928px; top: 276px; --w: 186px; z-index: 7; }
+
+  .orb { position: absolute; left: 726px; top: 206px; width: 52px; height: 52px; border-radius: 17px; display: grid; place-items: center; z-index: 9;
+    background: radial-gradient(circle at 40% 30%, rgba(94,234,212,.35), rgba(56,189,248,.12) 55%, rgba(10,14,22,.92) 100%);
+    border: 1px solid rgba(94,234,212,.4); box-shadow: 0 0 40px rgba(56,189,248,.35); }
+  svg.links { position: absolute; inset: 0; z-index: 8; }
+  .tag { position: absolute; z-index: 11; display: flex; flex-direction: column; gap: 4px; }
+  .tag b { font: 700 13.5px/1 var(--sans); letter-spacing: -.01em; color: var(--ink); display: flex; align-items: center; gap: 7px; }
+  .tag b i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); box-shadow: 0 0 10px var(--c); }
+  .tag span { font: 500 10.5px/1.3 var(--mono); color: var(--ink-3); }
+</style></head>
+<body><div class="canvas">
+  <div class="sky" data-seed="17" data-density="1.1"></div>
+  <div class="aurora" data-blobs="20,-30,60,60,violet,.16,90; 45,-35,60,60,teal,.22,90; 75,-30,50,60,sky,.22,90; 50,75,80,50,sky,.10,100"></div>
+  <div class="head">
+    <span class="eyebrow"><span class="pulse" style="--s:20px"><b></b></span>Page Studio</span>
+    <h1 class="headline">The night shift for <em>your AI agents.</em></h1>
+    <p class="caption">A Mac app that keeps agents running, iPhone and Android apps that answer for them, a relay on your own Cloudflare account, and a chat app that joins in.</p>
+  </div>
+
+  <div class="laptop">
+    <div class="lid"><div class="display" style="--mb:15px">
+      <div class="wall"></div>
+      <div class="sky" data-seed="5" data-density=".5" data-fade=".9"></div>
+      <div class="menubar">
+        <div class="item open">
+          <svg width="11" height="11" viewBox="0 0 22 22"><circle cx="11" cy="11" r="9.5" fill="none" stroke="#F5B14C" stroke-opacity=".55" stroke-width="1.6"/><circle cx="11" cy="11" r="5" fill="#F5B14C"/></svg>
+          <span style="color:#F5B14C;font-weight:700">2</span>
+        </div>
+        <div class="item"><svg width="11" height="9" viewBox="0 0 22 17"><path d="M1 6.2a14.5 14.5 0 0 1 20 0M4.3 9.6a9.6 9.6 0 0 1 13.4 0M7.6 12.9a4.8 4.8 0 0 1 6.8 0" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/><circle cx="11" cy="15.6" r="1.5" fill="#fff"/></svg></div>
+        <div class="item"><svg width="19" height="9" viewBox="0 0 38 18"><rect x="1" y="1" width="31" height="16" rx="4.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.6"/><rect x="3.6" y="3.6" width="10.8" height="10.8" rx="2.4" fill="#fff"/><rect x="34" y="6" width="2.6" height="6" rx="1.3" fill="#fff" fill-opacity=".55"/></svg></div>
+        <div class="item">Mon 26 Oct&nbsp; 1:12</div>
+      </div>
+      <div class="aura"><img src="assets/aura-window.webp" alt=""></div>
+      <div class="render pop fade-bottom"><img src="assets/mac-popover-needs.webp" alt=""></div>
+    </div></div>
+    <div class="base"></div>
+  </div>
+
+  <svg class="links" viewBox="0 0 1200 750">
+    <defs><linearGradient id="g1" gradientUnits="userSpaceOnUse" x1="540" y1="0" x2="1030" y2="0"><stop offset="0" stop-color="#F5B14C" stop-opacity=".9"/><stop offset=".4" stop-color="#5EEAD4"/><stop offset="1" stop-color="#38BDF8"/></linearGradient></defs>
+    <path d="M543 270 C 556 236, 650 226, 725 229" stroke="url(#g1)" stroke-width="1.5" stroke-dasharray="2 5" fill="none" stroke-linecap="round"/>
+    <path d="M752 259 C 760 300, 820 298, 858 302" stroke="url(#g1)" stroke-width="1.5" stroke-dasharray="2 5" fill="none" stroke-linecap="round"/>
+    <path d="M779 226 C 900 220, 1006 228, 1020 276" stroke="url(#g1)" stroke-width="1.5" stroke-dasharray="2 5" fill="none" stroke-linecap="round"/>
+  </svg>
+  <div class="orb"><svg width="22" height="22" viewBox="0 0 40 40"><rect x="10" y="17" width="20" height="15" rx="4" fill="#5EEAD4"/><path d="M14 17.5v-4a6 6 0 0 1 12 0v4" fill="none" stroke="#5EEAD4" stroke-width="3"/><circle cx="20" cy="24.5" r="2.2" fill="#062022"/></svg></div>
+
+  <div class="phone android"><div class="cam"></div><div class="screen"><img src="assets/android-now.webp" alt=""></div></div>
+  <div class="phone iphone"><div class="island"></div><div class="screen"><img src="assets/ios-room-codex.webp" alt=""></div></div>
+
+  <div class="tag" style="left:116px; top:690px; --c:#5EEAD4"><b><i></i>Page for Mac</b><span>keep-awake · battery pause · replies</span></div>
+  <div class="tag" style="left:420px; top:690px; --c:#A78BFA"><b><i></i>Page Aura</b><span>bring-your-own-key Claude chat</span></div>
+  <div class="tag" style="left:794px; top:238px; --c:#38BDF8"><b><i></i>Your relay</b><span>your Cloudflare account</span></div>
+  <div class="tag" style="left:800px; top:690px; --c:#F5B14C"><b><i></i>Page for iPhone &amp; Android</b><span>pages · approvals · live sessions</span></div>
+</div><script src="sky.js"></script></body></html>

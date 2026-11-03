@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Keep-awake and battery pause</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .win { left: 352px; top: 58px; width: 590px; border-radius: 6.4px; }
+  .pop { left: 352px; top: 300px; width: 280px; border-radius: 15.8px 15.8px 0 0; box-shadow: 0 26px 60px rgba(0,0,0,.7), 0 0 0 .5px rgba(255,255,255,.1); }
+  .tag { position: absolute; z-index: 21; display: flex; align-items: center; gap: 7px; }
+</style></head>
+<body><div class="canvas feat">
+  <div class="sky" data-seed="21"></div>
+  <div class="aurora" data-blobs="55,-30,60,70,teal,.28,70; 85,10,40,60,sky,.22,70; 10,60,50,60,amber,.10,90"></div>
+  <div class="copy" style="--cw:292px">
+    <span class="eyebrow"><span class="pulse" style="--s:18px"><b></b></span>Keep-awake · battery</span>
+    <h2 class="headline">Stays awake. <em>Pauses gracefully.</em></h2>
+    <p class="caption">Keeps the Mac awake while agents work, lid closed too. At your battery cutoff, Page asks them to stop and summarise, and resumes them on power.</p>
+  </div>
+  <div class="render win shadowed"><img src="assets/mac-tower-power.webp" alt=""></div>
+  <div class="render pop fade-bottom"><img src="assets/mac-popover-battery-head.webp" alt=""></div>
+</div><script src="sky.js"></script></body></html>

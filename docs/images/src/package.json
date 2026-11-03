@@ -1,0 +1,13 @@
+{
+  "name": "page-studio-images",
+  "private": true,
+  "type": "module",
+  "description": "Headless compositions for Page Studio's marketing images (see README.md).",
+  "scripts": {
+    "shoot": "node shoot.mjs",
+    "build": "node shoot.mjs && python3 compress.py"
+  },
+  "devDependencies": {
+    "playwright": "1.64.1"
+  }
+}

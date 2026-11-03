@@ -143,6 +143,8 @@ enum DeliveryPreview {
 
     static func typeOne(route: String?, mac: String) -> String { line("Will type 1", route: route, mac: mac) }
     static func pressEsc(route: String?, mac: String) -> String { line("Will press Esc", route: route, mac: mac) }
+    /// A Page Aura chat: Page Aura's own Stop, not a key.
+    static func stopReply(route: String?, mac: String) -> String { line("Will stop the reply", route: route, mac: mac) }
     static func tellInstead(route: String?, mac: String) -> String { line("Esc, then your message", route: route, mac: mac) }
     /// A message to a busy or finished session: queued behind the turn; never Esc or 1.
     static func message(route: String?, mac: String) -> String { line("Your message, then Return", route: route, mac: mac) }

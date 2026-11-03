@@ -1,0 +1,12 @@
+---
+import { imageDims, imageSrc } from '../data/images';
+interface Props { name: string; alt: string; caption?: string; class?: string; eager?: boolean; crop?: number; ratio?: number; pos?: string }
+const { name, alt, caption, class: cls = '', eager = false, crop = 1, ratio, pos = 'top' } = Astro.props;
+const [w, h] = imageDims(name);
+---
+<figure class={cls}>
+  <div class="glass-shot">
+    <img src={imageSrc(name)} alt={alt} width={w} height={h} loading={eager ? 'eager' : 'lazy'} decoding="async" class="block h-auto w-full object-cover" style={`object-position:${pos};` + (ratio ? `aspect-ratio:${ratio}` : crop < 1 ? `aspect-ratio:${w}/${h * crop}` : '')} />
+  </div>
+  {caption && <figcaption class="fine mt-3">{caption}</figcaption>}
+</figure>

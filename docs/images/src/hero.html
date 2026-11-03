@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Page Studio hero</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .copy { position: absolute; left: 64px; top: 118px; width: 440px; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+  .brand .name { font: 700 15px/1 var(--sans); letter-spacing: -.01em; color: var(--ink); }
+  .brand .eyebrow { margin-left: 4px; }
+  .copy h1 { font-size: 45px; }
+  .copy p { margin-top: 22px; font-size: 15.5px; max-width: 440px; }
+  .copy .chip { font-size: 11.5px; padding: 6px 10px; gap: 6px; }
+  .chips { gap: 7px !important; flex-wrap: nowrap !important; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+
+  /* the Mac */
+  .laptop { left: 612px; top: 82px; --w: 556px; }
+  .wall { position: absolute; inset: 0;
+    background:
+      radial-gradient(70% 55% at 75% 105%, rgba(56,189,248,.28), transparent 70%),
+      radial-gradient(50% 45% at 20% 100%, rgba(167,139,250,.22), transparent 70%),
+      radial-gradient(60% 40% at 60% 70%, rgba(94,234,212,.12), transparent 70%),
+      linear-gradient(180deg, #070b16 0%, #0a1422 60%, #0b1a26 100%); }
+  .term { position: absolute; left: 16px; top: 34px; width: 268px; border-radius: 7px; overflow: hidden;
+    background: rgba(10,12,17,.86); box-shadow: 0 10px 30px rgba(0,0,0,.55), 0 0 0 .5px rgba(255,255,255,.12); }
+  .term .bar { height: 16px; display: flex; align-items: center; gap: 4px; padding: 0 7px; background: rgba(255,255,255,.05);
+    font: 500 7px/1 var(--sans); color: var(--ink-3); }
+  .term .bar i { width: 6px; height: 6px; border-radius: 50%; background: #3a3d45; }
+  .term .bar span { margin-left: auto; margin-right: auto; transform: translateX(-12px); }
+  .term pre { padding: 8px 10px 10px; font: 400 7.2px/1.55 var(--mono); color: rgba(255,255,255,.78); white-space: pre; }
+  .term .a { color: var(--amber); } .term .t { color: var(--teal); } .term .m { color: var(--ink-3); } .term .w { color: #fff; font-weight: 600; }
+  .popover { left: 290px; top: 19px; width: 220px; border-radius: 11.6px; box-shadow: 0 22px 50px rgba(0,0,0,.65), 0 0 0 .5px rgba(255,255,255,.08); }
+  .notch-glow { position: absolute; left: 388px; top: 15px; width: 34px; height: 6px; background: radial-gradient(closest-side, rgba(245,177,76,.6), transparent); filter: blur(2px); }
+
+  /* phones */
+  .android { left: 520px; top: 190px; --w: 180px; z-index: 6; }
+  .iphone { left: 682px; top: 178px; --w: 192px; z-index: 7; }
+  .iphone .screen img { width: 101.2%; margin: -.6% 0 0 -.6%; }
+  .home { position: absolute; left: 0; right: 0; bottom: 0; height: 9%;
+    background: linear-gradient(180deg, rgba(5,7,13,0), rgba(5,7,13,.92) 55%); }
+  .home::after { content: ""; position: absolute; left: 50%; bottom: 7px; width: 34%; height: 4px; border-radius: 4px; transform: translateX(-50%); background: rgba(255,255,255,.7); }
+
+  /* the relay link */
+  svg.link { position: absolute; inset: 0; z-index: 8; overflow: visible; }
+  .relay { position: absolute; left: 846px; top: 22px; z-index: 9; display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px 6px 7px; border-radius: 999px; background: rgba(10,14,22,.82); border: 1px solid rgba(94,234,212,.28);
+    box-shadow: 0 0 24px rgba(56,189,248,.18); font: 600 10.5px/1 var(--mono); color: var(--ink-2); letter-spacing: .02em; white-space: nowrap; }
+  .relay .lock { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
+    background: radial-gradient(circle, rgba(94,234,212,.35), rgba(56,189,248,.08)); }
+  .floor { position: absolute; left: 470px; right: 0; top: 548px; height: 120px;
+    background: radial-gradient(55% 40% at 50% 10%, rgba(94,234,212,.10), transparent 70%); }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <div class="sky" data-seed="11" data-density="1.15"></div>
+  <div class="aurora" data-blobs="58,-22,62,60,teal,.32,70; 78,-10,40,50,sky,.30,70; 30,-30,40,50,violet,.20,80; 62,62,60,55,sky,.12,90"></div>
+  <div class="floor"></div>
+
+  <div class="copy">
+    <div class="brand"><span class="pulse" style="--s:26px"><b></b></span><span class="name">Page Studio</span></div>
+    <h1 class="headline">Your agents<br>keep working.<br><em>You get paged only<br>when it matters.</em></h1>
+    <p class="caption">Page keeps your Mac awake while Claude Code and Codex work, pauses them gracefully at your battery cutoff, and pages your phone when a decision is yours.</p>
+    <div class="chips">
+      <span class="chip"><span class="dot"></span>Mac</span>
+      <span class="chip"><span class="dot" style="background:var(--amber);box-shadow:0 0 8px var(--amber)"></span>iPhone</span>
+      <span class="chip"><span class="dot" style="background:#34D399;box-shadow:0 0 8px #34D399"></span>Android</span>
+      <span class="chip"><span class="dot" style="background:var(--sky);box-shadow:0 0 8px var(--sky)"></span>Your relay</span>
+      <span class="chip"><span class="dot" style="background:var(--violet);box-shadow:0 0 8px var(--violet)"></span>Page Aura</span>
+    </div>
+  </div>
+
+  <div class="laptop">
+    <div class="lid"><div class="display" style="--mb:14px">
+      <div class="wall"></div>
+      <div class="sky" data-seed="4" data-density=".5" data-fade=".9"></div>
+      <div class="menubar">
+        <div class="left"><b>Terminal</b><span>Shell</span><span>Edit</span><span>View</span><span>Window</span></div>
+        <div class="item open">
+          <svg width="11" height="11" viewBox="0 0 22 22"><circle cx="11" cy="11" r="9.5" fill="none" stroke="#F5B14C" stroke-opacity=".55" stroke-width="1.6"/><circle cx="11" cy="11" r="5" fill="#F5B14C"/></svg>
+          <span style="color:#F5B14C;font-weight:700">2</span>
+        </div>
+        <div class="item"><svg width="11" height="9" viewBox="0 0 22 17"><path d="M1 6.2a14.5 14.5 0 0 1 20 0M4.3 9.6a9.6 9.6 0 0 1 13.4 0M7.6 12.9a4.8 4.8 0 0 1 6.8 0" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/><circle cx="11" cy="15.6" r="1.5" fill="#fff"/></svg></div>
+        <div class="item"><svg width="19" height="9" viewBox="0 0 38 18"><rect x="1" y="1" width="31" height="16" rx="4.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.6"/><rect x="3.6" y="3.6" width="10.8" height="10.8" rx="2.4" fill="#fff"/><rect x="34" y="6" width="2.6" height="6" rx="1.3" fill="#fff" fill-opacity=".55"/></svg></div>
+        <div class="item">Mon 26 Oct&nbsp; 1:12</div>
+      </div>
+      <div class="term">
+        <div class="bar"><i></i><i></i><i></i><span>bottle-flip — claude</span></div>
+<pre><span class="m">&gt;</span> clean out the old dev builds before the release
+
+<span class="t">●</span> <span class="w">Bash</span>(rm -rf Builds/Dev/*.app)
+  <span class="m">└ Delete every Dev build</span>
+
+ <span class="w">Do you want to proceed?</span>
+ <span class="a">›</span> <span class="a">1. Yes</span>
+   2. Yes, and don't ask again
+   3. No, and tell Claude what to do differently
+</pre>
+      </div>
+      <div class="notch-glow"></div>
+      <div class="render popover"><img src="assets/mac-popover-needs.webp" alt=""></div>
+    </div></div>
+    <div class="base"></div>
+  </div>
+
+  <svg class="link" viewBox="0 0 1200 600">
+    <defs>
+      <linearGradient id="arcA" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5EEAD4" stop-opacity=".1"/><stop offset=".5" stop-color="#5EEAD4" stop-opacity=".75"/><stop offset="1" stop-color="#38BDF8" stop-opacity=".9"/></linearGradient>
+      <linearGradient id="arcB" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#38BDF8" stop-opacity=".9"/><stop offset="1" stop-color="#F5B14C" stop-opacity=".25"/></linearGradient>
+    </defs>
+    <!-- phones -> relay -> Mac menu-bar glyph -->
+    <path d="M610 188 C 610 90, 760 34, 852 34" fill="none" stroke="url(#arcB)" stroke-width="1.3" stroke-dasharray="2 5" stroke-linecap="round"/>
+    <path d="M778 176 C 790 100, 820 52, 856 40" fill="none" stroke="url(#arcB)" stroke-width="1.3" stroke-dasharray="2 5" stroke-linecap="round"/>
+    <path d="M1048 34 C 1040 60, 1030 80, 1013 96" fill="none" stroke="url(#arcA)" stroke-width="1.3" stroke-dasharray="2 5" stroke-linecap="round"/>
+    <circle cx="1013" cy="97" r="2.6" fill="#F5B14C"/>
+  </svg>
+  <div class="relay"><span class="lock"><svg width="10" height="11" viewBox="0 0 20 22"><rect x="3" y="9.5" width="14" height="11" rx="2.6" fill="#5EEAD4"/><path d="M6.2 10V7a3.8 3.8 0 0 1 7.6 0v3" fill="none" stroke="#5EEAD4" stroke-width="2"/></svg></span>your own relay · Cloudflare</div>
+
+  <div class="phone android reflect"><div class="cam"></div><div class="screen"><img src="assets/android-now.webp" alt=""></div></div>
+  <div class="phone iphone reflect"><div class="screen lock">
+    <img src="assets/board-lock-screen.webp" alt="">
+    <div class="sky-patch"></div><div class="plain-island"></div><div class="dim"></div>
+    <div class="notifs">
+      <div class="notif"><img class="icon" src="assets/app-icon.webp" alt=""><div class="txt"><div class="top"><b>page paged you</b><span>now</span></div><div class="body">Approval needed: [Bash] <code>swift test --filter StuckTests</code></div></div></div>
+      <div class="notif"><img class="icon" src="assets/app-icon.webp" alt=""><div class="txt"><div class="top"><b>bottle-flip paged you</b><span>4m ago</span></div><div class="body">Approval needed: [Bash] <code>rm -rf Builds/Dev/*.app</code></div></div></div>
+    </div>
+    <div class="homebar"></div>
+  </div></div>
+</div>
+<script src="sky.js"></script>
+</body>
+</html>

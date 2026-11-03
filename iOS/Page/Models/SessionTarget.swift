@@ -42,7 +42,11 @@ struct SessionTarget: Equatable {
     }
 
     /// First four characters of the id: tells two sessions in one project apart.
-    var shortId: String { String(sessionId.prefix(4)) }
+    /// A Page Aura chat's id starts `aura-` on every row, so that part is skipped.
+    var shortId: String {
+        let id = sessionId.hasPrefix("aura-") && sessionId.count > 5 ? String(sessionId.dropFirst(5)) : sessionId
+        return String(id.prefix(4))
+    }
 
     /// "~/projects/rover-tracker · #c4f7": the room's header line, so no two rooms read alike.
     var whereLine: String {

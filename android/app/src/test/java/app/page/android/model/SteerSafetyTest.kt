@@ -51,6 +51,17 @@ class SteerSafetyTest {
         assertEquals("~/projects/rover-tracker · #c4f7", target.whereLine)
     }
 
+    @Test fun `a chat is named by its title and its own id, and sends no folder`() {
+        val chat = nwSession("aura-k3j9x", title = "Quarterly numbers", state = "idle", host = "Page Aura", backend = "aura", cwd = "", provider = "anthropic")
+        val target = SessionTarget.of(chat, "Studio MBP")
+        assertEquals("Quarterly numbers", target.project)
+        assertEquals("k3j9", target.shortId)
+        assertEquals("#k3j9", target.whereLine)
+        assertEquals(null, target.expectCwd)
+        assertEquals("Quarterly numbers", target.expectTitle)
+        assertEquals("Quarterly numbers · Page Aura · Studio MBP", target.route)
+    }
+
     @Test fun `an unknown terminal and a blank Mac name drop out of the route, and the home folder reads tilde`() {
         assertEquals("b · your Mac", SessionTarget.of(nwSession("x1", host = "unknown", cwd = "~/a/b"), "").route)
         assertEquals("~", SessionTarget.of(nwSession("zz", title = "Some thread", cwd = "~"), "M").project)

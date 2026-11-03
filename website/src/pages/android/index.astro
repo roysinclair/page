@@ -1,0 +1,120 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import Phone from '../../components/Phone.astro';
+import Showcase from '../../components/Showcase.astro';
+import { u, GUIDE, BLOB } from '../../data/site';
+---
+<Layout current="android/" title="Page for Android" description="Page for Android: the same pages, decision sheet, session rooms and Night Watch design as iPhone, with no Google account and no Play services. Built with the Android SDK and paired by QR. It has no push; here is how it stays connected.">
+  <PageHero label="Page for Android" title="The same pages. No Google account." lede="A native Android app, built with Jetpack Compose, with the iPhone app’s behaviour, trust model and Night Watch design. No Google account, no Play services, no Firebase. It has no push; here is honestly how it still reaches you.">
+    <Fragment slot="actions">
+      <a href="#no-push" class="btn-primary">How notifications work</a>
+      <a href="#setup" class="btn-ghost">Set it up</a>
+    </Fragment>
+    <Showcase name="showcase/feature-android-visual" eager motion="final-approach" sizes="(min-width: 1024px) 560px, 100vw" alt="Android, too: three Android phones running Page. In front, the Now screen: 2 need you, 5 working, the runway, and an irreversible request to delete every Dev build with Deny and Hold. Behind it, the decision sheet for an undoable command with Approve, and the Tower with the battery cutoff, usage rings and Stay connected." />
+  </PageHero>
+
+  <section id="features" class="block-section">
+    <div class="wrap">
+      <p class="label">What it does</p>
+      <h2 class="h2 mt-3 max-w-3xl">Everything the Mac asks of you, in your pocket.</h2>
+      <div class="mt-12 grid items-start gap-10 lg:grid-cols-[1.2fr_1fr]">
+        <ul class="list-dots">
+          <li><strong>Now.</strong> A ranked stream of what needs you (Decide, Look, Review), what is working (In flight) and what has settled.</li>
+          <li><strong>Sky.</strong> The fleet as constellations, or as Lanes, a denser list.</li>
+          <li><strong>Decision sheet.</strong> Opens from a card, with a reversibility chip and exactly what will be typed and where. Undoable items swipe or tap; irreversible ones need a hold plus your fingerprint, face or screen lock.</li>
+          <li><strong>Session rooms.</strong> Story, Screen, Changes and Workflows, with the terminal’s questions answered in the app and Stop as a short hold. Live sessions are end-to-end encrypted with the key from the pairing QR.</li>
+          <li><strong>Dispatch.</strong> Start new work.</li>
+          <li><strong>Tower.</strong> Every setting in one place.</li>
+          <li><strong>Notification actions.</strong> Approve, Deny and Tell it… (undoable approvals), Answer… (questions), Looks good or Steer… (a finished turn), Stop it or Steer… (stuck), Send after reset (rate limit). Every action needs the phone unlocked first.</li>
+          <li><strong>Home-screen widget and Quick Settings tile.</strong> Counts and times only, never a project name or a command. The tile never acts on its own.</li>
+          <li><strong>Accessibility.</strong> The system font size is followed, “Remove animations” stops the motion, and every gesture has a named TalkBack action, so nothing depends on a swipe or a hold.</li>
+        </ul>
+        <div class="flex justify-center gap-4">
+          <Phone name="android-decision" crop={0.62} align="bottom" width={260} class="w-[50%]" alt="The decision sheet on Android for an irreversible request: delete every Dev build, with the exact command, 'Will type 1 into cmux', a hold ring that asks you to confirm with your fingerprint, and Deny and Tell it instead buttons." />
+          <Phone name="android-room" crop={0.72} width={260} class="mt-12 w-[50%]" alt="A session room on Android showing a Claude Code session working: its story, a list of steps, a Stop button and a composer that queues your message after the current step." />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="no-push" class="block-section border-t border-white/[0.06]">
+    <div class="wrap">
+      <div class="grid items-center gap-10 lg:grid-cols-[1.3fr_1fr]">
+        <div>
+          <p class="label">No push, honestly</p>
+          <h2 class="h2 mt-3">The relay’s push path is Apple-only, so Android stays connected instead.</h2>
+          <p class="lede mt-5">Push needs the relay to register the phone with a push service, and today it only speaks Apple’s. The Android app registers nothing with the relay. Three mechanisms share one record of what was notified, so a page buzzes once.</p>
+        </div>
+        <div class="flex justify-center"><Phone name="android-notifications" crop={0.9} width={300} class="w-[78%] sm:w-[62%] lg:w-[80%]" alt="Android notifications from Page: a Quick Settings tile saying 2 need you, an ongoing live notification with the runway, a looks-stuck notification with Stop it and Steer actions, and an approval for a test run with Approve and Deny." /></div>
+      </div>
+      <div class="mt-12 grid gap-5 md:grid-cols-3">
+        <div class="card card-tone tone-teal">
+          <span class="tag tone-bg">While Page is open</span>
+          <p class="body mt-4">The app holds the relay connection and posts a notification the moment a page opens.</p>
+        </div>
+        <div class="card card-tone tone-amber">
+          <span class="tag tone-bg">Stay connected</span>
+          <p class="body mt-4">Off by default (Tower, then Attention). A foreground service keeps that connection open in the background, so pages arrive within seconds. Android shows a low-importance ongoing notification (“2 need you · 5 working”) with a Turn off button, and it restarts after a reboot.</p>
+        </div>
+        <div class="card card-tone tone-sky">
+          <span class="tag tone-bg">Otherwise</span>
+          <p class="body mt-4">A background check runs every 15 minutes, Android’s minimum, whenever the phone has a network, and posts any page not notified yet.</p>
+        </div>
+      </div>
+      <ul class="list-dots mt-8 grid gap-x-12 md:grid-cols-2 [&>li]:!mt-3">
+        <li>Battery use of Stay connected is small (one idle socket and a ping every 25 seconds), but aggressive battery savers on some phones may stop it. Exclude Page from battery optimisation if pages arrive late.</li>
+        <li>Widgets and the tile can lag the app by up to the 15-minute check while the app is closed.</li>
+        <li>Push can be added later behind a provider hook once the relay can register non-Apple devices. Nothing here promises when.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="setup" class="block-section border-t border-white/[0.06]">
+    <div class="wrap grid gap-10 lg:grid-cols-2">
+      <div>
+        <p class="label">Set it up</p>
+        <h2 class="h2 mt-3">Build it with the Android SDK.</h2>
+        <p class="body mt-5">You need the Android SDK (platform 35 and build-tools 35.0.0), a JDK 17 or later (Android Studio’s bundled one works) and, for installing, <code class="code-inline">adb</code>. Gradle won’t download missing SDK parts: the build fails instead. The app needs Android 8.0 or later.</p>
+        <ol class="mt-6 list-decimal space-y-3 pl-6 text-ink-2 marker:font-mono marker:text-pulse-teal">
+          <li>Set up <a class="link" href={u('relay/')}>your relay</a> and <a class="link" href={u('mac/#install')}>Page for Mac</a>.</li>
+          <li>Build the debug APK and install it with <code class="code-inline">adb</code> (USB debugging on), or copy the APK across and allow “Install unknown apps”.</li>
+          <li>On the Mac choose <strong>Pair phone…</strong>. In the app, <strong>Pair with your Mac</strong> scans the QR, or paste the pairing link instead.</li>
+          <li>Android 13 and later asks for notification permission once, after pairing. Turn on <strong>Stay connected</strong> for steady pages.</li>
+        </ol>
+        <p class="fine mt-5">A release APK is signed with the debug key unless you give it your own. Updating keeps your pairing only if the new APK uses the same key, so make one key and keep it outside the repo.</p>
+      </div>
+      <div class="self-start">
+        <div class="codeblock">
+          <div class="c"># from the repo root</div>
+          <div>cd android</div>
+          <div>echo "sdk.dir=$HOME/Library/Android/sdk" &gt; local.properties</div>
+          <div>export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"</div>
+          <div>./gradlew :app:assembleDebug</div>
+          <div class="mt-3 c"># with USB debugging on</div>
+          <div>adb install -r app/build/outputs/apk/debug/app-debug.apk</div>
+        </div>
+        <p class="mt-6"><a class="link text-[15px] font-semibold" href={GUIDE} rel="noopener">Step-by-step in the self-hosting guide →</a></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="limits" class="block-section border-t border-white/[0.06]">
+    <div class="wrap">
+      <p class="label">Honest limits</p>
+      <h2 class="h2 mt-3 max-w-3xl">Differences from iPhone.</h2>
+      <ul class="list-dots mt-8 grid gap-x-12 md:grid-cols-2 [&>li]:!mt-3">
+        <li><strong>No push</strong>, so no badge count and no device registration with the relay.</li>
+        <li><strong>One Mac per pairing.</strong> There’s no saved-Macs list.</li>
+        <li><strong>No Siri shortcuts.</strong> The Quick Settings tile and the home-screen widget stand in.</li>
+        <li><strong>Dark only.</strong> Night Watch has no light theme. The optional card glow is off by default.</li>
+        <li><strong>Sideloaded.</strong> No Play Store build. Nothing is backed up and no cloud transfer is allowed, so a new phone pairs again.</li>
+        <li><strong>Treat the QR code as a password.</strong> Regenerate it on the Mac if it leaks.</li>
+      </ul>
+      <div class="mt-10 flex flex-wrap gap-3">
+        <a class="btn-ghost" href={BLOB + 'android/README.md'} rel="noopener">Android README</a>
+        <a class="btn-ghost" href={u('iphone/')}>Page for iPhone</a>
+      </div>
+    </div>
+  </section>
+</Layout>

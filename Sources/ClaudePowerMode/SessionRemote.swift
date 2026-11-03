@@ -88,10 +88,18 @@ protocol SessionRemoteBackends: AnyObject {
     /// backend's own queue. `completion` may run on any queue.
     func inputImages(_ session: AgentSession, clientId: String, images: [AssembledImage], text: String,
                      interventionId: String?, completion: @escaping (SessionCommandResult) -> Void)
+    /// A Page Aura chat's latest transcript, as Page Aura sent it (`aura-link`
+    /// proto 2); nil until one arrives. Locks only, safe on the sessions queue.
+    func auraTranscript(for session: AgentSession) -> SessionTranscript.Snapshot?
+    /// Whether a phone has the Sessions view open and which Page Aura chats
+    /// (session ids) phones are viewing. Called whenever either changes.
+    func auraWatchChanged(list: Bool, sessionIds: Set<String>)
 }
 
 extension SessionRemoteBackends {
     func flightFacts(_ sessions: [AgentSession]) -> [String: InFlightFacts] { [:] }
+    func auraTranscript(for session: AgentSession) -> SessionTranscript.Snapshot? { nil }
+    func auraWatchChanged(list: Bool, sessionIds: Set<String>) {}
 }
 
 /// One phone → Mac command, decrypted (SESSIONS-PROTOCOL.md §5).
@@ -534,6 +542,8 @@ final class SessionRemote {
     private var lastAgentBody: [SessionWatchers.AgentRef: Data] = [:]
     private var lastAgentStamp: [SessionWatchers.AgentRef: FileStamp] = [:]
     private var timer: DispatchSourceTimer?
+    /// What Page Aura was last told (`aura-link` watch): a phone is looking, and which chats.
+    private var auraWatch: (list: Bool, ids: Set<String>) = (false, [])
     private var macName: String?
     private var stopped = false
     /// Where the result of a `performLocal` command goes (confined to `queue`).
@@ -626,6 +636,7 @@ final class SessionRemote {
                 }
             }
             self.setPhonesLocked(0)
+            self.syncAuraWatch()
         }
     }
 
@@ -648,6 +659,7 @@ final class SessionRemote {
             self.enabled = on
             Logger.shared.log("Sessions: live sessions view \(on ? "enabled" : "disabled")")
             self.lastListBody = nil   // re-send at once in the new form
+            self.syncAuraWatch()
         }
     }
 
@@ -729,6 +741,7 @@ final class SessionRemote {
             self.outboxTimer?.cancel()
             self.outboxTimer = nil
             self.sink = nil
+            self.syncAuraWatch()
         }
     }
 
@@ -862,6 +875,26 @@ final class SessionRemote {
             timer?.cancel()
             timer = nil
         }
+        syncAuraWatch()
+    }
+
+    /// Tells Page Aura whether a phone has the Sessions view open and which of
+    /// its chats phones are viewing (`aura-link` proto 2), when that changed.
+    /// Never while the feature is off, the relay is down or no key is paired.
+    private func syncAuraWatch() {
+        let t = now()
+        let looking = !stopped && enabled && phones > 0 && sink != nil && keys != nil
+        var ids = Set<String>()
+        if looking {
+            for id in watchers.watched(now: t) {
+                // Listed: by its backend; not listed (yet): by its prefix.
+                let known = sessions.first { $0.sessionId == id }
+                if let known { if known.backend == .aura { ids.insert(id) } } else if AuraLink.chatId(sessionId: id) != nil { ids.insert(id) }
+            }
+        }
+        guard looking != auraWatch.list || ids != auraWatch.ids else { return }
+        auraWatch = (looking, ids)
+        backends.auraWatchChanged(list: looking, sessionIds: ids)
     }
 
     private func startTimer() {
@@ -874,6 +907,7 @@ final class SessionRemote {
     }
 
     private func stepLocked() {
+        syncAuraWatch()
         guard !stopped, phones > 0, sink != nil, keys != nil else { return }
         let t = now()
         watchers.prune(now: t)
@@ -893,8 +927,9 @@ final class SessionRemote {
         where SessionsSchedule.transcriptDue(phones: phones, lastCheckedAt: lastTranscriptCheck[sid], now: t) {
             sendTranscript(sid, force: false, at: t)
         }
-        for sid in watched
-        where SessionsSchedule.screenDue(phones: phones, lastCheckedAt: lastScreenCheck[sid], reading: screensReading.contains(sid), now: t) {
+        // A Page Aura chat has no screen to read.
+        for sid in watched where !isAura(sid)
+        && SessionsSchedule.screenDue(phones: phones, lastCheckedAt: lastScreenCheck[sid], reading: screensReading.contains(sid), now: t) {
             readScreen(sid, at: t)
         }
         // Forget screens nobody is watching any more.
@@ -1019,7 +1054,8 @@ final class SessionRemote {
 
     private func probeIfNeeded(_ t: Date) {
         guard !probing else { return }
-        let due = sessions.filter { s in hosts[s.sessionId].map { t.timeIntervalSince($0.at) >= Self.hostTTL } ?? true }
+        // A Page Aura chat's host is its state, read on every list: nothing to probe.
+        let due = sessions.filter { $0.backend != .aura }.filter { s in hosts[s.sessionId].map { t.timeIntervalSince($0.at) >= Self.hostTTL } ?? true }
         guard !due.isEmpty else { return }
         probing = true
         let backends = self.backends
@@ -1037,7 +1073,7 @@ final class SessionRemote {
     /// Re-reads the working sessions' card facts on the probe queue (files only),
     /// a few seconds apart.
     private func probeFlightIfNeeded(_ t: Date) {
-        let working = sessions.filter { state(of: $0) == .active }
+        let working = sessions.filter { $0.backend != .aura && state(of: $0) == .active }
         guard !working.isEmpty else {
             if !flightFacts.isEmpty { flightFacts = [:] }
             return
@@ -1087,6 +1123,20 @@ final class SessionRemote {
         return out
     }
 
+    /// Whether `sessionId` is one of the listed Page Aura chats.
+    private func isAura(_ sessionId: String) -> Bool {
+        sessions.first { $0.sessionId == sessionId }?.backend == .aura
+    }
+
+    /// Refuses an op a Page Aura chat can't take (docs/AURA-LINK.md §5), before
+    /// any Claude or Codex code is reached. nil for every other session.
+    private func auraRefusal(_ s: AgentSession, op: String, _ reason: SessionCommandResult.Reason = .notTypable,
+                             _ detail: String = AuraLink.unsupportedDetail) -> SessionCommandResult? {
+        guard s.backend == .aura else { return nil }
+        Logger.shared.log("Sessions: \(op) \(s.sessionId.prefix(8)) → refused/\(reason.rawValue) (Page Aura chat)")
+        return .refused(reason, detail)
+    }
+
     private func state(of s: AgentSession) -> AgentSessionState {
         s.backend == .claude ? Self.overlay(s.state, fresh: statuses[s.sessionId]) : s.state
     }
@@ -1097,8 +1147,9 @@ final class SessionRemote {
         var held: Set<String>?   // read once per list, and only if a session is working
         for s in sessions where seen.insert(s.sessionId).inserted {
             let st = state(of: s)
-            let probed = hosts[s.sessionId]?.info
-            let host = Self.effectiveHost(probed ?? .checking, backend: s.backend, state: st)
+            let probed = s.backend == .aura ? nil : hosts[s.sessionId]?.info
+            let host = s.backend == .aura ? AuraLink.host(for: st)
+                                          : Self.effectiveHost(probed ?? .checking, backend: s.backend, state: st)
             let photos = ImageDelivery.rowFields(backend: s.backend, host: host)
             rows.append(RemoteSessionRow(
                 id: s.sessionId,
@@ -1165,6 +1216,7 @@ final class SessionRemote {
     }
 
     private func preview(for s: AgentSession, state: AgentSessionState, at t: Date) -> String? {
+        if s.backend == .aura { return s.preview }
         if let cached = previews[s.sessionId], t.timeIntervalSince(cached.checkedAt) < Self.previewInterval {
             return SessionTranscript.preview(cached.entries, active: state == .active)
         }
@@ -1250,6 +1302,9 @@ final class SessionRemote {
 
     private func sendTranscript(_ sessionId: String, force: Bool, at t: Date) {
         lastTranscriptCheck[sessionId] = t
+        if let s = sessions.first(where: { $0.sessionId == sessionId }), s.backend == .aura {
+            return sendAuraTranscript(s, force: force, at: t)
+        }
         guard phones > 0, let s = sessions.first(where: { $0.sessionId == sessionId }),
               let file = backends.transcriptFile(for: s), let stamp = Self.fileStamp(file.path) else { return }
         let snapshot: SessionTranscript.Snapshot
@@ -1272,6 +1327,19 @@ final class SessionRemote {
         head["sessionId"] = sessionId
         guard let data = SessionTranscript.plaintext(header: head, snapshot: snapshot), seal(data) else { return }
         lastTranscriptBody[sessionId] = body
+    }
+
+    /// A watched Page Aura chat's transcript: the last snapshot Page Aura sent
+    /// (nothing until the first one arrives), sent again only when it changed.
+    private func sendAuraTranscript(_ s: AgentSession, force: Bool, at t: Date) {
+        guard phones > 0, let snapshot = backends.auraTranscript(for: s) else { return }
+        let body = (try? JSONSerialization.data(withJSONObject: ["e": snapshot.entries.map(\.jsonObject), "t": snapshot.truncated],
+                                                options: [.sortedKeys])) ?? Data()
+        if !force && body == lastTranscriptBody[s.sessionId] { return }
+        var head = header("transcript", at: t)
+        head["sessionId"] = s.sessionId
+        guard let data = SessionTranscript.plaintext(header: head, snapshot: snapshot), seal(data) else { return }
+        lastTranscriptBody[s.sessionId] = body
     }
 
     /// The `folders` kind: where a session may be started, and whether
@@ -1328,6 +1396,7 @@ final class SessionRemote {
         case "watch":
             guard let viewer = cmd.viewer else { return }
             watchers.set(viewer: viewer, sessionId: cmd.sessionId, runId: cmd.runId, agentId: cmd.agentId, now: t)
+            syncAuraWatch()
             if let agent = watchers.agent(forViewer: viewer, now: t) {
                 sendAgentTranscript(agent, force: true, at: t)
                 workflowsResync.insert(agent.sessionId)
@@ -1366,7 +1435,10 @@ final class SessionRemote {
                 return sendResult(cmd.clientId, refusal)
             case .success(let t): text = t
             }
-            if cmd.hold && !cmd.local { return holdInput(cmd, session: s, text: text, at: t) }
+            if cmd.hold && !cmd.local {
+                if let refusal = auraRefusal(s, op: "input hold", .notTypable, AuraLink.holdDetail) { return sendResult(cmd.clientId, refusal) }
+                return holdInput(cmd, session: s, text: text, at: t)
+            }
             Logger.shared.log("Sessions: input \(sid) (\(length) chars)")
             let clientId = cmd.clientId
             backends.input(s, clientId: clientId, text: cmd.text ?? "", interventionId: openPage(for: s)?.id) { [weak self] r in
@@ -1385,6 +1457,7 @@ final class SessionRemote {
                 Logger.shared.log("Sessions: answer \(sid) → refused/target_mismatch")
                 return sendResult(cmd.clientId, refusal)
             }
+            if let refusal = auraRefusal(s, op: "answer", .answerUnsupported) { return sendResult(cmd.clientId, refusal) }
             guard s.backend == .claude, let promptKey = cmd.promptKey, let answers = cmd.answers else {
                 Logger.shared.log("Sessions: answer \(sid) → refused/answer_unsupported")
                 return sendResult(cmd.clientId, .refused(.answerUnsupported, "Page can't answer that question from here"))
@@ -1437,6 +1510,7 @@ final class SessionRemote {
                 Logger.shared.log("Sessions: clearDraft \(sid) → refused/target_mismatch (\(length) chars)")
                 return sendResult(cmd.clientId, refusal)
             }
+            if let refusal = auraRefusal(s, op: "clearDraft") { return sendResult(cmd.clientId, refusal) }
             guard s.backend == .claude else {
                 Logger.shared.log("Sessions: clearDraft \(sid) → refused/not_typable (\(length) chars)")
                 return sendResult(cmd.clientId, .refused(.notTypable, DraftClear.codexMessage))
@@ -1463,6 +1537,7 @@ final class SessionRemote {
                 Logger.shared.log("Sessions: peekDraft \(sid) → refused/target_mismatch")
                 return sendResult(cmd.clientId, refusal)
             }
+            if let refusal = auraRefusal(s, op: "peekDraft") { return sendResult(cmd.clientId, refusal) }
             guard s.backend == .claude else {
                 Logger.shared.log("Sessions: peekDraft \(sid) → refused/not_typable")
                 return sendResult(cmd.clientId, .refused(.notTypable, DraftClear.atTheMacMessage))
@@ -1539,6 +1614,7 @@ final class SessionRemote {
             guard let id = cmd.sessionId, let s = sessions.first(where: { $0.sessionId == id }) else {
                 return sendResult(cmd.clientId, .refused(.notFound, "That session isn't running any more"))
             }
+            if let refusal = auraRefusal(s, op: "diff") { return sendResult(cmd.clientId, refusal) }
             Logger.shared.log("Sessions: diff \(sid)")
             let file = backends.transcriptFile(for: s)
             let transcript = file?.format == .claude ? file?.path : nil
@@ -1569,6 +1645,7 @@ final class SessionRemote {
                 Logger.shared.log("Sessions: inputImages \(sid) → refused/target_mismatch")
                 return sendResult(cmd.clientId, refusal)
             }
+            if let refusal = auraRefusal(s, op: "inputImages", .attachUnsupported, AuraLink.photosBlocker) { return sendResult(cmd.clientId, refusal) }
             guard let refs = cmd.images else {
                 Logger.shared.log("Sessions: inputImages \(sid) → refused/attachment_invalid (no usable photo list)")
                 return sendResult(cmd.clientId, .refused(.attachmentInvalid, "The photos didn't arrive in a form Page understands"))
@@ -1615,6 +1692,10 @@ final class SessionRemote {
         let sid = cmd.sessionId.map { String($0.prefix(8)) } ?? "-"
         guard let part = cmd.imagePart, let sessionId = cmd.sessionId else {
             Logger.shared.log("Sessions: image part \(sid) dropped (malformed)")
+            return
+        }
+        if isAura(sessionId) {
+            Logger.shared.log("Sessions: image part \(sid) dropped (Page Aura chat)")
             return
         }
         let tag = "\(sid)/\(part.imageId.prefix(6)) \(part.index + 1)/\(part.total)"
@@ -1878,17 +1959,27 @@ final class SessionRemote {
 
 /// `SessionRemoteBackends` over the real Claude and Codex backends.
 final class LiveSessionBackends: SessionRemoteBackends {
-    /// Page Aura's chats are paged, not driven, and never reach the live-sessions
-    /// list (the Coordinator filters them); this is the answer if one ever asks.
-    static let auraMessage = "Page can't type into Page Aura chats from here"
+    /// What a Page Aura chat says to an op it can't take (answer, draft, photos, hold…).
+    static let auraMessage = AuraLink.unsupportedDetail
     private let claude: ClaudeBackend
     private let codex: CodexBackend
+    private let aura: AuraBackend
     /// Reads working sessions' card facts; probe queue only.
     private let flightProbe = FlightProbe()
 
-    init(claude: ClaudeBackend, codex: CodexBackend) {
+    init(claude: ClaudeBackend, codex: CodexBackend, aura: AuraBackend) {
         self.claude = claude
         self.codex = codex
+        self.aura = aura
+    }
+
+    func auraTranscript(for session: AgentSession) -> SessionTranscript.Snapshot? {
+        guard session.backend == .aura else { return nil }
+        return aura.remoteTranscript(sessionId: session.sessionId).map(AuraLink.snapshot)
+    }
+
+    func auraWatchChanged(list: Bool, sessionIds: Set<String>) {
+        aura.setRemoteWatch(list: list, sessionIds: sessionIds)
     }
 
     func probeHosts(_ sessions: [AgentSession]) -> [String: SessionHostInfo] {
@@ -1941,7 +2032,8 @@ final class LiveSessionBackends: SessionRemoteBackends {
                 out[s.sessionId] = Self.codexHost(terminal, appHost: CodexInjector.host(ofPid: pid, table: table), provider: provider,
                                                   cmuxBlocker: cmuxBlocker)
             case .aura:
-                out[s.sessionId] = .blocked("unknown", Self.auraMessage)
+                // Never probed (its host is its state, `AuraLink.host(for:)`); if asked, the same answer.
+                out[s.sessionId] = AuraLink.host(for: s.state)
             }
         }
         return out
@@ -2111,7 +2203,7 @@ final class LiveSessionBackends: SessionRemoteBackends {
         case .codex:
             codex.remoteInput(threadId: session.sessionId, text: text, interventionId: interventionId, completion: completion)
         case .aura:
-            completion(.refused(.notTypable, Self.auraMessage))
+            aura.remoteInput(sessionId: session.sessionId, text: text, completion: completion)
         }
     }
 
@@ -2133,7 +2225,7 @@ final class LiveSessionBackends: SessionRemoteBackends {
         case .codex:
             codex.remoteInterrupt(threadId: session.sessionId, interventionId: interventionId, completion: completion)
         case .aura:
-            completion(.refused(.notTypable, Self.auraMessage))
+            aura.remoteStop(sessionId: session.sessionId, completion: completion)
         }
     }
 

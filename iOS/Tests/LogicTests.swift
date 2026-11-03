@@ -2785,6 +2785,9 @@ do {
     check(ollama.subtitle(backend: .known(.claude), provider: "ollama", host: "cmux") == "Claude · on Ollama · cmux", "Claude on Ollama subtitle")
     check(opencode.subtitle(backend: .other("opencode"), provider: "ollama", host: "cmux") == "Ollama · via Opencode · cmux", "harness on Ollama subtitle")
     check(claude.subtitle(backend: .known(.claude), provider: nil, host: "unknown") == "Claude", "unknown host is omitted")
+    let auraChar = AgentCharacter.from(backend: .known(.aura), provider: "anthropic")
+    check(auraChar.kind == .aura && auraChar.name == "Page Aura" && auraChar.symbol == "sparkles", "a Page Aura chat has its own character")
+    check(auraChar.subtitle(backend: .known(.aura), provider: "anthropic", host: "Page Aura") == "Page Aura", "Page Aura's host is not said twice")
 
     let offer = RoomLens.available(RoomLens.Inputs(character: claude, hasScreen: true, workflowCount: 2, canAskForChanges: true))
     check(offer == [.story, .screen, .changes, .workflows], "Claude gets every lens with something behind it")
@@ -2871,6 +2874,12 @@ do {
     let stopS = nwSession("q1", title: "bottle-flip", state: "active", host: "Terminal", canInterrupt: true)
     let stop = SessionStopPlan.build(session: stopS, ready: true, ended: false, macName: "Studio MBP")
     check(stop.canStop && stop.scope == "Press Esc in bottle-flip" && stop.preview == "Will press Esc · Terminal › bottle-flip · Studio MBP", "room stop previews Esc")
+    let auraChat = nwSession("aura-k3j9x", title: "Quarterly numbers", state: "active", host: "Page Aura", canType: false, blocker: "Page Aura is still replying",
+                             backend: "aura", cwd: "", canInterrupt: true, provider: "anthropic")
+    let auraStop = SessionStopPlan.build(session: auraChat, ready: true, ended: false, macName: "Studio MBP")
+    check(auraChat.backend == .known(.aura) && auraChat.hostLabel == "Page Aura" && auraChat.cwd.isEmpty && auraChat.title == "Quarterly numbers", "an aura row decodes with no folder")
+    check(auraStop.canStop && auraStop.scope == "Stop the reply in Quarterly numbers"
+          && auraStop.preview == "Will stop the reply · Page Aura › Quarterly numbers · Studio MBP", "a chat stops its reply, it doesn't press Esc (\(auraStop.scope) / \(auraStop.preview))")
     check(!SessionStopPlan.build(session: stopS, ready: true, ended: true, macName: "M").canStop, "ended cannot stop")
     check(!SessionStopPlan.build(session: nwSession("q2", state: "active", canInterrupt: false), ready: true, ended: false, macName: "M").canStop, "cannot interrupt, cannot stop")
     check(!SessionStopPlan.build(session: nwSession("q3", state: "idle", canInterrupt: true), ready: true, ended: false, macName: "M").canStop, "only mid-turn stops")
@@ -3188,6 +3197,26 @@ do {
     let target = SessionTarget(session: page, macName: "Studio MBP")
     check(target.project == "rover-tracker" && target.shortId == "c4f7", "target names the folder and the id's start")
     check(target.route == "rover-tracker · cmux · Studio MBP", "route: project, terminal, Mac")
+    let auraIdle = nwSession("aura-k3j9x", title: "Quarterly numbers", state: "idle", host: "Page Aura", canType: true, backend: "aura", cwd: "", provider: "anthropic")
+    let auraTarget = SessionTarget(session: auraIdle, macName: "Studio MBP")
+    check(auraTarget.project == "Quarterly numbers" && auraTarget.shortId == "k3j9" && auraTarget.whereLine == "#k3j9", "a chat is named by its title and its own id (\(auraTarget.whereLine))")
+    check(auraTarget.expectCwd == nil && auraTarget.expectTitle == "Quarterly numbers" && auraTarget.route == "Quarterly numbers · Page Aura · Studio MBP", "a chat sends its title, no folder")
+    let auraRoom = RoomPlan.build(RoomPlan.Inputs(session: auraIdle, character: AgentCharacter.from(backend: .known(.aura), provider: "anthropic"),
+                                                  pageRow: nil, ended: false, ready: true, macName: "Studio MBP", caps: ["images-v1"]))
+    check(RoomLens.available(.init(character: AgentCharacter.from(backend: .known(.aura), provider: "anthropic"), hasScreen: true, workflowCount: 2, canAskForChanges: true)) == [.story],
+          "a chat has Story only: no screen, no changes, no workflows")
+    check(auraRoom.mode == .nextTask && auraRoom.photos.mode == .hidden, "an idle chat takes a message and offers no photo button")
+    let auraJSON = #"{"id":"aura-k3j9x","backend":"aura","title":"Quarterly numbers","state":"idle","host":"Page Aura","canType":true,"canInterrupt":false,"provider":"anthropic","attachBlocker":"Page can't send photos to Page Aura yet","preview":"Totals look right."}"#
+    let auraWire = try! JSONDecoder.page().decode(LiveSession.self, from: Data(auraJSON.utf8))
+    let auraWireRoom = RoomPlan.build(RoomPlan.Inputs(session: auraWire, character: AgentCharacter.from(backend: .known(.aura), provider: "anthropic"),
+                                                      pageRow: nil, ended: false, ready: true, macName: "Studio MBP", caps: ["images-v1"]))
+    check(auraWire.cwd.isEmpty && auraWire.canType && auraWire.attach == nil, "an aura row without a cwd decodes")
+    check(auraWireRoom.photos.mode == .hidden && auraWireRoom.photos.note == "Page can't send photos to Page Aura yet", "the photo button is replaced by the Mac's reason")
+    let auraBusy = nwSession("aura-b2", title: "Long refactor", state: "active", host: "Page Aura", canType: false, blocker: "Page Aura is still replying", backend: "aura", cwd: "")
+    let auraBusyRoom = RoomPlan.build(RoomPlan.Inputs(session: auraBusy, character: AgentCharacter.from(backend: .known(.aura), provider: "anthropic"),
+                                                      pageRow: nil, ended: false, ready: true, macName: "M", caps: ["images-v1"]))
+    if case .blocked(let why) = auraBusyRoom.mode { check(why == "Page Aura is still replying", "a replying chat shows the Mac's reason in place of the composer") }
+    else { check(false, "a busy chat blocks the composer (\(auraBusyRoom.mode))") }
     check(target.expectCwd == "~/projects/rover-tracker" && target.expectTitle == "rover-tracker", "what travels is what the Mac listed")
     check(SessionTarget(session: nwSession("x1", host: "unknown", cwd: "~/a/b"), macName: "").route == "b · your Mac", "unknown terminal and blank Mac name")
     check(SessionTarget(session: nwSession("zz", title: "Some thread", cwd: "~"), macName: "M").project == "~", "home folder reads ~, as on the Mac")

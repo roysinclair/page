@@ -323,12 +323,19 @@ final class Coordinator {
             queues[b.id] = DispatchQueue(label: "ClaudePowerMode.reply.\(b.id.rawValue)", qos: .userInitiated)
         }
         replyQueues = queues
-        liveBackends = LiveSessionBackends(claude: claudeBackend, codex: codexBackend)
+        liveBackends = LiveSessionBackends(claude: claudeBackend, codex: codexBackend, aura: auraBackend)
         sessionRemote = SessionRemote(backends: liveBackends, replayStore: PairingTokenManager.sessionReplayFileURL,
                                       outboxStore: PairingTokenManager.heldOutboxFileURL, imageStore: .standard)
         // Delivery results reach the Mac panel whether or not a relay is up.
         for b in backends {
             b.onReplyFinished = { [weak self] finished in self?.finishMacReply(finished) }
+        }
+        // Page Aura's chats changed: the phone's list follows at once, not on the next tick.
+        auraBackend.onRemoteChange = { [weak self] in
+            self?.tickQueue.async {
+                guard let self, self.hasTicked, !self.isShutDown, !self.isTerminating else { return }
+                self.pushLiveSessions()
+            }
         }
         // A held message came, went or was typed: the panel shows it at once.
         sessionRemote.onHeldChanged = { [weak self] in
@@ -846,8 +853,7 @@ final class Coordinator {
     /// Whether the phone's live-sessions view (sessions-v1) may list this backend's sessions.
     static func isLiveSessionCapable(_ id: AgentBackendID) -> Bool {
         switch id {
-        case .claude, .codex: return true
-        case .aura: return false
+        case .claude, .codex, .aura: return true
         }
     }
 
@@ -918,16 +924,22 @@ final class Coordinator {
 
         lastSnapshots = backends.map { $0.currentSnapshot }
         evaluatePower(p, cfg: cfg)
-        let visible = lastSnapshots.filter { isEnabled($0.backendID) }
-        // Page Aura's chats are paged, not driven: not in the phone's live-sessions view (v1).
-        let live = visible.filter { Self.isLiveSessionCapable($0.backendID) }
-        sessionRemote.update(sessions: live.flatMap(\.sessions), pending: live.flatMap(\.pendingInterventions),
-                             rateLimited: Dictionary(live.compactMap(\.currentRateLimit).map { ($0.sessionId, $0.resetTime) },
-                                                     uniquingKeysWith: { a, b in max(a, b) }))
+        pushLiveSessions()
 
         hasTicked = true
         maybeSync()
         publishSnapshot()
+    }
+
+    /// Hands the phone's live-sessions view the sessions of every capable
+    /// backend. Page Aura contributes its Sessions-tab chats (`remoteSnapshot`),
+    /// not the busy-only snapshot the Mac's own menu uses.
+    private func pushLiveSessions() {
+        let live = lastSnapshots.filter { isEnabled($0.backendID) && Self.isLiveSessionCapable($0.backendID) }
+            .map { $0.backendID == .aura ? auraBackend.remoteSnapshot : $0 }
+        sessionRemote.update(sessions: live.flatMap(\.sessions), pending: live.flatMap(\.pendingInterventions),
+                             rateLimited: Dictionary(live.compactMap(\.currentRateLimit).map { ($0.sessionId, $0.resetTime) },
+                                                     uniquingKeysWith: { a, b in max(a, b) }))
     }
 
     // MARK: keeping awake (tick queue)

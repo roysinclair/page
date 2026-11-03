@@ -1,0 +1,29 @@
+---
+// The Hold Ring (signature animation 4), as a demo you can press. Timing from iOS/Page/Models/HoldRing.swift:
+// nothing for 300 ms, then the ring fills clockwise over 1.2 s, amber warming to red only in its final third;
+// letting go early unwinds it and nothing is sent; when full, Face ID stands in, then a burst.
+// Driven by scripts/motion.ts. It is only a demonstration: it sends nothing anywhere.
+interface Props { class?: string; label?: string; autoplay?: boolean }
+const { class: cls = '', label = 'Hold to approve', autoplay = true } = Astro.props;
+---
+<div class={`hold-demo ${cls}`} data-motion="hold-ring" data-autoplay={autoplay ? 'true' : undefined}>
+  <button type="button" class="hr-btn" aria-describedby="hr-note">
+    <svg class="hr-svg" viewBox="0 0 80 80" width="80" height="80" aria-hidden="true" overflow="visible">
+      <circle class="hr-track" cx="40" cy="40" r="33" fill="none" stroke="#F26D6D" stroke-opacity=".18" stroke-width="5" />
+      <circle class="hr-fill hr-amber" cx="40" cy="40" r="33" fill="none" stroke="#F5B14C" stroke-width="5" stroke-linecap="round" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="100" transform="rotate(-90 40 40)" />
+      <circle class="hr-fill hr-red" cx="40" cy="40" r="33" fill="none" stroke="#F26D6D" stroke-width="5" stroke-linecap="round" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="100" transform="rotate(-90 40 40)" opacity="0" />
+      <circle class="hr-burst" cx="40" cy="40" r="33" fill="none" stroke="#F26D6D" stroke-width="3" opacity="0" />
+      <circle class="hr-core" cx="40" cy="40" r="23" fill="#F26D6D" />
+      <circle class="hr-core-ok" cx="40" cy="40" r="23" fill="#34D399" opacity="0" />
+      <!-- a hand, then a face-scan mark once the ring is full -->
+      <g class="hr-hand" fill="none" stroke="#2A0D0D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M34 44v-9a2 2 0 0 1 4 0v6M38 41v-9a2 2 0 0 1 4 0v9M42 41v-7a2 2 0 0 1 4 0v8M46 42v-3a2 2 0 0 1 4 0v5c0 5-3 9-8 9h-2c-3 0-5-1-7-4l-4-6a2 2 0 0 1 3-2.5l2 2.5" />
+      </g>
+      <g class="hr-face" fill="none" stroke="#05261B" stroke-width="2.2" stroke-linecap="round" opacity="0">
+        <path d="M31 36v-3a2 2 0 0 1 2-2h3M44 31h3a2 2 0 0 1 2 2v3M49 44v3a2 2 0 0 1-2 2h-3M36 49h-3a2 2 0 0 1-2-2v-3M36 37v2M44 37v2M40 37v5h-1.5M36.5 45c2 1.5 5 1.5 7 0" />
+      </g>
+    </svg>
+    <span class="hr-label">{label}</span>
+  </button>
+  <p id="hr-note" class="hr-status fine" aria-live="polite">Press and hold. Let go early and nothing is sent. (A demo: it sends nothing.)</p>
+</div>

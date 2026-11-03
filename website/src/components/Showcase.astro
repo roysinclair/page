@@ -1,0 +1,33 @@
+---
+import { imageDims, imageSrc, imageSrcset } from '../data/images';
+// A showcase visual: device art on the night sky, with its edges feathered into the page so it never reads
+// as a box. `motion` adds a data-motion hook (final-approach plays it in as it enters the viewport).
+interface Props {
+  name: string;
+  alt: string;
+  class?: string;
+  eager?: boolean;
+  sizes?: string;
+  motion?: string;
+  feather?: 'all' | 'none';
+}
+const { name, alt, class: cls = '', eager = false, sizes = '(min-width: 1024px) 600px, 100vw', motion, feather = 'all' } = Astro.props;
+const [w, h] = imageDims(name);
+const srcset = imageSrcset(name);
+const fa = motion === 'final-approach' ? 'fa-item' : '';
+---
+<figure class={`showcase feather-${feather} ${fa} ${cls}`} data-motion={motion}>
+  <img
+    src={imageSrc(name)}
+    srcset={srcset}
+    sizes={srcset ? sizes : undefined}
+    alt={alt}
+    width={w}
+    height={h}
+    loading={eager ? 'eager' : 'lazy'}
+    fetchpriority={eager ? 'high' : undefined}
+    decoding={eager ? 'sync' : 'async'}
+    class="block h-auto w-full"
+  />
+  <slot />
+</figure>

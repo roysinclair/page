@@ -127,11 +127,82 @@ Page Aura validates every command (known `t`, ids ≤ 64 chars of
   default on, since it only opens a local socket; the opt-in lives in Page
   Aura).
 
-## 5. What leaves the Mac
+## 5. Page Aura chats in the phone's Sessions tab (`aura-link` proto 2)
+
+Page Aura chats appear in the phone's Sessions tab beside Claude Code and
+Codex sessions, through the existing live-sessions protocol
+(`SESSIONS-PROTOCOL.md`, end-to-end encrypted Mac ⇄ phone). Page Aura sends
+`hello` with `"proto":2`; a proto-1 peer simply never sends or answers these
+frames.
+
+### Page → Page Aura: `watch`
+```json
+{"t":"watch","list":true,"chatIds":["k3j9x"]}
+```
+Sent whenever it changes. `list:true` while at least one phone has the
+Sessions view connected; `chatIds` = the Page Aura chats a phone is viewing
+(the sessions-v1 watch set, mapped back from session ids). `{"t":"watch","list":false,"chatIds":[]}`
+stops everything. On (re)connect Page Aura assumes `list:false`.
+
+### Page Aura → Page: `chats` (only while `list:true`)
+```json
+{"t":"chats","chats":[
+  {"id":"k3j9x","title":"Quarterly numbers","model":"claude-opus-5-5",
+   "updatedAt":1762160300000,"busy":false,"approval":null,
+   "preview":"…last assistant line, ≤160 chars…"}
+]}
+```
+The 20 most recently updated chats from the last 7 days (busy and
+waiting chats always included), on change (≤ 1 per second) and every 20 s.
+Only when the user has "Show my chats in Page's Sessions tab" on in Page
+Aura (default on when the link is on); otherwise an empty list.
+
+### Page Aura → Page: `transcript` (only for watched chats)
+```json
+{"t":"transcript","chatId":"k3j9x","truncated":true,"entries":[
+  {"id":"m12","role":"user","text":"…","at":1762160000000},
+  {"id":"m13","role":"assistant","text":"…","at":1762160200000},
+  {"id":"m13-t0","role":"tool","text":"Web search: …","tool":"web_search","at":1762160100000}
+]}
+```
+Last 40 meaningful entries as a full snapshot, re-sent on change (≤ 1 per
+1.5 s per chat, including while a reply streams). `user`/`assistant` text
+≤ 4000 chars each (thinking is never sent); `tool` entries are one-liners
+("Web search: …", "Ran code", "Used Filesystem · read_file") — tool output
+and results are never included; attachments appear as "(attached: name)".
+
+### How Page maps it
+- Each chat becomes a sessions-v1 row: `id` = `aura-<chatId>`,
+  `backend:"aura"`, `title`, `cwd` omitted/empty, `host:"Page Aura"`,
+  `provider:"anthropic"`, state `active` (busy) / `waitingOnApproval` /
+  `idle`, `preview`, `lastActivityAt` = `updatedAt`, `interventionId` when a
+  page is open, `canType` true when idle (false with `typeBlocker` "Page Aura
+  is still replying" while busy or waiting on an approval), `canInterrupt`
+  true while busy. No `ask`, `hold`, `attach` (photos aren't offered: no
+  `attach`, `attachBlocker` "Page can't send photos to Page Aura yet").
+- Phone `input` on an aura row → `send`; `interrupt` → `stop`; results
+  reported through the normal sessions-v1 command result with the ack's
+  `detail`. Every input still goes through Page's input gate rules
+  (fresh, decrypted, not replayed).
+- Page Aura chats don't keep the Mac awake unless busy (unchanged) and don't
+  open pages by themselves (pages still follow §4).
+- Rows exist only for a peer that said `proto >= 2` and only from its latest
+  `chats` frame (busy / approval are taken from whichever of `state` / `chats`
+  arrived last). A proto-1 peer gets no `watch` and shows no rows; `chats` or
+  `transcript` frames that were not asked for are ignored.
+- Everything else a phone can ask of a session is refused for a chat with a
+  plain message: `answer`, `clearDraft`, `peekDraft`, `inputImages`, `diff`,
+  `input` with `hold`. "Stop all agents" (`interruptAll`) counts a busy chat
+  like any other working session and sends it a `stop`.
+
+## 6. What leaves the Mac
 
 Same standard as Claude Code pages (see `PROTOCOL.md`): the intervention's
 `context` (a redacted, clipped snippet of the reply, or the tool name and
 redacted args) and the chat title go through **your own** relay Worker to your
 phone. The first 180 characters of `context` can appear in the push
 notification. Nothing else from Page Aura (no history, attachments, API key)
-is sent. Page Aura's setting says this in plain words.
+is sent. The Sessions tab (§5) adds chat titles, previews and recent
+transcripts, but those travel end-to-end encrypted between your Mac and
+your phone: the relay can't read them. Page Aura's setting says this in
+plain words.

@@ -1,0 +1,131 @@
+/* Signature motion for the web (see the MOTION comment in layouts/Layout.astro).
+   Rule of the file: the default of every rule here is the FINISHED state. Anything that starts hidden or
+   moves is scoped to html.motion, which a head script sets only when motion is allowed. */
+
+/* ---------- 5. Dusk and dawn: the page's sky ---------- */
+.nw-sky { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+.nw-sky > i { position: absolute; inset: 0; will-change: opacity; }
+.sky-work {
+  background:
+    radial-gradient(1200px 520px at 78% -8%, rgba(56, 189, 248, 0.15), transparent 70%),
+    radial-gradient(900px 480px at 8% 2%, rgba(94, 234, 212, 0.13), transparent 70%);
+}
+.sky-dusk {
+  opacity: 0;
+  background:
+    radial-gradient(1200px 560px at 72% -10%, rgba(124, 92, 214, 0.2), transparent 70%),
+    radial-gradient(900px 520px at 6% 0%, rgba(80, 64, 150, 0.17), transparent 72%),
+    linear-gradient(180deg, rgba(22, 15, 44, 0.42), transparent 65%);
+}
+.sky-dawn {
+  opacity: 0;
+  background:
+    radial-gradient(1400px 560px at 50% 112%, rgba(245, 177, 76, 0.17), transparent 70%),
+    radial-gradient(900px 420px at 16% 108%, rgba(242, 201, 76, 0.1), transparent 70%),
+    radial-gradient(900px 420px at 86% 108%, rgba(94, 234, 212, 0.07), transparent 70%);
+}
+
+/* ---------- 1. The Pulse ---------- */
+.nw-pulse .p-core, .nw-pulse .p-glow, .nw-pulse .p-ring, .nw-pulse .p-ripple { transform-box: fill-box; transform-origin: center; }
+.nw-pulse .p-ripple { opacity: 0; }
+.motion .nw-pulse[data-tone='teal'] .p-core { animation: nw-breath-core 4s ease-in-out infinite; }
+.motion .nw-pulse[data-tone='teal'] .p-glow { animation: nw-breath-glow 4s ease-in-out infinite; }
+.motion .nw-pulse[data-tone='teal'] .p-ring-1 { animation: nw-breath-ring 4s ease-in-out infinite; }
+/* Amber: one ring per waiting item (--ripples, max 4), never faster than one every 1.5 s. */
+.motion .nw-pulse[data-tone='amber'] .p-ripple {
+  --life: max(3s, calc(1.5s * var(--ripples, 1)));
+  animation: nw-ripple var(--life) cubic-bezier(0.22, 0.61, 0.36, 1) infinite;
+  animation-delay: calc(var(--life) / var(--ripples, 1) * var(--i, 0));
+}
+.motion .nw-pulse[data-tone='amber'] .p-glow { animation: nw-breath-glow 3s ease-in-out infinite; }
+@keyframes nw-breath-core { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes nw-breath-glow { 0%, 100% { opacity: 0.55; transform: scale(0.88); } 50% { opacity: 1; transform: scale(1.16); } }
+@keyframes nw-breath-ring { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+@keyframes nw-ripple { 0% { opacity: 0.9; transform: scale(1); } 75% { opacity: 0.12; } 100% { opacity: 0; transform: scale(3.3); } }
+
+/* The nav mark breathes with the teal pulse. */
+.brand-mark { position: relative; display: inline-flex; flex: none; }
+.brand-mark::before {
+  content: ''; position: absolute; inset: -8px; border-radius: 14px; opacity: 0.45;
+  background: radial-gradient(closest-side, rgba(94, 234, 212, 0.5), transparent);
+}
+.motion .brand-mark::before { animation: nw-mark 4s ease-in-out infinite; }
+@keyframes nw-mark { 0%, 100% { opacity: 0.3; transform: scale(0.9); } 50% { opacity: 0.85; transform: scale(1.12); } }
+
+/* ---------- 2. Final approach ---------- */
+.motion .fa-item { opacity: 0; }
+.fa-glow {
+  position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0;
+  box-shadow: 0 0 0 1px var(--tone, #F5B14C), 0 0 36px -6px var(--tone, #F5B14C);
+}
+.hero-stage { position: relative; }
+.hero-pulse { position: absolute; z-index: 2; left: 27%; top: -2%; transform: translate(-50%, -50%); }
+@media (max-width: 639px) { .hero-pulse { transform: translate(-50%, -50%) scale(0.72); } }
+.hero-contrail {
+  position: absolute; z-index: 1; left: 27%; top: -2%; width: 2px; height: 34%; margin-left: -1px; opacity: 0;
+  background: linear-gradient(180deg, rgba(245, 177, 76, 0.85), rgba(245, 177, 76, 0));
+  transform-origin: 50% 0;
+}
+.hero-glow {
+  position: absolute; inset: 6% 4% 10% 8%; opacity: 0; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(245, 177, 76, 0.22), transparent 75%);
+}
+
+/* ---------- 3. The receipt thread ---------- */
+.rt-amber rect { fill: #F5B14C; }
+.rt-blue rect { fill: #38BDF8; }
+.rt-green rect { fill: #34D399; }
+.rt .rt-halo { opacity: 0.28; }
+.rt-seg { transform-box: fill-box; }
+.rt-amber .rt-seg { transform-origin: left center; }
+.rt-amber .rt-v { transform-origin: center top; }
+.rt-blue .rt-seg { transform-origin: right center; }
+.rt-blue .rt-v { transform-origin: center bottom; }
+.rt-amber, .rt-blue, .rt-box, .rt-word { opacity: 0; }
+.rt-word { fill: #B3B7C0; }
+.rt-w-verified { opacity: 1; fill: #34D399; }
+.rt-box { stroke: #34D399; }
+.motion .rt-green, .motion .rt-w-verified { opacity: 0; }
+.motion ol[data-motion='receipt-thread'] > li { opacity: 0.3; }
+
+/* ---------- 4. The hold ring ---------- */
+.hold-demo { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem; }
+.hr-btn {
+  display: inline-flex; align-items: center; gap: 0.85rem; min-height: 44px; padding: 0.35rem 1.1rem 0.35rem 0.35rem;
+  border-radius: 999px; background: rgba(242, 109, 109, 0.1); color: #fff; font-weight: 600; font-size: 15px;
+  box-shadow: inset 0 0 0 1px rgba(242, 109, 109, 0.35); touch-action: none; user-select: none; -webkit-user-select: none;
+  -webkit-touch-callout: none; cursor: pointer;
+}
+.hr-btn:focus-visible { outline: 2px solid #F26D6D; outline-offset: 3px; }
+.hr-svg { width: 56px; height: 56px; flex: none; }
+.hr-burst { transform-box: fill-box; transform-origin: center; }
+.hr-status { flex: 1 1 14rem; min-width: 0; }
+
+/* ---------- 5. Dusk and dawn: the battery tile and box ---------- */
+.dd-tile { position: relative; overflow: hidden; isolation: isolate; border-radius: 16px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1); }
+.dd-tile > i { position: absolute; inset: 0; }
+.dd-base { background: linear-gradient(180deg, #2a1f4d 0%, #17122b 55%, #3a2a10 82%, #6b4a17 100%); }
+.dd-night { opacity: 0; background: linear-gradient(180deg, #1c1638 0%, #0c0a18 100%); }
+.dd-work { opacity: 0; background: radial-gradient(120% 90% at 30% 0%, rgba(94, 234, 212, 0.55), transparent 70%), linear-gradient(180deg, #0f3a44 0%, #0a1620 100%); }
+.dd-dawn { opacity: 0; background: linear-gradient(0deg, rgba(245, 177, 76, 0.85) 0%, rgba(245, 177, 76, 0.25) 45%, transparent 75%); }
+.dd-stars {
+  background-image:
+    radial-gradient(1.4px 1.4px at 22% 24%, #fff, transparent 70%),
+    radial-gradient(1.2px 1.2px at 62% 18%, #fff, transparent 70%),
+    radial-gradient(1.4px 1.4px at 44% 42%, #FFF6E0, transparent 70%),
+    radial-gradient(1.2px 1.2px at 80% 36%, #fff, transparent 70%);
+  opacity: 0.8;
+}
+.dd-horizon { top: auto !important; height: 1.5px; bottom: 26% !important; left: 12% !important; right: 12% !important; background: rgba(255, 255, 255, 0.4); opacity: 0.6; }
+.dd-box { position: relative; overflow: hidden; isolation: isolate; }
+.dd-sweep {
+  position: absolute; inset: 0; z-index: -1; opacity: 0; pointer-events: none;
+  background: linear-gradient(0deg, rgba(245, 177, 76, 0.32), rgba(245, 177, 76, 0.08) 55%, transparent 85%);
+}
+
+/* ---------- print: always the finished design ---------- */
+@media print {
+  .fa-item, .rt-green, .rt-w-verified, ol[data-motion='receipt-thread'] > li { opacity: 1 !important; transform: none !important; }
+  .fa-glow, .hero-contrail, .hero-glow, .rt-amber, .rt-blue, .rt-box, .dd-sweep, .dd-night, .dd-work, .dd-dawn { opacity: 0 !important; }
+  .nw-pulse *, .brand-mark::before { animation: none !important; }
+}

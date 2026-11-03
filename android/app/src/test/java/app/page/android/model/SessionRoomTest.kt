@@ -46,6 +46,34 @@ class SessionRoomTest {
         assertEquals("Claude", claude.subtitle(AgentBackend.Known(InterventionBackend.CLAUDE), null, "unknown"))
     }
 
+    @Test fun `a Page Aura chat is its own character, says its name once, stops the reply and offers no photo button`() {
+        val aura = AgentCharacter.from(AgentBackend.Known(InterventionBackend.AURA), "anthropic")
+        assertEquals(AgentCharacter.Kind.AURA, aura.kind)
+        assertEquals("Page Aura", aura.name)
+        assertEquals("sparkles", aura.symbol)
+        assertEquals(listOf(RoomLens.STORY), RoomLens.available(RoomLens.Inputs(aura, hasScreen = true, workflowCount = 2, canAskForChanges = true)))
+        assertEquals("Page Aura", aura.subtitle(AgentBackend.Known(InterventionBackend.AURA), "anthropic", "Page Aura"))
+
+        val busy = nwSession("aura-k3j9x", title = "Quarterly numbers", state = "active", host = "Page Aura", canType = false,
+            blocker = "Page Aura is still replying", backend = "aura", cwd = "", canInterrupt = true, provider = "anthropic")
+        assertEquals("Page Aura", busy.hostLabel)
+        assertEquals("", busy.cwd)
+        val stop = SessionStopPlan.build(busy, ready = true, ended = false, macName = "Studio MBP")
+        assertTrue(stop.canStop)
+        assertEquals("Stop the reply in Quarterly numbers", stop.scope)
+        assertEquals("Will stop the reply · Page Aura › Quarterly numbers · Studio MBP", stop.preview)
+        val busyPlan = RoomPlan.build(RoomPlan.Inputs(busy, aura, null, ended = false, ready = true, macName = "M"))
+        assertEquals(RoomComposerMode.Blocked("Page Aura is still replying"), busyPlan.mode)
+
+        val idle = LiveSession.decode(parseJson("""{"id":"aura-k3j9x","backend":"aura","title":"Quarterly numbers","state":"idle","host":"Page Aura","canType":true,"canInterrupt":false,"provider":"anthropic","attachBlocker":"Page can't send photos to Page Aura yet","preview":"Totals look right."}""")!!)!!
+        assertNull(idle.attach)
+        val idlePlan = RoomPlan.build(RoomPlan.Inputs(idle, aura, null, ended = false, ready = true, macName = "M"))
+        assertEquals(RoomComposerMode.NextTask, idlePlan.mode)
+        val photos = PhotoOffer.evaluate(setOf(SessionCaps.IMAGES), idle, idlePlan.mode)
+        assertFalse(photos.shown)
+        assertEquals("Page can't send photos to Page Aura yet", photos.blockerNote)
+    }
+
     @Test fun `Claude gets every lens with something behind it, and the others get fewer`() {
         val offer = RoomLens.available(RoomLens.Inputs(claude, hasScreen = true, workflowCount = 2, canAskForChanges = true))
         assertEquals(listOf(RoomLens.STORY, RoomLens.SCREEN, RoomLens.CHANGES, RoomLens.WORKFLOWS), offer)

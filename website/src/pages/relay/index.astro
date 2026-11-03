@@ -1,0 +1,143 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import Showcase from '../../components/Showcase.astro';
+import { GUIDE, GUIDE_AI, BLOB, u } from '../../data/site';
+---
+<Layout current="relay/" title="Run your own relay" description="Page's relay is a small Cloudflare Worker you deploy to your own account. It carries pages and replies between your Mac and your phone, keeps live session content end-to-end encrypted, and the authors have no access to it.">
+  <PageHero label="Your relay" title="A Worker on your own Cloudflare account." lede="It carries pages from your Mac to your phone and your replies back. You deploy it, you own it, and the authors of Page have no access to it. Cloudflare’s free plan is enough for one person.">
+    <Fragment slot="actions">
+      <a href="#steps" class="btn-primary">Deploy it</a>
+      <a href="#stores" class="btn-ghost">What it stores</a>
+    </Fragment>
+    <Showcase name="showcase/feature-relay-visual" eager motion="final-approach" sizes="(min-width: 1024px) 560px, 100vw" alt="Your relay, your keys: your Mac running Page for Mac, your Worker on your own Cloudflare account, and your phone (iPhone or Android), joined by a thread marked live sessions, end-to-end (AES-256-GCM). Below, the phone's Pairing and encryption settings: end-to-end encrypted with the session key from the pairing QR, the relay connected at relay.example.workers.dev, and Unpair." />
+  </PageHero>
+
+  <section id="what" class="block-section">
+    <div class="wrap">
+      <p class="label">What it does</p>
+      <h2 class="h2 mt-3 max-w-3xl">A small hub, one Durable Object per pairing.</h2>
+      <div class="mt-12 grid gap-5 md:grid-cols-2">
+        <div class="card">
+          <h3 class="h3">Matches your Mac and your phone</h3>
+          <p class="body mt-3">The pairing token is made on your Mac and reaches your phone in the QR code. Each pairing gets its own Durable Object, isolated from everyone else’s. No accounts: the token is the credential, and requests without a valid one are refused.</p>
+        </div>
+        <div class="card">
+          <h3 class="h3">Holds the live connections</h3>
+          <p class="body mt-3">The Mac and the phone each connect out to it over a WebSocket. The Mac sends pages, heartbeats and delivery results; the phone receives them live. The agent hooks reach it over HTTPS.</p>
+        </div>
+        <div class="card">
+          <h3 class="h3">Queues replies while the Mac is offline</h3>
+          <p class="body mt-3">Up to 200 replies are buffered, each for at most an hour. After that the phone is told the reply wasn’t delivered. A reply to a page that has moved on is refused rather than guessed at.</p>
+        </div>
+        <div class="card">
+          <h3 class="h3">Asks Apple to push (iPhone, optional)</h3>
+          <p class="body mt-3">With your own APNs key it sends push notifications to your iPhone. Without it, the relay still works over the live connection; it just can’t wake a backgrounded phone. There is no Android push.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="stores" class="block-section border-t border-white/[0.06]">
+    <div class="wrap">
+      <p class="label">Privacy</p>
+      <h2 class="h2 mt-3 max-w-3xl">What it stores, and what it can’t see.</h2>
+      <p class="lede mt-5 max-w-3xl">Page has no account, analytics or third-party SDKs, and nothing goes to the authors. But a page has to travel, so it is worth being exact.</p>
+      <div class="mt-12 grid gap-5 lg:grid-cols-3">
+        <div class="card card-tone tone-amber">
+          <h3 class="h3">Stored in your relay</h3>
+          <ul class="list-dots mt-4 text-[15px]">
+            <li>Pending pages, with their context: the session id, project name, working directory and up to 4000 characters of command, diff or question.</li>
+            <li>The last 300 closed pages, with their context and your reply text.</li>
+            <li>Queued replies (up to an hour), your phone’s push token, and short-lived records so a late message can’t reopen a closed page.</li>
+          </ul>
+          <p class="fine mt-4">Page masks common secret shapes (keys, bearer tokens, PEM blocks) before context leaves the Mac. That is best-effort pattern matching: assume anything on your screen can reach your Worker.</p>
+        </div>
+        <div class="card card-tone tone-teal">
+          <h3 class="h3">Never readable by the relay</h3>
+          <ul class="list-dots mt-4 text-[15px]">
+            <li><strong>Live session content</strong> (the Sessions view): titles, folders, transcripts, screens, diffs and what you type are sealed on the Mac and opened on the phone with AES-256-GCM.</li>
+            <li>The key comes from the pairing QR and never goes to the relay, which forwards opaque envelopes, stores none of them and logs only their size.</li>
+            <li>The session list is sent only while your phone has the app open, and a transcript only for the session on screen.</li>
+          </ul>
+        </div>
+        <div class="card card-tone tone-sky">
+          <h3 class="h3">Seen by Apple (iPhone push)</h3>
+          <ul class="list-dots mt-4 text-[15px]">
+            <li>Each push carries the project name, the session id, the page kind and up to 180 characters of the context as the notification body.</li>
+            <li>A close push removes banners from your phone silently.</li>
+          </ul>
+          <p class="fine mt-4">Skip the APNs key and none of this goes to Apple.</p>
+        </div>
+      </div>
+      <p class="body mt-8 max-w-3xl">The QR code is your credential. If it leaks, <strong>Regenerate token…</strong> on the Mac retires the old one on your Worker, and phones paired with it are told to re-pair. The full list of what is stored and for how long is in <a class="link" href={BLOB + 'SECURITY.md'} rel="noopener">SECURITY.md</a>.</p>
+    </div>
+  </section>
+
+  <section id="steps" class="block-section border-t border-white/[0.06]">
+    <div class="wrap">
+      <p class="label">Steps, summarised</p>
+      <h2 class="h2 mt-3 max-w-3xl">From clone to a healthy relay.</h2>
+      <div class="mt-12 grid gap-10 lg:grid-cols-[1fr_1fr]">
+        <div>
+          <p class="body">You need a free <a class="link" href="https://dash.cloudflare.com/sign-up" rel="noopener">Cloudflare account</a> and Node.js 22.18 or later.</p>
+          <ol class="mt-5 list-decimal space-y-3 pl-6 text-ink-2 marker:font-mono marker:text-pulse-teal">
+            <li>Clone the repo and run <code class="code-inline">npm ci</code> in <code class="code-inline">Cloudflare/</code>.</li>
+            <li><code class="code-inline">npx wrangler login</code> opens a browser to sign in.</li>
+            <li>If you will use an iPhone, choose your own bundle id and set <code class="code-inline">APNS_BUNDLE_ID</code> (and <code class="code-inline">APNS_ENV</code>) in <code class="code-inline">wrangler.toml</code>.</li>
+            <li>With a paid Apple team, create an APNs key and store it as three Worker secrets. Skip this otherwise.</li>
+            <li><code class="code-inline">npm run deploy</code> runs the type check and tests, then deploys. Wrangler prints your relay URL.</li>
+            <li>Check <code class="code-inline">/health</code>. <code class="code-inline">apnsConfigured</code> is <code class="code-inline">false</code> if you skipped the secrets, which is fine for Android-only or open-app-only use.</li>
+            <li>On the Mac, turn on <em>Send pages to my phone</em>, paste the URL and click Test.</li>
+          </ol>
+          <p class="mt-6"><a class="link text-[15px] font-semibold" href={GUIDE} rel="noopener">Every step, with the values that are yours →</a></p>
+        </div>
+        <div class="self-start">
+          <div class="codeblock mb-5">
+      <div class="c"># deploy, then check</div>
+      <div>cd Cloudflare &amp;&amp; npm ci</div>
+      <div>npx wrangler login</div>
+      <div>npm run deploy</div>
+      <div>curl https://page-relay.&lt;your-subdomain&gt;.workers.dev/health</div>
+      <div class="mt-3 c"># {`{"ok":true,"service":"page-relay","apnsConfigured":true, …}`}</div>
+    </div>
+          <div class="codeblock">
+            <div class="c"># pipe the key file: an interactive paste can keep only its first line</div>
+            <div>cat ~/path/to/AuthKey_XXXXXXXXXX.p8 | npx wrangler secret put APNS_KEY_P8</div>
+            <div>npx wrangler secret put APNS_KEY_ID</div>
+            <div>npx wrangler secret put APNS_TEAM_ID</div>
+          </div>
+          <div class="card mt-5 !p-5">
+            <h3 class="h3 !text-lg">Costs</h3>
+            <p class="body mt-2 text-[15px]">For one person, a handful of pages a day fits inside Cloudflare’s free plan, which includes SQLite-backed Durable Objects. Check Cloudflare’s current limits for your use.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="agent" class="block-section border-t border-white/[0.06]">
+    <div class="wrap grid items-start gap-10 lg:grid-cols-2">
+      <div>
+        <p class="label">Set it up with an AI agent</p>
+        <h2 class="h2 mt-3">Let Claude Code do the typing.</h2>
+        <p class="body mt-5">Hand the whole setup (relay, Mac app, iPhone and Android) to Claude Code on your Mac. It runs the commands; you do the parts that need you: browser logins, Apple sign-in, choosing names and scanning the QR. The prompt is in the self-hosting guide.</p>
+        <ul class="list-dots mt-5">
+          <li>It never invents a value: account names, bundle ids and team ids come from you or from command output.</li>
+          <li>It never commits anything, and edits only <code class="code-inline">wrangler.toml</code> and your git-ignored local files.</li>
+          <li>It never prints or logs secrets, and never uses sudo unless you say so.</li>
+          <li>It stops and asks whenever a step needs a human.</li>
+        </ul>
+        <a href={GUIDE_AI} rel="noopener" class="btn-primary mt-7">Open the prompt in the guide</a>
+      </div>
+      <div class="self-start">
+        <div class="codeblock">
+          <div class="c"># recommended: Opus 5.5 at high effort, in the folder you cloned</div>
+          <div>claude --model claude-opus-5-5 --effort high</div>
+        </div>
+        <p class="fine mt-4">Already inside Claude Code? Use <code class="code-inline">/model</code> to pick Opus 5.5 and <code class="code-inline">/effort high</code>. Then paste the prompt from the guide. A strong model at high effort is worth it, because setup is long, touches several tools and must stop at the right moments.</p>
+        <p class="fine mt-3">Plan on 30 to 60 minutes the first time, whether you do it by hand or with an agent.</p>
+      </div>
+    </div>
+  </section>
+</Layout>

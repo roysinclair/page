@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Page Studio social card</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .copy { position: absolute; left: 72px; top: 50%; transform: translateY(-50%); width: 560px; z-index: 10; }
+  .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 30px; }
+  .brand .name { font: 750 22px/1 var(--sans); letter-spacing: -.02em; }
+  h1 { font-size: 58px; }
+  .chips { display: flex; gap: 8px; margin-top: 32px; }
+  .chips .chip { font-size: 14px; padding: 8px 13px; }
+  .pop { left: 914px; top: 64px; width: 262px; height: 430px; border-radius: 14px; box-shadow: 0 30px 60px rgba(0,0,0,.6), 0 0 0 .5px rgba(255,255,255,.1); }
+  .iphone { left: 648px; top: 52px; --w: 250px; z-index: 6; }
+  .iphone .screen img:first-child { width: 101.2%; margin: -.6% 0 0 -.6%; }
+</style></head>
+<body><div class="canvas">
+  <div class="sky" data-seed="12" data-density="1.2"></div>
+  <div class="aurora" data-blobs="55,-30,60,70,teal,.30,80; 80,-10,40,60,sky,.28,80; 25,-30,40,60,violet,.16,90; 75,70,50,60,amber,.10,90"></div>
+  <div class="copy">
+    <div class="brand"><span class="pulse" style="--s:34px"><b></b></span><span class="name">Page Studio</span></div>
+    <h1 class="headline">Your agents<br>keep working.<br><em>You get paged only<br>when it matters.</em></h1>
+    <div class="chips">
+      <span class="chip"><span class="dot"></span>Mac</span>
+      <span class="chip"><span class="dot" style="background:var(--amber);box-shadow:0 0 8px var(--amber)"></span>iPhone</span>
+      <span class="chip"><span class="dot" style="background:#34D399;box-shadow:0 0 8px #34D399"></span>Android</span>
+      <span class="chip"><span class="dot" style="background:var(--sky);box-shadow:0 0 8px var(--sky)"></span>Your relay</span>
+    </div>
+  </div>
+  <div class="render pop fade-bottom"><img src="assets/mac-popover-needs.webp" alt=""></div>
+  <div class="phone iphone"><div class="screen lock">
+    <img src="assets/board-lock-screen.webp" alt="">
+    <div class="sky-patch"></div><div class="plain-island"></div><div class="dim"></div>
+    <div class="notifs">
+      <div class="notif"><img class="icon" src="assets/app-icon.webp" alt=""><div class="txt"><div class="top"><b>page paged you</b><span>now</span></div><div class="body">Approval needed: [Bash] <code>swift test --filter StuckTests</code></div></div></div>
+      <div class="notif"><img class="icon" src="assets/app-icon.webp" alt=""><div class="txt"><div class="top"><b>bottle-flip paged you</b><span>4m ago</span></div><div class="body">Approval needed: [Bash] <code>rm -rf Builds/Dev/*.app</code></div></div></div>
+    </div>
+    <div class="homebar"></div>
+  </div></div>
+</div><script src="sky.js"></script></body></html>

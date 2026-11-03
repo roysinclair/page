@@ -1,0 +1,45 @@
+---
+// The Pulse (Designs/v4-night-watch-spec.json, signature animation 1): one glyph on every surface.
+// tone: teal = working (a breath every 4 s), amber = needs you (one ripple ring per waiting item),
+// star = quiet (still). The motion lives in styles/motion.css under html.motion; without it (Reduce
+// Motion, print, no JS) this is the spec's fallback: a static ring.
+interface Props { size?: number; tone?: 'teal' | 'amber' | 'star'; rings?: 2 | 3; waiting?: number; label?: string; class?: string }
+const { size = 120, tone = 'teal', rings = 3, waiting = 1, label, class: cls = '' } = Astro.props;
+const c = { teal: ['#5EEAD4', '#38BDF8'], amber: ['#F5B14C', '#F2C94C'], star: ['#FFF6E0', '#FFFFFF'] }[tone];
+const id = `pg-${tone}-${size}`;
+// One ripple per waiting item, capped at four (more reads as noise, not a count).
+const ripples = tone === 'amber' ? Math.min(4, Math.max(1, waiting)) : 0;
+---
+<svg
+  data-motion="pulse"
+  data-tone={tone}
+  class={`nw-pulse ${cls}`}
+  width={size}
+  height={size}
+  viewBox="0 0 120 120"
+  overflow="visible"
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : 'true'}
+  style={ripples ? `--ripples:${ripples}` : undefined}
+>
+  <defs>
+    <radialGradient id={id} cx="50%" cy="42%" r="60%">
+      <stop offset="0%" stop-color="#fff" stop-opacity=".95" />
+      <stop offset="45%" stop-color={c[0]} />
+      <stop offset="100%" stop-color={c[1]} />
+    </radialGradient>
+    <radialGradient id={`${id}-glow`} cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color={c[0]} stop-opacity=".55" />
+      <stop offset="100%" stop-color={c[0]} stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  {rings === 3 && <circle class="p-ring p-ring-3" cx="60" cy="60" r="56" fill="none" stroke={c[0]} stroke-opacity=".16" />}
+  <circle class="p-ring p-ring-2" cx="60" cy="60" r="42" fill="none" stroke={c[0]} stroke-opacity=".3" />
+  <circle class="p-ring p-ring-1" cx="60" cy="60" r="28" fill="none" stroke={c[0]} stroke-opacity=".5" stroke-width="1.5" />
+  {Array.from({ length: ripples }, (_, i) => (
+    <circle class="p-ripple" cx="60" cy="60" r="17" fill="none" stroke={c[0]} stroke-width="1.5" style={`--i:${i}`} />
+  ))}
+  <circle class="p-glow" cx="60" cy="60" r="34" fill={`url(#${id}-glow)`} />
+  <circle class="p-core" cx="60" cy="60" r="17" fill={`url(#${id})`} />
+</svg>

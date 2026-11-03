@@ -1,0 +1,231 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Pulse from '../components/Pulse.astro';
+import Shot from '../components/Shot.astro';
+import Showcase from '../components/Showcase.astro';
+import HoldRing from '../components/HoldRing.astro';
+import ConnectDiagram from '../components/ConnectDiagram.astro';
+import { u, pieces, kinds, GITHUB, GUIDE, PDF } from '../data/site';
+---
+<Layout current="" description="Page Studio is a family of open-source tools you run yourself: keep your Mac awake while AI coding agents work, pause them gracefully at your battery cutoff, and answer them from your phone, through a relay on your own Cloudflare account.">
+  <!-- HERO -->
+  <section class="relative isolate overflow-hidden">
+    <div class="wrap grid items-center gap-4 pb-16 pt-12 sm:pt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.12fr)] lg:gap-6 lg:pb-24 lg:pt-16">
+      <div class="relative z-10">
+        <p class="label">Page Studio · Open source · Run it yourself</p>
+        <h1 class="h1 mt-5 !text-[40px] sm:!text-[54px] lg:!text-[52px] xl:!text-[58px]">Your agents keep working. <span class="text-grad sm:block">You get paged only when it matters.</span></h1>
+        <p class="lede mt-6 max-w-xl">Page keeps your Mac awake while Claude Code and Codex work, pauses them gracefully at your battery cutoff, and pages your phone when a decision is yours.</p>
+        <div class="mt-9 flex flex-wrap gap-3">
+          <a href="#get-started" class="btn-primary">Get started</a>
+          <a href="#connect" class="btn-ghost">How it connects</a>
+        </div>
+        <p class="fine mt-7 max-w-md">Claude Code, Codex and local models. macOS, iPhone and Android. Page Studio License: read every line, run it yourself.</p>
+      </div>
+      <!-- data-motion="final-approach": the composition descends from the pulse into place, trailing a contrail. -->
+      <div class="hero-stage mt-10 lg:mt-0 lg:-mr-8 xl:-mr-16" data-motion="final-approach" data-approach="hero">
+        <span class="hero-glow" aria-hidden="true"></span>
+        <span class="hero-contrail" aria-hidden="true"></span>
+        <div class="hero-pulse"><Pulse size={84} tone="amber" waiting={2} label="The Pulse, amber: two things need you" /></div>
+        <Showcase name="showcase/hero-visual" eager class="fa-item" sizes="(min-width: 1024px) 680px, 100vw" alt="Page across your devices, linked through your own relay on Cloudflare. An Android phone shows two items that need you, first an irreversible request to delete every Dev build with Deny and Hold; an iPhone lock screen shows two Page notifications asking for approval; the Mac's menu-bar popover lists what needs you and what is working." />
+      </div>
+    </div>
+  </section>
+
+  <!-- TWO PROMISES -->
+  <section id="promises" class="block-section border-t border-white/[0.06]">
+    <div class="wrap">
+      <p class="label">The original promise</p>
+      <h2 class="h2 mt-3 max-w-3xl">Two promises, kept on the Mac.</h2>
+      <div class="mt-12 grid gap-6 md:grid-cols-2">
+        <article class="card tone-teal card-tone">
+          <div class="flex items-center gap-4">
+            <Pulse size={64} tone="teal" />
+            <h3 class="h3">Your agents never sleep mid-turn</h3>
+          </div>
+          <p class="body mt-5">While an agent works, the Mac stays awake, lid closed too on AC. Page reads the state Claude Code itself writes (busy, waiting or idle), checks the process is alive, and holds the Mac awake only while something is mid-turn.</p>
+          <p class="fine mt-4">On battery, lid-closed keep-awake is opt-in, behind a watchdog that clears it if Page dies.</p>
+          <a href={u('mac/#power')} class="link mt-5 inline-block text-[15px] font-semibold">How power control works →</a>
+        </article>
+        <article class="card tone-amber card-tone">
+          <div class="flex items-center gap-4">
+            <!-- data-motion="dusk-dawn": working sky, dusk falls at the cutoff, then dawn sweeps up when power returns. -->
+            <div data-motion="dusk-dawn" aria-hidden="true" class="dd-tile h-16 w-16 shrink-0"><i class="dd-base"></i><i class="dd-night"></i><i class="dd-work"></i><i class="dd-dawn"></i><i class="dd-stars"></i><i class="dd-horizon"></i></div>
+            <h3 class="h3">A graceful pause at your cutoff</h3>
+          </div>
+          <p class="body mt-5">At the cutoff you chose, Page asks busy agents to stop and write a two-line summary, waits for them, then lets the Mac sleep. When power is back, it tells the sessions it paused to carry on.</p>
+          <p class="fine mt-4">Pause now, finish the current step first, or do nothing. Your call, in Preferences.</p>
+          <a href={u('mac/#battery')} class="link mt-5 inline-block text-[15px] font-semibold">How the pause works →</a>
+        </article>
+      </div>
+      <Shot class="mt-10" crop={0.73} name="mac-menubar-states" alt="Page for Mac's menu-bar popover in three states: two items need you with five agents working; all quiet with phone paging armed because you are away; and paused at ten percent for battery, with two agents summarised and a Resume now anyway button. A Dispatch box below starts new work." caption="The menu-bar popover: needs you, all quiet, and paused for battery." />
+    </div>
+  </section>
+
+  <!-- FOUR PIECES -->
+  <section id="pieces" class="block-section border-t border-white/[0.06]">
+    <div class="wrap">
+      <p class="label">The studio</p>
+      <h2 class="h2 mt-3 max-w-3xl">Four pieces that work together.</h2>
+      <p class="lede mt-5 max-w-2xl">Each one runs on hardware and accounts you own. Use the Mac app alone, add a phone, or bring Page Aura along.</p>
+      <Showcase name="showcase/family-visual" motion="final-approach" class="-mx-4 mt-10 sm:mx-0" sizes="(min-width: 1200px) 1104px, 100vw" alt="The four pieces together: Page for Mac and Page Aura on a MacBook, with the menu-bar popover showing two items that need you; an Android phone and an iPhone running Page; and your relay on your own Cloudflare account linking the Mac to both phones." />
+      <div class="mt-8 grid gap-5 sm:grid-cols-2">
+        {pieces.map((p, i) => (
+          <a href={u(p.href)} class={`card card-tone card-link tone-${p.tone} group block`}>
+            <div class="flex items-center justify-between">
+              <span class="tag tone-bg">{`0${i + 1}`} · {p.kicker}</span>
+              <span class="text-ink-3 group-hover:text-ink" aria-hidden="true">→</span>
+            </div>
+            <h3 class="h3 mt-5">{p.name}</h3>
+            <p class="body mt-3">{p.body}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- CONNECT -->
+  <section id="connect" class="block-section border-t border-white/[0.06]">
+    <div class="wrap">
+      <p class="label">How they connect</p>
+      <h2 class="h2 mt-3 max-w-3xl">The Mac and the phone never talk directly.</h2>
+      <p class="lede mt-5 max-w-3xl">The Mac connects out to your relay. The phone connects out to your relay. A secret token, shown on the Mac as a QR code, matches the two. Scan it once to pair.</p>
+      <div class="card mt-12 !p-4 sm:!p-8">
+        <ConnectDiagram />
+      </div>
+      <ul class="list-dots mt-10 grid gap-x-12 gap-y-3 md:grid-cols-2 [&>li]:!mt-0">
+        <li><strong>Mac ⇄ relay ⇄ phone.</strong> Pages go up, your replies come back down. Replies wait in a queue for up to an hour if the Mac is offline.</li>
+        <li><strong>Page Aura ⇄ Mac.</strong> A Unix socket on the same Mac, readable only by you. Page Aura never sees your pairing and never talks to the relay.</li>
+        <li><strong>Apple push.</strong> With a paid Apple Developer team, the relay asks Apple to wake your iPhone. Android has no push; it uses a stay-connected service instead.</li>
+        <li><strong>Agent hooks (optional).</strong> Installed with a diff preview and a backup, they let the agent’s own approval prompts reach your phone from any app, not only terminals Page can type into.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- KINDS -->
+  <section id="moments" class="block-section border-t border-white/[0.06]">
+    <div class="wrap grid items-start gap-14 lg:grid-cols-[1.4fr_1fr]">
+      <div>
+        <p class="label">Only when it matters</p>
+        <h2 class="h2 mt-3">Only the moments that need you.</h2>
+        <p class="lede mt-5 max-w-2xl">No ping for every step. Approvals and questions page at once; idle and rate-limit pages wait until you have stepped away.</p>
+        <!-- data-motion="final-approach": a newly opened page descends into its ranked slot. A session has one current page; a newer one replaces the older. -->
+        <div data-motion="final-approach" data-approach="cards" class="mt-10 grid gap-3 sm:grid-cols-2">
+          {kinds.map((k) => (
+            <div class={`fa-item relative card !p-5 card-tone tone-${k.tone}`}>
+              <span class="tag tone-bg">{k.name}</span>
+              <p class="body mt-3 text-[15px]">{k.when}</p>
+              <p class="mt-3 font-mono text-[12.5px] text-ink">{k.actions}</p>
+              <p class="fine mt-1.5">{k.note}</p>
+            </div>
+          ))}
+        </div>
+        <div class="card mt-8 !p-5">
+          <p class="h3 !text-lg">Your reply is never a guess.</p>
+          <p class="body mt-2 text-[15px]">Page types your answer only into the exact terminal that owns the session, and the phone shows what happened. If it can’t deliver, it says why.</p>
+          <!-- data-motion="receipt-thread": arm, send, resolve only when the Mac confirms the keystroke landed. -->
+          <ol data-motion="receipt-thread" class="mt-4 flex flex-wrap items-center gap-2 font-mono text-[12px]" aria-label="Delivery states shown on the phone">
+            <li class="chip">sending</li><li aria-hidden="true" class="text-ink-3">→</li>
+            <li class="chip">queued, Mac offline</li><li aria-hidden="true" class="text-ink-3">→</li>
+            <li class="chip tone-teal !text-pulse-teal">delivered</li><li aria-hidden="true" class="text-ink-3">or</li>
+            <li class="chip tone-red !text-signal-red">failed, with the reason</li>
+          </ol>
+        </div>
+      </div>
+      <div class="w-full lg:sticky lg:top-24">
+        <Showcase name="showcase/feature-lock-screen-visual" motion="final-approach" class="mx-auto w-full max-w-[460px]" sizes="(min-width: 1024px) 440px, 100vw" alt="Answer from the lock screen: an iPhone lock screen with two Page notifications asking to approve a Bash command, and the decision sheet for an undoable command, showing what Page will type and into which terminal, with Approve, Deny and Tell it instead." />
+        <div class="card card-tone tone-red relative mx-auto mt-6 max-w-[460px] !p-5">
+          <span class="tag tone-bg">Irreversible</span>
+          <p class="body mt-3 text-[15px]">Deleting, force-pushing, deploying: press and hold, then Face ID. Let go early and nothing is sent.</p>
+          <!-- data-motion="hold-ring": a ring fills clockwise around the thumb; releasing early unwinds it. -->
+          <HoldRing class="mt-4" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WORKS WITH -->
+  <section id="works-with" class="block-section border-t border-white/[0.06]">
+    <div class="wrap">
+      <p class="label">Works with</p>
+      <h2 class="h2 mt-3 max-w-3xl">The agents and terminals you already use.</h2>
+      <div class="mt-10 grid gap-6 md:grid-cols-3">
+        <div class="card">
+          <h3 class="h3">Agents</h3>
+          <ul class="list-dots mt-4">
+            <li><strong>Claude Code</strong> in terminals, cmux, and (through hooks) the Claude desktop app, VS Code and JetBrains.</li>
+            <li><strong>Codex</strong>, with narrower support: keep-awake, idle pages, and replies after a turn ends.</li>
+            <li><strong>Local models</strong>: Ollama, LM Studio, llama.cpp, MLX, and terminal agents like aider and opencode. The Mac stays awake while they generate.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="h3">Terminals</h3>
+          <p class="body mt-4">Page types replies into Terminal.app, iTerm2, tmux, cmux, WezTerm, kitty, Herdr and Claude Squad. Anywhere else, run the agent in tmux or use the hooks.</p>
+          <a href={u('mac/#terminals')} class="link mt-4 inline-block text-[15px] font-semibold">See what each one can do →</a>
+        </div>
+        <div class="card">
+          <h3 class="h3">Page Aura</h3>
+          <p class="body mt-4">A bring-your-own-key Claude chat app that links to Page, so a streaming reply keeps the Mac awake and your phone hears when it is done.</p>
+          <a href={u('aura/')} class="link mt-4 inline-block text-[15px] font-semibold">Meet Page Aura →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRIVACY -->
+  <section id="privacy" class="block-section border-t border-white/[0.06]">
+    <div class="wrap">
+      <p class="label">Privacy and self-hosting</p>
+      <h2 class="h2 mt-3 max-w-3xl">Yours to run. Honest about what travels.</h2>
+      <p class="lede mt-5 max-w-3xl">Page has no account, no analytics and no third-party SDKs. Nothing goes to the authors. But a page has to travel from your Mac to your phone, so “nothing leaves your devices” would not be true.</p>
+      <div class="mt-12 grid gap-5 md:grid-cols-3">
+        <div class="card card-tone tone-teal">
+          <h3 class="h3">Yours</h3>
+          <p class="body mt-3">The relay runs in your Cloudflare account. The phone apps are built with your Apple or Android developer setup. The pairing token is generated on your Mac. None of the author’s keys, ids or URLs are needed.</p>
+        </div>
+        <div class="card card-tone tone-sky">
+          <h3 class="h3">Encrypted</h3>
+          <p class="body mt-3">Live session content (titles, folders, transcripts, what you type) is sealed end to end with AES-256-GCM using a key from the pairing QR. Your relay only forwards opaque envelopes and stores none of it.</p>
+        </div>
+        <div class="card card-tone tone-amber">
+          <h3 class="h3">Not encrypted</h3>
+          <p class="body mt-3">Pages pass through your Worker with their context (up to 4000 characters) and are kept: pending ones and the last 300 closed. Apple’s push service sees the project name and up to 180 characters. Page masks common secret shapes first; that is best effort.</p>
+        </div>
+      </div>
+      <a href={u('relay/')} class="link mt-8 inline-block text-[15px] font-semibold">What your relay stores and can’t see →</a>
+    </div>
+  </section>
+
+  <!-- GET STARTED -->
+  <section id="get-started" class="block-section border-t border-white/[0.06]">
+    <div class="wrap">
+      <p class="label">Get started</p>
+      <h2 class="h2 mt-3 max-w-3xl">From nothing to a phone that pages you, in 30 to 60 minutes.</h2>
+      <ol class="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+        {[
+          ['1', 'Deploy your relay', 'A free Cloudflare account and Node.js 22.18 or later. Three commands and a health check.', 'relay/'],
+          ['2', 'Install Page for Mac', 'Clone the repo and run ./install.sh. It builds and installs the menu-bar app and never uses sudo.', 'mac/#install'],
+          ['3', 'Build the phone app', 'Xcode and your Apple ID for iPhone, or the Android SDK for Android. Pair by QR.', 'iphone/'],
+          ['4', 'Optional: Page Aura', 'Switch the link on in both apps. Nothing to deploy.', 'aura/'],
+        ].map(([n, t, d, href]) => (
+          <li class="card !p-5">
+            <span class="font-mono text-[12px] font-bold text-pulse-teal">STEP {n}</span>
+            <h3 class="h3 mt-2 !text-lg">{t}</h3>
+            <p class="body mt-2 text-[15px]">{d}</p>
+            <a href={u(href)} class="link mt-3 inline-block text-[14px] font-semibold">Details →</a>
+          </li>
+        ))}
+      </ol>
+      <div class="card mt-8 flex flex-col gap-6 !p-6 sm:!p-8 md:flex-row md:items-center md:justify-between">
+        <div class="max-w-xl">
+          <h3 class="h3">The full walkthrough lives in the repo.</h3>
+          <p class="body mt-2">One guide, top to bottom, with every value that is yours, a troubleshooting table, and a copy-paste prompt to let Claude Code do the setup with you.</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <a href={GUIDE} rel="noopener" class="btn-primary">Self-hosting guide</a>
+          <a href={GITHUB} rel="noopener" class="btn-ghost">GitHub</a>
+          <a href={u(PDF)} download class="btn-ghost">Download PDF</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>

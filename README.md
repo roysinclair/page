@@ -1,39 +1,150 @@
-# Page AI Power Control
+<div align="center">
 
-**Keeps your Mac awake while AI coding agents work, pauses them gracefully at
-your battery cutoff, and pages your phone only when they truly need you.
-Your reply lands back in the live session.**
+<img src="Resources/AppIcon.iconset/icon_128x128@2x.png" alt="Page Studio app icon" width="96" height="96">
+
+# Page Studio
+
+**Your agents keep working. You get paged only when it matters.**
+
+Page keeps your Mac awake while Claude Code, Codex and local models work,
+pauses them gracefully at your battery cutoff, and pages your phone when a
+decision is yours. Your reply lands back in the live session.
+
+[![Platforms: macOS, iOS, Android](https://img.shields.io/badge/platforms-macOS%20%C2%B7%20iOS%20%C2%B7%20Android-2ea3c4?style=flat-square)](#the-page-studio-family)
+[![License: Page Studio](https://img.shields.io/badge/license-Page%20Studio-e0a030?style=flat-square)](LICENSE)
+[![Relay: self-hosted on your Cloudflare account](https://img.shields.io/badge/relay-self--hosted-3ecf9a?style=flat-square)](docs/SELF-HOSTING.md)
+
+[Website](https://roysinclair.github.io/page/) &nbsp;·&nbsp;
+[Brochure (PDF)](https://roysinclair.github.io/page/page-studio-brochure.pdf) &nbsp;·&nbsp;
+[Set it up](docs/SELF-HOSTING.md) &nbsp;·&nbsp;
+[Page Aura](https://github.com/roysinclair/page-studio-apps)
+
+</div>
+
+<p align="center">
+  <img src="docs/images/hero.png" alt="Page Studio: the Mac menu-bar app with its menu open, an iPhone lock screen with two pages, and the Android app, linked through your own relay" width="100%">
+</p>
+
+## What you get
+
+- **A Mac that stays awake while agents work.** Page reads real session
+  state, not CPU guesses, and holds the Mac awake only while an agent is
+  mid-turn. The lid can be closed on AC, and on battery if you opt in.
+- **A graceful pause at your battery cutoff.** Page asks busy agents to stop
+  and summarise before the Mac sleeps, and tells them to carry on when power is
+  back.
+- **Pages only when it matters.** Approvals, questions, stuck sessions and idle
+  agents page your phone. Approve, deny or reply from the lock screen, and Page
+  delivers it into the exact session that asked, or tells you why it couldn't.
+- **Live sessions on your phone.** Watch the story, the screen and the changes
+  of a running session, and type into it or stop it.
+- **Works with what you already run.** Claude Code, Codex, local and
+  open-weight models, in Terminal.app, iTerm2, tmux, cmux, WezTerm, kitty,
+  Herdr and Claude Squad.
+- **Your own relay.** A small Worker on your own Cloudflare account carries
+  pages and replies. Live-session content is end-to-end encrypted, and nothing
+  goes to the authors.
+- **Page Aura joins in.** The bring-your-own-key Claude chat app keeps the Mac
+  awake while it streams a reply, and pages your phone too.
+
+## The Page Studio family
+
+<p align="center">
+  <img src="docs/images/family.png" alt="Page Studio: Page for Mac and Page Aura on a laptop, Page for iPhone and Android on two phones, linked through your own Cloudflare relay" width="100%">
+</p>
+
+| Piece | What it does |
+|---|---|
+| **Page for Mac** | The menu-bar app. Detects agent state, keeps the Mac awake, applies your battery policy and delivers your replies. [Getting started](#getting-started) |
+| **Page for iPhone and Android** | Pages, lock-screen approvals, live sessions and widgets. [`iOS/`](iOS/README.md) · [`android/`](android/README.md) |
+| **Your relay** | A Cloudflare Worker with Durable Objects that you deploy to your own account. Setup in [`Cloudflare/`](Cloudflare/README.md) and the [self-hosting guide](docs/SELF-HOSTING.md) |
+| **Page Aura** | A separate bring-your-own-key Claude chat app that links into Page as a third agent backend. [github.com/roysinclair/page-studio-apps](https://github.com/roysinclair/page-studio-apps) · [link protocol](docs/AURA-LINK.md) |
+
+## A closer look
+
+<table>
+  <tr>
+    <td width="50%" valign="top"><img src="docs/images/feature-battery.png" alt="Keep-awake and battery pause" width="100%"><br><b>Stays awake, pauses gracefully.</b> Keeps the Mac awake while agents work, lid closed too, and asks them to stop and summarise at your battery cutoff.</td>
+    <td width="50%" valign="top"><img src="docs/images/feature-lock-screen.png" alt="Answer from the lock screen" width="100%"><br><b>Answer from the lock screen.</b> Approve, deny or reply from the notification. Anything riskier than an undoable command opens the decision sheet.</td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="docs/images/feature-sessions.png" alt="Live sessions on your phone" width="100%"><br><b>Live sessions in your pocket.</b> Story, screen and changes for Claude Code, Codex and local models, end-to-end encrypted.</td>
+    <td valign="top"><img src="docs/images/feature-terminals.png" alt="Supported terminals and agents" width="100%"><br><b>The terminals you already use.</b> Terminal.app, iTerm2, tmux, cmux, WezTerm, kitty, Herdr and Claude Squad.</td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="docs/images/feature-android.png" alt="Page for Android" width="100%"><br><b>Android, too.</b> The same pages and live sessions, built natively with Jetpack Compose.</td>
+    <td valign="top"><img src="docs/images/feature-widgets.png" alt="Widgets" width="100%"><br><b>Know before you unlock.</b> Widgets on iPhone, Android and the Mac: what needs you, what's working, how long the battery lasts.</td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="docs/images/feature-relay.png" alt="Your own relay" width="100%"><br><b>Your relay, your keys.</b> A small Worker on your own Cloudflare account carries pages and replies. Nothing goes to the authors.</td>
+    <td valign="top"><img src="docs/images/feature-aura.png" alt="Page Aura linked to Page" width="100%"><br><b>Page Aura, paged too.</b> The bring-your-own-key Claude chat app keeps the Mac awake while it streams and pages your phone.</td>
+  </tr>
+</table>
+
+## Get started in four steps
+
+1. **Deploy your relay** to your own Cloudflare account (free plan is enough for one person).
+2. **Install the Mac app** with `./install.sh`.
+3. **Install the phone app**: iPhone from Xcode, or Android with `adb install`.
+4. **Pair**: choose **Pair phone…** on the Mac and scan the QR code.
+
+> ### [Read the full setup guide: docs/SELF-HOSTING.md](docs/SELF-HOSTING.md)
+> From nothing to a phone that gets pages from your Mac, on your own accounts.
+> Plan on 30 to 60 minutes the first time.
+
+**Prefer to have Claude Code do it with you?** The guide ends with a
+copy-paste prompt. Start Claude Code in the folder you cloned like this, then
+paste the prompt from
+[Set it up with an AI agent](docs/SELF-HOSTING.md#set-it-up-with-an-ai-agent):
+
+```sh
+claude --model claude-opus-5-5 --effort high
+```
+
+## Documentation
+
+Everything below is the detailed reference.
+
+- [Overview](#overview)
+- [Features](#features): keep-awake, alerts, battery pause, phone pages,
+  approvals everywhere, reply delivery, live sessions, Codex, local models, rate limits
+- [Getting started](#getting-started): the short version of the setup guide
+- [Configuration](#configuration)
+- [How it works](#how-it-works)
+- [Safety model](#safety-model)
+- [Privacy and where your data goes](#privacy-and-where-your-data-goes)
+- [Troubleshooting](#troubleshooting)
+- [Project layout](#project-layout)
+- [Development](#development)
+- [Contributing, security, license](#contributing-security-license)
+
+More: [self-hosting guide](docs/SELF-HOSTING.md) · [wire protocol](docs/PROTOCOL.md)
+· [sessions protocol](docs/SESSIONS-PROTOCOL.md) · [Page Aura link](docs/AURA-LINK.md)
+· [roadmap](docs/ROADMAP.md)
+
+### Overview
 
 Page watches Claude Code and Codex sessions on your Mac. While an agent is
 mid-turn, the Mac stays awake (lid closed too, on AC). When the battery runs
 low, Page asks busy agents to stop and summarise before the Mac sleeps, and
 tells them to carry on when power is back. When an agent is blocked on an
-approval, asks a question, or sits idle while you're away, your iPhone gets a
+approval, asks a question, or sits idle while you're away, your phone gets a
 page. Approve, deny or type a reply from the lock screen, and Page delivers it
 into the exact session that asked, or tells you why it couldn't.
 
-There are three pieces, all of which you run yourself:
+There are four pieces, all of which you run yourself:
 
 - **The Mac menu-bar app** (Swift/AppKit, `Sources/ClaudePowerMode`). It does
   the detection, keep-awake, battery policy and reply delivery.
 - **A relay Worker on your own Cloudflare account** (TypeScript, Durable
   Objects, `Cloudflare/`).
-- **The iOS app** (SwiftUI, `iOS/`).
+- **The iOS app** (SwiftUI, `iOS/`) and **the Android app** (Kotlin and
+  Compose, `android/`).
+- **Page Aura**, optional, in its [own repository](https://github.com/roysinclair/page-studio-apps).
 
 > The Swift target is still called `ClaudePowerMode`, and so are the config
 > and log paths, from before the project was renamed. The app bundle, menu and
 > LaunchAgent are named Page.
-
-## Contents
-
-- [Features](#features)
-- [Getting started](#getting-started)
-- [Configuration](#configuration)
-- [How it works](#how-it-works)
-- [Safety model](#safety-model)
-- [Troubleshooting](#troubleshooting)
-- [Project layout](#project-layout)
-- [Development](#development)
 
 ## Features
 
@@ -71,7 +182,7 @@ There are three pieces, all of which you run yourself:
 
 ### Alerts beyond "it needs you"
 
-Settings live in **Preferences ▸ Alerts**.
+Settings live in **Preferences ▸ Attention**.
 
 - **Looks stuck.** Page pages you when a working session is getting
   nowhere: the same command fails 3 times in a row (or 5 times in its last
@@ -87,10 +198,10 @@ Settings live in **Preferences ▸ Alerts**.
   cutoff at the current drain ("Cutoff (10%) in about 40 min at this rate").
   The phone shows the same, and you get one page when the cutoff is about 15
   minutes away while agents are working. Opt in to **Pause early**
-  (Preferences ▸ Battery) to run the usual pause about 10 minutes before the
+  (Preferences ▸ Power) to run the usual pause about 10 minutes before the
   cutoff, so agents have time to write their summary.
 - **Claude usage and limit forecast.** Turn on **Show my Claude usage**
-  (Preferences ▸ Rate limits). Claude Code only gives the 5-hour and 7-day
+  (Preferences ▸ Budget). Claude Code only gives the 5-hour and 7-day
   usage numbers to your status line, so Page wraps it: a small script saves
   the numbers, then runs your own status line command unchanged. Turning it
   off restores `~/.claude/settings.json` exactly. The menu and phone then
@@ -102,7 +213,7 @@ Settings live in **Preferences ▸ Alerts**.
 ### Low-battery pause and resume
 
 When the battery reaches `lowBatteryCutoff` on battery power, Page does what
-you chose in Preferences ▸ Battery:
+you chose in Preferences ▸ Power:
 
 - **`pause`** (the default) asks busy agents to stop now and reply with a
   two-line summary.
@@ -409,7 +520,7 @@ The first time Page types into Terminal.app or iTerm2, macOS asks for
 
 ### 3. Point the Mac at your Worker
 
-Open the menu-bar icon ▸ **Preferences…** ▸ **Phone**, turn the relay on,
+Open the menu-bar icon ▸ **Preferences…** ▸ **Macs & phones**, turn the relay on,
 paste your Worker URL (`https://page-relay.<your-subdomain>.workers.dev`) and
 click **Test**. The `ws(s)://` and `/ws` forms are normalised to that https
 base. Plain `http://` is refused except for `localhost`, `127.0.0.1` and
@@ -481,8 +592,8 @@ least 30 s before that.
 
 Settings live in
 `~/Library/Application Support/ClaudePowerMode/config.json`. Most of them can
-be set in **Preferences…**, which has Phone, Power, Battery, Agents and Rate
-limits tabs and writes only the fields you change. Hand edits are fine:
+be set in **Preferences…**, which has Power, Budget, Macs & phones, Attention, Agents,
+Phone approvals, Terminals, Widgets, Shortcuts and Pairing pages and writes only the fields you change. Hand edits are fine:
 
 - Each key is decoded on its own, so a mistyped value falls back to its
   default and is reported in the menu.
@@ -759,7 +870,7 @@ Logs:
 ├── android/                     Android app, Kotlin + Compose (see its README)
 │   └── app/src/main/java/app/page/android/  model/ (pure, JUnit-tested), data/, notify/, ui/
 ├── hooks/                       page-notify.sh + page-extract-context.py (bundled into Page.app)
-├── docs/                        PROTOCOL.md (wire protocol), ROADMAP.md
+├── docs/                        SELF-HOSTING.md, PROTOCOL.md, SESSIONS-PROTOCOL.md, AURA-LINK.md, ROADMAP.md, images/
 ├── Tools/                       icon generator, parser test pointer
 ├── Resources/                   Mac app icon and entitlements
 ├── Designs/                     Pencil design sources

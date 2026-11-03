@@ -1,0 +1,54 @@
+# Marketing images
+
+Sources for the images in `docs/images/` (README, GitHub) and `website/public/img/showcase/` (website).
+Each image is an HTML composition shot by headless Chromium. Nothing opens a window.
+
+| File | Output |
+|---|---|
+| `hero.html` | `hero.png` 2400×1200 (README), `hero.webp` 2880×1440 (website) |
+| `og.html` | `og.png` / `og.webp` 1200×630 (social card, GitHub social preview) |
+| `feature-*.html` | 1600×1000 each: battery, lock-screen, sessions, terminals, android, widgets, relay, aura |
+| `family.html` | `family.png` / `family.webp` 2400×1500 (brochure cover, website overview) |
+
+`base.css` holds the Night Watch tokens, the drawn device frames (generic, with no vendor marks) and the lock-screen
+overlay. `sky.js` draws the seeded star field and aurora. The fonts are Inter and JetBrains Mono (OFL, in `fonts/`).
+
+## Regenerate
+
+```sh
+cd docs/images/src
+npm install                                   # playwright (uses its own headless Chromium)
+python3 -m venv .venv && .venv/bin/pip install pillow imagequant
+node shoot.mjs                                # or: node shoot.mjs feature-relay hero
+.venv/bin/python compress.py                  # writes ../*.png and website/public/img/showcase/*.webp
+```
+
+The PNGs must stay under 1.5 MB each (12 MB in total). `compress.py` palette-quantises one only if it goes over.
+
+## Refresh the app renders (`assets/`)
+
+`assets/*.webp` are crops of real renders with fixture (demo) data. To refresh them, render all three apps
+headlessly, then crop:
+
+```sh
+swift build && .build/debug/ClaudePowerMode --render-ui /tmp/r/mac --card-glow full   # offscreen; never use --live-check
+iOS/Tools/render-screens.sh /tmp/r/ios full        # simctl only, so Simulator.app stays closed. Re-run any blank screen.
+android/tools/screens.sh /tmp/r/android --glow full # boots the PageParity AVD with -no-window
+.venv/bin/python assets.py --mac /tmp/r/mac --ios /tmp/r/ios --android /tmp/r/android
+```
+
+`xcrun simctl shutdown "Page Render"` afterwards.
+
+## Rules for what goes in
+
+- **Real UI only.** Real renders come from the Mac, iOS and Android render harnesses, and Page Aura's own docs.
+  Two v4 design boards are used where no render exists: the iPhone lock screen's wallpaper, clock and widgets.
+  The board's Live Activity and island count are concepts, because nothing uses ActivityKit yet. `base.css`
+  paints them over with a plain island and real-format notifications ("<project> paged you" /
+  "Approval needed: [Bash] …", from `Cloudflare/src/logic.ts`).
+- **Demo data only.** Use the fixture names: page, bottle-flip, payments-api, sensor-hub, llm-play,
+  tokenizer-lab, acme-*, Studio MBP. Leave out any screen that shows this repo's own folder name, a real path
+  or a QR code.
+- **Copy must match the docs.** For example, live-session content is end-to-end encrypted but pages are not.
+  One-tap Approve from a notification works only for Undoable commands (`NotificationService.swift`). Terminal
+  capabilities come from `TerminalCatalog`.

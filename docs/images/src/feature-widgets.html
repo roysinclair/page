@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Widgets</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .w { position: absolute; border-radius: 24px; overflow: hidden; box-shadow: 0 24px 50px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.06); }
+  .w img { display: block; width: 100%; }
+  .wm { left: 352px; top: 56px; width: 404px; }
+  .ws1 { left: 352px; top: 262px; width: 196px; }
+  .ws2 { left: 560px; top: 262px; width: 196px; }
+  .halo { position: absolute; left: 380px; top: 120px; width: 360px; height: 260px; border-radius: 50%; background: radial-gradient(closest-side, rgba(245,177,76,.22), transparent); filter: blur(30px); }
+</style></head>
+<body><div class="canvas feat">
+  <div class="sky" data-seed="71"></div>
+  <div class="aurora" data-blobs="50,-30,60,70,amber,.16,80; 80,0,40,60,teal,.20,70; 20,70,50,60,sky,.10,90"></div>
+  <div class="halo"></div>
+  <div class="copy" style="--cw:272px">
+    <span class="eyebrow"><span class="pulse amber" style="--s:18px"><b></b></span>At a glance</span>
+    <h2 class="headline">Know before <em class="amber">you unlock.</em></h2>
+    <p class="caption">Widgets for iPhone, Android and the Mac desktop show what needs you, what's working, your Claude usage and how long the battery lasts.</p>
+  </div>
+  <div class="w wm"><img src="assets/mac-widget-medium-page.webp" alt=""></div>
+  <div class="w ws1"><img src="assets/mac-widget-small-page.webp" alt=""></div>
+  <div class="w ws2"><img src="assets/mac-widget-small-usage.webp" alt=""></div>
+</div><script src="sky.js"></script></body></html>

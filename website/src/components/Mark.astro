@@ -1,0 +1,9 @@
+---
+interface Props { v: 'yes' | 'no' | 'limited' }
+const { v } = Astro.props;
+---
+{v === 'yes'
+  ? <span class="font-bold text-pulse-teal" aria-label="Yes">✓<span class="sr-only"> yes</span></span>
+  : v === 'limited'
+  ? <span class="font-bold text-signal-amber">~<span class="sr-only"> with limits</span></span>
+  : <span class="text-ink-3">—<span class="sr-only"> no</span></span>}

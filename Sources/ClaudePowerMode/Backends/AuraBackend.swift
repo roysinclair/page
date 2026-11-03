@@ -14,8 +14,14 @@ import Foundation
 ///     `replied` once Page Aura's `ack` says it took it.
 ///   - Disconnect: everything clears and open pages close `stale`.
 ///
-/// Not in v1: low-battery pause (`BatteryPausable`) and the phone's live
-/// sessions view — Page Aura's chats are only paged, not driven.
+/// Not in v1: low-battery pause (`BatteryPausable`).
+///
+/// Proto 2 (docs/AURA-LINK.md §5): a peer whose `hello` says `proto >= 2` also
+/// sends `chats` and `transcript` frames, and is told what the phone is looking
+/// at with `watch`. `remoteSnapshot` is those chats as the phone's Sessions
+/// tab lists them; `remoteInput` / `remoteStop` are the phone's `input` and
+/// `interrupt`, answered from Page Aura's `ack`. A proto-1 peer gets no `watch`
+/// and has no rows there.
 ///
 /// Threading: all state is behind `lock`. The transport calls in on its own
 /// queue; replies come from the Coordinator's reply queue and never block
@@ -54,6 +60,12 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         get { locked { _onReplyFinished } }
         set { locked { _onReplyFinished = newValue } }
     }
+    /// Called (never under the lock) when `remoteSnapshot` changed: the
+    /// Coordinator hands the new sessions to the phone's list.
+    var onRemoteChange: (() -> Void)? {
+        get { locked { _onRemoteChange } }
+        set { locked { _onRemoteChange = newValue } }
+    }
 
     /// One open page and what a reply to it needs.
     private struct Page {
@@ -78,8 +90,27 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
     }
 
     private struct Pending {
-        let pageId: String
+        /// The page a reply belongs to, or nil for a command from the phone's Sessions tab.
+        let pageId: String?
         let timeout: DispatchWorkItem
+        /// Sessions tab: where the result goes.
+        var remote: ((SessionCommandResult) -> Void)? = nil
+        /// Sessions tab: a `stop` (a refusal says "can't stop", not "can't type").
+        var isStop = false
+    }
+
+    /// What the phone is looking at, as last told to Page Aura.
+    private struct Watch: Equatable {
+        var list = false
+        var chatIds: [String] = []
+        static let off = Watch()
+    }
+
+    private enum Outcome {
+        case acked(ok: Bool)
+        case timedOut
+        /// The socket closed, was replaced, or the write failed.
+        case lost
     }
 
     private let lock = NSLock()
@@ -92,6 +123,7 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
     private var _onNewIntervention: ((InterventionEvent) -> Void)?
     private var _onNewRateLimit: ((RateLimitEvent) -> Void)?
     private var _onReplyFinished: ((ReplyFinished) -> Void)?
+    private var _onRemoteChange: (() -> Void)?
 
     private var started = false
     private var connected = false
@@ -107,6 +139,18 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
     /// Replies typed at this Mac's panel: told as "resolved on your Mac".
     private var macOriginReplies = Set<String>()
     private var lastSnapshot: AgentBackendSnapshot
+    // Sessions tab (proto 2).
+    private var watch = Watch.off
+    private var sentWatch = Watch.off
+    /// The latest `chats` frame; nil until one arrives and while no phone looks.
+    private var remoteChats: [AuraLink.RemoteChat]?
+    private var transcripts: [String: AuraLink.Transcript] = [:]
+    /// Which of `state` / `chats` came last, so the fresher one decides busy and approval.
+    private var frameCounter = 0
+    private var stateFrame = 0
+    private var chatsFrame = 0
+    private var lastRemote = AgentBackendSnapshot(backendID: .aura, displayName: "Page Aura", sessions: [],
+                                                  wantsPowerAssertion: false, pendingInterventions: [])
 
     init(config: Config,
          transport: AuraLinkTransport = AuraLinkServer(),
@@ -128,6 +172,16 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         backendID: .aura, displayName: "Page Aura", sessions: [], wantsPowerAssertion: false, pendingInterventions: [])
 
     var currentSnapshot: AgentBackendSnapshot { locked { lastSnapshot } }
+
+    /// The chats of the phone's Sessions tab (all recent chats, not only busy
+    /// ones) and every open Page Aura page. Empty unless the peer speaks proto 2.
+    var remoteSnapshot: AgentBackendSnapshot { locked { lastRemote } }
+
+    /// The latest transcript Page Aura sent for a session (`aura-<chatId>`), if the phone is watching it.
+    func remoteTranscript(sessionId: String) -> AuraLink.Transcript? {
+        guard let chatId = AuraLink.chatId(sessionId: sessionId) else { return nil }
+        return locked { transcripts[chatId] }
+    }
 
     func openInterventionIds() -> [String] { locked { Array(pages.keys) } }
 
@@ -190,6 +244,7 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
             chats = []
             lastStateAt = nil
             idleCandidates = [:]
+            resetRemoteLocked()
             Logger.shared.log("AuraBackend: connected")
         }
     }
@@ -205,12 +260,20 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         guard let message = AuraLink.decode(line: line) else { return }
         switch message {
         case .hello(let h):
-            locked { hello = h }
+            var line: Data?
+            run { _ in
+                guard connected else { return }
+                hello = h
+                line = watchLineLocked()
+            }
             Logger.shared.log("AuraBackend: hello from \(h.app) \(h.version) (proto \(h.proto))")
+            if let line { _ = transport.send(line) }
         case .state(let list):
             run { fx in
                 guard connected else { return }
                 chats = list
+                frameCounter += 1
+                stateFrame = frameCounter
                 lastStateAt = now()
                 idleCandidates = idleCandidates.filter { !chatRestartedLocked($0.value) }
                 reconcilePagesLocked(&fx)
@@ -219,7 +282,58 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
             handleFinished(f)
         case .ack(let ack):
             handleAck(ack)
+        case .chats(let list):
+            run { _ in
+                // Only while a phone looks, and only from a proto-2 peer.
+                guard connected, speaksSessionsLocked, watch.list else { return }
+                remoteChats = list
+                frameCounter += 1
+                chatsFrame = frameCounter
+            }
+        case .transcript(let t):
+            run { _ in
+                guard connected, speaksSessionsLocked, watch.chatIds.contains(t.chatId) else { return }
+                transcripts[t.chatId] = t
+            }
         }
+    }
+
+    // MARK: Sessions tab: watch (proto 2)
+
+    private var speaksSessionsLocked: Bool { (hello?.proto ?? 0) >= AuraLink.sessionsProto }
+
+    /// Tells Page Aura what the phone is looking at: `list` while a phone has
+    /// the Sessions view open, `chatIds` the chats it is viewing (session ids
+    /// `aura-<chatId>`). Sent only to a proto-2 peer, and again on (re)connect.
+    func setRemoteWatch(list: Bool, sessionIds: Set<String>) {
+        let ids = Array(Set(sessionIds.compactMap(AuraLink.chatId(sessionId:)))).sorted().prefix(AuraLink.maxWatchedChats)
+        var line: Data?
+        run { _ in
+            let wanted = Watch(list: list, chatIds: list ? Array(ids) : [])
+            guard wanted != watch else { return }
+            watch = wanted
+            if !wanted.list { remoteChats = nil }
+            transcripts = transcripts.filter { wanted.chatIds.contains($0.key) }
+            line = watchLineLocked()
+        }
+        if let line { _ = transport.send(line) }
+    }
+
+    /// The `watch` line to send now, if the peer is ready and hasn't been told. Under `lock`.
+    private func watchLineLocked() -> Data? {
+        guard connected, speaksSessionsLocked, watch != sentWatch else { return nil }
+        sentWatch = watch
+        return AuraLink.encodeWatch(list: watch.list, chatIds: watch.chatIds)
+    }
+
+    /// A new (or closed) connection: Page Aura assumes `list:false`. Under `lock`.
+    private func resetRemoteLocked() {
+        sentWatch = .off
+        remoteChats = nil
+        transcripts = [:]
+        stateFrame = 0
+        chatsFrame = 0
+        frameCounter = 0
     }
 
     // MARK: pages
@@ -369,9 +483,10 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         chats = []
         lastStateAt = nil
         idleCandidates = [:]
+        resetRemoteLocked()
         for (cid, p) in pending {
             p.timeout.cancel()
-            finishLocked(commandId: cid, pageId: p.pageId, success: false, detail: failure, &fx)
+            settleLocked(cid, p, .lost, failure, &fx)
         }
         pending = [:]
         if let pageReason {
@@ -433,7 +548,97 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         run { fx in
             guard let p = pending.removeValue(forKey: outgoing.commandId) else { return }
             p.timeout.cancel()
-            finishLocked(commandId: outgoing.commandId, pageId: p.pageId, success: false, detail: AuraLink.notConnectedDetail, &fx)
+            settleLocked(outgoing.commandId, p, .lost, AuraLink.notConnectedDetail, &fx)
+        }
+    }
+
+    // MARK: Sessions tab: input and stop (proto 2)
+
+    /// The phone's `input` on an `aura-<chatId>` row: a `send`, answered from
+    /// Page Aura's `ack` (up to 20 s). The chat's state is re-read here, under
+    /// the lock, right before the line goes out.
+    func remoteInput(sessionId: String, text: String, completion: @escaping (SessionCommandResult) -> Void) {
+        let clean: String
+        switch SessionInputGate.validateText(text) {
+        case .failure(let refusal): return completion(refusal)
+        case .success(let t): clean = Self.cleanSendText(t)
+        }
+        remoteCommand(sessionId: sessionId, stop: false, completion: completion) { chat, commandId, chatId in
+            guard chat.approval == nil else {
+                let page = self.pages.values.filter { $0.chatId == chatId && $0.event.kind == .permission }.map(\.event.id).first
+                return .failure(.refused(.waiting, AuraLink.toolRequestWaitingDetail, interventionId: page))
+            }
+            guard !chat.busy else { return .failure(.refused(.notTypable, AuraLink.stillReplyingDetail)) }
+            return .success(AuraLink.encodeSend(id: commandId, chatId: chatId, text: clean))
+        }
+    }
+
+    /// The phone's `interrupt`: a `stop`.
+    func remoteStop(sessionId: String, completion: @escaping (SessionCommandResult) -> Void) {
+        remoteCommand(sessionId: sessionId, stop: true, completion: completion) { chat, commandId, chatId in
+            guard chat.busy, chat.approval == nil else { return .failure(.refused(.interruptUnsupported, SessionInputGate.notIdleMessage)) }
+            return .success(AuraLink.encodeStop(id: commandId, chatId: chatId))
+        }
+    }
+
+    /// Control characters (other than newline and tab) are dropped; the text is
+    /// otherwise what the phone typed, already trimmed and length-checked.
+    static func cleanSendText(_ text: String) -> String {
+        String(String.UnicodeScalarView(text.unicodeScalars.filter { $0 == "\n" || $0 == "\t" || !CharacterSet.controlCharacters.contains($0) }))
+    }
+
+    private func remoteCommand(sessionId: String, stop: Bool, completion: @escaping (SessionCommandResult) -> Void,
+                               build: (RemoteChatState, String, String) -> Result<Data, SessionCommandResult>) {
+        var outgoing: (line: Data, commandId: String)?
+        run { fx in
+            guard connected, speaksSessionsLocked else {
+                fx.append { completion(.refused(.notTypable, AuraLink.notConnectedDetail)) }
+                return
+            }
+            guard let chatId = AuraLink.chatId(sessionId: sessionId), let chat = remoteChatStatesLocked().first(where: { $0.id == chatId }) else {
+                fx.append { completion(.refused(.notFound, AuraLink.chatGoneDetail)) }
+                return
+            }
+            let commandId = AuraLink.newCommandId()
+            switch build(chat, commandId, chatId) {
+            case .failure(let refusal):
+                fx.append { completion(refusal) }
+            case .success(let line):
+                let timeout = DispatchWorkItem { [weak self] in self?.commandTimedOut(commandId) }
+                pending[commandId] = Pending(pageId: nil, timeout: timeout, remote: completion, isStop: stop)
+                DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + AuraLink.ackTimeout, execute: timeout)
+                outgoing = (line, commandId)
+            }
+        }
+        guard let outgoing, !transport.send(outgoing.line) else { return }
+        run { fx in
+            guard let p = pending.removeValue(forKey: outgoing.commandId) else { return }
+            p.timeout.cancel()
+            settleLocked(outgoing.commandId, p, .lost, AuraLink.notConnectedDetail, &fx)
+        }
+    }
+
+    private struct RemoteChatState {
+        let id: String
+        let title: String
+        let updatedAt: Int64?
+        let busy: Bool
+        let approval: AuraLink.Approval?
+        let preview: String
+    }
+
+    /// The chats of the latest `chats` frame, with busy and approval taken from
+    /// whichever of `state` / `chats` arrived last (a chat missing from `state`
+    /// is idle). Empty until a proto-2 peer has sent a list. Under `lock`.
+    private func remoteChatStatesLocked() -> [RemoteChatState] {
+        guard connected, speaksSessionsLocked, let list = remoteChats else { return [] }
+        let stateIsNewer = stateFrame > chatsFrame
+        return list.map { c in
+            let live = stateIsNewer ? chats.first { $0.id == c.id } : nil
+            return RemoteChatState(id: c.id, title: c.title, updatedAt: c.updatedAt,
+                                   busy: stateIsNewer ? (live?.busy ?? false) : c.busy,
+                                   approval: stateIsNewer ? live?.approval : c.approval,
+                                   preview: c.preview)
         }
     }
 
@@ -442,7 +647,7 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
             guard let p = pending.removeValue(forKey: ack.ref) else { return }
             p.timeout.cancel()
             let detail = ack.detail.isEmpty ? (ack.ok ? "Sent to Page Aura" : "Page Aura couldn't do that") : ack.detail
-            finishLocked(commandId: ack.ref, pageId: p.pageId, success: ack.ok, detail: detail, &fx)
+            settleLocked(ack.ref, p, .acked(ok: ack.ok), detail, &fx)
             reconcilePagesLocked(&fx)
         }
     }
@@ -451,9 +656,31 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         run { fx in
             guard let p = pending.removeValue(forKey: commandId) else { return }
             Logger.shared.log("AuraBackend: no ack for \(commandId.prefix(12)) in \(Int(AuraLink.ackTimeout)) s")
-            finishLocked(commandId: commandId, pageId: p.pageId, success: false, detail: ReplyFinished.timeoutDetail, &fx)
+            settleLocked(commandId, p, .timedOut, ReplyFinished.timeoutDetail, &fx)
             reconcilePagesLocked(&fx)
         }
+    }
+
+    /// Reports a command's end: a page reply goes through `finishLocked`; a
+    /// Sessions-tab command's completion gets a `SessionCommandResult`.
+    private func settleLocked(_ commandId: String, _ p: Pending, _ outcome: Outcome, _ detail: String, _ fx: inout [Effect]) {
+        if let pid = p.pageId {
+            var ok = false
+            if case .acked(let acked) = outcome { ok = acked }
+            finishLocked(commandId: commandId, pageId: pid, success: ok, detail: detail, &fx)
+            return
+        }
+        guard let remote = p.remote else { return }
+        let result: SessionCommandResult
+        switch outcome {
+        case .acked(let ok):
+            result = ok ? SessionCommandResult(code: .delivered, reason: nil, detail: detail)
+                        : .refused(p.isStop ? .interruptUnsupported : .notTypable, detail)
+        case .timedOut: result = .failed(detail)
+        case .lost: result = .refused(.notTypable, detail)
+        }
+        Logger.shared.log("AuraBackend: \(p.isStop ? "stop" : "send") from the phone → \(result.code.rawValue)")
+        fx.append { remote(result) }
     }
 
     private func failReplyLocked(_ pid: String, _ detail: String, _ fx: inout [Effect]) {
@@ -485,8 +712,10 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
     private func run(_ body: (inout [Effect]) -> Void) {
         var fx: [Effect] = []
         lock.lock()
+        let remoteBefore = lastRemote
         body(&fx)
         rebuildSnapshotLocked()
+        if lastRemote != remoteBefore, let changed = _onRemoteChange { fx.append(changed) }
         lock.unlock()
         fx.forEach { $0() }
     }
@@ -501,10 +730,21 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
                          lastActivityAt: chat.since.map { Date(timeIntervalSince1970: Double($0) / 1000) },
                          activeFlags: [], supportsRemoteReply: true)
         } : []
+        let pendingPages = pages.values.map(\.event).sorted { ($0.openedAt, $0.id) < ($1.openedAt, $1.id) }
         lastSnapshot = AgentBackendSnapshot(
             backendID: .aura, displayName: displayName, sessions: sessions,
             wantsPowerAssertion: connected && fresh && chats.contains { $0.busy },
-            pendingInterventions: pages.values.map(\.event).sorted { ($0.openedAt, $0.id) < ($1.openedAt, $1.id) })
+            pendingInterventions: pendingPages)
+        // The phone's Sessions tab: every chat Page Aura listed, not only the busy ones.
+        let rows = remoteChatStatesLocked().map { c -> AgentSession in
+            AgentSession(backend: .aura, sessionId: AuraLink.sessionId(chatId: c.id), cwd: nil,
+                         title: c.title.isEmpty ? "Untitled chat" : c.title, source: .desktop,
+                         state: AuraLink.listState(busy: c.busy, approval: c.approval != nil),
+                         lastActivityAt: AuraLink.date(ms: c.updatedAt), activeFlags: [], supportsRemoteReply: true,
+                         preview: AuraLink.previewLine(c.preview))
+        }
+        lastRemote = AgentBackendSnapshot(backendID: .aura, displayName: displayName, sessions: rows,
+                                          wantsPowerAssertion: false, pendingInterventions: connected ? pendingPages : [])
     }
 
     private func locked<T>(_ body: () -> T) -> T {

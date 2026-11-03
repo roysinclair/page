@@ -31,7 +31,12 @@ data class SessionTarget(
     val agent: String,
 ) {
     /** First four characters of the id: tells two sessions in one project apart. */
-    val shortId: String get() = Sw.prefix(sessionId, 4)
+    val shortId: String
+        get() {
+            // A Page Aura chat's id starts "aura-" on every row, so that part is skipped.
+            val id = if (sessionId.startsWith("aura-") && sessionId.length > 5) sessionId.substring(5) else sessionId
+            return Sw.prefix(id, 4)
+        }
 
     /** "~/projects/rover-tracker · #c4f7": the room's header line, so no two rooms read alike. */
     val whereLine: String

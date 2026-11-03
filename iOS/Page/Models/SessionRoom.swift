@@ -83,7 +83,8 @@ struct AgentCharacter: Equatable {
             parts.append(name)
         }
         let h = host.trimmingCharacters(in: .whitespaces)
-        if !h.isEmpty, h.lowercased() != "unknown host", h.lowercased() != "unknown" { parts.append(h) }
+        // Page Aura's host is its own name: say it once.
+        if !h.isEmpty, h.lowercased() != "unknown host", h.lowercased() != "unknown", h.lowercased() != name.lowercased() { parts.append(h) }
         return parts.joined(separator: " · ")
     }
 }
@@ -126,8 +127,9 @@ enum RoomLens: String, CaseIterable, Identifiable, Equatable {
     /// has no adapter for gets Story only. Pure.
     static func available(_ i: Inputs) -> [RoomLens] {
         var out: [RoomLens] = [.story]
-        if i.hasScreen && i.character.kind != .other { out.append(.screen) }
-        if i.canAskForChanges && i.character.kind != .other { out.append(.changes) }
+        // A Page Aura chat has no terminal to mirror and no folder to diff.
+        if i.hasScreen && i.character.kind != .other && i.character.kind != .aura { out.append(.screen) }
+        if i.canAskForChanges && i.character.kind != .other && i.character.kind != .aura { out.append(.changes) }
         if i.workflowCount > 0 && i.character.kind == .claude { out.append(.workflows) }
         return out
     }
@@ -384,6 +386,12 @@ struct SessionStopPlan: Equatable {
         // The folder's name, not the title: the same words the receipt and the header use.
         let project = SessionTarget(session: session, macName: macName).project
         let route = DeliveryPreview.route(host: session.host, project: project)
+        // A Page Aura chat has no Esc to press: Page asks Page Aura to stop the reply.
+        if session.backend == .known(.aura) {
+            return SessionStopPlan(canStop: session.isStoppable && ready && !ended,
+                                   scope: "Stop the reply in \(project)",
+                                   preview: DeliveryPreview.stopReply(route: route, mac: macName))
+        }
         return SessionStopPlan(canStop: session.isStoppable && ready && !ended,
                                scope: "Press Esc in \(project)",
                                preview: DeliveryPreview.pressEsc(route: route, mac: macName))

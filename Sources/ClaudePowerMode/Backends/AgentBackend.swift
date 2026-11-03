@@ -37,6 +37,8 @@ struct AgentSession: Equatable {
     let lastActivityAt: Date?
     let activeFlags: [String]
     let supportsRemoteReply: Bool
+    /// Page Aura only: the last assistant line, for the phone's list (redacted, clipped).
+    var preview: String? = nil
 }
 
 struct AgentBackendSnapshot: Equatable {

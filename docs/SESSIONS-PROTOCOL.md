@@ -153,6 +153,10 @@ When it changes, the phone resets its `seq` tracking.
   Macs send no `caps`; a phone treats a missing `caps` as `[]`. Readers ignore
   names they don't know.
 
+- `backend: "aura"` rows are Page Aura chats (`AURA-LINK.md` §5): `host` is
+  `"Page Aura"`, `cwd` is absent, `provider` is `anthropic`; `canType` is true
+  only while idle, `canInterrupt` only while busy, and `attachBlocker` says
+  photos aren't supported. `input` becomes a `send` and `interrupt` a `stop`.
 - `cwd` is home-abbreviated. `preview` is at most 160 characters and
   redacted, giving the current activity: the last tool-call one-liner while
   `active`, otherwise the last assistant line.

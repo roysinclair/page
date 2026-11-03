@@ -118,10 +118,85 @@ final class AuraLinkProtocolTests: XCTestCase {
         XCTAssertEqual(AgentBackendID(rawValue: "aura"), .aura)
     }
 
-    func testAuraIsNotLiveSessionCapable() {
+    func testAuraIsLiveSessionCapable() {
         XCTAssertTrue(Coordinator.isLiveSessionCapable(.claude))
         XCTAssertTrue(Coordinator.isLiveSessionCapable(.codex))
-        XCTAssertFalse(Coordinator.isLiveSessionCapable(.aura))
+        XCTAssertTrue(Coordinator.isLiveSessionCapable(.aura))
+    }
+
+    // MARK: proto 2 frames
+
+    func testChatsFrameDecodesAndClamps() {
+        let long = String(repeating: "p", count: 400)
+        let frame = #"{"t":"chats","chats":[{"id":"k3j9x","title":"Quarterly numbers","model":"claude-opus-5-5","updatedAt":1762160300000,"busy":false,"approval":null,"preview":"\#(long)"},{"id":"bad id","title":"x"},{"id":"k3j9x","title":"dup"},{"id":"p0q1r","busy":true,"approval":{"id":"a1","server":"S","tool":"t","args":"{}"}}]}"#
+        guard case .chats(let chats)? = decode(frame) else { return XCTFail("not chats") }
+        XCTAssertEqual(chats.map(\.id), ["k3j9x", "p0q1r"], "bad ids and duplicates are dropped")
+        XCTAssertEqual(chats[0].title, "Quarterly numbers")
+        XCTAssertEqual(chats[0].updatedAt, 1762160300000)
+        XCTAssertEqual(chats[0].preview.count, AuraLink.maxPreviewLength)
+        XCTAssertEqual(chats[1].approval?.id, "a1")
+        XCTAssertTrue(chats[1].busy)
+        XCTAssertNil(decode(#"{"t":"chats"}"#))
+        let many = (0..<300).map { #"{"id":"c\#($0)"}"# }.joined(separator: ",")
+        guard case .chats(let capped)? = decode(#"{"t":"chats","chats":[\#(many)]}"#) else { return XCTFail() }
+        XCTAssertEqual(capped.count, AuraLink.maxRemoteChats)
+    }
+
+    func testTranscriptFrameDecodesAndClamps() {
+        let long = String(repeating: "t", count: 9000)
+        let frame = #"{"t":"transcript","chatId":"k3j9x","truncated":true,"entries":[{"id":"m12","role":"user","text":"hi","at":1762160000000},{"id":"m13","role":"assistant","text":"\#(long)","at":1762160200000,"tool":"ignored"},{"id":"m13-t0","role":"tool","text":"Web search: x","tool":"web_search","at":1762160100000},{"id":"m14","role":"system","text":"nope"},{"role":"user","text":"no id"},{"id":"m15","role":"thinking","text":"never"}]}"#
+        guard case .transcript(let t)? = decode(frame) else { return XCTFail("not a transcript") }
+        XCTAssertEqual(t.chatId, "k3j9x")
+        XCTAssertTrue(t.truncated)
+        XCTAssertEqual(t.entries.map(\.id), ["m12", "m13", "m13-t0"], "unknown roles and entries without an id are dropped")
+        XCTAssertEqual(t.entries[1].text.count, AuraLink.maxEntryTextLength)
+        XCTAssertNil(t.entries[1].tool, "only tool entries carry a tool name")
+        XCTAssertEqual(t.entries[2].tool, "web_search")
+        XCTAssertEqual(t.entries[0].at, 1762160000000)
+        XCTAssertNil(decode(#"{"t":"transcript","chatId":"bad id","entries":[]}"#))
+        XCTAssertNil(decode(#"{"t":"transcript","chatId":"k","entries":"x"}"#))
+        // Only the last 40 are kept, and the snapshot says older ones exist.
+        let entries = (0..<60).map { #"{"id":"m\#($0)","role":"user","text":"x"}"# }.joined(separator: ",")
+        guard case .transcript(let big)? = decode(#"{"t":"transcript","chatId":"k","entries":[\#(entries)]}"#) else { return XCTFail() }
+        XCTAssertEqual(big.entries.count, 40)
+        XCTAssertEqual(big.entries.first?.id, "m20")
+        XCTAssertTrue(big.truncated)
+    }
+
+    func testTranscriptMapsToThePhonesRows() {
+        let t = AuraLink.Transcript(chatId: "k", truncated: false, entries: [
+            .init(id: "m1", role: .user, text: "key sk-abcdefghijklmnopqrstuvwx", tool: nil, at: 1762160000000),
+            .init(id: "m2", role: .assistant, text: String(repeating: "a", count: 3000), tool: nil, at: nil),
+            .init(id: "m2-t0", role: .tool, text: "Used Filesystem · read_file", tool: "read_file", at: 1762160100000)
+        ])
+        let snap = AuraLink.snapshot(t)
+        XCTAssertEqual(snap.entries.map(\.role), [.user, .assistant, .tool])
+        XCTAssertEqual(snap.entries.map(\.id), ["m1", "m2", "m2-t0"])
+        XCTAssertFalse(snap.entries[0].text.contains("sk-abcdefghijklmnopqrstuvwx"), "redacted")
+        XCTAssertLessThanOrEqual(snap.entries[1].text.count, SessionTranscript.maxEntryChars)
+        XCTAssertEqual(snap.entries[2].tool, "read_file")
+        XCTAssertEqual(snap.entries[0].jsonObject["at"] as? String, "2025-11-03T08:53:20Z")
+        XCTAssertNil(snap.entries[1].jsonObject["at"])
+    }
+
+    func testWatchEncodesSorted() throws {
+        let line = AuraLink.encodeWatch(list: true, chatIds: ["b", "a"])
+        XCTAssertEqual(line.last, 0x0A)
+        let obj = try XCTUnwrap(JSONSerialization.jsonObject(with: line) as? [String: Any])
+        XCTAssertEqual(obj["t"] as? String, "watch")
+        XCTAssertEqual(obj["list"] as? Bool, true)
+        XCTAssertEqual(obj["chatIds"] as? [String], ["a", "b"])
+        XCTAssertEqual(AuraLink.chatId(sessionId: "aura-k3j9x"), "k3j9x")
+        XCTAssertNil(AuraLink.chatId(sessionId: "aura-bad id"))
+        XCTAssertNil(AuraLink.chatId(sessionId: "claude-k3j9x"))
+        XCTAssertNil(AuraLink.chatId(sessionId: "aura-"))
+    }
+
+    func testPreviewIsOneRedactedLine() {
+        XCTAssertEqual(AuraLink.previewLine("first\nsecond line  "), "second line")
+        XCTAssertNil(AuraLink.previewLine(""))
+        XCTAssertNil(AuraLink.previewLine("\n\n"))
+        XCTAssertFalse((AuraLink.previewLine("token sk-abcdefghijklmnopqrstuvwx") ?? "").contains("sk-abcdefghijklmnopqrstuvwx"))
     }
 
     func testConfigDefaultsOnAndRoundTrips() throws {
@@ -667,5 +742,468 @@ final class AuraLinkServerTests: XCTestCase {
         write(fd, #"{"t":"ack","ref":"\#(cmd["id"] as! String)","ok":true,"detail":"Sent to Page Aura"}"# + "\n")
         waitUntil("replied") { relay.closed.map(\.reason) == ["replied"] }
         XCTAssertEqual(relay.injected.first?.method, "aura-link")
+    }
+}
+
+// MARK: - Sessions tab (proto 2)
+
+private final class SessionsSink: SessionsUpdateSink {
+    private let lock = NSLock()
+    private var _sent: [SessionEnvelope] = []
+    var isConnected = true
+    var sent: [SessionEnvelope] { lock.lock(); defer { lock.unlock() }; return _sent }
+    func sendSessionsUpdate(_ envelope: SessionEnvelope) { lock.lock(); _sent.append(envelope); lock.unlock() }
+}
+
+private final class MutableClock {
+    var now: Date
+    init(_ now: Date) { self.now = now }
+}
+
+/// Page Aura chats through the real `AuraBackend` (fake socket), `LiveSessionBackends`
+/// and `SessionRemote`, with the phone's encrypted frames decoded.
+final class AuraSessionsTests: XCTestCase {
+    private let root = Data((0...31).map { UInt8($0 &* 7) })
+    private lazy var keys = SessionKeys(root: root)!
+    private let t0 = Date(timeIntervalSince1970: 1_762_160_400)
+
+    private var clock: MutableClock!
+    private var transport: FakeTransport!
+    private var backend: AuraBackend!
+    private var sink: SessionsSink!
+    private var remote: SessionRemote!
+
+    override func setUp() {
+        clock = MutableClock(t0)
+        transport = FakeTransport()
+        let c = clock!
+        backend = AuraBackend(config: Config(), transport: transport, now: { c.now }, userAtMac: { _ in false })
+        let live = LiveSessionBackends(claude: ClaudeBackend(config: Config()), codex: CodexBackend(config: Config()), aura: backend)
+        sink = SessionsSink()
+        remote = SessionRemote(backends: live, now: { c.now }, autoTimer: false, macName: { "Test Mac" })
+        // What the Coordinator does: the backend's change goes to the phone's list.
+        backend.onRemoteChange = { [unowned self] in
+            let snap = self.backend.remoteSnapshot
+            self.remote.update(sessions: snap.sessions, pending: snap.pendingInterventions)
+        }
+        remote.attach(sink: sink, rootKey: root)
+        backend.start()
+        transport.connect()
+    }
+
+    override func tearDown() {
+        remote?.stop()
+        remote?.waitUntilIdle()
+        backend?.shutdown()
+    }
+
+    // MARK: helpers
+
+    private let idleChat = #"{"id":"k3j9x","title":"Quarterly numbers","model":"claude-opus-5-5","updatedAt":1762160300000,"busy":false,"approval":null,"preview":"Here is the summary\nTotals look right."}"#
+    private let busyChat = #"{"id":"b2","title":"Long refactor","model":"m","updatedAt":1762160390000,"busy":true,"approval":null,"preview":"Working…"}"#
+    private let askChat = #"{"id":"p0q1r","title":"Tidy Downloads","model":"m","updatedAt":1762160200000,"busy":false,"approval":{"id":"a7f3c2d1","server":"Filesystem","tool":"move_file","args":"{}"},"preview":""}"#
+
+    private let askState = #"{"id":"p0q1r","title":"Tidy Downloads","model":"m","busy":false,"since":1762160100000,"approval":{"id":"a7f3c2d1","server":"Filesystem","tool":"move_file","args":"{}"}}"#
+
+    private func hello(proto: Int = 2) { transport.receive(#"{"t":"hello","proto":\#(proto),"app":"Page Aura","version":"0.3.0"}"#) }
+    private func chats(_ list: String) { transport.receive(#"{"t":"chats","chats":[\#(list)]}"#); remote.waitUntilIdle() }
+    private func lookingPhone() { remote.setPhones(1, from: sink); remote.waitUntilIdle() }
+
+    private func decoded(_ e: SessionEnvelope) -> [String: Any]? {
+        SessionCrypto.open(e, key: keys.macToPhone, aad: SessionCrypto.updateAAD)
+            .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+    }
+    private var frames: [[String: Any]] { sink.sent.compactMap(decoded) }
+    private func frames(_ kind: String) -> [[String: Any]] { frames.filter { $0["kind"] as? String == kind } }
+    private var rows: [[String: Any]] { (frames("list").last?["sessions"] as? [[String: Any]]) ?? [] }
+    private func row(_ id: String) -> [String: Any]? { rows.first { $0["id"] as? String == id } }
+
+    private func command(_ fields: [String: Any]) -> SessionEnvelope {
+        var obj = fields
+        if obj["ts"] == nil { obj["ts"] = clock.now.timeIntervalSince1970 * 1000 }
+        if obj["clientId"] == nil { obj["clientId"] = UUID().uuidString }
+        if obj["viewer"] == nil { obj["viewer"] = "v1" }
+        return SessionCrypto.seal(try! JSONSerialization.data(withJSONObject: obj), key: keys.phoneToMac, aad: SessionCrypto.commandAAD)!
+    }
+    private func send(_ fields: [String: Any]) {
+        remote.handleCommand(command(fields))
+        remote.waitUntilIdle()
+    }
+    private func advance(_ s: TimeInterval) { clock.now = clock.now.addingTimeInterval(s); remote.step() }
+
+    /// Every line Page sent to Page Aura, decoded.
+    private var commands: [[String: Any]] {
+        transport.sent.compactMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+    }
+    private func commands(_ t: String) -> [[String: Any]] { commands.filter { $0["t"] as? String == t } }
+    private var lastResult: [String: Any]? { frames("result").last }
+
+    /// A proto-2 peer, a phone looking and a list of chats shown.
+    private func showChats(_ list: String? = nil) {
+        hello()
+        lookingPhone()
+        chats(list ?? [idleChat, busyChat, askChat].joined(separator: ","))
+        advance(1.1)
+    }
+
+    // MARK: watch
+
+    func testWatchGoesOnlyToAProto2Peer() {
+        hello(proto: 1)
+        lookingPhone()
+        XCTAssertTrue(commands("watch").isEmpty, "a proto-1 peer is never sent a watch")
+        send(["op": "watch", "sessionId": "aura-k3j9x"])
+        XCTAssertTrue(commands("watch").isEmpty)
+        remote.setPhones(0, from: sink)
+        remote.waitUntilIdle()
+        XCTAssertTrue(commands("watch").isEmpty)
+        XCTAssertTrue(backend.remoteSnapshot.sessions.isEmpty)
+    }
+
+    func testWatchTracksPhonesAndTheWatchSet() {
+        transport.sent = []
+        lookingPhone()
+        XCTAssertTrue(commands("watch").isEmpty, "no hello yet: Page Aura isn't known to speak proto 2")
+        hello()
+        XCTAssertEqual(commands("watch").count, 1, "sent as soon as the hello says proto 2")
+        XCTAssertEqual(commands("watch").last?["list"] as? Bool, true)
+        XCTAssertEqual(commands("watch").last?["chatIds"] as? [String], [])
+
+        send(["op": "watch", "sessionId": "aura-k3j9x", "viewer": "v1"])
+        XCTAssertEqual(commands("watch").last?["chatIds"] as? [String], ["k3j9x"])
+        let count = commands("watch").count
+        send(["op": "watch", "sessionId": "aura-k3j9x", "viewer": "v1"])   // the phone's 30 s re-send
+        XCTAssertEqual(commands("watch").count, count, "no change, no frame")
+        send(["op": "watch", "sessionId": "aura-p0q1r", "viewer": "v2"])
+        XCTAssertEqual(commands("watch").last?["chatIds"] as? [String], ["k3j9x", "p0q1r"])
+        // A Claude session is not a Page Aura chat.
+        send(["op": "watch", "sessionId": "9f1c0000-0000-0000-0000-000000000000", "viewer": "v3"])
+        XCTAssertEqual(commands("watch").last?["chatIds"] as? [String], ["k3j9x", "p0q1r"])
+        // Leaving the screen, and the TTL.
+        send(["op": "watch", "sessionId": NSNull(), "viewer": "v2"])
+        XCTAssertEqual(commands("watch").last?["chatIds"] as? [String], ["k3j9x"])
+        advance(SessionWatchers.ttl + 1)
+        XCTAssertEqual(commands("watch").last?["list"] as? Bool, true)
+        XCTAssertEqual(commands("watch").last?["chatIds"] as? [String], [])
+
+        remote.setPhones(0, from: sink)
+        remote.waitUntilIdle()
+        XCTAssertEqual(commands("watch").last?["list"] as? Bool, false)
+        XCTAssertEqual(commands("watch").last?["chatIds"] as? [String], [])
+    }
+
+    func testWatchIsResentAfterAReconnect() {
+        hello()
+        lookingPhone()
+        send(["op": "watch", "sessionId": "aura-k3j9x"])
+        transport.disconnect()
+        transport.sent = []
+        transport.connect()
+        XCTAssertTrue(commands("watch").isEmpty, "nothing before the hello")
+        hello()
+        XCTAssertEqual(commands("watch").last?["list"] as? Bool, true)
+        XCTAssertEqual(commands("watch").last?["chatIds"] as? [String], ["k3j9x"], "Page Aura assumes list:false on connect")
+    }
+
+    func testLiveSessionsOffSendsNoListWatch() {
+        hello()
+        remote.setEnabled(false)
+        lookingPhone()
+        XCTAssertTrue(commands("watch").isEmpty, "off → list:false is the default, nothing to say")
+    }
+
+    // MARK: list rows
+
+    func testChatsFromAProto1PeerAndUnsolicitedChatsAreIgnored() {
+        hello(proto: 1)
+        lookingPhone()
+        chats(idleChat)
+        XCTAssertTrue(backend.remoteSnapshot.sessions.isEmpty)
+        transport.disconnect(); transport.connect(); hello()
+        chats(idleChat)   // no phone looking → list:false → Page Aura shouldn't send this
+        remote.setPhones(0, from: sink)
+        remote.waitUntilIdle()
+        chats(idleChat)
+        XCTAssertTrue(backend.remoteSnapshot.sessions.isEmpty, "a chats frame while list is off is ignored")
+    }
+
+    func testRowsFollowTheSpec() throws {
+        showChats()
+        XCTAssertEqual(rows.count, 3)
+        let idle = try XCTUnwrap(row("aura-k3j9x"))
+        XCTAssertEqual(idle["backend"] as? String, "aura")
+        XCTAssertEqual(idle["title"] as? String, "Quarterly numbers")
+        XCTAssertEqual(idle["host"] as? String, "Page Aura")
+        XCTAssertEqual(idle["provider"] as? String, "anthropic")
+        XCTAssertNil(idle["cwd"], "a chat has no folder")
+        XCTAssertEqual(idle["state"] as? String, "idle")
+        XCTAssertEqual(idle["canType"] as? Bool, true)
+        XCTAssertNil(idle["typeBlocker"])
+        XCTAssertEqual(idle["canInterrupt"] as? Bool, false)
+        XCTAssertEqual(idle["preview"] as? String, "Totals look right.")
+        XCTAssertEqual(idle["lastActivityAt"] as? String, SessionTranscript.isoFormatter.string(from: Date(timeIntervalSince1970: 1_762_160_300)))
+        XCTAssertNil(idle["attach"], "no photos")
+        XCTAssertEqual(idle["attachBlocker"] as? String, "Page can't send photos to Page Aura yet")
+        XCTAssertNil(idle["ask"])
+        XCTAssertNil(idle["canHold"])
+        XCTAssertNil(idle["held"])
+
+        let busy = try XCTUnwrap(row("aura-b2"))
+        XCTAssertEqual(busy["state"] as? String, "active")
+        XCTAssertEqual(busy["canType"] as? Bool, false)
+        XCTAssertEqual(busy["typeBlocker"] as? String, "Page Aura is still replying")
+        XCTAssertEqual(busy["canInterrupt"] as? Bool, true)
+        XCTAssertNil(busy["attachBlocker"], "the typeBlocker already says why")
+
+        // The approval page is open once Page Aura's `state` carries it.
+        transport.receive(#"{"t":"state","chats":[\#(askState)]}"#)
+        remote.waitUntilIdle()
+        advance(1.1)
+        let waiting = try XCTUnwrap(row("aura-p0q1r"))
+        XCTAssertEqual(waiting["state"] as? String, "waitingOnApproval")
+        XCTAssertEqual(waiting["canType"] as? Bool, false)
+        XCTAssertEqual(waiting["typeBlocker"] as? String, "Page Aura is still replying")
+        XCTAssertEqual(waiting["canInterrupt"] as? Bool, false)
+        XCTAssertEqual(waiting["interventionId"] as? String, "aura-p0q1r-perm-a7f3c2d1")
+        // Needs-you first.
+        XCTAssertEqual(rows.first?["id"] as? String, "aura-p0q1r")
+    }
+
+    func testStateFrameRefreshesBusyBetweenChatsFrames() throws {
+        showChats(idleChat)
+        XCTAssertEqual(row("aura-k3j9x")?["state"] as? String, "idle")
+        transport.receive(#"{"t":"state","chats":[{"id":"k3j9x","title":"Quarterly numbers","model":"m","busy":true,"since":1762160390000,"approval":null}]}"#)
+        remote.waitUntilIdle()
+        advance(1.1)
+        XCTAssertEqual(row("aura-k3j9x")?["state"] as? String, "active", "the fresher frame decides")
+        transport.receive(#"{"t":"state","chats":[]}"#)
+        remote.waitUntilIdle()
+        advance(1.1)
+        XCTAssertEqual(row("aura-k3j9x")?["state"] as? String, "idle")
+    }
+
+    func testUntitledChatAndDisconnect() {
+        showChats(#"{"id":"c1","title":"","updatedAt":1762160300000,"busy":false,"preview":""}"#)
+        XCTAssertEqual(row("aura-c1")?["title"] as? String, "Untitled chat")
+        XCTAssertNil(row("aura-c1")?["preview"])
+        transport.disconnect()
+        remote.waitUntilIdle()
+        advance(1.1)
+        XCTAssertTrue(rows.isEmpty, "Page Aura closing takes its chats off the phone")
+    }
+
+    // MARK: transcript
+
+    func testTranscriptForAWatchedChatIsMappedAndSent() throws {
+        showChats()
+        send(["op": "watch", "sessionId": "aura-k3j9x"])
+        XCTAssertTrue(frames("transcript").isEmpty, "nothing to send until Page Aura sends one")
+        transport.receive(#"{"t":"transcript","chatId":"k3j9x","truncated":true,"entries":[{"id":"m12","role":"user","text":"Totals?","at":1762160000000},{"id":"m13","role":"assistant","text":"All good. key sk-abcdefghijklmnopqrstuvwx","at":1762160200000},{"id":"m13-t0","role":"tool","text":"Used Filesystem · read_file","tool":"read_file","at":1762160100000}]}"#)
+        advance(1.6)
+        let t = try XCTUnwrap(frames("transcript").last)
+        XCTAssertEqual(t["sessionId"] as? String, "aura-k3j9x")
+        XCTAssertEqual(t["truncated"] as? Bool, true)
+        let entries = try XCTUnwrap(t["entries"] as? [[String: Any]])
+        XCTAssertEqual(entries.map { $0["id"] as? String }, ["m12", "m13", "m13-t0"])
+        XCTAssertEqual(entries.map { $0["role"] as? String }, ["user", "assistant", "tool"])
+        XCTAssertEqual(entries[2]["tool"] as? String, "read_file")
+        XCTAssertFalse((entries[1]["text"] as? String ?? "").contains("sk-abcdefghijklmnopqrstuvwx"))
+        XCTAssertEqual(entries[0]["at"] as? String, SessionTranscript.isoFormatter.string(from: Date(timeIntervalSince1970: 1_762_160_000)))
+
+        // Unchanged: not re-sent. Changed: sent again, but not faster than every 1.5 s.
+        let count = frames("transcript").count
+        advance(2)
+        XCTAssertEqual(frames("transcript").count, count)
+        transport.receive(#"{"t":"transcript","chatId":"k3j9x","entries":[{"id":"m12","role":"user","text":"Totals?"},{"id":"m14","role":"assistant","text":"More"}]}"#)
+        advance(1.6)
+        XCTAssertEqual(frames("transcript").count, count + 1)
+        XCTAssertEqual((frames("transcript").last?["entries"] as? [[String: Any]])?.last?["text"] as? String, "More")
+    }
+
+    func testTranscriptOfAnUnwatchedChatIsIgnored() {
+        showChats()
+        transport.receive(#"{"t":"transcript","chatId":"k3j9x","entries":[{"id":"m1","role":"user","text":"hi"}]}"#)
+        XCTAssertNil(backend.remoteTranscript(sessionId: "aura-k3j9x"), "Page Aura wasn't asked for it")
+        send(["op": "watch", "sessionId": "aura-k3j9x"])
+        transport.receive(#"{"t":"transcript","chatId":"k3j9x","entries":[{"id":"m1","role":"user","text":"hi"}]}"#)
+        XCTAssertEqual(backend.remoteTranscript(sessionId: "aura-k3j9x")?.entries.count, 1)
+        send(["op": "watch", "sessionId": NSNull()])
+        XCTAssertNil(backend.remoteTranscript(sessionId: "aura-k3j9x"), "dropped once nobody watches it")
+    }
+
+    // MARK: input
+
+    func testInputBecomesASendAndTheAckBecomesTheResult() throws {
+        showChats()
+        send(["op": "input", "sessionId": "aura-k3j9x", "text": "  Add a chart  ", "clientId": "c-in", "expectTitle": "Quarterly numbers"])
+        let cmd = try XCTUnwrap(commands("send").last)
+        XCTAssertEqual(cmd["chatId"] as? String, "k3j9x")
+        XCTAssertEqual(cmd["text"] as? String, "Add a chart")
+        XCTAssertTrue(AuraLink.isValidId(try XCTUnwrap(cmd["id"] as? String)))
+        XCTAssertTrue(frames("result").isEmpty, "the result waits for Page Aura's ack")
+
+        transport.receive(#"{"t":"ack","ref":"\#(cmd["id"] as! String)","ok":true,"detail":"Sent to Page Aura"}"#)
+        remote.waitUntilIdle()
+        let r = try XCTUnwrap(lastResult)
+        XCTAssertEqual(r["clientId"] as? String, "c-in")
+        XCTAssertEqual(r["code"] as? String, "delivered")
+        XCTAssertEqual(r["ok"] as? Bool, true)
+        XCTAssertEqual(r["detail"] as? String, "Sent to Page Aura")
+    }
+
+    func testAckFailureIsRefusedWithPageAurasWords() throws {
+        showChats()
+        send(["op": "input", "sessionId": "aura-k3j9x", "text": "hi", "clientId": "c1"])
+        let cmd = try XCTUnwrap(commands("send").last)
+        transport.receive(#"{"t":"ack","ref":"\#(cmd["id"] as! String)","ok":false,"detail":"Page Aura needs its API key"}"#)
+        remote.waitUntilIdle()
+        XCTAssertEqual(lastResult?["code"] as? String, "refused")
+        XCTAssertEqual(lastResult?["reason"] as? String, "not_typable")
+        XCTAssertEqual(lastResult?["detail"] as? String, "Page Aura needs its API key")
+        XCTAssertEqual(lastResult?["ok"] as? Bool, false)
+    }
+
+    func testInputIsRefusedHereWhenTheChatIsBusyOrAskingOrGone() throws {
+        showChats()
+        transport.receive(#"{"t":"state","chats":[\#(askState),{"id":"b2","title":"Long refactor","model":"m","busy":true,"since":1762160390000,"approval":null}]}"#)
+        remote.waitUntilIdle()
+        advance(1.1)
+        let before = transport.sent.count
+        send(["op": "input", "sessionId": "aura-b2", "text": "hi", "clientId": "c-busy"])
+        XCTAssertEqual(lastResult?["reason"] as? String, "not_typable")
+        XCTAssertEqual(lastResult?["detail"] as? String, "Page Aura is still replying")
+        send(["op": "input", "sessionId": "aura-p0q1r", "text": "hi", "clientId": "c-ask"])
+        XCTAssertEqual(lastResult?["reason"] as? String, "waiting")
+        XCTAssertEqual(lastResult?["interventionId"] as? String, "aura-p0q1r-perm-a7f3c2d1")
+        send(["op": "input", "sessionId": "aura-nope", "text": "hi", "clientId": "c-gone"])
+        XCTAssertEqual(lastResult?["reason"] as? String, "not_found")
+        send(["op": "input", "sessionId": "aura-k3j9x", "text": "   ", "clientId": "c-empty"])
+        XCTAssertEqual(lastResult?["code"] as? String, "refused")
+        send(["op": "input", "sessionId": "aura-k3j9x", "text": String(repeating: "a", count: 8001), "clientId": "c-long"])
+        XCTAssertEqual(lastResult?["code"] as? String, "refused")
+        send(["op": "input", "sessionId": "aura-k3j9x", "text": "hi", "clientId": "c-wrong", "expectTitle": "Some other chat"])
+        XCTAssertEqual(lastResult?["reason"] as? String, "target_mismatch")
+        send(["op": "input", "sessionId": "aura-k3j9x", "text": "later", "clientId": "c-hold", "hold": true])
+        XCTAssertEqual(lastResult?["reason"] as? String, "not_typable")
+        XCTAssertEqual(transport.sent.count, before, "none of these reached Page Aura")
+    }
+
+    func testInputKeepsTheGatesFreshnessReplayAndDecryption() throws {
+        showChats()
+        let before = commands("send").count
+        // Stale.
+        send(["op": "input", "sessionId": "aura-k3j9x", "text": "hi", "clientId": "c-old", "ts": (clock.now.timeIntervalSince1970 - 600) * 1000])
+        XCTAssertEqual(lastResult?["reason"] as? String, "stale")
+        // Replay: the same command twice is typed once.
+        let env = command(["op": "input", "sessionId": "aura-k3j9x", "text": "once", "clientId": "c-same"])
+        remote.handleCommand(env); remote.waitUntilIdle()
+        remote.handleCommand(env); remote.waitUntilIdle()
+        XCTAssertEqual(commands("send").count, before + 1)
+        // Sealed with the wrong key: dropped without a word.
+        let results = frames("result").count
+        let forged = SessionCrypto.seal(try JSONSerialization.data(withJSONObject: ["op": "input", "sessionId": "aura-k3j9x", "text": "x", "clientId": "c-forged",
+                                                                                   "ts": clock.now.timeIntervalSince1970 * 1000, "viewer": "v"]),
+                                        key: keys.macToPhone, aad: SessionCrypto.commandAAD)!
+        remote.handleCommand(forged); remote.waitUntilIdle()
+        XCTAssertEqual(commands("send").count, before + 1)
+        XCTAssertEqual(frames("result").count, results)
+        // Live sessions off in Page's settings.
+        remote.setEnabled(false)
+        send(["op": "input", "sessionId": "aura-k3j9x", "text": "hi", "clientId": "c-off"])
+        XCTAssertEqual(lastResult?["reason"] as? String, "disabled")
+        XCTAssertEqual(commands("send").count, before + 1)
+    }
+
+    func testInputWithoutPageAuraReportsIt() {
+        showChats()
+        transport.disconnect()
+        // The phone still holds the old list for a moment: the send fails cleanly.
+        remote.update(sessions: [AgentSession(backend: .aura, sessionId: "aura-k3j9x", cwd: nil, title: "Quarterly numbers", source: .desktop,
+                                              state: .idle, lastActivityAt: nil, activeFlags: [], supportsRemoteReply: true)], pending: [])
+        send(["op": "input", "sessionId": "aura-k3j9x", "text": "hi", "clientId": "c1"])
+        XCTAssertEqual(lastResult?["code"] as? String, "refused")
+        XCTAssertEqual(lastResult?["detail"] as? String, "Page Aura isn't open on your Mac")
+    }
+
+    func testAckLostWhenTheSocketCloses() throws {
+        showChats()
+        send(["op": "input", "sessionId": "aura-k3j9x", "text": "hi", "clientId": "c1"])
+        XCTAssertTrue(frames("result").isEmpty)
+        transport.disconnect()
+        remote.waitUntilIdle()
+        XCTAssertEqual(lastResult?["clientId"] as? String, "c1")
+        XCTAssertEqual(lastResult?["code"] as? String, "refused")
+        XCTAssertEqual(lastResult?["detail"] as? String, "Page Aura isn't open on your Mac")
+    }
+
+    // MARK: interrupt
+
+    func testInterruptBecomesAStop() throws {
+        showChats()
+        send(["op": "interrupt", "sessionId": "aura-b2", "clientId": "c-stop"])
+        let cmd = try XCTUnwrap(commands("stop").last)
+        XCTAssertEqual(cmd["chatId"] as? String, "b2")
+        XCTAssertTrue(frames("result").isEmpty)
+        transport.receive(#"{"t":"ack","ref":"\#(cmd["id"] as! String)","ok":true,"detail":"Stopped"}"#)
+        remote.waitUntilIdle()
+        XCTAssertEqual(lastResult?["clientId"] as? String, "c-stop")
+        XCTAssertEqual(lastResult?["code"] as? String, "delivered")
+        XCTAssertEqual(lastResult?["detail"] as? String, "Stopped")
+    }
+
+    func testInterruptOfAnIdleChatIsRefusedWithoutAStop() {
+        showChats()
+        send(["op": "interrupt", "sessionId": "aura-k3j9x", "clientId": "c1"])
+        XCTAssertEqual(lastResult?["reason"] as? String, "interrupt_unsupported")
+        XCTAssertTrue(commands("stop").isEmpty)
+    }
+
+    func testStopAllStopsBusyChatsLikeAnyWorkingSession() throws {
+        showChats()
+        send(["op": "interruptAll", "clientId": "c-all"])
+        let stops = commands("stop")
+        XCTAssertEqual(stops.map { $0["chatId"] as? String }, ["b2"], "only the busy chat, not the idle or asking ones")
+        transport.receive(#"{"t":"ack","ref":"\#(stops[0]["id"] as! String)","ok":true,"detail":"Stopped"}"#)
+        remote.waitUntilIdle()
+        remote.waitUntilIdle()
+        XCTAssertEqual(lastResult?["clientId"] as? String, "c-all")
+        XCTAssertEqual(lastResult?["detail"] as? String, "Stopped 1 agent")
+        XCTAssertEqual(lastResult?["ok"] as? Bool, true)
+    }
+
+    // MARK: ops that don't apply
+
+    func testUnsupportedOpsAreRefusedCleanly() {
+        showChats()
+        let before = transport.sent.count
+        let cases: [(op: String, extra: [String: Any], reason: String)] = [
+            ("answer", ["promptKey": "p", "answers": [["question": 0, "labels": ["x"]]]], "answer_unsupported"),
+            ("clearDraft", ["text": "draft"], "not_typable"),
+            ("peekDraft", [:], "not_typable"),
+            ("inputImages", ["text": "look", "images": [["imageId": "i1", "bytes": 10, "sha256": "ab", "mime": "image/jpeg", "total": 1]]], "attach_unsupported"),
+        ]
+        for c in cases {
+            var fields: [String: Any] = ["op": c.op, "sessionId": "aura-k3j9x", "clientId": "c-\(c.op)"]
+            fields.merge(c.extra) { a, _ in a }
+            send(fields)
+            XCTAssertEqual(lastResult?["clientId"] as? String, "c-\(c.op)", c.op)
+            XCTAssertEqual(lastResult?["code"] as? String, "refused", c.op)
+            XCTAssertEqual(lastResult?["reason"] as? String, c.reason, c.op)
+            XCTAssertFalse((lastResult?["detail"] as? String ?? "").isEmpty, c.op)
+        }
+        let resultsBeforeDiff = frames("result").count
+        send(["op": "diff", "sessionId": "aura-k3j9x", "clientId": "c-diff"])
+        XCTAssertEqual(frames("result").count, resultsBeforeDiff + 1, "a diff gets a refusal, not a git run")
+        XCTAssertEqual(lastResult?["reason"] as? String, "not_typable")
+        XCTAssertTrue(frames("diff").isEmpty)
+        XCTAssertEqual(transport.sent.count, before, "none of these reached Page Aura")
+    }
+
+    func testNoScreenIsReadForAChat() {
+        showChats()
+        send(["op": "watch", "sessionId": "aura-k3j9x"])
+        advance(5)
+        XCTAssertTrue(frames("screen").isEmpty)
+        XCTAssertTrue(frames("workflows").isEmpty)
     }
 }

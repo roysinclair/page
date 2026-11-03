@@ -1,0 +1,174 @@
+---
+// The Page Studio topology as inline SVG. Wide version for md+, tall version for phones.
+// All of it is also written out in the list beside it on the pages that use it.
+// `thread` adds the Receipt Thread overlay (signature animation 3, driven by scripts/motion.ts): a page
+// travels Mac -> relay -> phone, the reply's thread comes back phone -> relay -> Mac, and it turns green only
+// when the Mac confirms. Its finished state (what Reduce Motion shows) is the green, verified thread.
+// The brochure leaves it out.
+interface Props { class?: string; mode?: 'viewport' | 'container'; thread?: boolean }
+const { class: cls = '', mode = 'viewport', thread = true } = Astro.props;
+const wideCls = mode === 'viewport' ? 'cd-wide hidden h-auto w-full md:block' : 'cd-wide block h-auto w-full';
+const tallCls = mode === 'viewport' ? 'cd-tall mx-auto block h-auto w-full max-w-[380px] md:hidden' : 'cd-tall mx-auto hidden h-auto w-full max-w-[380px]';
+const title = 'How the pieces of Page Studio connect';
+const desc = 'AI agents on your Mac are watched by Page for Mac. Page for Mac connects out to your own relay on Cloudflare. Your iPhone and Android phone connect out to the same relay. Apple push notifications are optional and go from the relay to the iPhone. Page Aura talks to Page for Mac over a local Unix socket on the same Mac and never touches the relay.';
+---
+<div class={cls} data-motion={thread ? "receipt-thread" : undefined}>
+  <!-- Wide -->
+  <svg class={wideCls} viewBox="0 0 1000 540" role="img" aria-labelledby="cd-t cd-d" font-family="Inter Variable, Inter, system-ui, sans-serif">
+    <title id="cd-t">{title}</title>
+    <desc id="cd-d">{desc}</desc>
+    <defs>
+      <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1l8 4-8 4z" fill="#5EEAD4"/></marker>
+      <marker id="ahv" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1l8 4-8 4z" fill="#A78BFA"/></marker>
+      <marker id="ahd" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1l8 4-8 4z" fill="#8a92a3"/></marker>
+      <linearGradient id="gbox" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1B1E25"/><stop offset="1" stop-color="#14161C"/></linearGradient>
+    </defs>
+
+    <!-- agents -->
+    <g>
+      <rect x="40" y="40" width="270" height="90" rx="18" fill="url(#gbox)" stroke="rgba(255,255,255,.12)"/>
+      <text x="62" y="76" fill="#fff" font-size="17" font-weight="700">AI coding agents</text>
+      <text x="62" y="102" fill="#B3B7C0" font-size="13.5">Claude Code · Codex · local models</text>
+    </g>
+    <path d="M165 130V228" stroke="#5EEAD4" stroke-width="2" marker-end="url(#ah)"/>
+    <text x="180" y="184" fill="#B3B7C0" font-size="13">sessions in, keystrokes out</text>
+
+    <!-- Mac -->
+    <g>
+      <rect x="40" y="230" width="250" height="130" rx="22" fill="url(#gbox)" stroke="#5EEAD4" stroke-opacity=".55" stroke-width="1.5"/>
+      <text x="62" y="272" fill="#5EEAD4" font-size="11.5" font-weight="700" letter-spacing="2">YOUR MAC</text>
+      <text x="62" y="304" fill="#fff" font-size="20" font-weight="800">Page for Mac</text>
+      <text x="62" y="331" fill="#B3B7C0" font-size="13.5">keep-awake · pause · replies</text>
+    </g>
+
+    <!-- relay -->
+    <g>
+      <rect x="395" y="230" width="210" height="130" rx="22" fill="url(#gbox)" stroke="#38BDF8" stroke-opacity=".6" stroke-width="1.5"/>
+      <text x="417" y="272" fill="#38BDF8" font-size="11.5" font-weight="700" letter-spacing="2">YOUR CLOUDFLARE</text>
+      <text x="417" y="304" fill="#fff" font-size="20" font-weight="800">Your relay</text>
+      <text x="417" y="331" fill="#B3B7C0" font-size="13.5">a Worker on your account</text>
+    </g>
+
+    <!-- phones -->
+    <g>
+      <rect x="710" y="230" width="250" height="130" rx="22" fill="url(#gbox)" stroke="#F5B14C" stroke-opacity=".6" stroke-width="1.5"/>
+      <text x="732" y="272" fill="#F5B14C" font-size="11.5" font-weight="700" letter-spacing="2">YOUR PHONE</text>
+      <text x="732" y="304" fill="#fff" font-size="20" font-weight="800">Page for iPhone</text>
+      <text x="732" y="331" fill="#B3B7C0" font-size="13.5">and Page for Android</text>
+    </g>
+
+    <!-- Mac <-> relay <-> phone -->
+    <path d="M292 295H393" stroke="#5EEAD4" stroke-width="2" marker-start="url(#ah)" marker-end="url(#ah)"/>
+    <text x="342" y="282" fill="#B3B7C0" font-size="12.5" text-anchor="middle">wss</text>
+    <path d="M607 295H708" stroke="#5EEAD4" stroke-width="2" marker-start="url(#ah)" marker-end="url(#ah)"/>
+    <text x="657" y="282" fill="#B3B7C0" font-size="12.5" text-anchor="middle">wss · HTTPS</text>
+
+    <!-- APNs -->
+    <g>
+      <rect x="430" y="60" width="140" height="56" rx="14" fill="#0A0C11" stroke="rgba(255,255,255,.16)" stroke-dasharray="5 5"/>
+      <text x="500" y="84" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">Apple push</text>
+      <text x="500" y="104" fill="#B3B7C0" font-size="12" text-anchor="middle">optional · iPhone only</text>
+    </g>
+    <path d="M500 228V118" stroke="#8a92a3" stroke-dasharray="5 5" marker-end="url(#ahd)"/>
+    <path d="M572 88H835Q850 88 850 103V228" fill="none" stroke="#8a92a3" stroke-dasharray="5 5" marker-end="url(#ahd)"/>
+
+    <!-- Aura -->
+    <g>
+      <rect x="40" y="430" width="250" height="90" rx="22" fill="url(#gbox)" stroke="#A78BFA" stroke-opacity=".6" stroke-width="1.5"/>
+      <text x="62" y="466" fill="#A78BFA" font-size="11.5" font-weight="700" letter-spacing="2">BRING YOUR OWN KEY</text>
+      <text x="62" y="496" fill="#fff" font-size="20" font-weight="800">Page Aura</text>
+    </g>
+    <path d="M165 362V428" stroke="#A78BFA" stroke-width="2" marker-start="url(#ahv)" marker-end="url(#ahv)"/>
+    <text x="182" y="402" fill="#B3B7C0" font-size="13">local Unix socket, same Mac only</text>
+    <text x="320" y="480" fill="#B3B7C0" font-size="13.5">Page Aura never talks to the relay.</text>
+    <text x="320" y="502" fill="#B3B7C0" font-size="13.5">Page owns the pairing, the keys and push.</text>
+
+    {thread && (
+      <g class="rt" aria-hidden="true">
+        <rect class="rt-box rt-box-relay" x="395" y="230" width="210" height="130" rx="22" fill="none" stroke-width="2.5" />
+        <rect class="rt-box rt-box-phone" x="710" y="230" width="250" height="130" rx="22" fill="none" stroke-width="2.5" />
+        <rect class="rt-box rt-box-mac" x="40" y="230" width="250" height="130" rx="22" fill="none" stroke-width="2.5" />
+        {['amber', 'blue', 'green'].map((t) => (
+          <g class={`rt-c rt-${t}`}>
+            <rect class="rt-seg rt-a rt-halo" x="292" y="290.5" width="101" height="9" rx="4.5" />
+            <rect class="rt-seg rt-a" x="292" y="293.5" width="101" height="3" rx="1.5" />
+            <rect class="rt-seg rt-b rt-halo" x="607" y="290.5" width="101" height="9" rx="4.5" />
+            <rect class="rt-seg rt-b" x="607" y="293.5" width="101" height="3" rx="1.5" />
+          </g>
+        ))}
+        <g font-size="13" font-weight="700" text-anchor="middle" font-family="JetBrains Mono Variable, ui-monospace, monospace">
+          <text class="rt-word rt-w-page" x="500" y="388">a page goes up</text>
+          <text class="rt-word rt-w-sent" x="500" y="388">reply sent</text>
+          <text class="rt-word rt-w-typed" x="500" y="388">typed into the terminal</text>
+          <text class="rt-word rt-w-verified" x="500" y="388">verified ✓</text>
+        </g>
+      </g>
+    )}
+  </svg>
+
+  <!-- Tall -->
+  <svg class={tallCls} viewBox="0 0 360 700" role="img" aria-labelledby="cm-t cm-d" font-family="Inter Variable, Inter, system-ui, sans-serif">
+    <title id="cm-t">{title}</title>
+    <desc id="cm-d">{desc}</desc>
+    <defs>
+      <marker id="bh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1l8 4-8 4z" fill="#5EEAD4"/></marker>
+      <marker id="bhv" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1l8 4-8 4z" fill="#A78BFA"/></marker>
+    </defs>
+    <rect x="20" y="10" width="320" height="70" rx="16" fill="#14161C" stroke="rgba(255,255,255,.12)"/>
+    <text x="40" y="40" fill="#fff" font-size="16" font-weight="700">AI coding agents</text>
+    <text x="40" y="62" fill="#B3B7C0" font-size="13">Claude Code · Codex · local models</text>
+    <path d="M180 82V120" stroke="#5EEAD4" stroke-width="2" marker-end="url(#bh)"/>
+
+    <rect x="20" y="124" width="320" height="86" rx="18" fill="#14161C" stroke="#5EEAD4" stroke-opacity=".55" stroke-width="1.5"/>
+    <text x="40" y="150" fill="#5EEAD4" font-size="11" font-weight="700" letter-spacing="2">YOUR MAC</text>
+    <text x="40" y="178" fill="#fff" font-size="19" font-weight="800">Page for Mac</text>
+    <text x="40" y="198" fill="#B3B7C0" font-size="12.5">keep-awake · pause · replies</text>
+
+    <path d="M180 212V256" stroke="#5EEAD4" stroke-width="2" marker-start="url(#bh)" marker-end="url(#bh)"/>
+    <text x="196" y="239" fill="#B3B7C0" font-size="12.5">wss</text>
+
+    <rect x="20" y="260" width="320" height="86" rx="18" fill="#14161C" stroke="#38BDF8" stroke-opacity=".6" stroke-width="1.5"/>
+    <text x="40" y="286" fill="#38BDF8" font-size="11" font-weight="700" letter-spacing="2">YOUR CLOUDFLARE</text>
+    <text x="40" y="314" fill="#fff" font-size="19" font-weight="800">Your relay</text>
+    <text x="40" y="334" fill="#B3B7C0" font-size="12.5">a Worker on your own account</text>
+
+    <path d="M180 348V392" stroke="#5EEAD4" stroke-width="2" marker-start="url(#bh)" marker-end="url(#bh)"/>
+    <text x="196" y="367" fill="#B3B7C0" font-size="12.5">wss · HTTPS</text>
+    <text x="196" y="384" fill="#B3B7C0" font-size="12">+ Apple push (optional)</text>
+
+    <rect x="20" y="396" width="320" height="86" rx="18" fill="#14161C" stroke="#F5B14C" stroke-opacity=".6" stroke-width="1.5"/>
+    <text x="40" y="422" fill="#F5B14C" font-size="11" font-weight="700" letter-spacing="2">YOUR PHONE</text>
+    <text x="40" y="450" fill="#fff" font-size="19" font-weight="800">Page for iPhone</text>
+    <text x="40" y="470" fill="#B3B7C0" font-size="12.5">and Page for Android</text>
+
+    <line x1="20" y1="520" x2="340" y2="520" stroke="rgba(255,255,255,.12)" stroke-dasharray="4 6"/>
+    <text x="20" y="548" fill="#B3B7C0" font-size="12.5">Back on the Mac:</text>
+    <rect x="20" y="568" width="320" height="76" rx="18" fill="#14161C" stroke="#A78BFA" stroke-opacity=".6" stroke-width="1.5"/>
+    <text x="40" y="594" fill="#A78BFA" font-size="11" font-weight="700" letter-spacing="2">BRING YOUR OWN KEY</text>
+    <text x="40" y="622" fill="#fff" font-size="19" font-weight="800">Page Aura</text>
+    <text x="20" y="670" fill="#B3B7C0" font-size="12.5">Talks to Page for Mac over a local socket.</text>
+    <text x="20" y="688" fill="#B3B7C0" font-size="12.5">Never touches the relay.</text>
+
+    {thread && (
+      <g class="rt" aria-hidden="true">
+        <rect class="rt-box rt-box-relay" x="20" y="260" width="320" height="86" rx="18" fill="none" stroke-width="2.5" />
+        <rect class="rt-box rt-box-phone" x="20" y="396" width="320" height="86" rx="18" fill="none" stroke-width="2.5" />
+        <rect class="rt-box rt-box-mac" x="20" y="124" width="320" height="86" rx="18" fill="none" stroke-width="2.5" />
+        {['amber', 'blue', 'green'].map((t) => (
+          <g class={`rt-c rt-${t}`}>
+            <rect class="rt-seg rt-a rt-v rt-halo" x="175.5" y="212" width="9" height="44" rx="4.5" />
+            <rect class="rt-seg rt-a rt-v" x="178.5" y="212" width="3" height="44" rx="1.5" />
+            <rect class="rt-seg rt-b rt-v rt-halo" x="175.5" y="348" width="9" height="44" rx="4.5" />
+            <rect class="rt-seg rt-b rt-v" x="178.5" y="348" width="3" height="44" rx="1.5" />
+          </g>
+        ))}
+        <g font-size="12" font-weight="700" text-anchor="end" font-family="JetBrains Mono Variable, ui-monospace, monospace">
+          <text class="rt-word rt-w-page" x="164" y="374">page up</text>
+          <text class="rt-word rt-w-sent" x="164" y="374">reply sent</text>
+          <text class="rt-word rt-w-typed" x="164" y="238">typed</text>
+          <text class="rt-word rt-w-verified" x="164" y="238">verified ✓</text>
+        </g>
+      </g>
+    )}
+  </svg>
+</div>

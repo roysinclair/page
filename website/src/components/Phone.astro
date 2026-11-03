@@ -1,0 +1,23 @@
+---
+import { imageDims, imageSrc } from '../data/images';
+// A phone screenshot from the v4 design boards, in a rounded frame. `crop` shows only the top part (0-1)
+// so very tall screens do not dominate the page.
+interface Props { name: string; alt: string; crop?: number; class?: string; width?: number; eager?: boolean; align?: 'top' | 'bottom' }
+const { name, alt, crop = 1, class: cls = '', width, eager = false, align = 'top' } = Astro.props;
+const [w, h] = imageDims(name);
+const ratio = (h * crop) / w;
+---
+<figure class={`phone ${cls}`} style={width ? `max-width:${width}px` : undefined}>
+  <div class="overflow-hidden rounded-[28px] ring-1 ring-white/10 shadow-[0_30px_60px_-30px_rgba(0,0,0,.9)]" style={`aspect-ratio:${1 / ratio};`}>
+    <img
+      src={imageSrc(name)}
+      alt={alt}
+      width={w}
+      height={h}
+      loading={eager ? 'eager' : 'lazy'}
+      decoding="async"
+      class="block h-full w-full object-cover"
+      style={`object-position:${align === 'bottom' ? 'bottom' : 'top'}`}
+    />
+  </div>
+</figure>

@@ -1,0 +1,388 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ConnectDiagram from '../../components/ConnectDiagram.astro';
+import { u, kinds, PDF, GITHUB, AURA_GITHUB, GUIDE } from '../../data/site';
+
+// JPEG/PNG copies in img/print: Chromium embeds JPEG as-is in the PDF, which keeps the PDF small.
+// The showcase ones are made by scripts/showcase-crops.mjs (npm run crops) (the *-visual ones are the device side of a slide).
+const sizes: Record<string, [number, number, string]> = {
+  'family': [1800, 846, 'jpg'], 'feature-battery': [1400, 875, 'jpg'], 'feature-lock-screen': [1400, 875, 'jpg'],
+  'feature-terminals-visual': [900, 776, 'jpg'], 'feature-android-visual': [900, 836, 'jpg'],
+  'feature-relay-visual': [900, 930, 'jpg'], 'feature-aura-visual': [900, 646, 'jpg'],
+  'app-icon': [200, 200, 'png'], 'iphone-scan': [520, 1198, 'jpg'], 'iphone-tower': [520, 1432, 'jpg'],
+};
+const img = (n: string) => ({ src: u(`img/print/${n}.${sizes[n][2]}`), w: sizes[n][0], h: sizes[n][1] });
+const cover = img('family');
+const icon = img('app-icon');
+const battery = img('feature-battery');
+const lock = img('feature-lock-screen');
+const tMac = img('feature-terminals-visual');
+const tPhones = img('feature-android-visual');
+const tRelay = img('feature-relay-visual');
+const tAura = img('feature-aura-visual');
+const pScan = img('iphone-scan');
+const pTower = img('iphone-tower');
+---
+<Layout current="brochure/" bare motion={false} title="Brochure" description="The Page Studio brochure: what it is, the four products, how they connect, privacy and self-hosting, and how to get started. Designed to read on screen and to print on A4.">
+  <div class="bro-bar no-print">
+    <div class="wrap flex flex-wrap items-center justify-between gap-4 py-6">
+      <div>
+        <p class="label">Brochure</p>
+        <h1 class="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">The Page Studio brochure</h1>
+        <p class="fine mt-1">Eight A4 pages. Read it here, or take it with you.</p>
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <a href={u(PDF)} download class="btn-primary">Download PDF</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="bro">
+    <!-- 1 COVER -->
+    <section class="sheet s-cover" aria-label="Cover">
+      <div class="in">
+        <div class="brand"><img src={icon.src} width="64" height="64" alt="" /><span class="mono">PAGE STUDIO</span></div>
+        <figure class="cover-art">
+          <img src={cover.src} width={cover.w} height={cover.h} alt="The four pieces together: Page for Mac and Page Aura on a MacBook, an Android phone and an iPhone running Page, and your relay on your own Cloudflare account linking them." />
+        </figure>
+        <div class="grow"></div>
+        <p class="mono kick">Open source · Run it yourself</p>
+        <h2 class="cover-h">Page keeps watch so you don’t have to.</h2>
+        <p class="lead">Four tools that work together. Your Mac stays awake while AI coding agents work, they pause gracefully before the battery dies, and your phone is paged only when something truly needs you.</p>
+        <ul class="cover-chips" aria-label="The four pieces">
+          <li>Page for Mac</li><li>Page for iPhone &amp; Android</li><li>Your relay</li><li>Page Aura</li>
+        </ul>
+        <p class="foot">roysinclair.github.io/page · Page Studio License</p>
+      </div>
+    </section>
+
+    <!-- 2 WHAT IT IS -->
+    <section class="sheet" aria-label="What Page Studio is">
+      <div class="in">
+        <p class="mono kick">What it is</p>
+        <h2 class="h2">Agents do the work. Page keeps watch.</h2>
+        <p class="lead">You start AI coding agents (Claude Code, Codex, local models) and walk away. Page Studio is the set of tools you run yourself to keep them going and to bring you back only when it matters.</p>
+        <figure class="slide">
+          <img src={battery.src} width={battery.w} height={battery.h} alt="Stays awake. Pauses gracefully. Page keeps the Mac awake while agents work, lid closed too, and at your battery cutoff asks them to stop and summarise, then resumes them on power. Shown: the Tower's Power page at 41 percent and the menu-bar popover." />
+        </figure>
+        <ul class="bul">
+          <li><b>Real session state, not CPU guesses.</b> Page reads the state Claude Code itself writes and holds the Mac awake only while something is mid-turn, lid closed too on AC.</li>
+          <li><b>Only the moments that need you.</b> Approvals and questions page at once; idle and rate-limit pages wait until you step away.</li>
+          <li><b>Answer from anywhere.</b> Approve, deny or reply from the lock screen, and Page types it into the exact terminal that asked, or says why it couldn’t.</li>
+          <li><b>Yours to run.</b> Open source, with no account, no analytics and nothing sent to the authors.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 3 FOUR PRODUCTS -->
+    <section class="sheet" aria-label="The four products">
+      <div class="in">
+        <p class="mono kick">The studio</p>
+        <h2 class="h2">Four pieces that work together.</h2>
+        <div class="four">
+          <article class="card tone-teal">
+            <div class="thumb"><img src={tMac.src} width={tMac.w} height={tMac.h} alt="" /></div>
+            <p class="mono tag">Menu-bar app</p>
+            <h3>Page for Mac</h3>
+            <p>Keeps the Mac awake while agents work, pauses them at your cutoff, forecasts battery and usage, and types replies into Terminal.app, iTerm2, tmux, cmux, WezTerm, kitty, Herdr and Claude Squad.</p>
+          </article>
+          <article class="card tone-amber">
+            <div class="thumb"><img src={tPhones.src} width={tPhones.w} height={tPhones.h} alt="" /></div>
+            <p class="mono tag">The pages</p>
+            <h3>Page for iPhone and Android</h3>
+            <p>Approve, deny or reply from the lock screen. Live sessions with a transcript, a decision sheet, new sessions, photos and what-changed diffs. Android has no push; it stays connected instead.</p>
+          </article>
+          <article class="card tone-sky">
+            <div class="thumb thumb-top"><img src={tRelay.src} width={tRelay.w} height={tRelay.h} alt="" /></div>
+            <p class="mono tag">Cloudflare Worker</p>
+            <h3>Your relay</h3>
+            <p>A small Worker on your own Cloudflare account carries pages and replies. Live session content is end-to-end encrypted. The authors have no access to it.</p>
+          </article>
+          <article class="card tone-violet">
+            <div class="thumb"><img src={tAura.src} width={tAura.w} height={tAura.h} alt="" /></div>
+            <p class="mono tag">Bring-your-own-key chat</p>
+            <h3>Page Aura</h3>
+            <p>A Claude chat app that links to Page over a local socket: the Mac stays awake while a reply streams, and your phone is paged when it finishes or a chat asks to use a tool.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 MOMENTS -->
+    <section class="sheet" aria-label="The moments that need you">
+      <div class="in">
+        <p class="mono kick">Only when it matters</p>
+        <h2 class="h2">Only the moments that need you.</h2>
+        <div class="kinds">
+          {kinds.map((k) => (
+            <div class={`k tone-${k.tone}`}>
+              <p class="mono ktag">{k.name}</p>
+              <p>{k.when}</p>
+              <p class="acts">{k.actions}</p>
+            </div>
+          ))}
+        </div>
+        <figure class="slide">
+          <img src={lock.src} width={lock.w} height={lock.h} alt="Answer from the lock screen: an iPhone lock screen with two Page notifications, and the decision sheet that names the exact keystroke and terminal before you approve. Only undoable commands approve in one tap." />
+        </figure>
+        <p class="note"><b>Your reply is never a guess.</b> Page types your answer only into the exact terminal that owns the session. The phone shows sending, queued, delivered or failed, with the reason.</p>
+      </div>
+    </section>
+
+    <!-- 5 CONNECT -->
+    <section class="sheet" aria-label="How the pieces connect">
+      <div class="in">
+        <p class="mono kick">How they connect</p>
+        <h2 class="h2">The Mac and the phone never talk directly.</h2>
+        <p class="lead">The Mac connects out to your relay. The phone connects out to your relay. A secret token, shown on the Mac as a QR code, matches the two.</p>
+        <div class="diagram"><ConnectDiagram mode="container" thread={false} /></div>
+        <div class="parts">
+          <div class="box tone-teal"><h3>The Mac</h3><p>Does the detecting: session state, keep-awake, battery policy and delivering your reply.</p></div>
+          <div class="box tone-sky"><h3>The relay</h3><p>Holds pages, queues replies for up to an hour, and asks Apple to push to your iPhone.</p></div>
+          <div class="box tone-amber"><h3>The phone</h3><p>Shows pages and sends replies. Live session content is decrypted only here.</p></div>
+        </div>
+        <ul class="bul">
+          <li><b>Mac ⇄ relay ⇄ phone.</b> Pages go up and replies come down. Replies wait up to an hour if the Mac is offline.</li>
+          <li><b>Page Aura ⇄ Mac.</b> A Unix socket on the same Mac only. Page Aura never touches the relay.</li>
+          <li><b>Apple push (optional).</b> With a paid Apple developer team, the relay wakes your iPhone. Android has no push.</li>
+          <li><b>Agent hooks (optional).</b> Let approvals from the Claude desktop app, VS Code and JetBrains reach your phone too.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 6 PRIVACY -->
+    <section class="sheet" aria-label="Privacy and self-hosting">
+      <div class="in">
+        <p class="mono kick">Privacy and self-hosting</p>
+        <h2 class="h2">Yours to run. Honest about what travels.</h2>
+        <p class="lead">No account, no analytics, no third-party SDKs, and nothing goes to the authors. But a page has to travel from your Mac to your phone, so “nothing leaves your devices” would not be true.</p>
+        <div class="three">
+          <div class="box tone-teal"><h3>Yours</h3><p>The relay runs in your Cloudflare account. The phone apps are built with your own Apple or Android developer setup. The pairing token is made on your Mac.</p></div>
+          <div class="box tone-sky"><h3>Encrypted end to end</h3><p>Live session content (titles, folders, transcripts, what you type) is sealed with AES-256-GCM using a key from the pairing QR. The relay stores none of it.</p></div>
+          <div class="box tone-amber"><h3>Not encrypted</h3><p>Pages pass through your own relay with up to 4000 characters of context, and the last 300 closed pages are kept. Apple’s push service sees the project name and up to 180 characters.</p></div>
+        </div>
+        <h3 class="sub">What you run yourself</h3>
+        <ul class="bul two-col">
+          <li>A free Cloudflare account for the relay</li>
+          <li>A Mac running macOS 12 or later</li>
+          <li>Xcode and your Apple ID for iPhone; a paid Apple team only for push</li>
+          <li>The Android SDK for Android</li>
+          <li>Optional: Page Aura, linked from its own settings</li>
+          <li>Optional: agent hooks, installed with a diff preview and a backup</li>
+        </ul>
+        <div class="duo">
+          <figure><div class="ph"><img src={pScan.src} width={pScan.w} height={pScan.h} alt="The pairing screen on iPhone: scan the code on your Mac. The code holds your relay address and an encryption key." /></div><figcaption>Pair once by QR: it carries your relay address and the encryption key</figcaption></figure>
+          <figure><div class="ph"><img src={pTower.src} width={pTower.w} height={pTower.h} alt="The Tower on iPhone: power, usage budget, paired Macs, attention settings, and an end-to-end encrypted row." /></div><figcaption>The Tower: power, budget, Macs, attention, encryption</figcaption></figure>
+        </div>
+        <p class="note"><b>Treat the QR code as a password.</b> Anyone with the token can read your pages and send replies. Regenerate it on the Mac if it leaks. Redaction of secret shapes before context leaves the Mac is best effort.</p>
+      </div>
+    </section>
+
+    <!-- 7 GETTING STARTED -->
+    <section class="sheet" aria-label="Getting started">
+      <div class="in">
+        <p class="mono kick">Getting started</p>
+        <h2 class="h2">From nothing to a phone that pages you.</h2>
+        <p class="lead">Plan on 30 to 60 minutes the first time.</p>
+        <ol class="steps">
+          <li><b>Deploy your relay.</b> <span>A free Cloudflare account and Node.js 22.18 or later: install, log in, deploy, check <code>/health</code>.</span></li>
+          <li><b>Install Page for Mac.</b> <span>Clone the repo and run <code>./install.sh</code>. It builds the menu-bar app and never uses sudo. Point it at your relay in Preferences.</span></li>
+          <li><b>Build the phone app.</b> <span>Xcode and your Apple ID for iPhone, or the Android SDK for Android. Choose Pair phone… on the Mac and scan the QR.</span></li>
+          <li><b>Optional: Page Aura.</b> <span>Switch on the Page link in Page Aura’s settings. Nothing to deploy.</span></li>
+        </ol>
+        <div class="term" aria-label="The commands in short">
+          <div><span class="c"># 1 · relay</span></div>
+          <div>cd Cloudflare &amp;&amp; npm ci &amp;&amp; npx wrangler login &amp;&amp; npm run deploy</div>
+          <div class="gap"><span class="c"># 2 · Mac app</span></div>
+          <div>cd .. &amp;&amp; ./install.sh</div>
+          <div class="gap"><span class="c"># 3 · iPhone</span></div>
+          <div>cd iOS &amp;&amp; xcodegen generate &amp;&amp; open Page.xcodeproj</div>
+        </div>
+        <div class="agent">
+          <p class="mono ktag">Or set it up with an AI agent</p>
+          <pre>claude --model claude-opus-5-5 --effort high</pre>
+          <p>Then paste the prompt from the guide. The agent never invents values, never commits, never prints secrets, and stops whenever a step needs you.</p>
+        </div>
+        <p class="note"><b>Honest limits.</b> iPhone push needs a paid Apple Developer team. Android has no push. Codex support is narrower than Claude Code’s. Terminals Page can’t type into, such as Ghostty, VS Code’s terminal and Warp, work through tmux or hooks.</p>
+      </div>
+    </section>
+
+    <!-- 8 BACK COVER -->
+    <section class="sheet s-back" aria-label="Back cover">
+      <div class="in">
+        <div class="grow"></div>
+        <div class="brand center"><img src={icon.src} width="72" height="72" alt="" /></div>
+        <h2 class="back-h">Page Studio</h2>
+        <p class="lead center">Keep watch over your AI agents, so you don’t have to.</p>
+        <ul class="links">
+          <li><span class="mono">Website</span><b>roysinclair.github.io/page</b></li>
+          <li><span class="mono">Source</span><b>github.com/roysinclair/page</b></li>
+          <li><span class="mono">Page Aura</span><b>github.com/roysinclair/page-studio-apps</b></li>
+          <li><span class="mono">Setup guide</span><b>docs/SELF-HOSTING.md in the repo</b></li>
+        </ul>
+        <div class="grow"></div>
+        <p class="legal">Source-available under the Page Studio License: free to use and share, but not to modify, sell, or sell hosting or support of it as a product. Page Studio is built on Anthropic’s Claude Code, OpenAI’s Codex, Cloudflare Workers and Durable Objects, and XcodeGen. Project names in the screenshots are demo data.</p>
+      </div>
+    </section>
+  </div>
+</Layout>
+
+<style is:global>
+  html { background: #05070D; }
+  .bro-bar { border-bottom: 1px solid rgba(255,255,255,.07); background: rgba(5,7,13,.7); }
+  .bro { display: grid; justify-items: center; gap: 32px; padding: 32px 16px 80px; }
+
+  /* A4 portrait sheet. Everything inside is sized in --u (1% of the sheet width), so the page scales on screen
+     and prints at exactly 210 x 297 mm. */
+  .sheet {
+    container: sheet / inline-size;
+    --u: 1cqw;
+    --pad: calc(var(--u) * 8);
+    position: relative; overflow: hidden;
+    width: min(100%, 900px); aspect-ratio: 210 / 297;
+    color: #fff; background: #05070D; border-radius: 8px;
+    box-shadow: 0 30px 80px -30px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.08);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    break-inside: avoid;
+  }
+  .sheet::before { content: ''; position: absolute; inset: 0; background:
+      radial-gradient(70% 28% at 85% 0%, rgba(56,189,248,.16), transparent 70%),
+      radial-gradient(60% 24% at 8% 2%, rgba(94,234,212,.14), transparent 70%),
+      radial-gradient(60% 24% at 50% 100%, rgba(167,139,250,.09), transparent 70%); }
+  .sheet .in { position: absolute; inset: 0; padding: calc(var(--u) * 7.5) var(--pad) calc(var(--u) * 6.5); display: flex; flex-direction: column; font-size: calc(var(--u) * 2); line-height: 1.5; color: rgba(255,255,255,.78); }
+  .sheet .grow { flex: 1; }
+  .sheet .mono { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; }
+  .sheet .kick { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: calc(var(--u) * 1.3); letter-spacing: .2em; text-transform: uppercase; color: #5EEAD4; font-weight: 600; margin: 0; }
+  .sheet .h2 { font-size: calc(var(--u) * 4.7); line-height: 1.04; letter-spacing: -0.035em; font-weight: 800; color: #fff; margin: calc(var(--u) * 1.4) 0 calc(var(--u) * 2); text-wrap: balance; }
+  .sheet .lead { font-size: calc(var(--u) * 2.4); line-height: 1.5; color: rgba(255,255,255,.78); margin: 0 0 calc(var(--u) * 2.4); }
+  .sheet h3 { font-size: calc(var(--u) * 2.6); line-height: 1.2; letter-spacing: -0.02em; font-weight: 700; color: #fff; margin: 0 0 calc(var(--u) * .7); }
+  .sheet p { margin: 0; }
+  .sheet b { color: #fff; font-weight: 650; }
+  .sheet code { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: .9em; color: #fff; background: rgba(255,255,255,.08); padding: .05em .35em; border-radius: .3em; }
+  .sheet pre { margin: 0; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; }
+
+  .sheet .two { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 2); }
+  .sheet .parts { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(var(--u) * 1.6); margin-bottom: calc(var(--u) * 3); }
+  .sheet .parts .box { padding: calc(var(--u) * 1.6); }
+  .sheet .parts .box p { font-size: calc(var(--u) * 1.6); }
+  .sheet .three { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(var(--u) * 1.6); }
+  .sheet .box, .sheet .card, .sheet .k { background: rgba(20,22,28,.85); border-radius: calc(var(--u) * 2); border: 1px solid rgba(255,255,255,.09); border-top: 2px solid var(--tone, rgba(255,255,255,.2)); padding: calc(var(--u) * 2); }
+  .sheet .box p { font-size: calc(var(--u) * 1.8); }
+  .sheet .tag, .sheet .ktag { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: calc(var(--u) * 1.15); letter-spacing: .14em; text-transform: uppercase; color: var(--tone, #5EEAD4); font-weight: 700; }
+  .sheet .shot { margin: calc(var(--u) * 3) 0; }
+  .sheet .shot-crop { border-radius: calc(var(--u) * 2); overflow: hidden; border: 1px solid rgba(255,255,255,.1); }
+  .sheet .shot-crop img { display: block; width: 100%; height: auto; }
+  .sheet .shot-crop.menu img { aspect-ratio: 1700 / 745; object-fit: cover; object-position: top; }
+  .sheet figcaption { font-size: calc(var(--u) * 1.3); color: rgba(255,255,255,.58); margin-top: calc(var(--u) * .8); }
+  .sheet .bul { list-style: none; padding: 0; margin: 0; display: grid; gap: calc(var(--u) * 1.6); }
+  .sheet .bul li { position: relative; padding-left: calc(var(--u) * 2.2); font-size: calc(var(--u) * 1.95); }
+  .sheet .bul li::before { content: ''; position: absolute; left: 0; top: .7em; width: calc(var(--u) * .7); height: calc(var(--u) * .7); border-radius: 50%; background: #5EEAD4; opacity: .75; }
+  .sheet .bul.two-col { grid-template-columns: 1fr 1fr; column-gap: calc(var(--u) * 3); }
+  .sheet .sub { margin: calc(var(--u) * 4) 0 calc(var(--u) * 1.6); }
+  .sheet .note { margin-top: auto; padding: calc(var(--u) * 1.8) calc(var(--u) * 2); border-radius: calc(var(--u) * 1.6); background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); font-size: calc(var(--u) * 1.75); }
+  .tone-teal { --tone: #5EEAD4; } .tone-sky { --tone: #38BDF8; } .tone-amber { --tone: #F5B14C; } .tone-red { --tone: #F26D6D; } .tone-violet { --tone: #A78BFA; }
+
+  /* cover: the family art, full bleed, faded into the sheet at top and bottom */
+  .s-cover::before { display: none; }
+  .cover-art { position: relative; margin: calc(var(--u) * 7) calc(var(--pad) * -1) 0; }
+  .cover-art img { display: block; width: 100%; height: auto; }
+  .cover-art::before, .cover-art::after { content: ''; position: absolute; left: 0; right: 0; pointer-events: none; }
+  .cover-art::before { top: 0; height: 14%; background: linear-gradient(180deg, #05070D, rgba(5,7,13,0)); }
+  .cover-art::after { bottom: 0; height: 12%; background: linear-gradient(0deg, #05070D, rgba(5,7,13,0)); }
+  /* a showcase slide, edge to edge of the text column */
+  .sheet .slide { margin: calc(var(--u) * 2.6) 0 calc(var(--u) * 3); border-radius: calc(var(--u) * 2); overflow: hidden; border: 1px solid rgba(255,255,255,.1); }
+  .sheet .slide img { display: block; width: 100%; height: auto; }
+  .brand { display: flex; align-items: center; gap: calc(var(--u) * 1.6); }
+  .brand img { width: calc(var(--u) * 6.5); height: calc(var(--u) * 6.5); border-radius: calc(var(--u) * 1.6); }
+  .brand .mono { font-size: calc(var(--u) * 1.5); letter-spacing: .24em; font-weight: 700; color: #fff; }
+  .brand.center { justify-content: center; }
+  .cover-h { font-size: calc(var(--u) * 9); line-height: .98; letter-spacing: -0.045em; font-weight: 800; color: #fff; margin: calc(var(--u) * 1.6) 0 calc(var(--u) * 2.6); text-wrap: balance; }
+  .cover-chips { list-style: none; padding: 0; margin: calc(var(--u) * 2) 0 0; display: flex; flex-wrap: wrap; gap: calc(var(--u) * 1); }
+  .cover-chips li { padding: calc(var(--u) * .7) calc(var(--u) * 1.5); border-radius: 999px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); font-size: calc(var(--u) * 1.5); color: #fff; font-weight: 600; }
+  .s-cover .foot { margin-top: calc(var(--u) * 4); font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: calc(var(--u) * 1.3); color: rgba(255,255,255,.6); letter-spacing: .06em; }
+
+  /* four products */
+  .four { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 2); flex: 1; min-height: 0; }
+  .four .card { display: flex; flex-direction: column; gap: calc(var(--u) * .6); padding: calc(var(--u) * 1.6); min-height: 0; }
+  .four .card p:last-child { font-size: calc(var(--u) * 1.75); line-height: 1.45; }
+  .thumb { border-radius: calc(var(--u) * 1.4); overflow: hidden; height: calc(var(--u) * 33); background: #0A0C11; border: 1px solid rgba(255,255,255,.08); margin-bottom: calc(var(--u) * 1); position: relative; flex: none; }
+  .thumb img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+  .thumb-top img { object-position: center top; }
+
+  /* moments */
+  .kinds { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 1.4); }
+  .kinds .k { padding: calc(var(--u) * 1.4) calc(var(--u) * 1.6); }
+  .kinds .k p { font-size: calc(var(--u) * 1.65); line-height: 1.4; }
+  .kinds .ktag { margin-bottom: calc(var(--u) * .4); }
+  .kinds .acts { font-family: 'JetBrains Mono Variable', ui-monospace, monospace; color: #fff; margin-top: calc(var(--u) * .6); font-size: calc(var(--u) * 1.4) !important; }
+
+  /* connect */
+  .diagram { background: rgba(20,22,28,.7); border: 1px solid rgba(255,255,255,.08); border-radius: calc(var(--u) * 2); padding: calc(var(--u) * 2.4); margin-bottom: calc(var(--u) * 3); }
+
+  /* steps */
+  .steps { list-style: none; counter-reset: s; padding: 0; margin: 0 0 calc(var(--u) * 2); display: grid; gap: calc(var(--u) * 1); }
+  .steps li { counter-increment: s; position: relative; padding: calc(var(--u) * 1.4) calc(var(--u) * 2) calc(var(--u) * 1.4) calc(var(--u) * 7.5); border-radius: calc(var(--u) * 1.6); background: rgba(20,22,28,.85); border: 1px solid rgba(255,255,255,.09); font-size: calc(var(--u) * 1.85); }
+  .steps li::before { content: counter(s); position: absolute; left: calc(var(--u) * 2); top: 50%; transform: translateY(-50%); width: calc(var(--u) * 3.2); height: calc(var(--u) * 3.2); border-radius: 50%; display: grid; place-items: center; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-weight: 700; color: #06141A; background: linear-gradient(180deg, #5EEAD4, #38BDF8); }
+  .steps li b { display: block; font-size: calc(var(--u) * 2.2); margin-bottom: calc(var(--u) * .2); }
+  .agent { padding: calc(var(--u) * 2); border-radius: calc(var(--u) * 2); background: #04060A; border: 1px solid rgba(94,234,212,.3); margin-bottom: calc(var(--u) * 2); }
+  .agent pre { margin: calc(var(--u) * 1) 0; font-size: calc(var(--u) * 2.1); color: #5EEAD4; white-space: pre-wrap; }
+  .agent p:last-child { font-size: calc(var(--u) * 1.75); }
+
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 3); margin: calc(var(--u) * 3) auto calc(var(--u) * 2); width: 70%; }
+  .duo .ph { height: calc(var(--u) * 21); overflow: hidden; border-radius: calc(var(--u) * 2) calc(var(--u) * 2) 0 0; border: 1px solid rgba(255,255,255,.12); border-bottom: 0; }
+  .duo .ph img { display: block; width: 100%; height: auto; }
+  .duo figcaption { text-align: center; }
+  .term { padding: calc(var(--u) * 2); border-radius: calc(var(--u) * 2); background: #04060A; border: 1px solid rgba(255,255,255,.1); font-family: 'JetBrains Mono Variable', ui-monospace, monospace; font-size: calc(var(--u) * 1.45); line-height: 1.6; color: #fff; margin-bottom: calc(var(--u) * 2); padding: calc(var(--u) * 1.6) calc(var(--u) * 2); }
+  .term .c { color: rgba(255,255,255,.5); } .term .gap { margin-top: calc(var(--u) * 1); }
+  /* back cover */
+  .s-back .back-h { text-align: center; font-size: calc(var(--u) * 7); font-weight: 800; letter-spacing: -0.04em; color: #fff; margin: calc(var(--u) * 1.4) 0 calc(var(--u) * 1); }
+  .center { text-align: center; }
+  .links { list-style: none; padding: 0; margin: calc(var(--u) * 3) auto 0; width: 82%; display: grid; gap: 0; }
+  .links li { display: flex; justify-content: space-between; gap: calc(var(--u) * 2); padding: calc(var(--u) * 1.6) 0; border-top: 1px solid rgba(255,255,255,.12); font-size: calc(var(--u) * 1.8); }
+  .links li:last-child { border-bottom: 1px solid rgba(255,255,255,.12); }
+  .links .mono { font-size: calc(var(--u) * 1.2); letter-spacing: .18em; text-transform: uppercase; color: #5EEAD4; align-self: center; font-family: 'JetBrains Mono Variable', ui-monospace, monospace; }
+  .links b { color: #fff; font-weight: 650; text-align: right; }
+  .legal { font-size: calc(var(--u) * 1.25); color: rgba(255,255,255,.58); text-align: center; width: 88%; margin: 0 auto; }
+
+  /* container-aware diagram switch + stacking when a sheet is narrow (phones) */
+  @container sheet (max-width: 560px) {
+    .cd-wide { display: none !important; }
+    .cd-tall { display: block !important; }
+  }
+  @media (max-width: 720px) {
+    .duo { width: 100%; gap: 4cqw; } .duo .ph { height: 60cqw; } .term { font-size: 3.2cqw; }
+    .sheet .parts { grid-template-columns: 1fr; }
+    .bro { padding: 16px 12px 56px; gap: 20px; }
+    .sheet { aspect-ratio: auto; --u: 2.3cqw; --pad: 6cqw; }
+    .sheet .in { position: relative; min-height: 130cqw; padding: 8cqw var(--pad) 9cqw; }
+    .s-cover .in { min-height: 150cqw; }
+    .sheet .two, .sheet .three, .sheet .kinds, .sheet .four, .sheet .bul.two-col { grid-template-columns: 1fr; }
+    .sheet .note { margin-top: 5cqw; }
+    .cover-h { font-size: 14cqw; }
+    .sheet .h2 { font-size: 9.5cqw; }
+    .sheet .lead { font-size: 4.6cqw; }
+    .sheet .in { font-size: 4.2cqw; }
+    .sheet .box p, .sheet .bul li, .kinds .k p, .four .card p:last-child, .steps li { font-size: 4.1cqw; }
+    .sheet .kick, .sheet .tag, .sheet .ktag { font-size: 3cqw; }
+    .sheet h3 { font-size: 5cqw; }
+    .thumb { height: 52cqw; }
+    .sheet figcaption { font-size: 3cqw; }
+    .brand img { width: 14cqw; height: 14cqw; }
+    .links li { font-size: 4cqw; flex-direction: column; gap: 1cqw; } .links b { text-align: left; }
+    .legal { font-size: 3cqw; margin-top: 8cqw; width: 100%; }
+    .cover-chips li { font-size: 3.6cqw; }
+    .s-back .back-h { font-size: 14cqw; }
+    .steps li { padding-left: 15cqw; } .steps li::before { left: 4cqw; width: 8cqw; height: 8cqw; }
+    .diagram { padding: 3cqw; }
+    .agent pre { font-size: 3.8cqw; }
+  }
+
+  @media print {
+    @page { size: A4; margin: 0; }
+    html, body { background: #05070D !important; margin: 0; }
+    .bro { display: block; padding: 0; }
+    .sheet { width: 210mm; height: 297mm; aspect-ratio: auto; border-radius: 0; box-shadow: none; break-after: page; page-break-after: always; }
+    .sheet:last-child { break-after: auto; page-break-after: auto; }
+    .sheet .in { position: absolute; min-height: 0; }
+  }
+</style>

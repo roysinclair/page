@@ -1,0 +1,16 @@
+---
+interface Props { label: string; title: string; lede: string; class?: string }
+const { label, title, lede, class: cls = '' } = Astro.props;
+---
+<section class={`relative isolate overflow-hidden border-b border-white/[0.06] ${cls}`}>
+  <div class="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] opacity-70" style="background:radial-gradient(700px 300px at 20% 0%,rgba(94,234,212,.16),transparent 70%),radial-gradient(700px 300px at 85% 10%,rgba(56,189,248,.14),transparent 70%)"></div>
+  <div class="wrap grid items-center gap-10 py-14 sm:py-20 lg:grid-cols-[1.05fr_1fr]">
+    <div>
+      <p class="label">{label}</p>
+      <h1 class="h1 mt-5 !text-[38px] sm:!text-[52px] lg:!text-[60px]">{title}</h1>
+      <p class="lede mt-6 max-w-xl">{lede}</p>
+      <div class="mt-8 flex flex-wrap gap-3"><slot name="actions" /></div>
+    </div>
+    <div class="min-w-0"><slot /></div>
+  </div>
+</section>

@@ -23,3 +23,10 @@ extension Platform {
         )
     }
 }
+
+/// Called first thing by paged's main: from here on the core sees Linux.
+public enum PageLinuxBootstrap {
+    public static func installLinuxPlatform() {
+        Platform.current = .linux
+    }
+}

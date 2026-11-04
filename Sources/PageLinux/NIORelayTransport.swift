@@ -139,6 +139,8 @@ final class NIORelayWebSocket: RelayWebSocket, @unchecked Sendable {
             proxyConnectDeadline: .now() + .seconds(20),
             configuration: config, on: group
         ) { [weak self] ws in
+            // On the channel's event loop: WebSocketKit wants its callbacks set here.
+            self?.attach(ws)
             self?.queue.async { self?.opened(ws) }
         }
         future.whenFailure { [weak self] error in
@@ -148,10 +150,9 @@ final class NIORelayWebSocket: RelayWebSocket, @unchecked Sendable {
         }
     }
 
-    /// On `queue`.
-    private func opened(_ ws: WebSocket) {
-        guard !cancelled, !ended else { _ = ws.close(code: .goingAway); return }
-        self.ws = ws
+    /// On the event loop, before any frame can arrive. Every callback hops
+    /// to `queue`.
+    private func attach(_ ws: WebSocket) {
         ws.onText { [weak self] _, text in self?.queue.async { self?.deliver(.string(text)) } }
         ws.onBinary { [weak self] _, buffer in
             let data = Data(buffer.readableBytesView)
@@ -167,6 +168,12 @@ final class NIORelayWebSocket: RelayWebSocket, @unchecked Sendable {
             let code = ws.closeCode
             self?.queue.async { self?.closed(code) }
         }
+    }
+
+    /// On `queue`.
+    private func opened(_ ws: WebSocket) {
+        guard !cancelled, !ended else { _ = ws.close(code: .goingAway); return }
+        self.ws = ws
         events?.webSocketDidOpen(self)
     }
 

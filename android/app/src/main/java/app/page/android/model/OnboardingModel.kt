@@ -78,7 +78,7 @@ data class PairedWelcome(
                 NotificationsState.NOT_SET, NotificationsState.CHECKING -> Action.ALLOW_NOTIFICATIONS
             }
             return PairedWelcome(
-                title = "${DeliveryPreview.macLabel(macName).replace("your Mac", "Your Mac")} is paired",
+                title = "${DeliveryPreview.macLabel(macName).replace("your computer", "Your computer")} is paired",
                 subtitle = subtitle(liveSessions, isFirstMac),
                 promiseTitle = "Only when you're needed", promises = promiseLines, action = action,
                 skipTitle = if (action == Action.ALLOW_NOTIFICATIONS) "Not now" else null,

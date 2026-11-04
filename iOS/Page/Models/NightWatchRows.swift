@@ -117,7 +117,7 @@ struct RowAction: Equatable, Identifiable {
 /// The delivery preview strings. Every one names the Mac, so with several
 /// Macs paired you cannot act on the wrong one.
 enum DeliveryPreview {
-    /// "your Mac" when the name is blank, so a preview never omits the Mac.
+    /// "your computer" when the name is blank, so a preview never omits it.
     static func macLabel(_ name: String) -> String {
         let t = name.trimmingCharacters(in: .whitespacesAndNewlines)
         return t.isEmpty ? "your computer" : t

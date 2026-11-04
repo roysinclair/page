@@ -1,0 +1,46 @@
+---
+// The three product marks: Page Power's Pulse (its app icon), Page Aura's comet and Page Orbit's eclipse
+// (both drawn from the apps' own logo.svg). Decorative unless given a `label`. `glow` adds a soft halo.
+import { imageSrc } from '../data/images';
+interface Props { product: 'power' | 'aura' | 'orbit'; size?: number; class?: string; glow?: boolean; label?: string }
+const { product, size = 48, class: cls = '', glow = false, label } = Astro.props;
+// A per-instance id so several marks on one page never share a gradient.
+const id = `pi-${product}-${Math.random().toString(36).slice(2, 8)}`;
+const halo = { power: 'rgba(94,234,212,.55)', aura: 'rgba(79,134,255,.55)', orbit: 'rgba(183,59,206,.6)' }[product];
+---
+<span class={`relative inline-flex flex-none ${cls}`} style={`width:${size}px;height:${size}px`}>
+  {glow && <span aria-hidden="true" class="absolute -inset-[45%] rounded-full" style={`background:radial-gradient(closest-side,${halo},transparent)`}></span>}
+  {product === 'power' && (
+    <img src={imageSrc('app-icon')} width={size} height={size} alt={label ?? ''} class="relative h-full w-full" loading="lazy" decoding="async" />
+  )}
+  {product === 'aura' && (
+    <svg class="relative h-full w-full" viewBox="0 0 128 128" role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : 'true'}>
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#22d3c5" /><stop offset=".48" stop-color="#4f86ff" /><stop offset=".82" stop-color="#9b7bff" /><stop offset="1" stop-color="#d98bf5" />
+        </linearGradient>
+      </defs>
+      <rect width="128" height="128" rx="36" fill={`url(#${id})`} />
+      <g transform="translate(26.88 26.88) scale(3.08)" fill="#fff">
+        <circle cx="12" cy="12" r="3.6" />
+        <path d="M21.24 7.69A9.44 9.44 0 0 0 3.43 12.75A7.75 7.75 0 0 1 18.34 9.04A1.6 1.6 0 0 0 21.24 7.69Z" />
+        <path d="M2.76 16.31A9.44 9.44 0 0 0 20.57 11.25A7.75 7.75 0 0 1 5.66 14.96A1.6 1.6 0 0 0 2.76 16.31Z" opacity=".6" />
+      </g>
+    </svg>
+  )}
+  {product === 'orbit' && (
+    <svg class="relative h-full w-full" viewBox="0 0 128 128" role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : 'true'}>
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#7d4ef2" /><stop offset=".5" stop-color="#b73bce" /><stop offset="1" stop-color="#da2978" />
+        </linearGradient>
+      </defs>
+      <rect width="128" height="128" rx="36" fill={`url(#${id})`} />
+      <g transform="translate(26.88 26.88) scale(3.08)" fill="#fff">
+        <path d="M14.66 7.35A5.5 5.5 0 1 0 17.46 9.87A3.85 3.85 0 0 1 14.66 7.35Z" />
+        <path d="M15.88 21.47A9.6 9.6 0 1 1 15.63 3.34A3.85 3.85 0 0 0 14.61 5.03C13.47 4.64 12.22 4.51 10.99 4.69C9.76 4.86 8.55 5.34 7.5 6.07C6.45 6.81 5.57 7.8 4.95 8.97C4.33 10.13 3.99 11.46 3.96 12.82C3.94 14.17 4.24 15.55 4.85 16.8C5.47 18.05 6.38 19.17 7.53 20.03C8.67 20.89 10.03 21.49 11.48 21.74C12.92 22 14.44 21.91 15.88 21.47Z" />
+        <circle cx="18.3" cy="6.11" r="2.55" />
+      </g>
+    </svg>
+  )}
+</span>

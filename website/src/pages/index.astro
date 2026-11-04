@@ -1,236 +1,387 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import Pulse from '../components/Pulse.astro';
-import Shot from '../components/Shot.astro';
-import Showcase from '../components/Showcase.astro';
+import Field from '../components/Field.astro';
+import Window from '../components/Window.astro';
+import Device from '../components/Device.astro';
+import ProductIcon from '../components/ProductIcon.astro';
+import Icon from '../components/Icon.astro';
+import Pic from '../components/Pic.astro';
+import Flow from '../components/Flow.astro';
+import TrustBand from '../components/TrustBand.astro';
 import HoldRing from '../components/HoldRing.astro';
-import ConnectDiagram from '../components/ConnectDiagram.astro';
-import { u, pieces, kinds, GITHUB, GUIDE, PDF } from '../data/site';
+import Showcase from '../components/Showcase.astro';
+import { u, GITHUB, GUIDE, PDF, AURA_APP, AURA_GUIDE, ORBIT_DEMO, ORBIT_GUIDE, STUDIO_RELEASES } from '../data/site';
+
+// The pages your phone can get, across the family. From the kinds of page in data/site.ts (Page Power),
+// docs/AURA-LINK.md (Page Aura) and docs/ORBIT-LINK.md (Page Orbit).
+const moments = [
+  { p: 'power', kind: 'Approval', when: 'A tool call or plan from Claude Code is waiting for your OK.', act: 'Approve · Deny · Deny with instructions' },
+  { p: 'power', kind: 'Looks stuck', when: 'The same command failed three times in a row, or nothing was written for 15 minutes.', act: 'Steer · Stop it' },
+  { p: 'power', kind: 'Low battery', when: 'Your agents were paused at your cutoff, each with a two-line summary.', act: 'Carry on · stay paused' },
+  { p: 'aura', kind: 'Tool request', when: 'A chat asks to use an app on your Mac (a local MCP tool).', act: 'Allow once · Deny' },
+  { p: 'aura', kind: 'Reply ready', when: 'A reply finished while you were away from the Mac.', act: 'Read the end · send a message' },
+  { p: 'orbit', kind: 'Approval', when: 'An agent wants to run a command or use a tool that asks first.', act: 'Allow once · Deny' },
+  { p: 'orbit', kind: 'Finished', when: 'A session finished while you were away, with the end of its last message.', act: 'Reply with its next task' },
+] as const;
+const pname = { power: 'Page Power', aura: 'Page Aura', orbit: 'Page Orbit' } as const;
 ---
-<Layout current="" description="Page Studio is a family of open-source tools you run yourself: keep your Mac awake while AI coding agents work, pause them gracefully at your battery cutoff, and answer them from your phone, through a relay on your own Cloudflare account.">
-  <!-- HERO -->
-  <section class="relative isolate overflow-hidden">
-    <div class="wrap grid items-center gap-4 pb-16 pt-12 sm:pt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.12fr)] lg:gap-6 lg:pb-24 lg:pt-16">
-      <div class="relative z-10">
-        <p class="label">Page Studio · Open source · Run it yourself</p>
-        <h1 class="h1 mt-5 !text-[40px] sm:!text-[54px] lg:!text-[52px] xl:!text-[58px]">Your agents keep working. <span class="text-grad sm:block">You get paged only when it matters.</span></h1>
-        <p class="lede mt-6 max-w-xl">Page Power keeps your Mac awake while Claude Code and Codex work, pauses them gracefully at your battery cutoff, and pages your phone when a decision is yours.</p>
-        <div class="mt-9 flex flex-wrap gap-3">
-          <a href="#get-started" class="btn-primary">Get started</a>
-          <a href="#connect" class="btn-ghost">How it connects</a>
+<Layout current="" world="studio" og={{ image: 'img/og/studio.webp', alt: 'Page Studio: run your AI agents, answer them from anywhere. Page Aura and Page Orbit windows behind an iPhone lock screen paged by Page Power.' }}>
+  <!-- ================================================================ HERO -->
+  <section class="relative isolate overflow-hidden pb-10 pt-14 sm:pt-20">
+    <Field layout="hero" />
+    <div class="wrap-wide text-center">
+      <a href="#apps" class="eyebrow">
+        <span class="flex -space-x-1.5">
+          <ProductIcon product="power" size={22} class="rounded-[7px] ring-2 ring-night-900" />
+          <ProductIcon product="aura" size={22} class="rounded-[7px] ring-2 ring-night-900" />
+          <ProductIcon product="orbit" size={22} class="rounded-[7px] ring-2 ring-night-900" />
+        </span>
+        <span>Page Studio · three free apps<span class="hidden sm:inline"> you run yourself</span></span>
+      </a>
+      <h1 class="display mx-auto mt-7 max-w-[1240px]">Run your AI agents. <span class="text-spectrum block pb-2">Answer them from anywhere.</span></h1>
+      <p class="lede mx-auto mt-6 max-w-2xl">Keep watch over your coding agents, chat with Anthropic’s models on your own key, and run cloud agents from one control room. When something needs you, your phone is paged. Nothing goes through us.</p>
+      <div class="mt-9 flex flex-wrap justify-center gap-3">
+        <a href="#apps" class="btn-primary btn-lg">Meet the apps</a>
+        <a href="#connect" class="btn-ghost btn-lg">How they connect</a>
+      </div>
+    </div>
+
+    <!-- The family in one picture: Page Aura and Page Orbit on the desktop, Page Power paging the phone in front. -->
+    <div class="wrap-wide stage mt-14 sm:mt-20">
+      <div class="hs tilt">
+        <div class="hs-aura">
+          <Window name="aura/hero" title="Page Aura" eager sizes="(min-width: 1024px) 640px, 70vw" alt="Page Aura with three chats side by side: a web search answer with a table and numbered sources, a sales chart made from an uploaded spreadsheet, and a researched price answer. The sidebar groups chats by date and shows an estimated balance." />
         </div>
-        <p class="fine mt-7 max-w-md">Claude Code, Codex and local models. macOS, iPhone and Android. Page Studio License: read every line, run it yourself.</p>
-      </div>
-      <!-- data-motion="final-approach": the composition descends from the pulse into place, trailing a contrail. -->
-      <div class="hero-stage mt-10 lg:mt-0 lg:-mr-8 xl:-mr-16" data-motion="final-approach" data-approach="hero">
-        <span class="hero-glow" aria-hidden="true"></span>
-        <span class="hero-contrail" aria-hidden="true"></span>
-        <div class="hero-pulse"><Pulse size={84} tone="amber" waiting={2} label="The Pulse, amber: two things need you" /></div>
-        <Showcase name="showcase/hero-visual" eager class="fa-item" sizes="(min-width: 1024px) 680px, 100vw" alt="Page across your devices, linked through your own relay on Cloudflare. An Android phone shows two items that need you, first an irreversible request to delete every Dev build with Deny and Hold; an iPhone lock screen shows two Page notifications asking for approval; the Mac's menu-bar popover lists what needs you and what is working." />
+        <div class="hs-orbit">
+          <Window name="orbit/session" title="Page Orbit" eager sizes="(min-width: 1024px) 640px, 70vw" alt="A Page Orbit session: release notes written by an agent on the left, and a timeline of every event with its timing, tokens and cost on the right." />
+        </div>
+        <div class="hs-phone">
+          <div class="rings" aria-hidden="true">
+            <i style="--r:150%;--dl:0s"></i><i style="--r:150%;--dl:-2s"></i><i style="--r:150%;--dl:-4s"></i>
+          </div>
+          <Device name="power/lock" eager sizes="(min-width: 1024px) 300px, 40vw" alt="An iPhone lock screen paged by Page Power: a live activity reading 2 need you, 5 working, as bottle-flip wants to delete builds, with Open; and a page saying llm-play looks stuck after cargo test failed 6 times in a row." />
+        </div>
+        <div class="hs-chip hs-chip-aura floaty" style="--dl:-1s" aria-hidden="true"><ProductIcon product="aura" size={22} /> Reply ready</div>
+        <div class="hs-chip hs-chip-orbit floaty" style="--dl:-3.5s" aria-hidden="true"><ProductIcon product="orbit" size={22} /> Approval needed</div>
       </div>
     </div>
-  </section>
 
-  <!-- TWO PROMISES -->
-  <section id="promises" class="block-section border-t border-white/[0.06]">
-    <div class="wrap">
-      <p class="label">The original promise</p>
-      <h2 class="h2 mt-3 max-w-3xl">Two promises, kept on the Mac.</h2>
-      <div class="mt-12 grid gap-6 md:grid-cols-2">
-        <article class="card tone-teal card-tone">
-          <div class="flex items-center gap-4">
-            <Pulse size={64} tone="teal" />
-            <h3 class="h3">Your agents never sleep mid-turn</h3>
-          </div>
-          <p class="body mt-5">While an agent works, the Mac stays awake, lid closed too on AC. Page reads the state Claude Code itself writes (busy, waiting or idle), checks the process is alive, and holds the Mac awake only while something is mid-turn.</p>
-          <p class="fine mt-4">On battery, lid-closed keep-awake is opt-in, behind a watchdog that clears it if Page dies.</p>
-          <a href={u('mac/#power')} class="link mt-5 inline-block text-[15px] font-semibold">How power control works →</a>
-        </article>
-        <article class="card tone-amber card-tone">
-          <div class="flex items-center gap-4">
-            <!-- data-motion="dusk-dawn": working sky, dusk falls at the cutoff, then dawn sweeps up when power returns. -->
-            <div data-motion="dusk-dawn" aria-hidden="true" class="dd-tile h-16 w-16 shrink-0"><i class="dd-base"></i><i class="dd-night"></i><i class="dd-work"></i><i class="dd-dawn"></i><i class="dd-stars"></i><i class="dd-horizon"></i></div>
-            <h3 class="h3">A graceful pause at your cutoff</h3>
-          </div>
-          <p class="body mt-5">At the cutoff you chose, Page asks busy agents to stop and write a two-line summary, waits for them, then lets the Mac sleep. When power is back, it tells the sessions it paused to carry on.</p>
-          <p class="fine mt-4">Pause now, finish the current step first, or do nothing. Your call, in Preferences.</p>
-          <a href={u('mac/#battery')} class="link mt-5 inline-block text-[15px] font-semibold">How the pause works →</a>
-        </article>
-      </div>
-      <Shot class="mt-10" crop={0.73} name="mac-menubar-states" alt="Page Power for Mac's menu-bar popover in three states: two items need you with five agents working; all quiet with phone paging armed because you are away; and paused at ten percent for battery, with two agents summarised and a Resume now anyway button. A Dispatch box below starts new work." caption="The menu-bar popover: needs you, all quiet, and paused for battery." />
-    </div>
-  </section>
-
-  <!-- FOUR PIECES -->
-  <section id="pieces" class="block-section border-t border-white/[0.06]">
-    <div class="wrap">
-      <p class="label">The studio</p>
-      <h2 class="h2 mt-3 max-w-3xl">Five pieces that work together.</h2>
-      <p class="lede mt-5 max-w-2xl">Each one runs on hardware and accounts you own. Use Page Power on the Mac alone, add a phone, or bring Page Aura and Page Orbit along.</p>
-      <Showcase name="showcase/family-visual" motion="final-approach" class="-mx-4 mt-10 sm:mx-0" sizes="(min-width: 1200px) 1104px, 100vw" alt="The four pieces together: Page Power for Mac and Page Aura on a MacBook, with the menu-bar popover showing two items that need you; an Android phone and an iPhone running Page; and your relay on your own Cloudflare account linking the Mac to both phones." />
-      <div class="mt-8 grid gap-5 sm:grid-cols-2">
-        {pieces.map((p, i) => (
-          <a href={u(p.href)} class={`card card-tone card-link tone-${p.tone} group block`}>
-            <div class="flex items-center justify-between">
-              <span class="tag tone-bg">{`0${i + 1}`} · {p.kicker}</span>
-              <span class="text-ink-3 group-hover:text-ink" aria-hidden="true">→</span>
-            </div>
-            <h3 class="h3 mt-5">{p.name}</h3>
-            <p class="body mt-3">{p.body}</p>
+    <!-- legend: what each one is, in a line -->
+    <div class="wrap mt-12 sm:mt-16">
+      <ul class="grid gap-3 md:grid-cols-3">
+        <li>
+          <a href="#power" class="legend world-power">
+            <ProductIcon product="power" size={40} />
+            <span><strong>Page Power</strong><small>Keeps your Mac awake while coding agents work, and pages your phone.</small></span>
           </a>
-        ))}
-      </div>
-    </div>
-  </section>
-
-  <!-- CONNECT -->
-  <section id="connect" class="block-section border-t border-white/[0.06]">
-    <div class="wrap">
-      <p class="label">How they connect</p>
-      <h2 class="h2 mt-3 max-w-3xl">The Mac and the phone never talk directly.</h2>
-      <p class="lede mt-5 max-w-3xl">The Mac connects out to your relay. The phone connects out to your relay. A secret token, shown on the Mac as a QR code, matches the two. Scan it once to pair.</p>
-      <div class="card mt-12 !p-4 sm:!p-8">
-        <ConnectDiagram />
-      </div>
-      <ul class="list-dots mt-10 grid gap-x-12 gap-y-3 md:grid-cols-2 [&>li]:!mt-0">
-        <li><strong>Mac ⇄ relay ⇄ phone.</strong> Pages go up, your replies come back down. Replies wait in a queue for up to an hour if the Mac is offline.</li>
-        <li><strong>Page Aura ⇄ Mac.</strong> A Unix socket on the same Mac, readable only by you. Page Aura never sees your pairing and never talks to the relay.</li>
-        <li><strong>Apple push.</strong> With a paid Apple Developer team, the relay asks Apple to wake your iPhone. Android has no push; it uses a stay-connected service instead.</li>
-        <li><strong>Agent hooks (optional).</strong> Installed with a diff preview and a backup, they let the agent’s own approval prompts reach your phone from any app, not only terminals Page can type into.</li>
+        </li>
+        <li>
+          <a href="#aura" class="legend world-aura">
+            <ProductIcon product="aura" size={40} />
+            <span><strong>Page Aura</strong><small>A beautiful chat for Anthropic’s models, on your own API key.</small></span>
+          </a>
+        </li>
+        <li>
+          <a href="#orbit" class="legend world-orbit">
+            <ProductIcon product="orbit" size={40} />
+            <span><strong>Page Orbit</strong><small>Mission control for Anthropic’s Managed Agents.</small></span>
+          </a>
+        </li>
       </ul>
     </div>
   </section>
 
-  <!-- KINDS -->
-  <section id="moments" class="block-section border-t border-white/[0.06]">
-    <div class="wrap grid items-start gap-14 lg:grid-cols-[1.4fr_1fr]">
-      <div>
-        <p class="label">Only when it matters</p>
-        <h2 class="h2 mt-3">Only the moments that need you.</h2>
-        <p class="lede mt-5 max-w-2xl">No ping for every step. Approvals and questions page at once; idle and rate-limit pages wait until you have stepped away.</p>
-        <!-- data-motion="final-approach": a newly opened page descends into its ranked slot. A session has one current page; a newer one replaces the older. -->
-        <div data-motion="final-approach" data-approach="cards" class="mt-10 grid gap-3 sm:grid-cols-2">
-          {kinds.map((k) => (
-            <div class={`fa-item relative card !p-5 card-tone tone-${k.tone}`}>
-              <span class="tag tone-bg">{k.name}</span>
-              <p class="body mt-3 text-[15px]">{k.when}</p>
-              <p class="mt-3 font-mono text-[12.5px] text-ink">{k.actions}</p>
-              <p class="fine mt-1.5">{k.note}</p>
-            </div>
-          ))}
-        </div>
-        <div class="card mt-8 !p-5">
-          <p class="h3 !text-lg">Your reply is never a guess.</p>
-          <p class="body mt-2 text-[15px]">Page types your answer only into the exact terminal that owns the session, and the phone shows what happened. If it can’t deliver, it says why.</p>
-          <!-- data-motion="receipt-thread": arm, send, resolve only when the Mac confirms the keystroke landed. -->
-          <ol data-motion="receipt-thread" class="mt-4 flex flex-wrap items-center gap-2 font-mono text-[12px]" aria-label="Delivery states shown on the phone">
-            <li class="chip">sending</li><li aria-hidden="true" class="text-ink-3">→</li>
-            <li class="chip">queued, Mac offline</li><li aria-hidden="true" class="text-ink-3">→</li>
-            <li class="chip tone-teal !text-pulse-teal">delivered</li><li aria-hidden="true" class="text-ink-3">or</li>
-            <li class="chip tone-red !text-signal-red">failed, with the reason</li>
-          </ol>
-        </div>
-      </div>
-      <div class="w-full lg:sticky lg:top-24">
-        <Showcase name="showcase/feature-lock-screen-visual" motion="final-approach" class="mx-auto w-full max-w-[460px]" sizes="(min-width: 1024px) 440px, 100vw" alt="Answer from the lock screen: an iPhone lock screen with two Page notifications asking to approve a Bash command, and the decision sheet for an undoable command, showing what Page will type and into which terminal, with Approve, Deny and Tell it instead." />
-        <div class="card card-tone tone-red relative mx-auto mt-6 max-w-[460px] !p-5">
-          <span class="tag tone-bg">Irreversible</span>
-          <p class="body mt-3 text-[15px]">Deleting, force-pushing, deploying: press and hold, then Face ID. Let go early and nothing is sent.</p>
-          <!-- data-motion="hold-ring": a ring fills clockwise around the thumb; releasing early unwinds it. -->
-          <HoldRing class="mt-4" />
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- WORKS WITH -->
-  <section id="works-with" class="block-section border-t border-white/[0.06]">
-    <div class="wrap">
-      <p class="label">Works with</p>
-      <h2 class="h2 mt-3 max-w-3xl">The agents and terminals you already use.</h2>
-      <div class="mt-10 grid gap-6 md:grid-cols-3">
-        <div class="card">
-          <h3 class="h3">Agents</h3>
-          <ul class="list-dots mt-4">
-            <li><strong>Claude Code</strong> in terminals, cmux, and (through hooks) the Claude desktop app, VS Code and JetBrains.</li>
-            <li><strong>Codex</strong>, with narrower support: keep-awake, idle pages, and replies after a turn ends.</li>
-            <li><strong>Local models</strong>: Ollama, LM Studio, llama.cpp, MLX, and terminal agents like aider and opencode. The Mac stays awake while they generate.</li>
+  <!-- ================================================================ THE APPS -->
+  <div id="apps">
+    <!-- PAGE POWER -->
+    <section id="power" class="world world-power relative isolate overflow-hidden py-24 sm:py-32">
+      <Field layout="right" full />
+      <div class="wrap-wide grid items-center gap-12 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-10">
+        <div data-reveal>
+          <div class="flex items-center gap-4">
+            <ProductIcon product="power" size={60} glow />
+            <div><p class="text-[15px] font-semibold">Page Power</p><p class="label mt-1">Mac · iPhone · Android</p></div>
+          </div>
+          <h2 class="h2 world-h mt-8">Your agents keep working. <span class="text-world">You get paged only when it matters.</span></h2>
+          <p class="lede mt-6">A Mac menu-bar app that keeps the Mac awake while Claude Code, Codex and local models work, pauses them gracefully at your battery cutoff, and pages your phone when a decision is yours. Your reply is typed into the exact terminal that asked.</p>
+          <ul class="feats mt-8">
+            <li><span class="ico"><Icon name="bolt" /></span><span><strong>Awake exactly as long as the work needs.</strong> Real session state, not CPU guesses, lid closed too on AC.</span></li>
+            <li><span class="ico"><Icon name="battery" /></span><span><strong>A graceful pause at your cutoff.</strong> Agents stop and write a two-line summary, then the Mac sleeps.</span></li>
+            <li><span class="ico"><Icon name="lock" /></span><span><strong>Your own relay.</strong> A Worker on your Cloudflare account; live sessions are end-to-end encrypted.</span></li>
           </ul>
+          <div class="mt-9 flex flex-wrap gap-3">
+            <a href={u('mac/')} class="btn-primary btn-arrow">Explore Page Power</a>
+            <a href={u('iphone/')} class="btn-ghost">The phone apps</a>
+          </div>
         </div>
-        <div class="card">
-          <h3 class="h3">Terminals</h3>
-          <p class="body mt-4">Page types replies into Terminal.app, iTerm2, tmux, cmux, WezTerm, kitty, Herdr and Claude Squad. Anywhere else, run the agent in tmux or use the hooks.</p>
-          <a href={u('mac/#terminals')} class="link mt-4 inline-block text-[15px] font-semibold">See what each one can do →</a>
-        </div>
-        <div class="card">
-          <h3 class="h3">Page Aura</h3>
-          <p class="body mt-4">A bring-your-own-key Claude chat app that links to Page Power, so a streaming reply keeps the Mac awake and your phone hears when it is done.</p>
-          <a href={u('aura/')} class="link mt-4 inline-block text-[15px] font-semibold">Meet Page Aura →</a>
-        </div>
-        <div class="card">
-          <h3 class="h3">Page Orbit</h3>
-          <p class="body mt-4">A control room for Anthropic Managed Agents that links to Page Power, so an agent waiting for your approval, or one that has finished, pages your phone.</p>
-          <a href={u('orbit/')} class="link mt-4 inline-block text-[15px] font-semibold">Meet Page Orbit →</a>
+        <div class="halo lg:-mr-16 xl:-mr-24" data-reveal="scale" style="--d:120ms">
+          <Showcase name="showcase/hero-visual" class="-mx-4 sm:mx-0" sizes="(min-width: 1024px) 660px, 100vw" alt="Page Power across your devices, linked through your own relay on Cloudflare. An Android phone shows two items that need you, first an irreversible request to delete every Dev build with Deny and Hold; an iPhone lock screen shows two pages asking for approval; the Mac's menu-bar popover lists what needs you and what is working." />
         </div>
       </div>
+    </section>
+
+    <!-- PAGE AURA -->
+    <section id="aura" class="world world-aura relative isolate overflow-hidden py-24 sm:py-32">
+      <Field layout="left" full />
+      <div class="wrap-wide grid items-center gap-14 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:gap-14">
+        <div class="relative order-2 lg:order-1 lg:-ml-8 xl:-ml-14" data-reveal="scale">
+          <div class="halo relative mr-4 sm:mr-8">
+            <Window name="aura/hero" title="Page Aura" sizes="(min-width: 1024px) 680px, 92vw" alt="Page Aura with three chats side by side, each with its own model and cost, and an estimated balance in the sidebar." />
+            <div class="float-ui floaty -bottom-8 left-[4%] w-[66%] sm:-bottom-10" style="--dl:-2s">
+              <Pic name="aura/approval" sizes="(min-width: 1024px) 460px, 62vw" alt="A Page Aura approval card: the model wants to read config/modem.yaml, with Deny, Always allow in this chat, and Allow once." />
+            </div>
+            <div class="float-ui floaty -right-4 -top-6 w-[34%] sm:-right-10 sm:-top-8" style="--dl:-4s">
+              <Pic name="aura/balance" sizes="(min-width: 1024px) 230px, 34vw" alt="Page Aura's balance gauge: about $23.95 left, $0.14 today, $0.32 this month." />
+            </div>
+          </div>
+        </div>
+        <div class="order-1 lg:order-2" data-reveal>
+          <div class="flex items-center gap-4">
+            <ProductIcon product="aura" size={60} glow />
+            <div><p class="text-[15px] font-semibold">Page Aura</p><p class="label mt-1">Chat · Windows · macOS · Linux · browser</p></div>
+          </div>
+          <h2 class="h2 world-h mt-8">A beautiful chat for Anthropic’s models, <span class="text-world">on your own key.</span></h2>
+          <p class="lede mt-6">One HTML file, or a desktop app. Several chats side by side, web search with sources, code and files, memory and notes, and what every reply costs. No server, no account and no telemetry in between.</p>
+          <ul class="feats mt-8">
+            <li><span class="ico"><Icon name="key" /></span><span><strong>Your key, in your keychain.</strong> The desktop app adds it to each request, so the interface never sees it.</span></li>
+            <li><span class="ico"><Icon name="shield" /></span><span><strong>Only api.anthropic.com.</strong> A strict content security policy, and every library embedded and checked.</span></li>
+            <li><span class="ico"><Icon name="coin" /></span><span><strong>Every reply priced.</strong> A balance gauge for the credit you already pay for.</span></li>
+          </ul>
+          <div class="mt-9 flex flex-wrap gap-3">
+            <a href={u('aura/')} class="btn-primary btn-arrow">Explore Page Aura</a>
+            <a href={AURA_APP} rel="noopener" class="btn-ghost">Open it in your browser</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE ORBIT -->
+    <section id="orbit" class="world world-orbit relative isolate overflow-hidden py-24 sm:py-32">
+      <Field layout="right" full />
+      <div class="wrap-wide grid items-center gap-14 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-14">
+        <div data-reveal>
+          <div class="flex items-center gap-4">
+            <ProductIcon product="orbit" size={60} glow />
+            <div><p class="text-[15px] font-semibold">Page Orbit</p><p class="label mt-1">Agents · Windows · macOS · Linux</p></div>
+          </div>
+          <h2 class="h2 world-h mt-8">Mission control for <span class="text-world">your cloud agents.</span></h2>
+          <p class="lede mt-6">A free desktop app for Anthropic’s Managed Agents: agents that work in their own cloud sandbox, on their own or on a schedule. Build them, talk to them live, see every step and every cent, and let a model diagnose what went wrong.</p>
+          <ul class="feats mt-8">
+            <li><span class="ico"><Icon name="layers" /></span><span><strong>Agents with versions.</strong> Every save is a version: compare any two, roll back with one click.</span></li>
+            <li><span class="ico"><Icon name="timeline" /></span><span><strong>Every step, every cent.</strong> A timeline of each event, with timing, tokens and cost.</span></li>
+            <li><span class="ico"><Icon name="activity" /></span><span><strong>Diagnose.</strong> A model explains what went wrong and proposes a fix you apply as a new version.</span></li>
+          </ul>
+          <div class="mt-9 flex flex-wrap gap-3">
+            <a href={u('orbit/')} class="btn-primary btn-arrow">Explore Page Orbit</a>
+            <a href={ORBIT_DEMO} rel="noopener" class="btn-ghost">Try the demo</a>
+          </div>
+        </div>
+        <div class="relative lg:-mr-8 xl:-mr-14" data-reveal="scale" style="--d:120ms">
+          <div class="halo relative ml-2 mr-4 sm:ml-0 sm:mr-10">
+            <Window name="orbit/session" title="Page Orbit" sizes="(min-width: 1024px) 680px, 92vw" alt="A Page Orbit session: the agent's conversation on the left, with a retry notice, and a timeline of every event with timing, tokens and cost on the right." />
+            <div class="float-ui floaty -bottom-12 -right-4 w-[54%] sm:-right-12 sm:-bottom-16" style="--dl:-1.5s">
+              <Pic name="orbit/diagnose" sizes="(min-width: 1024px) 380px, 54vw" alt="Diagnose in Page Orbit: a model suggests letting the agent read GitHub without asking, shows the change to the agent as a diff, and offers Apply as version 4." />
+            </div>
+            <div class="float-ui floaty -left-3 bottom-[18%] w-[32%] sm:-left-10" style="--dl:-3s">
+              <Pic name="orbit/versions" sizes="(min-width: 1024px) 220px, 32vw" alt="An agent's versions in Page Orbit: v3 changed model (current), v2 changed system, v1 first version." />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ================================================================ CONNECT -->
+  <section id="connect" class="relative isolate overflow-hidden py-24 sm:py-32">
+    <Field layout="center" full />
+    <div class="wrap-wide">
+      <div class="sec-head center" data-reveal>
+        <p class="label">Better together</p>
+        <h2 class="h2">One phone for <span class="text-spectrum">all of it.</span></h2>
+        <p class="lede mx-auto">Page Aura and Page Orbit hand their chats and sessions to Page Power on the same Mac. Page Power carries the pages through your own relay to your phone, and brings your answers back.</p>
+      </div>
+      <div class="glass-panel mt-14 px-4 py-6 md:px-10 md:py-11" data-reveal="scale">
+        <Flow />
+      </div>
+      <ul class="mt-10 grid gap-4 md:grid-cols-3">
+        <li class="mini" data-reveal style="--d:0ms"><Icon name="lock" /><span><strong>A private local socket.</strong> Page Aura and Page Orbit only ever talk to Page Power, on the same Mac, readable only by you.</span></li>
+        <li class="mini" data-reveal style="--d:90ms"><Icon name="cloud" /><span><strong>Your relay, your account.</strong> The Mac and the phone both connect out to it. Page Studio’s authors have no access.</span></li>
+        <li class="mini" data-reveal style="--d:180ms"><Icon name="shield" /><span><strong>Sealed end to end.</strong> Live session content is encrypted with AES-256-GCM, with a key from the pairing QR.</span></li>
+      </ul>
     </div>
   </section>
 
-  <!-- PRIVACY -->
-  <section id="privacy" class="block-section border-t border-white/[0.06]">
-    <div class="wrap">
-      <p class="label">Privacy and self-hosting</p>
-      <h2 class="h2 mt-3 max-w-3xl">Yours to run. Honest about what travels.</h2>
-      <p class="lede mt-5 max-w-3xl">Page Studio has no account, no analytics and no third-party SDKs. Nothing goes to the authors. But a page has to travel from your Mac to your phone, so “nothing leaves your devices” would not be true.</p>
-      <div class="mt-12 grid gap-5 md:grid-cols-3">
-        <div class="card card-tone tone-teal">
-          <h3 class="h3">Yours</h3>
-          <p class="body mt-3">The relay runs in your Cloudflare account. The phone apps are built with your Apple or Android developer setup. The pairing token is generated on your Mac. None of the author’s keys, ids or URLs are needed.</p>
-        </div>
-        <div class="card card-tone tone-sky">
-          <h3 class="h3">Encrypted</h3>
-          <p class="body mt-3">Live session content (titles, folders, transcripts, what you type) is sealed end to end with AES-256-GCM using a key from the pairing QR. Your relay only forwards opaque envelopes and stores none of it.</p>
-        </div>
-        <div class="card card-tone tone-amber">
-          <h3 class="h3">Not encrypted</h3>
-          <p class="body mt-3">Pages pass through your Worker with their context (up to 4000 characters) and are kept: pending ones and the last 300 closed. Apple’s push service sees the project name and up to 180 characters. Page masks common secret shapes first; that is best effort.</p>
-        </div>
+  <!-- ================================================================ MOMENTS -->
+  <section id="moments" class="relative overflow-hidden py-24 sm:py-32">
+    <div class="wrap-wide grid items-center gap-16 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+      <div class="relative mx-auto w-full max-w-[340px] world-power" data-reveal="scale">
+        <div class="rings" aria-hidden="true"><i style="--r:170%;--dl:0s"></i><i style="--r:170%;--dl:-2s"></i><i style="--r:170%;--dl:-4s"></i></div>
+        <Device name="power/decision" island sizes="(min-width: 1024px) 340px, 80vw" alt="Page Power's decision sheet on iPhone for an undoable command: Run this command? swift test --filter StuckTests, which Page will type into cmux on Studio MBP, with Approve, Deny and Tell it instead." class="relative" />
       </div>
-      <a href={u('relay/')} class="link mt-8 inline-block text-[15px] font-semibold">What your relay stores and can’t see →</a>
-    </div>
-  </section>
-
-  <!-- GET STARTED -->
-  <section id="get-started" class="block-section border-t border-white/[0.06]">
-    <div class="wrap">
-      <p class="label">Get started</p>
-      <h2 class="h2 mt-3 max-w-3xl">From nothing to a phone that pages you, in 30 to 60 minutes.</h2>
-      <ol class="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-        {[
-          ['1', 'Deploy your relay', 'A free Cloudflare account and Node.js 22.18 or later. Three commands and a health check.', 'relay/'],
-          ['2', 'Install Page Power for Mac', 'Clone the repo and run ./install.sh. It builds and installs the menu-bar app and never uses sudo.', 'mac/#install'],
-          ['3', 'Build the phone app', 'Xcode and your Apple ID for iPhone, or the Android SDK for Android. Pair by QR.', 'iphone/'],
-          ['4', 'Optional: Page Aura and Page Orbit', 'Switch the link on in each app and in Page Power. Nothing to deploy.', 'aura/'],
-        ].map(([n, t, d, href]) => (
-          <li class="card !p-5">
-            <span class="font-mono text-[12px] font-bold text-pulse-teal">STEP {n}</span>
-            <h3 class="h3 mt-2 !text-lg">{t}</h3>
-            <p class="body mt-2 text-[15px]">{d}</p>
-            <a href={u(href)} class="link mt-3 inline-block text-[14px] font-semibold">Details →</a>
+      <div>
+        <div class="sec-head" data-reveal>
+          <p class="label">Only when it matters</p>
+          <h2 class="h2">No ping for every step. <span class="text-spectrum">Just the moments that need you.</span></h2>
+          <p class="lede">Approvals and questions page at once; idle and finished ones wait until you have stepped away. Answer from the lock screen, and see whether your answer landed.</p>
+        </div>
+        <ul class="mt-10 grid gap-3 sm:grid-cols-2">
+          {moments.map((m, i) => (
+            <li class={`moment world-${m.p}`} data-reveal style={`--d:${(i % 4) * 70}ms`}>
+              <div class="flex items-center gap-2.5">
+                <ProductIcon product={m.p} size={22} />
+                <span class="text-[12.5px] font-semibold text-ink-2">{pname[m.p]}</span>
+                <span class="ml-auto font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-accent">{m.kind}</span>
+              </div>
+              <p class="mt-3 text-[15px] leading-snug text-ink">{m.when}</p>
+              <p class="mt-2 font-mono text-[12px] text-ink-3">{m.act}</p>
+            </li>
+          ))}
+          <li class="moment danger" data-reveal style="--d:210ms">
+            <div class="flex items-center gap-2.5">
+              <ProductIcon product="power" size={22} />
+              <span class="text-[12.5px] font-semibold text-ink-2">Irreversible</span>
+            </div>
+            <p class="mt-3 text-[15px] leading-snug text-ink">Deleting, force-pushing, deploying: press and hold, then Face ID.</p>
+            <HoldRing class="mt-4" />
           </li>
-        ))}
-      </ol>
-      <div class="card mt-8 flex flex-col gap-6 !p-6 sm:!p-8 md:flex-row md:items-center md:justify-between">
-        <div class="max-w-xl">
-          <h3 class="h3">The full walkthrough lives in the repo.</h3>
-          <p class="body mt-2">One guide, top to bottom, with every value that is yours, a troubleshooting table, and a copy-paste prompt to let Claude Code do the setup with you.</p>
-        </div>
-        <div class="flex flex-wrap gap-3">
-          <a href={GUIDE} rel="noopener" class="btn-primary">Self-hosting guide</a>
-          <a href={GITHUB} rel="noopener" class="btn-ghost">GitHub</a>
-          <a href={u(PDF)} download class="btn-ghost">Download PDF</a>
-        </div>
+        </ul>
       </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ TRUST -->
+  <section class="py-16 sm:py-20">
+    <div class="wrap-wide">
+      <div class="sec-head center mb-10" data-reveal>
+        <p class="label">Yours to run</p>
+        <h2 class="h2">Your key. Your devices. <span class="text-spectrum">Your rules.</span></h2>
+      </div>
+      <div data-reveal>
+        <TrustBand items={[
+          { icon: 'key', title: 'Your key, your keychain', body: 'Page Aura and Page Orbit keep it in the system keychain, out of the interface’s reach.' },
+          { icon: 'server', title: 'No server in the middle', body: 'The apps talk straight to Anthropic, or through a relay on your own account.' },
+          { icon: 'eye', title: 'No telemetry', body: 'No account, no analytics, no third-party scripts. Nothing goes to the authors.' },
+          { icon: 'code', title: 'Read every line', body: 'Source-available, Page Studio License. Build it yourself.' },
+          { icon: 'gift', title: 'Free', body: 'No subscription. The AI apps use the API credit you already have.' },
+        ]} />
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ GET STARTED -->
+  <section id="get-started" class="py-24 sm:py-32">
+    <div class="wrap-wide">
+      <div class="sec-head center" data-reveal>
+        <p class="label">Get started</p>
+        <h2 class="h2">Pick a door. <span class="text-spectrum">They all link up.</span></h2>
+        <p class="lede mx-auto">Each app works on its own. To link Page Aura or Page Orbit to Page Power, switch it on in each app on the same Mac. Nothing to deploy.</p>
+      </div>
+      <div class="mt-14 grid gap-5 lg:grid-cols-3">
+        <article class="door world-power" data-reveal>
+          <ProductIcon product="power" size={56} glow />
+          <h3 class="mt-6 text-[26px] font-bold tracking-tight">Page Power</h3>
+          <p class="mt-3 text-ink-2">Build the Mac app, deploy your relay to Cloudflare, and pair your phone by QR. From nothing to a phone that pages you in 30 to 60 minutes.</p>
+          <div class="mt-auto flex flex-wrap gap-2.5 pt-8">
+            <a href={GUIDE} rel="noopener" class="btn-primary">Self-hosting guide</a>
+            <a href={GITHUB} rel="noopener" class="btn-ghost">GitHub</a>
+          </div>
+          <a href={u('relay/#agent')} class="link mt-5 text-[14px] font-semibold">Or let Claude Code do the typing →</a>
+        </article>
+        <article class="door world-aura" data-reveal style="--d:90ms">
+          <ProductIcon product="aura" size={56} glow />
+          <h3 class="mt-6 text-[26px] font-bold tracking-tight">Page Aura</h3>
+          <p class="mt-3 text-ink-2">Open it in your browser right now, or install the desktop app for Windows, macOS or Linux. Add your Anthropic API key and start a chat.</p>
+          <div class="mt-auto flex flex-wrap gap-2.5 pt-8">
+            <a href={AURA_APP} rel="noopener" class="btn-primary">Open Page Aura</a>
+            <a href={STUDIO_RELEASES} rel="noopener" class="btn-ghost">Download</a>
+          </div>
+          <a href={AURA_GUIDE} rel="noopener" class="link mt-5 text-[14px] font-semibold">Read the guide →</a>
+        </article>
+        <article class="door world-orbit" data-reveal style="--d:180ms">
+          <ProductIcon product="orbit" size={56} glow />
+          <h3 class="mt-6 text-[26px] font-bold tracking-tight">Page Orbit</h3>
+          <p class="mt-3 text-ink-2">Explore the demo in your browser with a sample workspace, then install the desktop app and bring a key with Managed Agents available.</p>
+          <div class="mt-auto flex flex-wrap gap-2.5 pt-8">
+            <a href={ORBIT_DEMO} rel="noopener" class="btn-primary">Try the demo</a>
+            <a href={STUDIO_RELEASES} rel="noopener" class="btn-ghost">Download</a>
+          </div>
+          <a href={ORBIT_GUIDE} rel="noopener" class="link mt-5 text-[14px] font-semibold">Read the guide →</a>
+        </article>
+      </div>
+      <p class="fine mt-10 text-center">The installers aren’t code-signed: build them yourself, or check the SHA256 checksums that come with every release. <a class="link" href={u('brochure/')}>Read the brochure</a> or <a class="link" href={u(PDF)} download>download it as a PDF</a>.</p>
     </div>
   </section>
 </Layout>
+
+<style>
+  /* ---- hero stage: Page Aura and Page Orbit lean in from the sides, the phone stands in front ---- */
+  .hs { position: relative; aspect-ratio: 1 / 1.08; max-width: 1240px; margin: 0 auto; }
+  .hs::before {
+    content: ''; position: absolute; left: 6%; right: 6%; top: 18%; bottom: 8%; z-index: 0; border-radius: 50%; pointer-events: none;
+    background: linear-gradient(90deg, #4f86ff, #22d3c5 30%, #5EEAD4 50%, #b73bce 72%, #da2978); filter: blur(70px); opacity: 0.28;
+  }
+  .hs-aura, .hs-orbit { position: absolute; z-index: 1; width: 86%; right: -4%; transform: perspective(1400px) rotateY(-12deg); transform-origin: 0% 50%; }
+  .hs-aura { top: 0; }
+  .hs-orbit { top: 37%; }
+  .hs-phone { position: absolute; z-index: 3; left: 0; bottom: 0; width: 40%; }
+  .hs-chip {
+    position: absolute; z-index: 4; display: none; align-items: center; gap: 9px; padding: 8px 14px 8px 8px; border-radius: 999px;
+    font-size: 13.5px; font-weight: 600; color: #fff; background: rgba(16, 19, 26, 0.86); backdrop-filter: blur(10px);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14), 0 20px 40px -16px rgba(0,0,0,0.9);
+  }
+  @media (min-width: 768px) {
+    .hs { aspect-ratio: 1240 / 700; }
+    .hs::before { left: 10%; right: 10%; top: 20%; bottom: 14%; filter: blur(90px); opacity: 0.32; }
+    .hs-aura, .hs-orbit { width: 52%; top: 9%; }
+    .hs-aura { left: 0; right: auto; transform: perspective(1800px) rotateY(14deg); transform-origin: 100% 50%; }
+    .hs-orbit { right: 0; transform: perspective(1800px) rotateY(-14deg); transform-origin: 0% 50%; }
+    .hs-phone { left: 50%; width: 24.5%; top: 0; bottom: auto; transform: translateX(-50%); }
+    .hs-chip { display: inline-flex; }
+    .hs-chip-aura { left: 13%; bottom: 10%; }
+    .hs-chip-orbit { right: 12%; bottom: 7%; }
+  }
+
+  .world-h { font-size: 34px; }
+  @media (min-width: 640px) { .world-h { font-size: 44px; } }
+  @media (min-width: 1024px) { .world-h { font-size: 50px; } }
+
+  /* legend under the hero */
+  .legend {
+    display: flex; align-items: center; gap: 14px; height: 100%; padding: 16px 18px; border-radius: 22px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015)); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+  }
+  .legend strong { display: block; font-size: 16px; font-weight: 650; letter-spacing: -0.01em; }
+  .legend small { display: block; margin-top: 2px; font-size: 14px; line-height: 1.4; color: rgba(255,255,255,0.68); }
+  .legend:hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--w2) 55%, transparent), 0 20px 50px -30px color-mix(in srgb, var(--w2) 80%, transparent); }
+  @media (prefers-reduced-motion: no-preference) { .legend { transition: box-shadow 220ms ease, transform 220ms ease; } .legend:hover { transform: translateY(-2px); } }
+
+  /* the feature rows in each product world */
+  .feats { display: grid; gap: 16px; }
+  .feats li { display: flex; align-items: flex-start; gap: 14px; font-size: 15.5px; line-height: 1.5; color: rgba(255,255,255,0.72); }
+  .feats strong { color: #fff; font-weight: 600; }
+  .feats .ico { width: 40px; height: 40px; border-radius: 12px; }
+  .feats .ico :global(svg) { width: 20px; height: 20px; }
+
+  .mini { display: flex; gap: 14px; padding: 4px 4px; font-size: 15px; line-height: 1.5; color: rgba(255,255,255,0.7); }
+  .mini :global(svg) { flex: none; margin-top: 2px; color: #8fd8f0; }
+  .mini strong { color: #fff; font-weight: 600; }
+
+  .moment {
+    position: relative; overflow: hidden; padding: 18px 18px 16px; border-radius: 20px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015)), #0B0D12;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+  }
+  .moment::before { content: ''; position: absolute; left: 0; top: 14px; bottom: 14px; width: 3px; border-radius: 0 3px 3px 0; background: linear-gradient(180deg, var(--w1), var(--w3)); }
+  .moment.danger { box-shadow: inset 0 0 0 1px rgba(242,109,109,0.3); background: linear-gradient(180deg, rgba(242,109,109,0.08), rgba(242,109,109,0.02)), #0B0D12; }
+  .moment.danger::before { background: #F26D6D; }
+
+  .door {
+    position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start;
+    padding: 32px; border-radius: 32px;
+    background:
+      radial-gradient(90% 60% at 0% 0%, color-mix(in srgb, var(--w1) 22%, transparent), transparent 70%),
+      radial-gradient(80% 60% at 100% 100%, color-mix(in srgb, var(--w3) 20%, transparent), transparent 70%),
+      #0B0D13;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.09);
+  }
+</style>

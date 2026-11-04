@@ -1,23 +1,35 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import PageHero from '../../components/PageHero.astro';
-import Showcase from '../../components/Showcase.astro';
+import Flow from '../../components/Flow.astro';
+import Pic from '../../components/Pic.astro';
+import ConnectDiagram from '../../components/ConnectDiagram.astro';
 import { GUIDE, GUIDE_AI, BLOB, u } from '../../data/site';
 ---
 <Layout current="relay/" title="Run your own relay" description="Page's relay is a small Cloudflare Worker you deploy to your own account. It carries pages and replies between your Mac and your phone, keeps live session content end-to-end encrypted, and the authors have no access to it.">
-  <PageHero label="Your relay" title="A Worker on your own Cloudflare account." lede="It carries pages from your Mac to your phone and your replies back. You deploy it, you own it, and the authors of Page have no access to it. Cloudflare’s free plan is enough for one person.">
+  <PageHero label="Your relay" title="A Worker on" accent="your own Cloudflare account." lede="It carries pages from your Mac to your phone and your replies back. You deploy it, you own it, and the authors of Page have no access to it. Cloudflare’s free plan is enough for one person.">
     <Fragment slot="actions">
       <a href="#steps" class="btn-primary">Deploy it</a>
       <a href="#stores" class="btn-ghost">What it stores</a>
     </Fragment>
-    <Showcase name="showcase/feature-relay-visual" eager motion="final-approach" sizes="(min-width: 1024px) 560px, 100vw" alt="Your relay, your keys: your Mac running Page Power for Mac, your Worker on your own Cloudflare account, and your phone (iPhone or Android), joined by a thread marked live sessions, end-to-end (AES-256-GCM). Below, the phone's Pairing and encryption settings: end-to-end encrypted with the session key from the pairing QR, the relay connected at relay.example.workers.dev, and Unpair." />
+    <div class="relative pb-40 sm:pb-48">
+      <div class="glass-panel p-4 sm:p-6">
+        <Flow sources={false} compact />
+      </div>
+      <div class="float-ui floaty bottom-0 right-[4%] w-[82%] sm:w-[60%]" style="--dl:-2s">
+        <Pic name="power/pairing" sizes="(min-width: 1024px) 380px, 78vw" alt="The phone's Pairing and encryption settings: end-to-end encrypted with the session key from the pairing QR; the relay connected at relay.example.workers.dev; and Unpair Studio MBP." />
+      </div>
+    </div>
   </PageHero>
 
   <section id="what" class="block-section">
     <div class="wrap">
       <p class="label">What it does</p>
       <h2 class="h2 mt-3 max-w-3xl">A small hub, one Durable Object per pairing.</h2>
-      <div class="mt-12 grid gap-5 md:grid-cols-2">
+      <div class="card mt-12 !p-4 sm:!p-8">
+        <ConnectDiagram />
+      </div>
+      <div class="mt-5 grid gap-5 md:grid-cols-2">
         <div class="card">
           <h3 class="h3">Matches your Mac and your phone</h3>
           <p class="body mt-3">The pairing token is made on your Mac and reaches your phone in the QR code. Each pairing gets its own Durable Object, isolated from everyone else’s. No accounts: the token is the credential, and requests without a valid one are refused.</p>

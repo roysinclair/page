@@ -1,0 +1,13 @@
+---
+// A phone drawn around a real screen render (the apps' own fixture renders). `island` draws the camera pill for
+// screens that leave room for it; `android` uses the flatter corners.
+import Pic from './Pic.astro';
+interface Props { name: string; alt: string; sizes?: string; eager?: boolean; class?: string; island?: boolean; android?: boolean; style?: string }
+const { name, alt, sizes = '(min-width: 1024px) 300px, 50vw', eager, class: cls = '', island = false, android = false, style } = Astro.props;
+---
+<figure class={`device m-0 ${android ? 'android' : ''} ${cls}`} style={style}>
+  <div class="device-screen">
+    {island && <span class="device-island" aria-hidden="true"></span>}
+    <Pic name={name} alt={alt} sizes={sizes} eager={eager} />
+  </div>
+</figure>

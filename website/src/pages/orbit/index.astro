@@ -266,11 +266,11 @@ import { u, AURA_GITHUB, ORBIT_GUIDE, ORBIT_DEMO, STUDIO_RELEASES, BLOB } from '
             <li>In Page Orbit, open Settings ▸ <strong>Page Power on this Mac</strong> and switch on <strong>Link Page Orbit to Page Power</strong>.</li>
             <li>The line under the switch reads <em>Connected to Page Power</em>, or <em>Waiting for Page Power</em> while it retries.</li>
           </ol>
-          <p class="fine mt-6">In Page Power, Preferences ▸ Agents ▸ <strong>Page Orbit</strong> must be on. It is on by default, because it only opens a local socket. The opt-in lives in Page Orbit, where the link is off by default. It exists only in the macOS desktop app. Page Power never keeps the Mac awake for Page Orbit: its agents run in Anthropic’s cloud.</p>
+          <p class="fine mt-6">In Page Power, Preferences ▸ Agents ▸ <strong>Page Orbit</strong> must be on. It is on by default, because it only opens a local socket. The opt-in lives in Page Orbit, where the link is off by default. It exists in the macOS and Linux desktop apps. Page Power never keeps the Mac awake for Page Orbit: its agents run in Anthropic’s cloud.</p>
         </div>
         <div class="card !p-7 sm:!p-9">
           <h3 class="h3">What leaves the Mac</h3>
-          <p class="body mt-4">Page Orbit never talks to the relay. It talks to Page Power over a Unix socket on the same Mac, readable only by you. Page Power then sends, through <strong class="text-ink">your own</strong> Page Relay to <strong class="text-ink">your</strong> phone:</p>
+          <p class="body mt-4">Page Orbit never talks to the relay. It talks to Page Power over a Unix socket on the same computer, readable only by you. Page Power then sends, through <strong class="text-ink">your own</strong> Page Relay to <strong class="text-ink">your</strong> phone:</p>
           <ul class="list-dots mt-4">
             <li>the titles of sessions that are working or waiting on you, and their agent’s name;</li>
             <li>the tool an agent wants to use, with its input clipped and redacted by Page Power;</li>

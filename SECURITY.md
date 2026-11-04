@@ -18,7 +18,7 @@ the security model is about who can send replies and what Page Studio will type.
 
 ```
  Mac (trusted)  ──wss/https──▶  your Cloudflare Worker  ──APNs──▶  your iPhone (trusted)
-   Page.app, hook                 (you deploy and own it)            Page app
+   Page Studio.app, hook          (you deploy and own it)            Page Relay
 ```
 
 | Component | Trust and attack surface |
@@ -235,7 +235,7 @@ from sleeping with the lid closed.
 
 | Label | Installed by | What it runs |
 |---|---|---|
-| `local.Page` | `install.sh` | `/Applications/Page.app` at login. It's restarted after a crash, not after a clean exit |
+| `local.Page` | `install.sh` | `/Applications/Page Studio.app` at login. It's restarted after a crash, not after a clean exit |
 | `local.Page.sleepguard` | Page Studio, when lid-closed-on-battery is turned on (removed when it's off and the flag is clear) | Every 60 s (and at load), `~/Library/Application Support/ClaudePowerMode/sleepguard.sh` clears `pmset disablesleep` if Page Studio isn't running or hasn't refreshed its `disablesleep.active` marker for 3 minutes |
 | `local.ClaudePowerMode.resume.<sessionId>` | Page Studio, per scheduled rate-limit resume (`autoResumeEnabled`) | A 0700 bash script that runs `claude --resume <id> --print "<prompt>"` once after the reset, unless the session is live. It removes itself afterwards. Older builds used `local.Page.resume.*` / `local.PageAI.resume.*`; those are cleaned up |
 

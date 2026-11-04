@@ -50,7 +50,7 @@ extension RenderSurfaces {
         +        "hooks": [
         +          {
         +            "type": "command",
-        +            "command": "'/Applications/Page.app/Contents/Resources/hooks/page-notify.sh'",
+        +            "command": "'/Applications/Page Studio.app/Contents/Resources/hooks/page-notify.sh'",
         +            "timeout": 570,
         +            "statusMessage": "Page: asking your phone (only when you're away)"
         +          }
@@ -60,7 +60,7 @@ extension RenderSurfaces {
         +    "Notification": [
         +      {
         +        "hooks": [
-        +          { "type": "command", "command": "'/Applications/Page.app/Contents/Resources/hooks/page-notify.sh'", "timeout": 30 }
+        +          { "type": "command", "command": "'/Applications/Page Studio.app/Contents/Resources/hooks/page-notify.sh'", "timeout": 30 }
         +        ]
         +      }
         +    ]
@@ -76,7 +76,7 @@ extension RenderSurfaces {
                  {
                    "type": "command",
         -          "command": "'/Users/studio/.claude/hooks/page-notify.sh' --codex",
-        +          "command": "'/Applications/Page.app/Contents/Resources/hooks/page-notify.sh' --codex",
+        +          "command": "'/Applications/Page Studio.app/Contents/Resources/hooks/page-notify.sh' --codex",
                    "timeout": 570
                  }
                ]

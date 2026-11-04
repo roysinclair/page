@@ -287,7 +287,7 @@ final class NWDialogInteractionTests: XCTestCase {
         let home = FileManager.default.temporaryDirectory.appendingPathComponent("nwint-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: home.appendingPathComponent(".codex"), withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: home) }
-        let script = "/Applications/Page.app/Contents/Resources/hooks/page-notify.sh"
+        let script = "/Applications/Page Studio.app/Contents/Resources/hooks/page-notify.sh"
         let tower = makeTower()
         var env = TowerEnvironment()
         let installer = HookInstaller(homeDirectory: home, scriptPath: script)

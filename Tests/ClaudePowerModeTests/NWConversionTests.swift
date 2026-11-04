@@ -13,8 +13,8 @@ import AppKit
 /// or `enableForPage()`, which would run the real cmux CLI.
 final class NWConversionTests: XCTestCase {
     private var home: URL!
-    private let script = "/Applications/Page.app/Contents/Resources/hooks/page-notify.sh"
-    private let otherScript = "/Users/me/Downloads/Page.app/Contents/Resources/hooks/page-notify.sh"
+    private let script = "/Applications/Page Studio.app/Contents/Resources/hooks/page-notify.sh"
+    private let otherScript = "/Users/me/Downloads/Page Studio.app/Contents/Resources/hooks/page-notify.sh"
 
     override func setUpWithError() throws {
         home = FileManager.default.temporaryDirectory.appendingPathComponent("nwconv-\(UUID().uuidString)", isDirectory: true)
@@ -36,7 +36,7 @@ final class NWConversionTests: XCTestCase {
     /// A store over the temp home. `located` is the hook script Page "found" (nil: not found).
     /// Every dialog is recorded, and answered with `answer` when it has more than one button.
     /// Callers keep the returned store in a local: the hooks model holds it weakly.
-    private func store(located: String? = "/Applications/Page.app/Contents/Resources/hooks/page-notify.sh",
+    private func store(located: String? = "/Applications/Page Studio.app/Contents/Resources/hooks/page-notify.sh",
                        answer: Int = 1, shown: @escaping (NWDialogSpec) -> Void = { _ in }) -> TowerStore {
         var env = TowerEnvironment()
         let installer = HookInstaller(homeDirectory: home, scriptPath: located ?? "")

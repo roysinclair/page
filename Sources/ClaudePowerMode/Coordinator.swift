@@ -216,6 +216,8 @@ final class Coordinator {
     private let claudeBackend: ClaudeBackend
     private let codexBackend: CodexBackend
     private let auraBackend: AuraBackend
+    /// Page Orbit (docs/ORBIT-LINK.md): the same link backend on `orbit.sock`; pages only.
+    private let orbitBackend: AuraBackend
     /// Immutable after init, so the relay queue may read it to route replies.
     private let backends: [AgentBackend]
     /// One serial queue per backend: replies to the same agent stay in
@@ -317,7 +319,8 @@ final class Coordinator {
         claudeBackend = ClaudeBackend(config: cfg)
         codexBackend = CodexBackend(config: cfg)
         auraBackend = AuraBackend(config: cfg)
-        backends = [claudeBackend, codexBackend, auraBackend]
+        orbitBackend = AuraBackend(config: cfg, flavor: .orbit)
+        backends = [claudeBackend, codexBackend, auraBackend, orbitBackend]
         var queues: [AgentBackendID: DispatchQueue] = [:]
         for b in backends {
             queues[b.id] = DispatchQueue(label: "ClaudePowerMode.reply.\(b.id.rawValue)", qos: .userInitiated)
@@ -854,6 +857,8 @@ final class Coordinator {
     static func isLiveSessionCapable(_ id: AgentBackendID) -> Bool {
         switch id {
         case .claude, .codex, .aura: return true
+        // Page Orbit's agents run in Anthropic's cloud; v1 has no Sessions-tab rows.
+        case .orbit: return false
         }
     }
 
@@ -862,6 +867,7 @@ final class Coordinator {
         case .claude: return true
         case .codex: return tickConfig.codexBackendEnabled
         case .aura: return tickConfig.auraBackendEnabled
+        case .orbit: return tickConfig.orbitBackendEnabled
         }
     }
 
@@ -1696,6 +1702,8 @@ final class Coordinator {
             return TerminalFocus.activateAnyTerminal()
         case .aura:
             return TerminalFocus.activate(appNamed: "Page Aura", shown: nil)
+        case .orbit:
+            return TerminalFocus.activate(appNamed: "Page Orbit", shown: nil)
         }
     }
 

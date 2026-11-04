@@ -5,6 +5,8 @@ enum AgentBackendID: String, Codable, Equatable, Hashable {
     case codex
     /// Page Aura, the bring-your-own-key chat app (docs/AURA-LINK.md).
     case aura
+    /// Page Orbit, the Managed Agents control room (docs/ORBIT-LINK.md).
+    case orbit
 }
 
 enum AgentSessionSource: String, Codable, Equatable {
@@ -64,7 +66,7 @@ struct RelayReply: Codable, Equatable {
     let cwd: String?
     /// The stored intervention kind ("permission", "question", "idle", ...).
     let kind: String?
-    /// "claude" | "codex" | "aura". Older Workers omit it; route by id prefix then.
+    /// "claude" | "codex" | "aura" | "orbit". Older Workers omit it; route by id prefix then.
     let backend: String?
     let source: String?
     /// v2 Workers set this when they forward free text to a page that had
@@ -80,11 +82,12 @@ struct RelayReply: Codable, Equatable {
     var promptKey: String? = nil
 
     /// Backend that owns this reply: explicit field first, else the
-    /// historical id-prefix convention (`codex-*` → Codex, `aura-*` → Page Aura).
+    /// historical id-prefix convention (`codex-*` → Codex, `aura-*` → Page Aura, `orbit-*` → Page Orbit).
     var owningBackend: AgentBackendID {
         if let backend, let id = AgentBackendID(rawValue: backend) { return id }
         if interventionId.hasPrefix("codex-") { return .codex }
         if interventionId.hasPrefix("aura-") { return .aura }
+        if interventionId.hasPrefix("orbit-") { return .orbit }
         return .claude
     }
 }

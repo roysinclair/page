@@ -2788,6 +2788,9 @@ do {
     let auraChar = AgentCharacter.from(backend: .known(.aura), provider: "anthropic")
     check(auraChar.kind == .aura && auraChar.name == "Page Aura" && auraChar.symbol == "sparkles", "a Page Aura chat has its own character")
     check(auraChar.subtitle(backend: .known(.aura), provider: "anthropic", host: "Page Aura") == "Page Aura", "Page Aura's host is not said twice")
+    let orbitChar = AgentCharacter.from(backend: AgentBackend(wire: "orbit"), provider: "anthropic")
+    check(orbitChar.kind == .orbit && orbitChar.name == "Page Orbit" && orbitChar.symbol == "atom", "a Page Orbit session has its own character")
+    check(InterventionBackend(rawValue: "orbit")?.badge == "ORBIT" && InterventionBackend(rawValue: "orbit")?.displayName == "Page Orbit", "Page Orbit pages are labelled")
 
     let offer = RoomLens.available(RoomLens.Inputs(character: claude, hasScreen: true, workflowCount: 2, canAskForChanges: true))
     check(offer == [.story, .screen, .changes, .workflows], "Claude gets every lens with something behind it")

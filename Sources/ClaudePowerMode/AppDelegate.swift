@@ -326,6 +326,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         case .claude: return "Claude"
         case .codex: return "Codex"
         case .aura: return "Page Aura"
+        case .orbit: return "Page Orbit"
         }
     }
 

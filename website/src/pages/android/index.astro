@@ -5,8 +5,8 @@ import Phone from '../../components/Phone.astro';
 import Showcase from '../../components/Showcase.astro';
 import { u, GUIDE, BLOB } from '../../data/site';
 ---
-<Layout current="android/" title="Page for Android" description="Page for Android: the same pages, decision sheet, session rooms and Night Watch design as iPhone, with no Google account and no Play services. Built with the Android SDK and paired by QR. It has no push; here is how it stays connected.">
-  <PageHero label="Page for Android" title="The same pages. No Google account." lede="A native Android app, built with Jetpack Compose, with the iPhone app’s behaviour, trust model and Night Watch design. No Google account, no Play services, no Firebase. It has no push; here is honestly how it still reaches you.">
+<Layout current="android/" title="Page Power for Android" description="Page Power for Android: the same pages, decision sheet, session rooms and Night Watch design as iPhone, with no Google account and no Play services. Built with the Android SDK and paired by QR. It has no push; here is how it stays connected.">
+  <PageHero label="Page Power for Android" title="The same pages. No Google account." lede="A native Android app, built with Jetpack Compose, with the iPhone app’s behaviour, trust model and Night Watch design. No Google account, no Play services, no Firebase. It has no push; here is honestly how it still reaches you.">
     <Fragment slot="actions">
       <a href="#no-push" class="btn-primary">How notifications work</a>
       <a href="#setup" class="btn-ghost">Set it up</a>
@@ -77,7 +77,7 @@ import { u, GUIDE, BLOB } from '../../data/site';
         <h2 class="h2 mt-3">Build it with the Android SDK.</h2>
         <p class="body mt-5">You need the Android SDK (platform 35 and build-tools 35.0.0), a JDK 17 or later (Android Studio’s bundled one works) and, for installing, <code class="code-inline">adb</code>. Gradle won’t download missing SDK parts: the build fails instead. The app needs Android 8.0 or later.</p>
         <ol class="mt-6 list-decimal space-y-3 pl-6 text-ink-2 marker:font-mono marker:text-pulse-teal">
-          <li>Set up <a class="link" href={u('relay/')}>your relay</a> and <a class="link" href={u('mac/#install')}>Page for Mac</a>.</li>
+          <li>Set up <a class="link" href={u('relay/')}>your relay</a> and <a class="link" href={u('mac/#install')}>Page Power for Mac</a>.</li>
           <li>Build the debug APK and install it with <code class="code-inline">adb</code> (USB debugging on), or copy the APK across and allow “Install unknown apps”.</li>
           <li>On the Mac choose <strong>Pair phone…</strong>. In the app, <strong>Pair with your Mac</strong> scans the QR, or paste the pairing link instead.</li>
           <li>Android 13 and later asks for notification permission once, after pairing. Turn on <strong>Stay connected</strong> for steady pages.</li>
@@ -113,7 +113,7 @@ import { u, GUIDE, BLOB } from '../../data/site';
       </ul>
       <div class="mt-10 flex flex-wrap gap-3">
         <a class="btn-ghost" href={BLOB + 'android/README.md'} rel="noopener">Android README</a>
-        <a class="btn-ghost" href={u('iphone/')}>Page for iPhone</a>
+        <a class="btn-ghost" href={u('iphone/')}>Page Power for iPhone</a>
       </div>
     </div>
   </section>

@@ -29,6 +29,7 @@ struct PreferencesForm: Equatable {
     // Agents
     var codexBackendEnabled: Bool
     var auraBackendEnabled: Bool
+    var orbitBackendEnabled: Bool
     var localModelsEnabled: Bool
     var codexPath: String
     // Rate limits
@@ -70,6 +71,7 @@ struct PreferencesForm: Equatable {
         resumeAfterBatteryRecovery = c.resumeAfterBatteryRecovery
         codexBackendEnabled = c.codexBackendEnabled
         auraBackendEnabled = c.auraBackendEnabled
+        orbitBackendEnabled = c.orbitBackendEnabled
         localModelsEnabled = c.localModelsEnabled
         codexPath = c.codexPath
         rateLimitWatcherEnabled = c.rateLimitWatcherEnabled
@@ -136,6 +138,7 @@ struct PreferencesForm: Equatable {
         if resumeAfterBatteryRecovery != baseline.resumeAfterBatteryRecovery { c.resumeAfterBatteryRecovery = resumeAfterBatteryRecovery }
         if codexBackendEnabled != baseline.codexBackendEnabled { c.codexBackendEnabled = codexBackendEnabled }
         if auraBackendEnabled != baseline.auraBackendEnabled { c.auraBackendEnabled = auraBackendEnabled }
+        if orbitBackendEnabled != baseline.orbitBackendEnabled { c.orbitBackendEnabled = orbitBackendEnabled }
         if localModelsEnabled != baseline.localModelsEnabled { c.localModelsEnabled = localModelsEnabled }
         if codexPath != baseline.codexPath { c.codexPath = codexPath.trimmingCharacters(in: .whitespacesAndNewlines) }
         if rateLimitWatcherEnabled != baseline.rateLimitWatcherEnabled { c.rateLimitWatcherEnabled = rateLimitWatcherEnabled }

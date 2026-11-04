@@ -1826,7 +1826,7 @@ final class SessionRemote {
             }
         case .codex:
             return state == .idle || state == .interrupted || state == .failed ? .ready : .wait
-        case .aura:
+        case .aura, .orbit:
             return .wait
         }
     }
@@ -2031,7 +2031,7 @@ final class LiveSessionBackends: SessionRemoteBackends {
                 let terminal = CodexInjector.terminal(tty: tty, pid: pid, threadId: t.id, table: table)
                 out[s.sessionId] = Self.codexHost(terminal, appHost: CodexInjector.host(ofPid: pid, table: table), provider: provider,
                                                   cmuxBlocker: cmuxBlocker)
-            case .aura:
+            case .aura, .orbit:
                 // Never probed (its host is its state, `AuraLink.host(for:)`); if asked, the same answer.
                 out[s.sessionId] = AuraLink.host(for: s.state)
             }
@@ -2168,7 +2168,7 @@ final class LiveSessionBackends: SessionRemoteBackends {
         case .codex:
             return codex.remoteThread(session.sessionId)?.path
                 .flatMap { $0.isEmpty ? nil : SessionTranscriptFile(path: $0, format: .codex) }
-        case .aura:
+        case .aura, .orbit:
             return nil
         }
     }
@@ -2189,7 +2189,7 @@ final class LiveSessionBackends: SessionRemoteBackends {
                                                      cwdFallback: .forSource(CodexBackend.mapSource(t.source)))
             guard case .tty(let tty, let pid) = target else { return nil }
             return SessionScreen.source(for: CodexInjector.terminal(tty: tty, pid: pid, threadId: t.id, table: table))
-        case .aura:
+        case .aura, .orbit:
             return nil
         }
     }
@@ -2202,7 +2202,7 @@ final class LiveSessionBackends: SessionRemoteBackends {
                                interventionId: interventionId, completion: completion)
         case .codex:
             codex.remoteInput(threadId: session.sessionId, text: text, interventionId: interventionId, completion: completion)
-        case .aura:
+        case .aura, .orbit:
             aura.remoteInput(sessionId: session.sessionId, text: text, completion: completion)
         }
     }
@@ -2213,7 +2213,7 @@ final class LiveSessionBackends: SessionRemoteBackends {
             claude.remoteAnswer(sessionId: session.sessionId, request: request, completion: completion)
         case .codex:
             completion(.refused(.answerUnsupported, "Page can't answer Codex's questions from here"))
-        case .aura:
+        case .aura, .orbit:
             completion(.refused(.answerUnsupported, Self.auraMessage))
         }
     }
@@ -2224,7 +2224,7 @@ final class LiveSessionBackends: SessionRemoteBackends {
             claude.remoteInterrupt(sessionId: session.sessionId, interventionId: interventionId, completion: completion)
         case .codex:
             codex.remoteInterrupt(threadId: session.sessionId, interventionId: interventionId, completion: completion)
-        case .aura:
+        case .aura, .orbit:
             aura.remoteStop(sessionId: session.sessionId, completion: completion)
         }
     }
@@ -2236,7 +2236,7 @@ final class LiveSessionBackends: SessionRemoteBackends {
             claude.remoteClearDraft(sessionId: session.sessionId, text: text, interventionId: interventionId, completion: completion)
         case .codex:
             completion(.refused(.notTypable, DraftClear.codexMessage))
-        case .aura:
+        case .aura, .orbit:
             completion(.refused(.notTypable, Self.auraMessage))
         }
     }
@@ -2248,7 +2248,7 @@ final class LiveSessionBackends: SessionRemoteBackends {
             claude.remotePeekDraft(sessionId: session.sessionId, interventionId: interventionId, completion: completion)
         case .codex:
             completion(.refused(.notTypable, DraftClear.atTheMacMessage))
-        case .aura:
+        case .aura, .orbit:
             completion(.refused(.notTypable, Self.auraMessage))
         }
     }
@@ -2261,7 +2261,7 @@ final class LiveSessionBackends: SessionRemoteBackends {
                                held: claim, completion: completion)
         case .codex:
             codex.remoteInput(threadId: session.sessionId, text: text, interventionId: nil, held: claim, completion: completion)
-        case .aura:
+        case .aura, .orbit:
             completion(.refused(.notTypable, Self.auraMessage))
         }
     }
@@ -2274,7 +2274,7 @@ final class LiveSessionBackends: SessionRemoteBackends {
                                 interventionId: interventionId, completion: completion)
         case .codex:
             completion(.refused(.attachUnsupported, ImageDelivery.codexMessage))
-        case .aura:
+        case .aura, .orbit:
             completion(.refused(.attachUnsupported, Self.auraMessage))
         }
     }

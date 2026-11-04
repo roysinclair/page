@@ -548,6 +548,10 @@ struct NWAgentsPage: View {
                 NWToggleRow(title: "Page Aura",
                             detail: "Lets the Page Aura chat app page your phone. Switch it on in Page Aura's settings too.",
                             isOn: store.bind(\.auraBackendEnabled))
+                NWDivider()
+                NWToggleRow(title: "Page Orbit",
+                            detail: "Lets Page Orbit page your phone when an agent needs approval or finishes. Switch it on in Page Orbit's settings too.",
+                            isOn: store.bind(\.orbitBackendEnabled))
             }
             NWCard(title: "LOCAL MODELS") {
                 NWToggleRow(title: "Keep the Mac awake while local models work",

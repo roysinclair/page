@@ -14,7 +14,7 @@ import { u, pieces, kinds, GITHUB, GUIDE, PDF } from '../data/site';
       <div class="relative z-10">
         <p class="label">Page Studio · Open source · Run it yourself</p>
         <h1 class="h1 mt-5 !text-[40px] sm:!text-[54px] lg:!text-[52px] xl:!text-[58px]">Your agents keep working. <span class="text-grad sm:block">You get paged only when it matters.</span></h1>
-        <p class="lede mt-6 max-w-xl">Page keeps your Mac awake while Claude Code and Codex work, pauses them gracefully at your battery cutoff, and pages your phone when a decision is yours.</p>
+        <p class="lede mt-6 max-w-xl">Page Power keeps your Mac awake while Claude Code and Codex work, pauses them gracefully at your battery cutoff, and pages your phone when a decision is yours.</p>
         <div class="mt-9 flex flex-wrap gap-3">
           <a href="#get-started" class="btn-primary">Get started</a>
           <a href="#connect" class="btn-ghost">How it connects</a>
@@ -57,7 +57,7 @@ import { u, pieces, kinds, GITHUB, GUIDE, PDF } from '../data/site';
           <a href={u('mac/#battery')} class="link mt-5 inline-block text-[15px] font-semibold">How the pause works →</a>
         </article>
       </div>
-      <Shot class="mt-10" crop={0.73} name="mac-menubar-states" alt="Page for Mac's menu-bar popover in three states: two items need you with five agents working; all quiet with phone paging armed because you are away; and paused at ten percent for battery, with two agents summarised and a Resume now anyway button. A Dispatch box below starts new work." caption="The menu-bar popover: needs you, all quiet, and paused for battery." />
+      <Shot class="mt-10" crop={0.73} name="mac-menubar-states" alt="Page Power for Mac's menu-bar popover in three states: two items need you with five agents working; all quiet with phone paging armed because you are away; and paused at ten percent for battery, with two agents summarised and a Resume now anyway button. A Dispatch box below starts new work." caption="The menu-bar popover: needs you, all quiet, and paused for battery." />
     </div>
   </section>
 
@@ -65,9 +65,9 @@ import { u, pieces, kinds, GITHUB, GUIDE, PDF } from '../data/site';
   <section id="pieces" class="block-section border-t border-white/[0.06]">
     <div class="wrap">
       <p class="label">The studio</p>
-      <h2 class="h2 mt-3 max-w-3xl">Four pieces that work together.</h2>
-      <p class="lede mt-5 max-w-2xl">Each one runs on hardware and accounts you own. Use the Mac app alone, add a phone, or bring Page Aura along.</p>
-      <Showcase name="showcase/family-visual" motion="final-approach" class="-mx-4 mt-10 sm:mx-0" sizes="(min-width: 1200px) 1104px, 100vw" alt="The four pieces together: Page for Mac and Page Aura on a MacBook, with the menu-bar popover showing two items that need you; an Android phone and an iPhone running Page; and your relay on your own Cloudflare account linking the Mac to both phones." />
+      <h2 class="h2 mt-3 max-w-3xl">Five pieces that work together.</h2>
+      <p class="lede mt-5 max-w-2xl">Each one runs on hardware and accounts you own. Use Page Power on the Mac alone, add a phone, or bring Page Aura and Page Orbit along.</p>
+      <Showcase name="showcase/family-visual" motion="final-approach" class="-mx-4 mt-10 sm:mx-0" sizes="(min-width: 1200px) 1104px, 100vw" alt="The four pieces together: Page Power for Mac and Page Aura on a MacBook, with the menu-bar popover showing two items that need you; an Android phone and an iPhone running Page; and your relay on your own Cloudflare account linking the Mac to both phones." />
       <div class="mt-8 grid gap-5 sm:grid-cols-2">
         {pieces.map((p, i) => (
           <a href={u(p.href)} class={`card card-tone card-link tone-${p.tone} group block`}>
@@ -164,8 +164,13 @@ import { u, pieces, kinds, GITHUB, GUIDE, PDF } from '../data/site';
         </div>
         <div class="card">
           <h3 class="h3">Page Aura</h3>
-          <p class="body mt-4">A bring-your-own-key Claude chat app that links to Page, so a streaming reply keeps the Mac awake and your phone hears when it is done.</p>
+          <p class="body mt-4">A bring-your-own-key Claude chat app that links to Page Power, so a streaming reply keeps the Mac awake and your phone hears when it is done.</p>
           <a href={u('aura/')} class="link mt-4 inline-block text-[15px] font-semibold">Meet Page Aura →</a>
+        </div>
+        <div class="card">
+          <h3 class="h3">Page Orbit</h3>
+          <p class="body mt-4">A control room for Anthropic Managed Agents that links to Page Power, so an agent waiting for your approval, or one that has finished, pages your phone.</p>
+          <a href={u('orbit/')} class="link mt-4 inline-block text-[15px] font-semibold">Meet Page Orbit →</a>
         </div>
       </div>
     </div>
@@ -176,7 +181,7 @@ import { u, pieces, kinds, GITHUB, GUIDE, PDF } from '../data/site';
     <div class="wrap">
       <p class="label">Privacy and self-hosting</p>
       <h2 class="h2 mt-3 max-w-3xl">Yours to run. Honest about what travels.</h2>
-      <p class="lede mt-5 max-w-3xl">Page has no account, no analytics and no third-party SDKs. Nothing goes to the authors. But a page has to travel from your Mac to your phone, so “nothing leaves your devices” would not be true.</p>
+      <p class="lede mt-5 max-w-3xl">Page Studio has no account, no analytics and no third-party SDKs. Nothing goes to the authors. But a page has to travel from your Mac to your phone, so “nothing leaves your devices” would not be true.</p>
       <div class="mt-12 grid gap-5 md:grid-cols-3">
         <div class="card card-tone tone-teal">
           <h3 class="h3">Yours</h3>
@@ -203,9 +208,9 @@ import { u, pieces, kinds, GITHUB, GUIDE, PDF } from '../data/site';
       <ol class="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
         {[
           ['1', 'Deploy your relay', 'A free Cloudflare account and Node.js 22.18 or later. Three commands and a health check.', 'relay/'],
-          ['2', 'Install Page for Mac', 'Clone the repo and run ./install.sh. It builds and installs the menu-bar app and never uses sudo.', 'mac/#install'],
+          ['2', 'Install Page Power for Mac', 'Clone the repo and run ./install.sh. It builds and installs the menu-bar app and never uses sudo.', 'mac/#install'],
           ['3', 'Build the phone app', 'Xcode and your Apple ID for iPhone, or the Android SDK for Android. Pair by QR.', 'iphone/'],
-          ['4', 'Optional: Page Aura', 'Switch the link on in both apps. Nothing to deploy.', 'aura/'],
+          ['4', 'Optional: Page Aura and Page Orbit', 'Switch the link on in each app and in Page Power. Nothing to deploy.', 'aura/'],
         ].map(([n, t, d, href]) => (
           <li class="card !p-5">
             <span class="font-mono text-[12px] font-bold text-pulse-teal">STEP {n}</span>

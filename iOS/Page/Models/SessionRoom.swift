@@ -20,7 +20,7 @@ import Foundation
 /// narrates and runs steps, Codex shows plans and patches, a local model
 /// streams an answer and costs nothing.
 struct AgentCharacter: Equatable {
-    enum Kind: String, Equatable { case claude, codex, aura, local, other }
+    enum Kind: String, Equatable { case claude, codex, aura, orbit, local, other }
 
     let kind: Kind
     /// "Claude", "Codex", "Ollama", or the agent's own name.
@@ -65,6 +65,8 @@ struct AgentCharacter: Equatable {
             return AgentCharacter(kind: .codex, name: "Codex", symbol: "hexagon", privacyTitle: nil, privacyNote: nil, runtime: nil)
         case .known(.aura):
             return AgentCharacter(kind: .aura, name: "Page Aura", symbol: "sparkles", privacyTitle: nil, privacyNote: nil, runtime: nil)
+        case .known(.orbit):
+            return AgentCharacter(kind: .orbit, name: "Page Orbit", symbol: "atom", privacyTitle: nil, privacyNote: nil, runtime: nil)
         case .other:
             return AgentCharacter(kind: .other, name: backend.displayName, symbol: "questionmark.circle",
                                   privacyTitle: nil, privacyNote: nil, runtime: nil)
@@ -128,8 +130,8 @@ enum RoomLens: String, CaseIterable, Identifiable, Equatable {
     static func available(_ i: Inputs) -> [RoomLens] {
         var out: [RoomLens] = [.story]
         // A Page Aura chat has no terminal to mirror and no folder to diff.
-        if i.hasScreen && i.character.kind != .other && i.character.kind != .aura { out.append(.screen) }
-        if i.canAskForChanges && i.character.kind != .other && i.character.kind != .aura { out.append(.changes) }
+        if i.hasScreen && ![.other, .aura, .orbit].contains(i.character.kind) { out.append(.screen) }
+        if i.canAskForChanges && ![.other, .aura, .orbit].contains(i.character.kind) { out.append(.changes) }
         if i.workflowCount > 0 && i.character.kind == .claude { out.append(.workflows) }
         return out
     }

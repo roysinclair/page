@@ -33,7 +33,7 @@ data class AgentCharacter(
     /** The local runtime's own name when the model runs locally ("Ollama"). */
     val runtime: String?,
 ) {
-    enum class Kind(val raw: String) { CLAUDE("claude"), CODEX("codex"), AURA("aura"), LOCAL("local"), OTHER("other") }
+    enum class Kind(val raw: String) { CLAUDE("claude"), CODEX("codex"), AURA("aura"), ORBIT("orbit"), LOCAL("local"), OTHER("other") }
 
     /** "Claude · cmux", "Claude · on Ollama · cmux", "Ollama · via opencode · cmux". */
     fun subtitle(backend: AgentBackend, provider: String?, host: String): String {
@@ -82,6 +82,7 @@ data class AgentCharacter(
                     InterventionBackend.CLAUDE -> AgentCharacter(Kind.CLAUDE, "Claude", "sparkle", null, null, null)
                     InterventionBackend.CODEX -> AgentCharacter(Kind.CODEX, "Codex", "hexagon", null, null, null)
                     InterventionBackend.AURA -> AgentCharacter(Kind.AURA, "Page Aura", "sparkles", null, null, null)
+                    InterventionBackend.ORBIT -> AgentCharacter(Kind.ORBIT, "Page Orbit", "atom", null, null, null)
                 }
                 is AgentBackend.Other -> AgentCharacter(Kind.OTHER, backend.displayName, "questionmark.circle", null, null, null)
             }
@@ -113,8 +114,8 @@ enum class RoomLens(val raw: String, val title: String) {
         fun available(i: Inputs): List<RoomLens> {
             val out = arrayListOf(STORY)
             // A Page Aura chat has no terminal to mirror and no folder to diff.
-            if (i.hasScreen && i.character.kind != AgentCharacter.Kind.OTHER && i.character.kind != AgentCharacter.Kind.AURA) out.add(SCREEN)
-            if (i.canAskForChanges && i.character.kind != AgentCharacter.Kind.OTHER && i.character.kind != AgentCharacter.Kind.AURA) out.add(CHANGES)
+            if (i.hasScreen && i.character.kind !in setOf(AgentCharacter.Kind.OTHER, AgentCharacter.Kind.AURA, AgentCharacter.Kind.ORBIT)) out.add(SCREEN)
+            if (i.canAskForChanges && i.character.kind !in setOf(AgentCharacter.Kind.OTHER, AgentCharacter.Kind.AURA, AgentCharacter.Kind.ORBIT)) out.add(CHANGES)
             if (i.workflowCount > 0 && i.character.kind == AgentCharacter.Kind.CLAUDE) out.add(WORKFLOWS)
             return out
         }

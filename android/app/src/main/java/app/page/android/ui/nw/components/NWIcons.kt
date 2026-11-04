@@ -10,6 +10,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Forum
+import androidx.compose.material.icons.outlined.TrackChanges
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Laptop
 import androidx.compose.material.icons.outlined.SettingsInputAntenna
@@ -106,6 +107,7 @@ fun nwIcon(symbol: String): ImageVector = when (symbol) {
     "hand.tap", "rectangle.and.hand.point.up.left" -> Icons.Outlined.TouchApp
     "sparkle", "sparkles" -> Icons.Outlined.AutoAwesome
     "hexagon" -> Icons.Outlined.Category
+    "atom" -> Icons.Outlined.TrackChanges
     "cpu" -> Icons.Outlined.Memory
     "questionmark.circle" -> Icons.AutoMirrored.Outlined.HelpOutline
     "bell.badge" -> Icons.Outlined.NotificationsActive

@@ -57,10 +57,11 @@ enum class InterventionKind(val wire: String) {
 enum class InterventionBackend(val wire: String) {
     CLAUDE("claude"),
     CODEX("codex"),
-    AURA("aura");
+    AURA("aura"),
+    ORBIT("orbit");
 
-    val badge: String get() = when (this) { CLAUDE -> "CLAUDE"; CODEX -> "CODEX"; AURA -> "AURA" }
-    val displayName: String get() = when (this) { CLAUDE -> "Claude"; CODEX -> "Codex"; AURA -> "Page Aura" }
+    val badge: String get() = when (this) { CLAUDE -> "CLAUDE"; CODEX -> "CODEX"; AURA -> "AURA"; ORBIT -> "ORBIT" }
+    val displayName: String get() = when (this) { CLAUDE -> "Claude"; CODEX -> "Codex"; AURA -> "Page Aura"; ORBIT -> "Page Orbit" }
 
     companion object {
         fun fromWire(raw: String?): InterventionBackend? = entries.firstOrNull { it.wire == raw }

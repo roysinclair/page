@@ -97,7 +97,7 @@ An *intervention* (a "page") is one moment where an agent needs a human.
 | `openedAt` | timestamp | sender | Unparseable → time of receipt |
 | `closedAt`, `closeReason` | timestamp, string | Worker | Set when archived. Reason ≤ 64 chars |
 | `repliedAt`, `repliedText`, `repliedAction` | timestamp, string, string | Worker | The latest accepted reply. `repliedAt` and `repliedAction` are cleared when delivery fails (`repliedText` is kept) |
-| `backend` | `"claude"` \| `"codex"` | sender | Missing → `codex` if the id starts with `codex-`, else `claude` |
+| `backend` | `"claude"` \| `"codex"` \| `"aura"` \| `"orbit"` | sender | Missing → `codex`, `aura` or `orbit` if the id starts with `codex-`, `aura-` or `orbit-`, else `claude`. `aura`: Page Aura ([AURA-LINK.md](AURA-LINK.md)); `orbit`: Page Orbit ([ORBIT-LINK.md](ORBIT-LINK.md)) |
 | `source` | `terminal` \| `desktop` \| `vscode` \| `exec` \| `remote` \| `unknown` | sender | Missing → `terminal`. Unrecognised → `unknown` |
 | `subtype` | string | sender | Free-form, ≤ 100. Known values: `plan`, `low_battery`; v4: `looping`, `stuck`, `workflow_stalled` (kind `idle`), `battery_forecast`, `usage_forecast` (kind `rate_limit`) |
 | `promptKey` | string | sender (hook) | The agent's tool-use id for the prompt (`toolu_…`, `call_…`). Kept only if it matches `^[A-Za-z0-9_.:-]{1,200}$` |
@@ -175,7 +175,7 @@ Sent over the Mac's WebSocket, or as the body of `POST /intervention`.
 | `intervention.closed` | `{id, reason}` | `reason` defaults to `"closed"`. A close for an unknown id leaves a tombstone (except `stale`) and returns `{ok:true, unknown:true}` |
 | `heartbeat` | `{ts, activeSessions, battery, onAC?, working?, forecast?, usage?}` | `battery` is 0–100, or `-1` when unknown. The Mac sends one on connect and every 15 s. v4 adds three optional fields, validated field by field (a bad one is dropped): `working` (sessions mid-turn); `forecast` `{cutoff, minutes, drainPerHour}`, the battery's time to the low-battery cutoff at the current drain (sent on battery only); `usage` `{fiveHour?: {pct, resetsAt?}, sevenDay?: {pct, resetsAt?}, hitAt?, updatedAt?}`, Claude subscription usage when the user turned on usage capture, with `hitAt` the forecast time the 5-hour limit is reached. All three are forwarded to phones and reported by `GET /status` (`forecast` only while `onAC` is false) |
 | `reply.injected` | `{interventionId, method, success, detail?, reason?, output?}` | Delivery result ([§8](#8-replies-and-delivery-confirmation)). `detail` is ≤ 200 from the Mac, stored ≤ 300. `output` (diagnostic text, ≤ 2000) is **ignored by the Worker**: never stored, logged or shown |
-| `sync` | `{backend: "claude"\|"codex", openIds: string[]}` | v2. The Mac's truth about which of its pages are still open. Sent per backend after connect (once the first scan has finished) and every 60 s. At most 1000 ids are read |
+| `sync` | `{backend: "claude"\|"codex"\|"aura"\|"orbit", openIds: string[]}` | v2. The Mac's truth about which of its pages are still open. Sent per backend after connect (once the first scan has finished) and every 60 s. At most 1000 ids are read |
 | `device.register` | `{apnsToken, appVersion, apnsEnv?}` | Same as the HTTP route. Phones normally use HTTP |
 | `relay.retire` | `{reason?}` | v2. Sent on the **old** token when the Mac regenerates its token ([§10](#10-token-retirement)) |
 

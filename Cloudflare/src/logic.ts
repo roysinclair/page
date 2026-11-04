@@ -315,9 +315,10 @@ export function normalizeIntervention(
   // and string order matches time order.
   const openedAt = isoSeconds(Number.isFinite(parsedOpened) ? parsedOpened : nowMs);
   const backend: InterventionBackend =
-    raw.backend === "claude" || raw.backend === "codex" || raw.backend === "aura" ? raw.backend
+    raw.backend === "claude" || raw.backend === "codex" || raw.backend === "aura" || raw.backend === "orbit" ? raw.backend
       : id.startsWith("codex-") ? "codex"
-      : id.startsWith("aura-") ? "aura" : "claude";
+      : id.startsWith("aura-") ? "aura"
+      : id.startsWith("orbit-") ? "orbit" : "claude";
   const source: InterventionSource =
     typeof raw.source === "string" && SOURCES.has(raw.source) ? raw.source as InterventionSource
       : raw.source === undefined || raw.source === null ? "terminal" : "unknown";
@@ -654,7 +655,7 @@ export interface ParsedSync {
 
 export function parseSync(raw: unknown): ParsedSync | null {
   if (!isObject(raw)) return null;
-  if (raw.backend !== "claude" && raw.backend !== "codex" && raw.backend !== "aura") return null;
+  if (raw.backend !== "claude" && raw.backend !== "codex" && raw.backend !== "aura" && raw.backend !== "orbit") return null;
   if (!Array.isArray(raw.openIds)) return null;
   const openIds = new Set<string>();
   for (const id of raw.openIds.slice(0, MAX_SYNC_IDS)) {

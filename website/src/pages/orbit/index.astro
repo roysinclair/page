@@ -1,0 +1,94 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import Shot from '../../components/Shot.astro';
+import { u, AURA_GITHUB, ORBIT_GUIDE, ORBIT_DEMO, BLOB } from '../../data/site';
+---
+<Layout current="orbit/" title="Page Orbit" description="Page Orbit builds, runs and fixes Anthropic Managed Agents with your own API key. Linked to Page Power, your phone is paged when an agent wants your approval or has finished.">
+  <PageHero label="Page Orbit" title="A control room for your AI agents." lede="Page Orbit is a free desktop app for Anthropic’s Managed Agents: agents that work in their own cloud sandbox, on their own or on a schedule. Build them, talk to them, see every step and every cent, and let a model diagnose what went wrong. Linked to Page Power, your phone is paged when an agent needs you.">
+    <Fragment slot="actions">
+      <a href={ORBIT_DEMO} rel="noopener" class="btn-primary">Explore the demo</a>
+      <a href={ORBIT_GUIDE} rel="noopener" class="btn-ghost">Page Orbit guide</a>
+    </Fragment>
+    <Shot eager name="orbit-session" alt="A Page Orbit session: the agent’s conversation with tool approvals on the left, and a timeline of every event with timing and cost on the right." />
+  </PageHero>
+
+  <section id="app" class="block-section">
+    <div class="wrap">
+      <p class="label">The app</p>
+      <h2 class="h2 mt-3 max-w-3xl">Build, run and fix agents, with the key you already have.</h2>
+      <p class="lede mt-5 max-w-3xl">Page Orbit talks straight to Anthropic with your own API key. No server, no account and no telemetry in between. It’s a desktop app for Windows, macOS and Linux; the demo runs in your browser with sample data.</p>
+      <div class="mt-12 grid gap-5 md:grid-cols-3">
+        <div class="card">
+          <h3 class="h3">Agents with versions</h3>
+          <ul class="list-dots mt-4 text-[15px]">
+            <li>Model, effort, instructions, tools and what needs your approval</li>
+            <li>MCP servers, custom tools, skills and teams of helper agents</li>
+            <li>Every save is a version: compare any two, roll back with one click</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="h3">Talk to them live</h3>
+          <ul class="list-dots mt-4 text-[15px]">
+            <li>Watch messages, tool calls and results as they happen</li>
+            <li>Allow or deny what an agent asks to do; stop it at any time</li>
+            <li>A timeline of every step, with timing, tokens and cost</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="h3">Find out why</h3>
+          <ul class="list-dots mt-4 text-[15px]">
+            <li>Diagnose: a model reads the session and explains what went wrong</li>
+            <li>Fixes come as a diff you apply as a new version</li>
+            <li>Schedules, credentials, memory and skills, all in one place</li>
+          </ul>
+        </div>
+      </div>
+      <div class="mt-12 grid items-start gap-6 md:grid-cols-2">
+        <Shot name="orbit-diagnose" alt="Diagnose in Page Orbit: a model explains what happened in a session and proposes a change to the agent as a diff, with an Apply button." caption="Diagnose explains a session and proposes a fix." />
+        <Shot name="orbit-agent" alt="The Page Orbit agent editor: instructions, and a table of sandbox tools with Allow, Ask or Auto for each." caption="Each tool can run freely, ask you first, or let a safety check decide." />
+      </div>
+    </div>
+  </section>
+
+  <section id="link" class="block-section border-t border-white/[0.06]">
+    <div class="wrap">
+      <p class="label">The Page Power link</p>
+      <h2 class="h2 mt-3 max-w-3xl">Your agents work in the cloud. Page Power tells your phone when they need you.</h2>
+      <p class="lede mt-5 max-w-3xl">On a Mac, Page Orbit can hand its sessions to Page Power. An agent that stops to ask for approval, or one that finishes while you’re away, pages your phone like Claude Code and Codex do.</p>
+      <div class="mt-12 grid gap-5 md:grid-cols-3">
+        <div class="card card-tone tone-amber"><h3 class="h3">Approvals on your phone</h3><p class="body mt-3">When an agent wants to run a command or use a tool that asks first, you see what and why, and Allow once or Deny from the lock screen.</p></div>
+        <div class="card card-tone tone-teal"><h3 class="h3">Finished, wherever you are</h3><p class="body mt-3">A session that finishes while you’re away from the Mac pages you with the end of the agent’s last message. Reply to give it its next task.</p></div>
+        <div class="card card-tone tone-sky"><h3 class="h3">Scheduled runs don’t stall</h3><p class="body mt-3">A scheduled agent that stops for approval would wait forever with nobody watching. Now it waits for you, wherever you are.</p></div>
+      </div>
+
+      <div class="mt-14 grid items-start gap-10 lg:grid-cols-2">
+        <div>
+          <h3 class="h3">Turn it on</h3>
+          <ol class="mt-4 list-decimal space-y-3 pl-6 text-ink-2 marker:font-mono marker:text-pulse-teal">
+            <li>Run Page Power on the same Mac.</li>
+            <li>In Page Orbit, open Settings ▸ <strong>Page Power on this Mac</strong> and switch on <strong>Link Page Orbit to Page Power</strong>.</li>
+            <li>The line under the switch reads <em>Connected to Page Power</em>, or <em>Waiting for Page Power</em> while it retries.</li>
+          </ol>
+          <p class="fine mt-4">In Page Power, Preferences ▸ Agents ▸ <strong>Page Orbit</strong> must be on. It is on by default, because it only opens a local socket. The opt-in lives in Page Orbit, where the link is off by default. It exists only in the macOS desktop app. Page Power never keeps the Mac awake for Page Orbit: its agents run in Anthropic’s cloud.</p>
+        </div>
+        <div>
+          <h3 class="h3">What leaves the Mac</h3>
+          <p class="body mt-4">Page Orbit never talks to the relay. It talks to Page Power over a Unix socket on the same Mac, readable only by you. Page Power then sends, through <strong>your own</strong> Page Relay to <strong>your</strong> phone:</p>
+          <ul class="list-dots mt-4">
+            <li>the titles of sessions that are working or waiting on you, and their agent’s name;</li>
+            <li>the tool an agent wants to use, with its input clipped and redacted by Page Power;</li>
+            <li>the end of a finished session’s last message.</li>
+          </ul>
+          <p class="fine mt-4">Never sent: your API key, transcripts or files. The protocol is documented in <a class="link" href={BLOB + 'docs/ORBIT-LINK.md'} rel="noopener">docs/ORBIT-LINK.md</a>.</p>
+        </div>
+      </div>
+
+      <div class="mt-10 flex flex-wrap gap-3">
+        <a href={ORBIT_DEMO} rel="noopener" class="btn-primary">Explore the demo</a>
+        <a href={AURA_GITHUB + '/releases/latest'} rel="noopener" class="btn-ghost">Download Page Orbit</a>
+        <a href={u('mac/')} class="btn-ghost">Page Power for Mac</a>
+      </div>
+    </div>
+  </section>
+</Layout>

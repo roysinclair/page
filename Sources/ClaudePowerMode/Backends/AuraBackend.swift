@@ -1,5 +1,37 @@
 import Foundation
 
+/// Which app a link backend serves. Page Aura and Page Orbit speak the same
+/// line protocol (docs/AURA-LINK.md; Page Orbit's differences are in
+/// docs/ORBIT-LINK.md), each on its own socket and with its own backend id,
+/// intervention prefix and Preferences switch.
+struct LinkFlavor {
+    let id: AgentBackendID
+    let displayName: String
+    /// Intervention and session id prefix ("aura-", "orbit-").
+    let prefix: String
+    /// `sendReplyInjected` method name.
+    let method: String
+    /// Page Aura's replies stream on this Mac, so a busy chat keeps it awake.
+    /// Page Orbit's agents run in Anthropic's cloud: nothing to keep awake.
+    let holdsMac: Bool
+    /// Tool requests run on this Mac (Page Aura's local apps) or elsewhere.
+    let toolsOnThisMac: Bool
+    let enabled: (Config) -> Bool
+    let socketName: String
+
+    static let aura = LinkFlavor(id: .aura, displayName: "Page Aura", prefix: "aura-", method: "aura-link",
+                                 holdsMac: true, toolsOnThisMac: true, enabled: { $0.auraBackendEnabled }, socketName: "aura.sock")
+    static let orbit = LinkFlavor(id: .orbit, displayName: "Page Orbit", prefix: "orbit-", method: "orbit-link",
+                                  holdsMac: false, toolsOnThisMac: false, enabled: { $0.orbitBackendEnabled }, socketName: "orbit.sock")
+
+    /// Page Aura's user-facing wording, said for this app ("chat" becomes "session" for Page Orbit).
+    func say(_ s: String) -> String {
+        guard id != .aura else { return s }
+        return s.replacingOccurrences(of: "Page Aura", with: displayName)
+            .replacingOccurrences(of: "chats", with: "sessions").replacingOccurrences(of: "chat", with: "session")
+    }
+}
+
 /// Page Aura backend (docs/AURA-LINK.md): the bring-your-own-key Claude chat
 /// app hands its chats to Page over a local Unix socket.
 ///
@@ -28,10 +60,11 @@ import Foundation
 /// (the 20 s ack wait is a timer). Relay and callback calls are made after
 /// the lock is released.
 final class AuraBackend: AgentBackend, @unchecked Sendable {
-    let id: AgentBackendID = .aura
-    let displayName = "Page Aura"
+    let id: AgentBackendID
+    let displayName: String
+    let flavor: LinkFlavor
 
-    static let method = "aura-link"
+    static let method = LinkFlavor.aura.method
     /// Page Aura sends `state` at least every 30 s; three missed beats and a
     /// "busy" chat no longer keeps the Mac awake.
     static let staleStateSeconds: TimeInterval = 90
@@ -149,27 +182,31 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
     private var frameCounter = 0
     private var stateFrame = 0
     private var chatsFrame = 0
-    private var lastRemote = AgentBackendSnapshot(backendID: .aura, displayName: "Page Aura", sessions: [],
-                                                  wantsPowerAssertion: false, pendingInterventions: [])
+    private var lastRemote: AgentBackendSnapshot
 
     init(config: Config,
-         transport: AuraLinkTransport = AuraLinkServer(),
+         flavor: LinkFlavor = .aura,
+         transport: AuraLinkTransport? = nil,
          now: @escaping () -> Date = Date.init,
          userAtMac: @escaping (Config) -> Bool = { cfg in
              cfg.idlePageOnlyWhenAwaySeconds > 0 && UserPresence.isActive(within: cfg.idlePageOnlyWhenAwaySeconds)
          }) {
+        self.flavor = flavor
+        self.id = flavor.id
+        self.displayName = flavor.displayName
         self._config = config
-        self.transport = transport
+        self.transport = transport ?? AuraLinkServer(path: AuraLinkServer.path(socketName: flavor.socketName))
         self.now = now
         self.userAtMac = userAtMac
-        self.lastSnapshot = Self.emptySnapshot
-        transport.onConnect = { [weak self] in self?.handleConnect() }
-        transport.onLine = { [weak self] line in self?.handleLine(line) }
-        transport.onDisconnect = { [weak self] in self?.handleDisconnect() }
+        let empty = AgentBackendSnapshot(backendID: flavor.id, displayName: flavor.displayName, sessions: [],
+                                         wantsPowerAssertion: false, pendingInterventions: [])
+        self.lastSnapshot = empty
+        self.lastRemote = empty
+        self.transport.onConnect = { [weak self] in self?.handleConnect() }
+        self.transport.onLine = { [weak self] line in self?.handleLine(line) }
+        self.transport.onDisconnect = { [weak self] in self?.handleDisconnect() }
     }
 
-    private static let emptySnapshot = AgentBackendSnapshot(
-        backendID: .aura, displayName: "Page Aura", sessions: [], wantsPowerAssertion: false, pendingInterventions: [])
 
     var currentSnapshot: AgentBackendSnapshot { locked { lastSnapshot } }
 
@@ -191,7 +228,7 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
     // MARK: lifecycle
 
     func start() {
-        guard locked({ _config.auraBackendEnabled }) else {
+        guard locked({ flavor.enabled(_config) }) else {
             Logger.shared.log("AuraBackend disabled in config — not starting")
             return
         }
@@ -200,7 +237,7 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
     }
 
     func refresh() {
-        let (enabled, wasStarted) = locked { (_config.auraBackendEnabled, started) }
+        let (enabled, wasStarted) = locked { (flavor.enabled(_config), started) }
         // A listener that couldn't open (no folder, busy path) is retried on
         // every tick; `start()` on a listening transport is a no-op.
         if enabled && wasStarted { transport.start() }
@@ -217,10 +254,10 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
             _config = config
             return o
         }
-        if old.auraBackendEnabled && !config.auraBackendEnabled {
+        if flavor.enabled(old) && !flavor.enabled(config) {
             Logger.shared.log("AuraBackend disabled via config — shutting down")
             stop(closingPages: true)
-        } else if !old.auraBackendEnabled && config.auraBackendEnabled {
+        } else if !flavor.enabled(old) && flavor.enabled(config) {
             Logger.shared.log("AuraBackend enabled via config — starting")
             start()
         }
@@ -230,7 +267,7 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         locked { started = false }
         transport.stop()
         run { fx in
-            clearConnectionLocked(&fx, pageReason: closingPages ? "stale" : nil, failure: "Page Aura switched off")
+            clearConnectionLocked(&fx, pageReason: closingPages ? "stale" : nil, failure: flavor.say("Page Aura switched off"))
         }
     }
 
@@ -252,7 +289,7 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
     private func handleDisconnect() {
         run { fx in
             Logger.shared.log("AuraBackend: disconnected")
-            clearConnectionLocked(&fx, pageReason: "stale", failure: AuraLink.notConnectedDetail)
+            clearConnectionLocked(&fx, pageReason: "stale", failure: flavor.say(AuraLink.notConnectedDetail))
         }
     }
 
@@ -300,7 +337,8 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
 
     // MARK: Sessions tab: watch (proto 2)
 
-    private var speaksSessionsLocked: Bool { (hello?.proto ?? 0) >= AuraLink.sessionsProto }
+    /// Page Orbit (v1) has no Sessions-tab rows; only a proto-2 Page Aura does.
+    private var speaksSessionsLocked: Bool { flavor.id == .aura && (hello?.proto ?? 0) >= AuraLink.sessionsProto }
 
     /// Tells Page Aura what the phone is looking at: `list` while a phone has
     /// the Sessions view open, `chatIds` the chats it is viewing (session ids
@@ -338,20 +376,20 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
 
     // MARK: pages
 
-    private static func permissionId(chat: String, approval: String) -> String { "aura-\(chat)-perm-\(approval)" }
-    private static func idleId(chat: String, at: Int64) -> String { "aura-\(chat)-idle-\(at)" }
+    private func permissionId(chat: String, approval: String) -> String { "\(flavor.prefix)\(chat)-perm-\(approval)" }
+    private func idleId(chat: String, at: Int64) -> String { "\(flavor.prefix)\(chat)-idle-\(at)" }
 
     private func event(chatId: String, title: String, kind: InterventionKind, id: String, context: String) -> InterventionEvent {
-        InterventionEvent(id: id, sessionId: "aura-\(chatId)", cwd: "",
-                          projectName: title.isEmpty ? "Page Aura" : title, kind: kind, openedAt: now(),
-                          context: context, transcriptPath: "", backend: .aura, source: .desktop)
+        InterventionEvent(id: id, sessionId: "\(flavor.prefix)\(chatId)", cwd: "",
+                          projectName: title.isEmpty ? displayName : title, kind: kind, openedAt: now(),
+                          context: context, transcriptPath: "", backend: id, source: .desktop)
     }
 
     /// Pure. "Use <server> · <tool> on this Mac" plus the redacted, clipped args.
-    static func permissionContext(server: String, tool: String, args: String) -> String {
+    static func permissionContext(server: String, tool: String, args: String, onThisMac: Bool = true) -> String {
         var head = "Use \(server.isEmpty ? "an app" : server)"
         if !tool.isEmpty { head += " · \(tool)" }
-        head += " on this Mac"
+        if onThisMac { head += " on this Mac" }
         let shown = ContextRedactor.redactedPrefix(args, maxPromptContext).prefix(maxPromptContext)
         guard !shown.isEmpty else { return head }
         return head + "\n" + shown + (args.count > maxPromptContext ? "…" : "")
@@ -369,11 +407,11 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         var wanted = Set<String>()
         for chat in chats {
             guard let a = chat.approval else { continue }
-            let pid = Self.permissionId(chat: chat.id, approval: a.id)
+            let pid = permissionId(chat: chat.id, approval: a.id)
             wanted.insert(pid)
             guard pages[pid] == nil, recentlyClosed[pid] == nil else { continue }
             let e = event(chatId: chat.id, title: chat.title, kind: .permission, id: pid,
-                          context: Self.permissionContext(server: a.server, tool: a.tool, args: a.args))
+                          context: Self.permissionContext(server: a.server, tool: a.tool, args: a.args, onThisMac: flavor.toolsOnThisMac))
             pages[pid] = Page(event: e, chatId: chat.id, approvalId: a.id, idleAt: nil)
             publishLocked(e, &fx)
         }
@@ -425,7 +463,7 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
             let t = now()
             for c in idleCandidates.values.sorted(by: { ($0.at, $0.chatId) < ($1.at, $1.chatId) }) {
                 let age = t.timeIntervalSince(Date(timeIntervalSince1970: Double(c.at) / 1000))
-                let pid = Self.idleId(chat: c.chatId, at: c.at)
+                let pid = idleId(chat: c.chatId, at: c.at)
                 if !connected || age > Self.maxIdlePageAge || chatRestartedLocked(c)
                     || pages[pid] != nil || recentlyClosed[pid] != nil {
                     idleCandidates[c.chatId] = nil
@@ -511,7 +549,7 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         var outgoing: (line: Data, commandId: String)?
         run { fx in
             guard connected else {
-                return failReplyLocked(pid, AuraLink.notConnectedDetail, &fx)
+                return failReplyLocked(pid, flavor.say(AuraLink.notConnectedDetail), &fx)
             }
             guard !pending.values.contains(where: { $0.pageId == pid }) else {
                 Logger.shared.log("AuraBackend: reply \(pid.prefix(48)) ignored — one is already in flight")
@@ -525,7 +563,7 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
                 // still goes into the chat; Page Aura refuses it if it's busy.
                 page = gone
             } else {
-                let detail = recentlyClosed[pid] != nil ? AuraLink.requestGoneDetail : AuraLink.pageGoneDetail
+                let detail = recentlyClosed[pid] != nil ? flavor.say(AuraLink.requestGoneDetail) : flavor.say(AuraLink.pageGoneDetail)
                 return failReplyLocked(pid, detail, &fx)
             }
             let commandId = AuraLink.newCommandId()
@@ -536,7 +574,7 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
             case .send(let text):
                 line = AuraLink.encodeSend(id: commandId, chatId: page.chatId, text: text)
             case .approve(let decision):
-                guard let approvalId = page.approvalId else { return failReplyLocked(pid, AuraLink.requestGoneDetail, &fx) }
+                guard let approvalId = page.approvalId else { return failReplyLocked(pid, flavor.say(AuraLink.requestGoneDetail), &fx) }
                 line = AuraLink.encodeApprove(id: commandId, chatId: page.chatId, approvalId: approvalId, decision: decision)
             }
             let timeout = DispatchWorkItem { [weak self] in self?.commandTimedOut(commandId) }
@@ -548,7 +586,7 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         run { fx in
             guard let p = pending.removeValue(forKey: outgoing.commandId) else { return }
             p.timeout.cancel()
-            settleLocked(outgoing.commandId, p, .lost, AuraLink.notConnectedDetail, &fx)
+            settleLocked(outgoing.commandId, p, .lost, flavor.say(AuraLink.notConnectedDetail), &fx)
         }
     }
 
@@ -566,9 +604,9 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         remoteCommand(sessionId: sessionId, stop: false, completion: completion) { chat, commandId, chatId in
             guard chat.approval == nil else {
                 let page = self.pages.values.filter { $0.chatId == chatId && $0.event.kind == .permission }.map(\.event.id).first
-                return .failure(.refused(.waiting, AuraLink.toolRequestWaitingDetail, interventionId: page))
+                return .failure(.refused(.waiting, flavor.say(AuraLink.toolRequestWaitingDetail), interventionId: page))
             }
-            guard !chat.busy else { return .failure(.refused(.notTypable, AuraLink.stillReplyingDetail)) }
+            guard !chat.busy else { return .failure(.refused(.notTypable, flavor.say(AuraLink.stillReplyingDetail))) }
             return .success(AuraLink.encodeSend(id: commandId, chatId: chatId, text: clean))
         }
     }
@@ -592,11 +630,11 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         var outgoing: (line: Data, commandId: String)?
         run { fx in
             guard connected, speaksSessionsLocked else {
-                fx.append { completion(.refused(.notTypable, AuraLink.notConnectedDetail)) }
+                fx.append { completion(.refused(.notTypable, flavor.say(AuraLink.notConnectedDetail))) }
                 return
             }
             guard let chatId = AuraLink.chatId(sessionId: sessionId), let chat = remoteChatStatesLocked().first(where: { $0.id == chatId }) else {
-                fx.append { completion(.refused(.notFound, AuraLink.chatGoneDetail)) }
+                fx.append { completion(.refused(.notFound, flavor.say(AuraLink.chatGoneDetail))) }
                 return
             }
             let commandId = AuraLink.newCommandId()
@@ -614,7 +652,7 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         run { fx in
             guard let p = pending.removeValue(forKey: outgoing.commandId) else { return }
             p.timeout.cancel()
-            settleLocked(outgoing.commandId, p, .lost, AuraLink.notConnectedDetail, &fx)
+            settleLocked(outgoing.commandId, p, .lost, flavor.say(AuraLink.notConnectedDetail), &fx)
         }
     }
 
@@ -646,7 +684,7 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         run { fx in
             guard let p = pending.removeValue(forKey: ack.ref) else { return }
             p.timeout.cancel()
-            let detail = ack.detail.isEmpty ? (ack.ok ? "Sent to Page Aura" : "Page Aura couldn't do that") : ack.detail
+            let detail = ack.detail.isEmpty ? (ack.ok ? flavor.say("Sent to Page Aura") : flavor.say("Page Aura couldn't do that")) : ack.detail
             settleLocked(ack.ref, p, .acked(ok: ack.ok), detail, &fx)
             reconcilePagesLocked(&fx)
         }
@@ -695,9 +733,9 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         let finished = _onReplyFinished
         let viaMac = macOriginReplies.remove(pid) != nil
         fx.append {
-            finished?(ReplyFinished(interventionId: pid, success: success, method: Self.method, detail: detail))
+            finished?(ReplyFinished(interventionId: pid, success: success, method: flavor.method, detail: detail))
             if !viaMac {
-                relay?.sendReplyInjected(interventionId: pid, method: Self.method, success: success, detail: detail, output: nil)
+                relay?.sendReplyInjected(interventionId: pid, method: flavor.method, success: success, detail: detail, output: nil)
             }
         }
         guard success else { return }
@@ -724,7 +762,7 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         let t = now()
         let fresh = lastStateAt.map { t.timeIntervalSince($0) < Self.staleStateSeconds } ?? false
         let sessions = connected ? chats.map { chat -> AgentSession in
-            AgentSession(backend: .aura, sessionId: "aura-\(chat.id)", cwd: nil,
+            AgentSession(backend: id, sessionId: "\(flavor.prefix)\(chat.id)", cwd: nil,
                          title: chat.title.isEmpty ? nil : chat.title, source: .desktop,
                          state: chat.approval != nil ? .waitingOnApproval : (chat.busy ? .active : .idle),
                          lastActivityAt: chat.since.map { Date(timeIntervalSince1970: Double($0) / 1000) },
@@ -732,18 +770,18 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         } : []
         let pendingPages = pages.values.map(\.event).sorted { ($0.openedAt, $0.id) < ($1.openedAt, $1.id) }
         lastSnapshot = AgentBackendSnapshot(
-            backendID: .aura, displayName: displayName, sessions: sessions,
-            wantsPowerAssertion: connected && fresh && chats.contains { $0.busy },
+            backendID: id, displayName: displayName, sessions: sessions,
+            wantsPowerAssertion: flavor.holdsMac && connected && fresh && chats.contains { $0.busy },
             pendingInterventions: pendingPages)
         // The phone's Sessions tab: every chat Page Aura listed, not only the busy ones.
         let rows = remoteChatStatesLocked().map { c -> AgentSession in
-            AgentSession(backend: .aura, sessionId: AuraLink.sessionId(chatId: c.id), cwd: nil,
+            AgentSession(backend: id, sessionId: AuraLink.sessionId(chatId: c.id), cwd: nil,
                          title: c.title.isEmpty ? "Untitled chat" : c.title, source: .desktop,
                          state: AuraLink.listState(busy: c.busy, approval: c.approval != nil),
                          lastActivityAt: AuraLink.date(ms: c.updatedAt), activeFlags: [], supportsRemoteReply: true,
                          preview: AuraLink.previewLine(c.preview))
         }
-        lastRemote = AgentBackendSnapshot(backendID: .aura, displayName: displayName, sessions: rows,
+        lastRemote = AgentBackendSnapshot(backendID: id, displayName: displayName, sessions: rows,
                                           wantsPowerAssertion: false, pendingInterventions: connected ? pendingPages : [])
     }
 

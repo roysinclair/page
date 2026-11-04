@@ -118,12 +118,13 @@ import app.page.android.ui.nw.theme.Rgba
 // stores and routes every closure through the existing services, the render harness fills them from fixtures.
 // Nothing here types anything. (iOS NWRoom.swift.)
 
-/** Claude copper, Codex slate, Page Aura soft violet, a local model's lime, anything else neutral. */
+/** Claude copper, Codex slate, Page Aura soft violet, Page Orbit orchid, a local model's lime, anything else neutral. */
 val AgentCharacter.tint: Rgba
     get() = when (kind) {
         AgentCharacter.Kind.CLAUDE -> Rgba.hex(0xE89E64)
         AgentCharacter.Kind.CODEX -> Rgba.hex(0xC9CEDB)
         AgentCharacter.Kind.AURA -> Rgba.hex(0xB7A4F5)
+        AgentCharacter.Kind.ORBIT -> Rgba.hex(0xE78AE6)
         AgentCharacter.Kind.LOCAL -> Rgba.hex(0xC6E86A)
         AgentCharacter.Kind.OTHER -> Rgba.hex(0xA3ADC2)
     }

@@ -72,6 +72,12 @@ profile, and falls back to the build configuration when there is none.
 only place to bump the version. `Info.plist` reads both, and Settings → About
 shows them.
 
+### Store listings
+
+The repository has no App Store metadata (no fastlane `metadata/`). If you
+list the app, name it **Page Relay for iPhone** in App Store Connect. The
+home-screen name (`CFBundleDisplayName`) stays **Page Relay**.
+
 ## Pairing
 
 There are no accounts. The phone and the Mac share one relay token.

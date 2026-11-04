@@ -72,19 +72,19 @@ const pname = { power: 'Page Power', aura: 'Page Aura', orbit: 'Page Orbit' } as
         <li>
           <a href="#power" class="legend world-power">
             <ProductIcon product="power" size={40} />
-            <span><strong>Page Power</strong><small>Keeps your Mac awake while coding agents work, and pages your phone.</small></span>
+            <span><strong>Page Power</strong><small>Keeps your Mac awake while coding agents work, and pages your phone.</small><small class="plat">macOS · iPhone · Android · your Cloudflare relay</small></span>
           </a>
         </li>
         <li>
           <a href="#aura" class="legend world-aura">
             <ProductIcon product="aura" size={40} />
-            <span><strong>Page Aura</strong><small>A beautiful chat for Anthropic’s models, on your own API key.</small></span>
+            <span><strong>Page Aura</strong><small>A beautiful chat for Anthropic’s models, on your own API key.</small><small class="plat">Windows · macOS · Linux · browser</small></span>
           </a>
         </li>
         <li>
           <a href="#orbit" class="legend world-orbit">
             <ProductIcon product="orbit" size={40} />
-            <span><strong>Page Orbit</strong><small>Mission control for Anthropic’s Managed Agents.</small></span>
+            <span><strong>Page Orbit</strong><small>Mission control for Anthropic’s Managed Agents.</small><small class="plat">Windows · macOS · Linux</small></span>
           </a>
         </li>
       </ul>
@@ -100,7 +100,7 @@ const pname = { power: 'Page Power', aura: 'Page Aura', orbit: 'Page Orbit' } as
         <div data-reveal>
           <div class="flex items-center gap-4">
             <ProductIcon product="power" size={60} glow />
-            <div><p class="text-[15px] font-semibold">Page Power</p><p class="label mt-1">Mac · iPhone · Android</p></div>
+            <div><p class="text-[15px] font-semibold">Page Power</p><p class="label mt-1">macOS menu bar · iPhone · Android</p></div>
           </div>
           <h2 class="h2 world-h mt-8">Your agents keep working. <span class="text-world">You get paged only when it matters.</span></h2>
           <p class="lede mt-6">A Mac menu-bar app that keeps the Mac awake while Claude Code, Codex and local models work, pauses them gracefully at your battery cutoff, and pages your phone when a decision is yours. Your reply is typed into the exact terminal that asked.</p>
@@ -208,6 +208,7 @@ const pname = { power: 'Page Power', aura: 'Page Aura', orbit: 'Page Orbit' } as
         <li class="mini" data-reveal style="--d:90ms"><Icon name="cloud" /><span><strong>Your relay, your account.</strong> The Mac and the phone both connect out to it. Page Studio’s authors have no access.</span></li>
         <li class="mini" data-reveal style="--d:180ms"><Icon name="shield" /><span><strong>Sealed end to end.</strong> Live session content is encrypted with AES-256-GCM, with a key from the pairing QR.</span></li>
       </ul>
+      <p class="fine mx-auto mt-8 max-w-3xl text-center" data-reveal>Page Aura and Page Orbit run on Windows, macOS and Linux. Page Power, and with it the link to your phone, is a Mac app today, so the paging works when Page Aura or Page Orbit runs on a Mac. On Windows and Linux they work fully on their own.</p>
     </div>
   </section>
 
@@ -352,6 +353,7 @@ const pname = { power: 'Page Power', aura: 'Page Aura', orbit: 'Page Orbit' } as
   }
   .legend strong { display: block; font-size: 16px; font-weight: 650; letter-spacing: -0.01em; }
   .legend small { display: block; margin-top: 2px; font-size: 14px; line-height: 1.4; color: rgba(255,255,255,0.68); }
+  .legend small.plat { margin-top: 8px; font-family: "JetBrains Mono Variable", ui-monospace, monospace; font-size: 11.5px; letter-spacing: .04em; color: color-mix(in srgb, var(--w2) 75%, white); }
   .legend:hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--w2) 55%, transparent), 0 20px 50px -30px color-mix(in srgb, var(--w2) 80%, transparent); }
   @media (prefers-reduced-motion: no-preference) { .legend { transition: box-shadow 220ms ease, transform 220ms ease; } .legend:hover { transform: translateY(-2px); } }
 

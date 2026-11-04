@@ -1,6 +1,6 @@
 # Page Aura link (`aura-link-v1`)
 
-Page Aura (the bring-your-own-key Claude chat app, github.com/roysinclair/page-studio-apps)
+Page Aura (the bring-your-own-key chat app, github.com/roysinclair/page-studio-apps)
 can hand its chats to Page, so that:
 
 - the Mac **stays awake** while Page Aura is writing a reply (an API stream dies

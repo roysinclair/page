@@ -47,7 +47,7 @@ builds, runs and fixes Anthropic Managed Agents; both link to Page Power.
 - **Your own relay.** A small Worker on your own Cloudflare account carries
   pages and replies. Live-session content is end-to-end encrypted, and nothing
   goes to the authors.
-- **Page Aura joins in.** The bring-your-own-key Claude chat app keeps the Mac
+- **Page Aura joins in.** The bring-your-own-key chat app keeps the Mac
   awake while it streams a reply, and pages your phone too.
 - **So does Page Orbit.** When a Managed Agent is waiting for your approval or
   has finished, your phone is paged; Allow, Deny, reply or stop from there.
@@ -57,16 +57,16 @@ builds, runs and fixes Anthropic Managed Agents; both link to Page Power.
 Page Studio products: **Page Power** (the Mac menu-bar app and its iPhone and Android apps, with **Page Relay** inside), **Page Aura** and **Page Orbit**. Each works on its own; together, your phone hears from all of them.
 
 <p align="center">
-  <img src="docs/images/family.png" alt="Page Studio: Page Power for Mac and Page Aura on a laptop, Page Power for iPhone and Android on two phones, linked through your own Cloudflare relay" width="100%">
+  <img src="docs/images/family.png" alt="Page Studio: Page Orbit, Page Aura and the Page Power menu on a laptop, Page Power for iPhone and Android on two phones, linked through your own Cloudflare relay" width="100%">
 </p>
 
 | Piece | What it does |
 |---|---|
-| **Page Power for Mac** | The menu-bar app. Detects agent state, keeps the Mac awake, applies your battery policy and delivers your replies. [Getting started](#getting-started) |
+| **Page Power for Mac** | The macOS menu-bar app (macOS only today). Detects agent state, keeps the Mac awake, applies your battery policy and delivers your replies. [Getting started](#getting-started) |
 | **Page Power for iPhone and Android** | Pages, lock-screen approvals, live sessions and widgets. [`iOS/`](iOS/README.md) · [`android/`](android/README.md) |
 | **Page Relay** | Your own relay: a Cloudflare Worker with Durable Objects that you deploy to your own account. Setup in [`Cloudflare/`](Cloudflare/README.md) and the [self-hosting guide](docs/SELF-HOSTING.md) |
-| **Page Aura** | A separate bring-your-own-key Claude chat app that links into Page Power as an agent backend. [github.com/roysinclair/page-studio-apps](https://github.com/roysinclair/page-studio-apps) · [link protocol](docs/AURA-LINK.md) |
-| **Page Orbit** | A desktop control room for Anthropic Managed Agents: agents with versions, live sessions, Diagnose, schedules. Links into Page Power so approvals and finished runs page your phone. [Guide](https://github.com/roysinclair/page-studio-apps/blob/main/docs/orbit/README.md) · [link protocol](docs/ORBIT-LINK.md) |
+| **Page Aura** | A bring-your-own-key chat app for Anthropic’s models (Windows, macOS, Linux, browser) that links into Page Power on a Mac as an agent backend. [github.com/roysinclair/page-studio-apps](https://github.com/roysinclair/page-studio-apps) · [link protocol](docs/AURA-LINK.md) |
+| **Page Orbit** | A desktop control room for Anthropic Managed Agents (Windows, macOS, Linux): agents with versions, live sessions, Diagnose, schedules. Links into Page Power so approvals and finished runs page your phone. [Guide](https://github.com/roysinclair/page-studio-apps/blob/main/docs/orbit/README.md) · [link protocol](docs/ORBIT-LINK.md) |
 
 ## A closer look
 
@@ -85,7 +85,7 @@ Page Studio products: **Page Power** (the Mac menu-bar app and its iPhone and An
   </tr>
   <tr>
     <td valign="top"><img src="docs/images/feature-relay.png" alt="Page Relay, your own relay" width="100%"><br><b>Page Relay: your relay, your keys.</b> A small Worker on your own Cloudflare account carries pages and replies. Nothing goes to the authors.</td>
-    <td valign="top"><img src="docs/images/feature-aura.png" alt="Page Aura linked to Page" width="100%"><br><b>Page Aura, paged too.</b> The bring-your-own-key Claude chat app keeps the Mac awake while it streams and pages your phone.</td>
+    <td valign="top"><img src="docs/images/feature-aura.png" alt="Page Aura linked to Page" width="100%"><br><b>Page Aura, paged too.</b> The bring-your-own-key chat app keeps the Mac awake while it streams and pages your phone.</td>
   </tr>
 </table>
 

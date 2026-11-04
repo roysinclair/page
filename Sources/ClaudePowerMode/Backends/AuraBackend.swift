@@ -32,7 +32,7 @@ struct LinkFlavor {
     }
 }
 
-/// Page Aura backend (docs/AURA-LINK.md): the bring-your-own-key Claude chat
+/// Page Aura backend (docs/AURA-LINK.md): the bring-your-own-key chat
 /// app hands its chats to Page over a local Unix socket.
 ///
 ///   - Sessions: each chat in Page Aura's latest `state` (busy, or waiting on

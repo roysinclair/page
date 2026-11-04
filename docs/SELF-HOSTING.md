@@ -350,7 +350,7 @@ More detail, including the Simulator and development shortcuts, is in
 ## Optional: Page Aura link
 
 [Page Aura](https://github.com/roysinclair/page-studio-apps) is a separate
-bring-your-own-key Claude chat app for the Mac. If you use it, Page can keep
+bring-your-own-key chat app (Windows, macOS, Linux). If you use it, Page can keep
 the Mac awake while Page Aura writes a reply, page your phone when a reply
 finishes or a tool wants approval, and let you answer from the phone. They
 talk over a local Unix socket on your Mac, and Page Aura never touches your

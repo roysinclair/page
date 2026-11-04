@@ -2,8 +2,7 @@ name: CI
 
 on:
   push:
-    # `linux`: the Linux port's branch, until it is merged.
-    branches: [main, linux]
+    branches: [main]
   pull_request:
 
 concurrency:

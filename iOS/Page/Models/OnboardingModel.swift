@@ -14,7 +14,7 @@ enum OnboardingCopy {
     static let pairButton = "Pair with your computer"
 
     static let scanTitle = "Scan the code on your computer"
-    static let scanHint = "Page Studio → Pair phone…"
+    static let scanHint = "Page Studio → Pair phone… · On Linux: paged pair"
     static let scanFacts: [(symbol: String, text: String)] = [
         ("lock", "The code holds your relay address and an encryption key"),
         ("checkmark.shield", "Only this phone can read your sessions"),
@@ -164,7 +164,7 @@ struct ProblemState: Equatable, Identifiable {
                 subtitle: replaced ? "Your computer made a new pairing code" : "The relay has never seen it connect",
                 details: [
                     Detail(symbol: "key.slash", text: replaced ? "The old code can't be used again" : "A code from an old screenshot, or a regenerated token, looks like this"),
-                    Detail(symbol: "qrcode", text: "On your computer, open Page Studio → Pair phone…"),
+                    Detail(symbol: "qrcode", text: "On your computer, open Page Studio → Pair phone…, or run paged pair on Linux"),
                 ],
                 actionTitle: "Scan the new code", action: .repair, replacesBanners: ["auth", "never"])
         }

@@ -176,18 +176,107 @@ final class InstallScriptTests: XCTestCase {
         func run() -> ProcessRunner.Result {
             var env = ProcessInfo.processInfo.environment
             env["HOME"] = home.path
-            return ProcessRunner.run("/bin/bash", ["-c", "APP_DEST=/Applications/Page.app\n\(fn)\ncheck_leftover_hooks"],
+            return ProcessRunner.run("/bin/bash", ["-c", "APP_DEST='/Applications/Page Studio.app'\n\(fn)\ncheck_leftover_hooks"],
                                      timeout: 10, environment: env)
         }
         XCTAssertTrue(run().succeeded, "no files: nothing left over")
         try #"{"hooks":{"Notification":[{"hooks":[{"type":"command","command":"'/Users/x/.claude/hooks/page-notify.sh'"}]}]}}"#
             .write(to: home.appendingPathComponent(".claude/settings.json"), atomically: true, encoding: .utf8)
         XCTAssertTrue(run().succeeded, "the --install-hook copy survives an uninstall")
-        try #"{"hooks":{"PermissionRequest":[{"hooks":[{"type":"command","command":"'/Applications/Page.app/Contents/Resources/hooks/page-notify.sh' --codex"}]}]}}"#
+        try #"{"hooks":{"PermissionRequest":[{"hooks":[{"type":"command","command":"'/Applications/Page Studio.app/Contents/Resources/hooks/page-notify.sh' --codex"}]}]}}"#
             .write(to: home.appendingPathComponent(".codex/hooks.json"), atomically: true, encoding: .utf8)
         let r = run()
         XCTAssertFalse(r.succeeded)
         XCTAssertTrue(r.stderr.contains(".codex/hooks.json"), r.stderr)
+    }
+
+    // The bundle folder moved from Page.app to Page Studio.app: an install
+    // points the hooks at the new folder before it removes the old one, and
+    // keeps the old one while any hook entry still runs its script.
+    func testOldBundleMigration() throws {
+        let text = try String(contentsOf: installSh, encoding: .utf8)
+        let fns = try ["safe_rm_app", "check_leftover_hooks", "migrate_old_bundle"].map { try XCTUnwrap(function($0, in: text), $0) }
+        XCTAssertTrue(text.contains("OLD_PAGE_APPS=(\"/Applications/Page.app\" \"$HOME/Applications/Page.app\")"))
+        XCTAssertTrue(text.contains("APP_DEST=\"/Applications/$APP_NAME\""))
+        XCTAssertTrue(text.contains("APP_NAME=\"Page Studio.app\""))
+        // In the install flow: copy the new bundle, then migrate, then write the LaunchAgent.
+        func at(_ s: String) throws -> String.Index { try XCTUnwrap(text.range(of: s, options: .backwards), s).lowerBound }
+        XCTAssertLessThan(try at("cp -R \"$APP_SRC\" \"$APP_DEST\""), try at("\nmigrate_old_bundle\n"))
+        XCTAssertLessThan(try at("\nmigrate_old_bundle\n"), try at("echo \"==> Writing LaunchAgent"))
+
+        let home = FileManager.default.temporaryDirectory.appendingPathComponent("page-move-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: home) }
+        let fm = FileManager.default
+        let old = home.appendingPathComponent("Applications/Page.app")
+        let new = home.appendingPathComponent("Applications/Page Studio.app")
+        let oldScript = old.path + "/Contents/Resources/hooks/page-notify.sh"
+        let newScript = new.path + "/Contents/Resources/hooks/page-notify.sh"
+        let settings = home.appendingPathComponent(".claude/settings.json")
+        let called = home.appendingPathComponent("called")
+        try fm.createDirectory(at: home.appendingPathComponent(".claude"), withIntermediateDirectories: true)
+        try fm.createDirectory(at: new.appendingPathComponent("Contents/MacOS"), withIntermediateDirectories: true)
+
+        /// `fake` stands in for the installed app's --migrate-hook-paths.
+        func run(fake: String) throws -> ProcessRunner.Result {
+            try fm.createDirectory(at: old.appendingPathComponent("Contents/Resources/hooks"), withIntermediateDirectories: true)
+            let exe = new.appendingPathComponent("Contents/MacOS/Page")
+            try ("#!/bin/bash\n[[ \"$1\" == --migrate-hook-paths ]] || exit 9\ntouch \"$HOME/called\"\n" + fake + "\n")
+                .write(to: exe, atomically: true, encoding: .utf8)
+            try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: exe.path)
+            try? fm.removeItem(at: called)
+            var env = ProcessInfo.processInfo.environment
+            env["HOME"] = home.path
+            let script = """
+            set -euo pipefail
+            cd "$HOME"
+            APP_DEST="$HOME/Applications/Page Studio.app"
+            BUNDLE_NAME=Page
+            OLD_PAGE_APPS=("$HOME/Applications/Page.app")
+            LSREGISTER=true
+            pluginkit() { :; }
+            \(fns.joined(separator: "\n"))
+            migrate_old_bundle
+            """
+            return ProcessRunner.run("/bin/bash", ["-c", script], timeout: 20, environment: env)
+        }
+        let oldEntry = #"{"hooks":{"Notification":[{"hooks":[{"type":"command","command":"'"# + oldScript + #"'"}]}]}}"#
+
+        // No hook names the old bundle: the app isn't asked, the old bundle goes.
+        try #"{"hooks":{}}"#.write(to: settings, atomically: true, encoding: .utf8)
+        var r = try run(fake: "exit 0")
+        XCTAssertTrue(r.succeeded, r.stderr)
+        XCTAssertFalse(fm.fileExists(atPath: called.path))
+        XCTAssertFalse(fm.fileExists(atPath: old.path))
+
+        // The app moves them: the old bundle goes.
+        try oldEntry.write(to: settings, atomically: true, encoding: .utf8)
+        r = try run(fake: "sed -i.bak 's#\(oldScript)#\(newScript)#' \"$HOME/.claude/settings.json\"")
+        XCTAssertTrue(r.succeeded, r.stderr)
+        XCTAssertTrue(fm.fileExists(atPath: called.path))
+        XCTAssertTrue(try String(contentsOf: settings, encoding: .utf8).contains(newScript))
+        XCTAssertFalse(fm.fileExists(atPath: old.path))
+        XCTAssertTrue(fm.fileExists(atPath: new.path))
+
+        // The app can't move them (it fails, or leaves an entry): the old bundle stays.
+        for fake in ["echo nope >&2; exit 1", "exit 0"] {
+            try oldEntry.write(to: settings, atomically: true, encoding: .utf8)
+            r = try run(fake: fake)
+            XCTAssertTrue(r.succeeded, r.stderr)
+            XCTAssertTrue(fm.fileExists(atPath: old.path), fake)
+            XCTAssertTrue(r.stderr.contains("Kept"), r.stderr)
+            XCTAssertEqual(try String(contentsOf: settings, encoding: .utf8), oldEntry)
+        }
+    }
+
+    func testSafeRemoveRefusesOddPaths() throws {
+        let text = try String(contentsOf: installSh, encoding: .utf8)
+        let fn = try XCTUnwrap(function("safe_rm_app", in: text))
+        for bad in ["/", "/Applications", "/Applications/../Users/x.app", "/tmp/Page.app", "/Users/x/Page.app"] {
+            var env = ProcessInfo.processInfo.environment
+            env["HOME"] = "/Users/nobody-\(UUID().uuidString)"
+            let r = ProcessRunner.run("/bin/bash", ["-c", "cd /\n\(fn)\nsafe_rm_app '\(bad)'"], timeout: 10, environment: env)
+            XCTAssertFalse(r.succeeded, bad)
+        }
     }
 
     // L1: the printed snippet matches what the in-app installer writes.
@@ -208,7 +297,7 @@ final class InstallScriptTests: XCTestCase {
         let text = try String(contentsOf: installSh, encoding: .utf8)
         let fn = try XCTUnwrap(function("disable_power_helpers", in: text))
         func at(_ s: String) throws -> String.Index { try XCTUnwrap(fn.range(of: s), s).lowerBound }
-        XCTAssertLessThan(try at("pkill -f"), try at("clear_disablesleep"))
+        XCTAssertLessThan(try at("stop_page_processes"), try at("clear_disablesleep"))
         XCTAssertLessThan(try at("clear_disablesleep"), try at("sudo rm -f \"$SUDOERS_FILE\""))
         XCTAssertLessThan(try at("sudo rm -f \"$SUDOERS_FILE\""), try at("sudo /usr/bin/pmset -a disablesleep 0"))
         XCTAssertTrue(ProcessRunner.run("/bin/bash", ["-n", installSh.path]).succeeded, "install.sh parses")

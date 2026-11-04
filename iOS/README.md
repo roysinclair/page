@@ -72,11 +72,18 @@ profile, and falls back to the build configuration when there is none.
 only place to bump the version. `Info.plist` reads both, and Settings → About
 shows them.
 
+### Store listings
+
+The repository has no App Store metadata (no fastlane `metadata/`). If you
+list the app, name it **Page Relay for iPhone** in App Store Connect. The
+home-screen name (`CFBundleDisplayName`) stays **Page Relay**.
+
 ## Pairing
 
 There are no accounts. The phone and the Mac share one relay token.
 
-1. On the Mac, click the Page Studio menu-bar icon → **Pair phone…**.
+1. On the Mac, click the Page Studio menu-bar icon → **Pair phone…**. On
+   Linux, run `paged pair`.
 2. In the app, tap **Scan pairing code**, or **Enter pairing code manually**
    and paste the JSON from **Copy pairing JSON**. The Simulator has no camera,
    so use the manual option there.

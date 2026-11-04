@@ -137,7 +137,7 @@ import { u, GUIDE, BLOB } from '../../data/site';
           <li>Install full Xcode, <a class="link" href="https://github.com/yonaskolb/XcodeGen" rel="noopener">XcodeGen</a>, and Xcode’s Metal Toolchain (the app compiles shaders). You need an iPhone on iOS 17 or later.</li>
           <li>Copy <code class="code-inline">Config/Local.xcconfig.example</code> to <code class="code-inline">Config/Local.xcconfig</code> and set your team id and a bundle id of your own. Use the same bundle id in the relay’s <code class="code-inline">wrangler.toml</code>.</li>
           <li>Run <code class="code-inline">xcodegen generate</code>, open the project, and run it on your iPhone.</li>
-          <li>On the computer choose <strong>Pair phone…</strong>, and in the app tap <strong>Scan pairing code</strong>. The phone checks your relay before saving anything.</li>
+          <li>On the computer choose <strong>Pair phone…</strong> (on Linux, run <code class="code-inline">paged pair</code>), and in the app tap <strong>Scan pairing code</strong>. The phone checks your relay before saving anything.</li>
         </ol>
         <div class="codeblock self-start">
           <div class="c"># from the repo root</div>

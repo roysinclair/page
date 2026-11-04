@@ -39,7 +39,7 @@ final class TowerConfirmFlowsTests: XCTestCase {
         next.answer(pick(next.spec))
     }
 
-    private let script = "/Applications/Page.app/Contents/Resources/hooks/page-notify.sh"
+    private let script = "/Applications/Page Studio.app/Contents/Resources/hooks/page-notify.sh"
     private var home: URL!
 
     override func setUpWithError() throws {

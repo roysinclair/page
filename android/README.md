@@ -52,9 +52,15 @@ Sideloading notes:
 - Nothing is backed up: `allowBackup` is off and every cloud backup and
   device transfer is excluded, so a new phone pairs again.
 
+## Store listings
+
+The repository has no Play Store metadata (no fastlane `metadata/` or Play
+`listings/`). If you list the app, name it **Page Relay for Android** in the
+Play Console. The launcher name stays **Page Relay**.
+
 ## Pair
 
-1. On the Mac: Page Studio menu-bar icon → **Pair phone…**.
+1. On the Mac: Page Studio menu-bar icon → **Pair phone…**. On Linux: run `paged pair`.
 2. In the app: **Pair with your Mac** opens the scanner (CameraX with the on-device ZXing decoder), or
    **Paste a pairing link instead** with the JSON from **Copy pairing JSON**. Pasting is the way to pair an
    emulator.

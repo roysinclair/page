@@ -5,7 +5,7 @@ import PageWidgetSupport
 /// (pure parsing; the process runs elsewhere), and where System Settings keeps
 /// the widget switches.
 final class WidgetRegistrationTests: XCTestCase {
-    private let appex = "/Applications/Page.app/Contents/PlugIns/PageWidgets.appex"
+    private let appex = "/Applications/Page Studio.app/Contents/PlugIns/PageWidgets.appex"
     private let id = PageWidgetConstants.extensionBundleID
 
     /// The `pluginkit -m -A -D -v` shape: flag column, id(version), uuid, date, path; tab separated.
@@ -58,7 +58,7 @@ final class WidgetRegistrationTests: XCTestCase {
 
     /// `=` is "superseded by another plug-in": macOS uses another copy, so this one is not the one showing.
     func testSupersededByAnotherCopyIsElsewhere() {
-        let other = "/Users/someone/build/Page.app/Contents/PlugIns/PageWidgets.appex"
+        let other = "/Users/someone/build/Page Studio.app/Contents/PlugIns/PageWidgets.appex"
         let output = [line("=", path: appex), line("+", path: other)].joined(separator: "\n")
         XCTAssertEqual(parse(output, expected: appex), .elsewhere(path: other))
         XCTAssertEqual(parse(line("=", path: appex), expected: appex), .elsewhere(path: appex),
@@ -66,12 +66,12 @@ final class WidgetRegistrationTests: XCTestCase {
     }
 
     func testAnotherCopysPathIsElsewhere() {
-        let build = "/Users/someone/projects/mac-on-claude-code/build/Page.app/Contents/PlugIns/PageWidgets.appex"
+        let build = "/Users/someone/projects/mac-on-claude-code/build/Page Studio.app/Contents/PlugIns/PageWidgets.appex"
         XCTAssertEqual(parse(line("+", path: build), expected: appex), .elsewhere(path: build))
     }
 
     func testTheLineForThisCopyWinsOverAnotherCopy() {
-        let build = "/Users/someone/build/Page.app/Contents/PlugIns/PageWidgets.appex"
+        let build = "/Users/someone/build/Page Studio.app/Contents/PlugIns/PageWidgets.appex"
         let output = [line("-", path: build), line("+", path: appex)].joined(separator: "\n")
         XCTAssertEqual(parse(output, expected: appex), .registered(path: appex))
     }
@@ -83,7 +83,7 @@ final class WidgetRegistrationTests: XCTestCase {
     func testSymlinkedAndPrivateAliasesCountAsTheSameCopy() throws {
         let folder = FileManager.default.temporaryDirectory
             .appendingPathComponent("PageRegistrationAlias-\(UUID().uuidString)", isDirectory: true)
-        let appexFolder = folder.appendingPathComponent("Page.app/Contents/PlugIns/PageWidgets.appex", isDirectory: true)
+        let appexFolder = folder.appendingPathComponent("Page Studio.app/Contents/PlugIns/PageWidgets.appex", isDirectory: true)
         try FileManager.default.createDirectory(at: appexFolder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         let expected = appexFolder.path
@@ -117,17 +117,17 @@ final class WidgetRegistrationTests: XCTestCase {
     }
 
     func testAbbreviateShortensAHomeFolderPathAndDropsThePlugInTail() {
-        let path = "/Users/sam/Downloads/Page.app/Contents/PlugIns/PageWidgets.appex"
-        XCTAssertEqual(WidgetRegistration.abbreviate(path, home: "/Users/sam"), "~/Downloads/Page.app")
-        XCTAssertEqual(WidgetRegistration.abbreviate("/Applications/Page.app/Contents/PlugIns/PageWidgets.appex",
-                                                     home: "/Users/sam"), "/Applications/Page.app")
+        let path = "/Users/sam/Downloads/Page Studio.app/Contents/PlugIns/PageWidgets.appex"
+        XCTAssertEqual(WidgetRegistration.abbreviate(path, home: "/Users/sam"), "~/Downloads/Page Studio.app")
+        XCTAssertEqual(WidgetRegistration.abbreviate("/Applications/Page Studio.app/Contents/PlugIns/PageWidgets.appex",
+                                                     home: "/Users/sam"), "/Applications/Page Studio.app")
     }
 
     /// Probe: the home test is a plain prefix, so a sibling folder such as
     /// /Users/samX reads as "~X/…", which is wrong.
     func testAbbreviateDoesNotTreatASiblingFolderAsHome() {
-        let path = "/Users/samX/Page.app/Contents/PlugIns/PageWidgets.appex"
-        XCTAssertEqual(WidgetRegistration.abbreviate(path, home: "/Users/sam"), "/Users/samX/Page.app")
+        let path = "/Users/samX/Page Studio.app/Contents/PlugIns/PageWidgets.appex"
+        XCTAssertEqual(WidgetRegistration.abbreviate(path, home: "/Users/sam"), "/Users/samX/Page Studio.app")
     }
 
     // MARK: where System Settings keeps them
@@ -153,7 +153,7 @@ final class WidgetRegistrationTests: XCTestCase {
     }
 
     func testExtensionSitsInsideTheAppsPlugIns() {
-        XCTAssertEqual(WidgetRegistration.extensionPath(inApp: "/Applications/Page.app"), appex)
+        XCTAssertEqual(WidgetRegistration.extensionPath(inApp: "/Applications/Page Studio.app"), appex)
         XCTAssertEqual(PageWidgetConstants.extensionBundleID, id)
     }
 }

@@ -19,6 +19,19 @@ if CommandLine.arguments.contains(RenderHarness.flag) {
     dispatchMain()
 }
 
+// `--migrate-hook-paths`: install.sh runs this on the installed copy after the
+// bundle folder moved from Page.app to Page Studio.app. Points agent hook
+// entries that run the old bundle's script at this one (backup first) and
+// exits; non-zero when a file couldn't be changed. Never starts the app.
+if CommandLine.arguments.contains(HookBundleMigration.flag) {
+    let outcomes = HookBundleMigration.runForThisApp()
+    for o in outcomes {
+        let line = HookBundleMigration.describe(o) + "\n"
+        if o.error == nil { FileHandle.standardOutput.write(Data(line.utf8)) } else { FileHandle.standardError.write(Data(line.utf8)) }
+    }
+    exit(outcomes.contains { $0.error != nil } ? 1 : 0)
+}
+
 #if DEBUG
 // `--probe-answer` / `--probe-screen`: measure answering a question dialog in a terminal (AnswerProbe.swift).
 // Compiled out of release builds; terminal like --render-ui, it never starts the app.

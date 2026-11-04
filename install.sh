@@ -29,9 +29,20 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 LABEL="local.Page"
-APP_SRC="Page.app"
-APP_DEST="/Applications/Page.app"
+# The bundle folder has a space in it: quote every path built from these.
+APP_NAME="Page Studio.app"
+APP_SRC="$APP_NAME"
+APP_DEST="/Applications/$APP_NAME"
+# The executable inside the bundle kept its name (Contents/MacOS/Page), so the
+# sleep watchdog and anything else that looks for the process still find it.
 BUNDLE_NAME="Page"
+# Until the rename the bundle folder was Page.app. Same bundle id, LaunchAgent
+# label, keychain item, App Group, preferences and support folder; only the
+# folder changed. An install moves an old copy over (migrate_old_bundle).
+OLD_PAGE_APPS=("/Applications/Page.app" "$HOME/Applications/Page.app")
+# What pkill/pgrep look for: the running executable in either folder.
+PROCESS_PATTERNS=("$APP_NAME/Contents/MacOS/$BUNDLE_NAME" "Page.app/Contents/MacOS/$BUNDLE_NAME")
+LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 PLIST_PATH="$HOME/Library/LaunchAgents/$LABEL.plist"
 # Name kept from the ClaudePowerMode era so existing installs are found.
 SUDOERS_FILE="/etc/sudoers.d/claude-power-mode"
@@ -61,7 +72,8 @@ LEGACY_BUNDLES=("ClaudePowerMode" "PageAI")
 safe_rm_app() {
     local target="${1:?safe_rm_app needs a path}"
     case "$target" in
-        /Applications/*.app|"$PWD"/*.app) ;;
+        */../*|*/./*) echo "!! Refusing to delete unexpected path: $target" >&2; exit 1 ;;
+        /Applications/*.app|"${HOME:?}"/Applications/*.app|"$PWD"/*.app) ;;
         *) echo "!! Refusing to delete unexpected path: $target" >&2; exit 1 ;;
     esac
     [[ -L "$target" ]] && { rm -f "$target"; return; }
@@ -79,6 +91,14 @@ unload_agent() {
         sleep 0.5
     done
     echo "!! $label is still loaded after bootout; continuing anyway" >&2
+}
+
+# Stops every running Page Studio, whichever folder it runs from.
+stop_page_processes() {
+    local pattern
+    for pattern in "${PROCESS_PATTERNS[@]}"; do
+        pkill -f "$pattern" 2>/dev/null || true
+    done
 }
 
 cleanup_legacy() {
@@ -177,8 +197,12 @@ remove_sleepguard() {
 }
 
 page_is_running() {
-    launchctl print "gui/$UID_NUM/$LABEL" >/dev/null 2>&1 \
-        || pgrep -f "$BUNDLE_NAME.app/Contents/MacOS/$BUNDLE_NAME" >/dev/null 2>&1
+    launchctl print "gui/$UID_NUM/$LABEL" >/dev/null 2>&1 && return 0
+    local pattern
+    for pattern in "${PROCESS_PATTERNS[@]}"; do
+        pgrep -f "$pattern" >/dev/null 2>&1 && return 0
+    done
+    return 1
 }
 
 disable_power_helpers() {
@@ -191,7 +215,7 @@ disable_power_helpers() {
         was_running=1
         echo "==> Stopping Page Studio while the rule is removed"
         unload_agent "$LABEL"
-        pkill -f "$BUNDLE_NAME.app/Contents/MacOS/$BUNDLE_NAME" 2>/dev/null || true
+        stop_page_processes
         sleep 1
     fi
     # While the rule still allows it without a password.
@@ -243,7 +267,7 @@ install_hook() {
 
     Easiest: Page Studio > Integrations > Install agent hooks… installs (and can remove)
     these entries for Claude Code and Codex, shows the change first and backs
-    up the file. It points them at the copy inside Page.app.
+    up the file. It points them at the copy inside Page Studio.app.
 
     This script does NOT edit ~/.claude/settings.json. To set it up by hand,
     merge this into the "hooks" object there:
@@ -278,30 +302,72 @@ EOF
 }
 
 # Page Studio's in-app installer writes hook entries that run the script inside
-# Page.app. Removing the app leaves them pointing at a missing file, so every
-# permission prompt / question / notification logs a hook error. Prints the
-# leftover entries; returns 0 when there are none.
+# the app bundle. Removing the bundle leaves them pointing at a missing file, so
+# every permission prompt / question / notification logs a hook error. Checks
+# the bundles given (default: $APP_DEST). Prints the leftover entries; returns
+# 0 when there are none.
 check_leftover_hooks() {
-    local script="$APP_DEST/Contents/Resources/hooks/page-notify.sh" f found=1
-    # Also the JSON-escaped spelling ("\/"), in case another tool rewrote the file.
-    local escaped="${script//\//\\/}"
+    local app script escaped f found=1
+    [[ $# -gt 0 ]] || set -- "$APP_DEST"
     for f in "$HOME/.claude/settings.json" "$HOME/.codex/hooks.json"; do
         [[ -f "$f" ]] || continue
-        if grep -qF -e "$script" -e "$escaped" "$f" 2>/dev/null; then
-            if [[ "$found" == 1 ]]; then
-                echo "!! Page Studio's phone-approval hooks are still installed and would point at a deleted script:" >&2
+        for app in "$@"; do
+            script="$app/Contents/Resources/hooks/page-notify.sh"
+            # Also the JSON-escaped spelling ("\/"), in case another tool rewrote the file.
+            escaped="${script//\//\\/}"
+            if grep -qF -e "$script" -e "$escaped" "$f" 2>/dev/null; then
+                if [[ "$found" == 1 ]]; then
+                    echo "!! Page Studio's phone-approval hooks are still installed and would point at a deleted script:" >&2
+                fi
+                found=0
+                echo "   $f:" >&2
+                grep -nF -e "$script" -e "$escaped" "$f" | sed 's/^/     /' >&2
             fi
-            found=0
-            echo "   $f:" >&2
-            grep -nF -e "$script" -e "$escaped" "$f" | sed 's/^/     /' >&2
-        fi
+        done
     done
     [[ "$found" == 1 ]]
 }
 
+# Moves an install from the old Page.app folder to Page Studio.app. Runs once
+# the new bundle is in $APP_DEST and Page Studio is stopped, before the
+# LaunchAgent is written again (with the new path).
+#  1. Hook entries in ~/.claude/settings.json and ~/.codex/hooks.json that run
+#     the script inside an old Page.app are pointed at $APP_DEST. The installed
+#     app does it (--migrate-hook-paths), with the same code as its own hook
+#     installer: only commands that run exactly the old script change, the
+#     file is backed up next to itself first (<name>.page-backup-<date>) and
+#     replaced atomically, and an invalid file is left alone.
+#  2. The old bundle is removed, but only once no hook entry still runs its
+#     script; otherwise it stays, so phone approvals keep working, and the
+#     reason is printed.
+migrate_old_bundle() {
+    local old hooks_moved=1
+    if ! check_leftover_hooks "${OLD_PAGE_APPS[@]}" 2>/dev/null; then
+        echo "==> Pointing Page Studio's agent hooks at $APP_DEST"
+        "$APP_DEST/Contents/MacOS/$BUNDLE_NAME" --migrate-hook-paths || true
+        if ! check_leftover_hooks "${OLD_PAGE_APPS[@]}"; then
+            hooks_moved=0
+            echo "!! Couldn't move them (see above). Fix the file, then run ./install.sh again," >&2
+            echo "   or use Page Studio > Integrations > Install agent hooks… > Update." >&2
+        fi
+    fi
+    for old in "${OLD_PAGE_APPS[@]}"; do
+        [[ -e "$old" ]] || continue
+        if [[ "$hooks_moved" != 1 ]]; then
+            echo "!! Kept $old for now: agent hooks still run the script inside it." >&2
+            continue
+        fi
+        echo "==> Removing the old $old (Page Studio is now $APP_DEST)"
+        # Forget the old copy's widget extension and app registration first.
+        pluginkit -r "$old/Contents/PlugIns/PageWidgets.appex" 2>/dev/null || true
+        "$LSREGISTER" -u "$old" 2>/dev/null || true
+        safe_rm_app "$old"
+    done
+}
+
 uninstall() {
     local force="${1:-}"
-    if ! check_leftover_hooks; then
+    if ! check_leftover_hooks "$APP_DEST" "${OLD_PAGE_APPS[@]}"; then
         echo "   Remove them first: Page Studio > Integrations > Install agent hooks… > Uninstall (Claude Code and" >&2
         echo "   Codex; it removes only Page Studio's entries and keeps a backup), then run --uninstall again." >&2
         if [[ "$force" == "--force" ]]; then
@@ -318,13 +384,13 @@ uninstall() {
     echo "==> Stopping running instance"
     # SIGTERM lets Page Studio clear disablesleep itself; give it a moment.
     unload_agent "$LABEL"
-    pkill -f "$BUNDLE_NAME.app/Contents/MacOS/$BUNDLE_NAME" 2>/dev/null || true
+    stop_page_processes
     sleep 1
     # Before the sudoers rule goes, so `sudo -n` can still clear the flag.
     clear_disablesleep
     remove_sleepguard
     # Scheduled resume jobs (current + legacy labels), loaded or not.
-    local plist label prefix
+    local plist label prefix app
     for prefix in "${RESUME_LABEL_PREFIXES[@]}"; do
         for plist in "$HOME/Library/LaunchAgents/$prefix"*.plist; do
             [[ -f "$plist" ]] || continue
@@ -343,10 +409,12 @@ uninstall() {
         echo "==> Removing $PLIST_PATH"
         rm -f "$PLIST_PATH"
     fi
-    if [[ -e "$APP_DEST" ]]; then
-        echo "==> Removing $APP_DEST"
-        safe_rm_app "$APP_DEST"
-    fi
+    for app in "$APP_DEST" "${OLD_PAGE_APPS[@]}"; do
+        if [[ -e "$app" ]]; then
+            echo "==> Removing $app"
+            safe_rm_app "$app"
+        fi
+    done
     cleanup_legacy
     if [[ -f "$SUDOERS_FILE" ]]; then
         echo "==> Removing the power-helper sudoers rule (admin password required)"
@@ -380,8 +448,10 @@ echo "==> Building (always, to pick up any source changes)"
 cleanup_legacy
 
 echo "==> Stopping any running Page Studio instance"
+# One label for the old Page.app and Page Studio.app, so this also stops an
+# old copy started at login; the process patterns cover both folders.
 unload_agent "$LABEL"
-pkill -f "$BUNDLE_NAME.app/Contents/MacOS/$BUNDLE_NAME" 2>/dev/null || true
+stop_page_processes
 sleep 1
 
 echo "==> Copying to $APP_DEST"
@@ -391,6 +461,8 @@ cp -R "$APP_SRC" "$APP_DEST"
 # Strip the quarantine attribute that macOS adds to anything copied around,
 # so Gatekeeper doesn't pop "are you sure" on first launch.
 xattr -dr com.apple.quarantine "$APP_DEST" 2>/dev/null || true
+
+migrate_old_bundle
 
 echo "==> Writing LaunchAgent at $PLIST_PATH"
 mkdir -p "$(dirname "$PLIST_PATH")"
@@ -439,7 +511,7 @@ fi
 
 sleep 2
 
-if pgrep -f "$BUNDLE_NAME.app/Contents/MacOS/$BUNDLE_NAME" >/dev/null; then
+if pgrep -f "$APP_NAME/Contents/MacOS/$BUNDLE_NAME" >/dev/null; then
     echo "==> Running. Look for the icon in your menu bar (top right)."
     echo "    Remote paging from Claude Code hooks: ./install.sh --install-hook"
     echo "    To uninstall:  ./install.sh --uninstall"

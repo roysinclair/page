@@ -19,7 +19,7 @@ import Foundation
 //    in macOS, and the widget views. Foundation and SwiftUI only (it is linked
 //    into an app extension, so nothing here may touch AppKit's app APIs).
 //  - PageWidgets: the WidgetKit extension. build.sh wraps its executable as
-//    Page.app/Contents/PlugIns/PageWidgets.appex and signs it before the app.
+//    Page Studio.app/Contents/PlugIns/PageWidgets.appex and signs it before the app.
 //  - ClaudePowerMode: the menu-bar app (AppKit/SwiftUI UI and widgets).
 //
 // Linux only:

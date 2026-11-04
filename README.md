@@ -131,7 +131,7 @@ paste the prompt from
 [Set it up with an AI agent](docs/SELF-HOSTING.md#set-it-up-with-an-ai-agent):
 
 ```sh
-claude --model claude-opus-5-5 --effort high
+claude
 ```
 
 ## Documentation
@@ -180,9 +180,11 @@ There are four pieces, all of which you run yourself:
 
 > The Swift target is still called `ClaudePowerMode`, and so are the config
 > and log paths, from before the project was renamed. The app is named Page
-> Studio wherever macOS shows a name; the bundle folder (`Page.app`), its
-> executable, bundle id and LaunchAgent keep the name Page so existing installs,
-> hooks and permissions carry on working.
+> Studio wherever macOS shows a name, and its bundle folder is `Page Studio.app`
+> (it was `Page.app`; `./install.sh` moves an old install over, see
+> [Upgrading from Page.app](#upgrading-from-pageapp)). Its executable, bundle id
+> and LaunchAgent keep the name Page so existing installs, hooks and
+> permissions carry on working.
 
 ## Features
 
@@ -326,7 +328,7 @@ Anthropic documents hook support for the desktop app and IDE extensions, but
 Page Studio hasn't been tested on every one of those surfaces. Whether the Codex
 desktop app and IDE extension run `~/.codex/hooks.json` is undocumented.
 Codex also asks you to trust new hooks once: open Codex and run `/hooks`, and
-again after moving Page.app.
+again after moving Page Studio.app (moving from the old `Page.app` counts).
 
 The hooks are **away-only** and **never decide on their own**:
 
@@ -557,7 +559,7 @@ routes, costs and APNs troubleshooting.
 ./install.sh
 ```
 
-This builds `Page.app`, copies it to `/Applications`, and registers the
+This builds `Page Studio.app`, copies it to `/Applications`, and registers the
 `local.Page` LaunchAgent so Page Studio starts at login. It never uses sudo. Signing
 uses `CODESIGN_IDENTITY` if set, else the first "Apple Development" identity,
 else the first "Developer ID Application" identity, else ad-hoc. A stable
@@ -575,6 +577,46 @@ identity keeps macOS permission grants across rebuilds.
 The first time Page Studio types into Terminal.app or iTerm2, macOS asks for
 **Automation** permission. Codex delivery through Terminal.app also needs
 **Accessibility** permission, to press Return.
+
+#### Upgrading from Page.app
+
+The app's folder is now `/Applications/Page Studio.app` (it was
+`/Applications/Page.app`). Run `./install.sh` as usual and it moves you over:
+
+1. It stops the running copy (same LaunchAgent label, `local.Page`).
+2. It installs `Page Studio.app`.
+3. If `~/.claude/settings.json` or `~/.codex/hooks.json` has Page Studio's
+   hooks pointing at the old `Page.app/Contents/Resources/hooks`, the new app
+   points exactly those entries at the new folder, the same way the in-app
+   installer does: a backup next to the file first
+   (`<file>.page-backup-<timestamp>`), an atomic write, and nothing else in the
+   file touched. A file that isn't valid JSON is left alone.
+4. It removes the old `Page.app` (from `/Applications` or `~/Applications`),
+   but only once no hook entry still runs its script. Otherwise it keeps it, so
+   phone approvals keep working, and says why.
+5. It writes the LaunchAgent again with the new path and starts Page Studio.
+
+Page Studio also checks at every launch and moves any hook entries still
+pointing at the old `Page.app` (with a backup, and a notification saying what
+changed). Nothing else moves: settings, logs and scheduled resumes stay in
+`~/Library/Application Support/ClaudePowerMode`, and the bundle id, keychain
+item, App Group and preferences are unchanged.
+
+What you may need to do by hand:
+
+- **Codex:** open Codex and run `/hooks`, then trust Page Studio's hook again.
+  Codex skips a hook whose command changed until you do.
+- **Permissions:** Automation and Accessibility grants follow the bundle id and
+  code signature, not the folder, so a build signed with your Apple Development
+  or Developer ID certificate keeps them. An ad-hoc build loses them on every
+  rebuild anyway, so expect macOS to ask again. If Page Studio still can't type
+  into a terminal although the switch looks on, remove Page Studio from
+  System Settings ▸ Privacy & Security ▸ Accessibility (or Automation) and let
+  it ask again.
+- **Login items:** macOS may show a new "Background item added" notice for
+  Page Studio. That is the same LaunchAgent with the new path.
+- **Widgets:** Page Studio registers its widgets from the new folder at
+  launch. If a placed widget stays blank, remove it and add it again.
 
 ### 3. Point the Mac at your Worker
 
@@ -720,7 +762,7 @@ Other files in `~/Library/Application Support/ClaudePowerMode/`:
 ```
   Your Mac                                   Your Cloudflare account          Apple        Your iPhone
  ┌──────────────────────────────────────┐   ┌──────────────────────────┐
- │ Page.app (menu bar, LaunchAgent)     │   │ Worker  /health, auth    │
+ │ Page Studio.app (menu bar, launchd)  │   │ Worker  /health, auth    │
  │                                      │   │   │                      │
  │  ClaudeBackend ─┐                    │   │   ▼  one Durable Object  │   ┌──────┐   ┌──────────────┐
  │   ~/.claude/sessions, transcripts    │   │      per relay token     │──▶│ APNs │──▶│ Page (iOS)   │
@@ -931,13 +973,13 @@ Logs:
 │   └── project.yml              XcodeGen spec (edit this, not the .xcodeproj)
 ├── android/                     Android app, Kotlin + Compose (see its README)
 │   └── app/src/main/java/app/page/android/  model/ (pure, JUnit-tested), data/, notify/, ui/
-├── hooks/                       page-notify.sh + page-extract-context.py (bundled into Page.app)
+├── hooks/                       page-notify.sh + page-extract-context.py (bundled into Page Studio.app)
 ├── docs/                        SELF-HOSTING.md, PROTOCOL.md, SESSIONS-PROTOCOL.md, AURA-LINK.md, ROADMAP.md, images/
 ├── Tools/                       icon generator, parser test pointer
 ├── Resources/                   Mac app icon and entitlements
 ├── Designs/                     Pencil design sources
 ├── website/                     project website
-├── build.sh                     build + sign Page.app
+├── build.sh                     build + sign Page Studio.app
 ├── install.sh                   install / power helpers / hooks / uninstall
 └── CODEX_INTEGRATION_SPEC.md    Codex design notes and current status
 ```

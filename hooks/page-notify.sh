@@ -30,7 +30,7 @@
 #
 #      "PermissionRequest": [
 #        { "hooks": [ { "type": "command",
-#                       "command": "'/Applications/Page.app/Contents/Resources/hooks/page-notify.sh' --agent-timeout 570",
+#                       "command": "'/Applications/Page Studio.app/Contents/Resources/hooks/page-notify.sh' --agent-timeout 570",
 #                       "timeout": 570 } ] } ]
 #
 # 2) PreToolUse for AskUserQuestion and ExitPlanMode (Claude Code; blocking)

@@ -16,7 +16,7 @@ object OnboardingCopy {
     const val pairButton = "Pair with your computer"
 
     const val scanTitle = "Scan the code on your computer"
-    const val scanHint = "Page Studio → Pair phone…"
+    const val scanHint = "Page Studio → Pair phone… · On Linux: paged pair"
     data class Fact(val symbol: String, val text: String)
     val scanFacts: List<Fact> = listOf(
         Fact("lock", "The code holds your relay address and an encryption key"),
@@ -164,7 +164,7 @@ data class ProblemState(
                     subtitle = if (replaced) "Your computer made a new pairing code" else "The relay has never seen it connect",
                     details = listOf(
                         Detail("key.slash", if (replaced) "The old code can't be used again" else "A code from an old screenshot, or a regenerated token, looks like this"),
-                        Detail("qrcode", "On your computer, open Page Studio → Pair phone…"),
+                        Detail("qrcode", "On your computer, open Page Studio → Pair phone…, or run paged pair on Linux"),
                     ),
                     actionTitle = "Scan the new code", action = Action.REPAIR, replacesBanners = setOf("auth", "never"),
                 )

@@ -200,7 +200,7 @@ struct PairMacView: View {
                                  retry: nil, openSettings: false)
             case .retired(let why):
                 stage = .problem(title: "This code was replaced",
-                                 message: "\(TokenRetirement.sentence(why)) On your computer, open Page Studio → Pair phone… and scan the code shown there now.",
+                                 message: "\(TokenRetirement.sentence(why)) On your computer, open Page Studio → Pair phone… (on Linux, run paged pair) and scan the code shown there now.",
                                  retry: nil, openSettings: false)
             }
         }

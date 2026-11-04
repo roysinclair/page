@@ -10,7 +10,7 @@ extension RenderSurfaces {
         let pad: CGFloat = 28
         let w = NWTowerWindow.size.width, h = NWTowerWindow.size.height
         let now = NightWatchFixtures.boardNow()
-        let appex = "/Applications/Page.app/Contents/PlugIns/PageWidgets.appex"
+        let appex = "/Applications/Page Studio.app/Contents/PlugIns/PageWidgets.appex"
         func window(_ status: WidgetRegistration.Status, guide: Bool = false, os: Int = 14, example: Bool = false,
                     height: CGFloat = h) -> AnyView {
             let store = TowerFixtures.store(section: .widgets)
@@ -26,7 +26,7 @@ extension RenderSurfaces {
         tower("widgets-registered", window(.registered(path: appex)))
         tower("widgets-disabled", window(.disabled(path: appex)))
         tower("widgets-not-registered", window(.notRegistered))
-        tower("widgets-elsewhere", window(.elsewhere(path: "/Users/studio/projects/page/build/Page.app/Contents/PlugIns/PageWidgets.appex")))
+        tower("widgets-elsewhere", window(.elsewhere(path: "/Users/studio/projects/page/build/Page Studio.app/Contents/PlugIns/PageWidgets.appex")))
         tower("widgets-unavailable-no-team", window(.unavailable(reason: WidgetSetup.Unavailable.noTeam)))
         tower("widgets-unavailable-build-folder", window(.unavailable(reason: WidgetSetup.Unavailable.notAnApp)))
         tower("widgets-macos13-guide", window(.registered(path: appex), guide: true, os: 13, height: 1500), height: 1500)

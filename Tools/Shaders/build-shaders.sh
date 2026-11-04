@@ -3,7 +3,7 @@
 # base64, in Sources/ClaudePowerMode/UI/Components/NWShaderBlob.generated.swift.
 #
 # SwiftPM's `swift build` does not compile .metal files, and build.sh copies
-# only the binary into Page.app, so the shaders ride inside the executable and
+# only the binary into Page Studio.app, so the shaders ride inside the executable and
 # load with ShaderLibrary(data:). Building the app needs no Metal toolchain;
 # only this script does (install it once with
 # `xcodebuild -downloadComponent MetalToolchain`). Run it after editing the

@@ -1,6 +1,7 @@
 import Foundation
 import PageWidgetSupport
 import Combine
+@testable import PageCore
 
 /// Everything the Tower needs from the outside world, as closures. The live
 /// window (PreferencesWindowController) fills them in; the render harness

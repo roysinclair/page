@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The menu-bar glyph: which state it shows, the battery arc, and the drawing
 /// numbers for each state (including Reduce Motion).

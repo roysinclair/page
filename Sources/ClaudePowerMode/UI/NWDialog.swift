@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+@testable import PageCore
 
 // The Night Watch dialog: what an NSAlert used to be. A glass card with a
 // title, a body, an optional mono block (a diff, the lines about to be added to

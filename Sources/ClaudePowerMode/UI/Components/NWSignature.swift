@@ -1,4 +1,5 @@
 import SwiftUI
+@testable import PageCore
 
 // The pieces of the signature motions that sit on a row or a panel: the
 // receipt thread's strip, the hold ring on a key cap, the arrival's glow and

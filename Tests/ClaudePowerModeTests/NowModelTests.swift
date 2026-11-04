@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The Now popover's model: headlines, sublines, runway markers, rings,
 /// receipts, the welcome-back summary and the clock and duration text.

@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The render harness (`--render-ui <dir>`): how its directory argument is
 /// read, and which surfaces it promises to draw. The renders themselves are

@@ -1,4 +1,5 @@
 import SwiftUI
+@testable import PageCore
 
 /// The glass of a Night Watch surface: a near-black fill and a hairline rim
 /// that is white at the top. When the "Card glow" setting is on (read from the

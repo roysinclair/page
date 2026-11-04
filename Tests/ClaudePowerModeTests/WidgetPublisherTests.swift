@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 import PageWidgetSupport
 
 /// The file side of the widgets: what lands in the group folder, how often

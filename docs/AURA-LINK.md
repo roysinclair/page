@@ -23,11 +23,14 @@ ids prefixed `aura-`).
 
 ## 1. Transport
 
-- **Socket:** `~/Library/Application Support/ClaudePowerMode/aura.sock`.
+- **Socket:** `~/Library/Application Support/ClaudePowerMode/aura.sock` on
+  macOS; `$XDG_DATA_HOME/page/aura.sock` (`~/.local/share/page/aura.sock`) on
+  Linux, where `paged` is the server ([LINUX.md](LINUX.md)).
   Page is the server; Page Aura is the client.
 - **Page (server):** creates the folder if missing, unlinks a stale socket,
   binds, sets the socket to `0600`. For every accepted connection it checks the
-  peer with `getpeereid` and closes it unless the peer uid equals `getuid()`.
+  peer with `getpeereid` (`SO_PEERCRED` on Linux) and closes it unless the
+  peer uid equals `getuid()`.
   One client at a time: a new connection replaces the old one. When the
   backend is switched off (Preferences) or Page quits, it closes the listener
   and removes the socket file.

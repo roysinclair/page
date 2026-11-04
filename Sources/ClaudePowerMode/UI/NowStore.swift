@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+@testable import PageCore
 
 /// A button on the panel that is not a row key.
 enum NowCommand: Equatable {

@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The Now panel's keyboard reducer, press-and-hold gestures, the reply gate,
 /// delivery results and receipts. Keystroke truth: approve types 1, deny

@@ -1,4 +1,5 @@
 import Foundation
+@testable import PageCore
 
 /// Fixture situations for the render harness (and for tests): the scenes the
 /// v4 boards show, built as Coordinator snapshots so they run through the same

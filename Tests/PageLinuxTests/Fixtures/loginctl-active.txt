@@ -1,0 +1,3 @@
+Type=x11
+IdleHint=no
+IdleSinceHint=0

@@ -1,5 +1,6 @@
 import Foundation
 import PageWidgetSupport
+@testable import PageCore
 
 /// Turns what the popover shows into the small file Page's widgets read.
 /// Everything that came from an agent (what a page asks, the step a session is

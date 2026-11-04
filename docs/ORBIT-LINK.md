@@ -26,7 +26,7 @@ Page Orbit speaks the Page Aura line protocol ([AURA-LINK.md](AURA-LINK.md)
 
 | | Page Aura | Page Orbit |
 |---|---|---|
-| Socket | `…/ClaudePowerMode/aura.sock` | `…/ClaudePowerMode/orbit.sock` (same folder, same 0600 / same-uid rules) |
+| Socket | `…/ClaudePowerMode/aura.sock` (Linux: `~/.local/share/page/aura.sock`) | `…/ClaudePowerMode/orbit.sock` (Linux: `~/.local/share/page/orbit.sock`; same folder, same 0600 / same-uid rules) |
 | `hello` | `"app":"Page Aura"`, `proto` 1 or 2 | `"app":"Page Orbit"`, `"proto":1` |
 | A "chat" on the wire is | a Page Aura chat | a Managed Agents **session**: `id` is the session id (`sesn_…`), `title` its title or its agent's name |
 | `busy` | an API stream or local tool is running | the session's status is `running` (or `rescheduling`) |

@@ -2,6 +2,7 @@ import XCTest
 import SwiftUI
 import AppKit
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The Night Watch dialog, actually used: shown over a real (on-screen) window,
 /// its buttons pressed with real mouse and key events through `NSWindow.sendEvent`

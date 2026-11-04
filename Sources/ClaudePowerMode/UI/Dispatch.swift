@@ -1,4 +1,5 @@
 import SwiftUI
+@testable import PageCore
 
 // Dispatch (⌘N): start a new Claude session from the Mac. The same fenced path
 // the phone uses (`SessionStarter`: prompt clean-up, the known-folders

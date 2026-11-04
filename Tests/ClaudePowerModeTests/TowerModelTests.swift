@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The Tower (settings window): the section list, the card, the formatting
 /// and option rules, the Power and Budget pages, the shortcut list, and the

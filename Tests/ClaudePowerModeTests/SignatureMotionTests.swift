@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The pure timing and phase models behind Night Watch's signature motions
 /// (SignatureMotion.swift), and the glyph's colour and frame-rate rules.

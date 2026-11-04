@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The rich In-flight card: step phrasing, model names, health, the card's
 /// words, the optional wire fields, "N working" jumping to the cards, the

@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// Every Tower flow that asks before it acts: the hook installs and removals,
 /// kitty setup, the broken-config Apply and the pairing regenerate. Each

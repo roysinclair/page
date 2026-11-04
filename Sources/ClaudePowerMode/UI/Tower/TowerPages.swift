@@ -1,4 +1,5 @@
 import SwiftUI
+@testable import PageCore
 
 private typealias P = NightWatch.Palette
 

@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// Coverage for the In-flight card that `InFlightCardTests` does not reach:
 /// the wire's golden output (the same literals the phone's logic tests decode),

@@ -1,5 +1,6 @@
 import Foundation
 import PageWidgetSupport
+@testable import PageCore
 
 /// Page's widget extension and macOS: is it known, and tell macOS about it.
 /// Page cannot place a widget (macOS has no API for that); this does the part

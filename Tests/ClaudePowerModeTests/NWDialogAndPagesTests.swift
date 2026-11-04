@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The Night Watch dialog's pure parts, and the pages that used to be windows
 /// (Phone approvals, cmux setup, pairing): what they say, and that they do

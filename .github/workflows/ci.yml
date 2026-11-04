@@ -26,6 +26,26 @@ jobs:
         # unless PAGE_LIVE_SESSION_ID is set.
         run: swift test
 
+  linux-build:
+    name: Linux (PageCore + paged)
+    runs-on: ubuntu-24.04
+    # The official Swift image: toolchain and its apt dependencies.
+    container: swift:6.2-noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tools the tests drive (tmux, python3)
+        run: apt-get update -q && apt-get install -y -q tmux python3
+      - name: Show Swift version
+        run: swift --version
+      - name: Build (debug)
+        run: swift build -c debug
+      - name: Build paged (release, as install-linux.sh does)
+        run: swift build -c release --product paged --static-swift-stdlib
+      - name: Unit tests (PageCore, PageLinux)
+        run: swift test
+      - name: Script syntax
+        run: bash -n install-linux.sh && bash -n hooks/page-notify.sh
+
   ios-build:
     name: iOS build (simulator)
     runs-on: macos-15

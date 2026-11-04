@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+@testable import PageCore
 
 /// Night Watch design tokens: colour, type, spacing, radius, and the aurora
 /// palettes. Values are read off the approved v4 boards (Designs/v4); fonts

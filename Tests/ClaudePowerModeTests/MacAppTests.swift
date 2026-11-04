@@ -1,6 +1,7 @@
 import XCTest
 import IOKit.ps
 @testable import ClaudePowerMode
+@testable import PageCore
 
 final class ConfigValidationTests: XCTestCase {
     func testDefaultsAreAlreadyValid() {

@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The Dispatch panel (⌘N): when it can send, folder choice, the hints and
 /// what a result looks like on screen.

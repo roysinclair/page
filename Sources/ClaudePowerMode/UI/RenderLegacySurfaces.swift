@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+@testable import PageCore
 
 /// Harness surfaces for what used to be plain AppKit windows and alerts: the
 /// Phone approvals page, the cmux setup, the pairing QR and the dialogs. Every

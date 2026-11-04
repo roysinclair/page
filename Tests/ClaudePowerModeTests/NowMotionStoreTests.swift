@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The signature motions as the Now store records them: what flies in and what
 /// waits behind the pill, the exhale when the last item clears, dusk and dawn,

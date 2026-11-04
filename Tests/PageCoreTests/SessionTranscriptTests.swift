@@ -1,0 +1,322 @@
+import XCTest
+@testable import PageCore
+
+/// SESSIONS-PROTOCOL.md §4 `transcript`: what the phone sees of a session.
+final class SessionTranscriptTests: XCTestCase {
+    private var dir: URL!
+
+    override func setUpWithError() throws {
+        dir = FileManager.default.temporaryDirectory.appendingPathComponent("page-transcript-\(UUID().uuidString.prefix(8))")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    }
+
+    override func tearDown() {
+        if let dir { try? FileManager.default.removeItem(at: dir) }
+    }
+
+    private func line(_ obj: [String: Any]) -> String {
+        String(data: try! JSONSerialization.data(withJSONObject: obj, options: [.sortedKeys]), encoding: .utf8)!
+    }
+
+    private func write(_ lines: [String], name: String = "t.jsonl") -> String {
+        let path = dir.appendingPathComponent(name).path
+        try! (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+        return path
+    }
+
+    private func append(_ lines: [String], to path: String) {
+        let h = FileHandle(forWritingAtPath: path)!
+        h.seekToEndOfFile()
+        h.write(Data((lines.joined(separator: "\n") + "\n").utf8))
+        h.closeFile()
+    }
+
+    private func user(_ uuid: String, _ content: Any, extra: [String: Any] = [:]) -> String {
+        var o: [String: Any] = ["type": "user", "uuid": uuid, "timestamp": "2026-10-24T12:00:00.000Z",
+                                "message": ["role": "user", "content": content]]
+        o.merge(extra) { $1 }
+        return line(o)
+    }
+
+    private func assistant(_ uuid: String, _ content: [[String: Any]], extra: [String: Any] = [:]) -> String {
+        var o: [String: Any] = ["type": "assistant", "uuid": uuid, "timestamp": "2026-10-24T12:00:01.000Z",
+                                "message": ["role": "assistant", "content": content]]
+        o.merge(extra) { $1 }
+        return line(o)
+    }
+
+    // MARK: Claude
+
+    func testClaudeRowsSkipToolOutputSidechainsAndMeta() throws {
+        let path = write([
+            user("u1", "Please run the tests"),
+            assistant("a1", [["type": "text", "text": "Running them now."],
+                             ["type": "tool_use", "id": "t1", "name": "Bash",
+                              "input": ["command": "npm test", "description": "Run the suite"]]]),
+            user("u2", [["type": "tool_result", "tool_use_id": "t1", "content": "SECRET TEST OUTPUT 42 passing"]]),
+            assistant("a2", [["type": "thinking", "thinking": "hmm"], ["type": "text", "text": "All green."]]),
+            user("u3", "subagent prompt", extra: ["isSidechain": true]),
+            assistant("a3", [["type": "text", "text": "subagent answer"]], extra: ["isSidechain": true]),
+            user("u4", "Caveat: local command output", extra: ["isMeta": true]),
+            line(["type": "attachment", "uuid": "q1", "timestamp": "2026-10-24T12:00:02Z",
+                  "attachment": ["type": "queued_command", "prompt": "also update the README", "origin": ["kind": "human"]]]),
+            line(["type": "attachment", "uuid": "q2", "attachment": ["type": "queued_command", "prompt": "task notification",
+                                                                    "origin": ["kind": "task-notification"]]]),
+            user("u5", [["type": "text", "text": "[Request interrupted by user]"]]),
+            user("u6", "<local-command-stdout>ls output</local-command-stdout>"),
+            user("u7", "<command-name>/model</command-name>\n<command-args>opus</command-args>"),
+            line(["type": "system", "uuid": "s1", "subtype": "turn_duration"]),
+            "not json at all",
+        ])
+        let snap = try XCTUnwrap(SessionTranscript.read(path: path, format: .claude))
+        XCTAssertEqual(snap.entries.map(\.role), [.user, .assistant, .tool, .assistant, .user, .system, .user])
+        XCTAssertEqual(snap.entries.map(\.text), ["Please run the tests", "Running them now.", "Bash: npm test", "All green.",
+                                                  "also update the README", "Interrupted", "/model opus"])
+        XCTAssertEqual(snap.entries.map(\.id), ["u1", "a1#0", "a1#1", "a2#1", "q1", "u5", "u7"])
+        XCTAssertEqual(snap.entries[2].tool, "Bash")
+        XCTAssertFalse(snap.truncated)
+        XCTAssertFalse(snap.entries.contains { $0.text.contains("SECRET TEST OUTPUT") || $0.text.contains("subagent") })
+        XCTAssertNotNil(snap.entries[0].at)
+    }
+
+    /// A message pasted with photos (`images-v1`): Claude Code stores each image inline as base64, a line of
+    /// megabytes. The phone gets the text and a count, never the image data.
+    func testPastedImagesAreCountedNeverSent() throws {
+        let base64 = String(repeating: "iVBORw0KGgo", count: 140_000)   // ~1.5 MB
+        let path = write([
+            user("u1", [["type": "text", "text": "[Image #1] [Image #2]what are these?"],
+                        ["type": "image", "source": ["type": "base64", "media_type": "image/png", "data": base64]],
+                        ["type": "image", "source": ["type": "base64", "media_type": "image/jpeg", "data": base64]]],
+                 extra: ["imagePasteIds": [1, 2]]),
+            user("u2", [["type": "image", "source": ["type": "base64", "media_type": "image/png", "data": "QQ=="]]]),
+            user("u3", "plain words"),
+        ])
+        let snap = try XCTUnwrap(SessionTranscript.read(path: path, format: .claude, tailBytes: 8 * 1024 * 1024))
+        XCTAssertEqual(snap.entries.map(\.text), ["[Image #1] [Image #2]what are these?", "[Image]", "plain words"])
+        XCTAssertEqual(snap.entries.map(\.images), [2, 1, nil])
+        XCTAssertEqual(snap.entries[0].jsonObject["images"] as? Int, 2)
+        XCTAssertNil(snap.entries[2].jsonObject["images"])
+        let data = try XCTUnwrap(SessionTranscript.plaintext(header: ["kind": "transcript"], snapshot: snap))
+        XCTAssertLessThanOrEqual(data.count, SessionTranscript.maxPlaintextBytes)
+        XCTAssertFalse(String(decoding: data, as: UTF8.self).contains("iVBORw0KGgo"), "no image data in the plaintext")
+    }
+
+    func testToolRowsAreOneLiners() {
+        XCTAssertEqual(SessionTranscript.toolLine(InterventionDetector.describeToolUse(
+            name: "Edit", input: ["file_path": "Sources/App.swift", "old_string": "a\nb", "new_string": "c"])), "Edit: Sources/App.swift")
+        XCTAssertEqual(SessionTranscript.toolLine(InterventionDetector.describeToolUse(
+            name: "Write", input: ["file_path": "x.txt", "content": "secret body\nmore"])), "Write: x.txt")
+        XCTAssertEqual(SessionTranscript.toolLine("[TodoWrite]"), "TodoWrite")
+    }
+
+    func testRedactionHappensBeforeTruncation() throws {
+        // A key straddling the 2000-character cut: clipping first would leave
+        // "sk-abcdefg…", too short for the pattern, on the phone.
+        let secret = "sk-" + String(repeating: "A1b2C3d4", count: 6)
+        let text = String(repeating: "x", count: 1985) + " " + secret + " tail"
+        // Clipped first, the key would leave "sk-A1b2C3d4A1" — too short to match.
+        XCTAssertEqual(ContextRedactor.redact(String(text.prefix(2000))), String(text.prefix(2000)))
+        let path = write([assistant("a1", [["type": "text", "text": text]])])
+        let entry = try XCTUnwrap(SessionTranscript.read(path: path, format: .claude)?.entries.first)
+        XCTAssertLessThanOrEqual(entry.text.count, 2000)
+        XCTAssertFalse(entry.text.contains("sk-"), "no fragment of the key survives")
+        XCTAssertFalse(entry.text.contains("A1b2C3d4"))
+        XCTAssertTrue(entry.text.contains("[redacted]"))
+
+        let tool = SessionTranscript.toolLine(InterventionDetector.describeToolUse(
+            name: "Bash", input: ["command": "curl -H 'Authorization: Bearer abcdefghijklmnop1234' https://x"]))
+        XCTAssertFalse(tool.contains("abcdefghijklmnop1234"))
+    }
+
+    func testCapsAtFortyEntriesAndMarksTruncated() throws {
+        let path = write((0..<60).map { user("u\($0)", "message \($0)") })
+        let snap = try XCTUnwrap(SessionTranscript.read(path: path, format: .claude))
+        XCTAssertEqual(snap.entries.count, 40)
+        XCTAssertEqual(snap.entries.first?.text, "message 20")
+        XCTAssertEqual(snap.entries.last?.text, "message 59")
+        XCTAssertTrue(snap.truncated)
+    }
+
+    func testEntryTextCappedAndPlaintextFitsIn48KiB() throws {
+        let path = write((0..<40).map { assistant("a\($0)", [["type": "text", "text": String(repeating: "word ", count: 1000)]]) })
+        let snap = try XCTUnwrap(SessionTranscript.read(path: path, format: .claude))
+        XCTAssertTrue(snap.entries.allSatisfy { $0.text.count <= 2000 })
+        let data = try XCTUnwrap(SessionTranscript.plaintext(header: ["kind": "transcript", "sessionId": "s"], snapshot: snap))
+        XCTAssertLessThanOrEqual(data.count, 48 * 1024)
+        let obj = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let entries = try XCTUnwrap(obj["entries"] as? [[String: Any]])
+        XCTAssertLessThan(entries.count, 40)
+        XCTAssertGreaterThan(entries.count, 15)
+        XCTAssertEqual(obj["truncated"] as? Bool, true)
+        XCTAssertEqual(entries.last?["id"] as? String, "a39#0", "the newest rows are the ones kept")
+    }
+
+    func testIdsAreStableAsTheFileGrows() throws {
+        let path = write((0..<10).map { user("u\($0)", "m\($0)") })
+        let before = try XCTUnwrap(SessionTranscript.read(path: path, format: .claude))
+        append((10..<15).map { user("u\($0)", "m\($0)") }, to: path)
+        let after = try XCTUnwrap(SessionTranscript.read(path: path, format: .claude))
+        XCTAssertEqual(Array(after.entries.prefix(10)), before.entries)
+    }
+
+    func testRecordsWithoutUuidUseTheirAbsoluteOffset() throws {
+        // Small windows so the read starts mid-file and drops a partial line.
+        let lines = (0..<30).map { line(["type": "user", "timestamp": "2026-10-24T12:00:00Z",
+                                         "message": ["role": "user", "content": "row \($0) " + String(repeating: "p", count: 40)]]) }
+        let path = write(lines)
+        let narrow = try XCTUnwrap(SessionTranscript.read(path: path, format: .claude, tailBytes: 600, extendTo: nil))
+        let wide = try XCTUnwrap(SessionTranscript.read(path: path, format: .claude, tailBytes: 1 << 20, extendTo: nil))
+        XCTAssertTrue(narrow.truncated)
+        XCTAssertFalse(narrow.entries.isEmpty)
+        // The same line has the same id however much of the file was read.
+        for e in narrow.entries {
+            XCTAssertEqual(wide.entries.first { $0.id == e.id }?.text, e.text)
+        }
+        XCTAssertTrue(narrow.entries.allSatisfy { $0.id.hasPrefix("o") })
+    }
+
+    func testPreview() {
+        let rows = [
+            SessionTranscriptEntry(id: "1", role: .assistant, text: "Plan:\nfirst\nNow running tests", at: nil),
+            SessionTranscriptEntry(id: "2", role: .tool, text: "Bash: npm test", at: nil, tool: "Bash"),
+        ]
+        XCTAssertEqual(SessionTranscript.preview(rows, active: true), "Bash: npm test")
+        XCTAssertEqual(SessionTranscript.preview(rows, active: false), "Now running tests")
+        XCTAssertNil(SessionTranscript.preview([], active: false))
+        let long = [SessionTranscriptEntry(id: "1", role: .assistant, text: String(repeating: "y", count: 400), at: nil)]
+        XCTAssertEqual(SessionTranscript.preview(long, active: false)?.count, 160)
+    }
+
+    // MARK: Codex
+
+    func testCodexRolloutRows() throws {
+        func item(_ payload: [String: Any], type: String = "response_item") -> String {
+            line(["timestamp": "2026-10-24T12:00:00.000Z", "type": type, "payload": payload])
+        }
+        let path = write([
+            item(["type": "message", "role": "user", "content": [["type": "input_text", "text": "<environment_context>cwd</environment_context>"]]]),
+            item(["type": "message", "role": "user", "content": [["type": "input_text", "text": "Fix the build"]]]),
+            item(["type": "reasoning", "summary": []]),
+            item(["type": "function_call", "name": "shell", "call_id": "c1",
+                  "arguments": #"{"command":["bash","-lc","npm test"],"workdir":"/x"}"#]),
+            item(["type": "function_call_output", "call_id": "c1", "output": "TOP SECRET OUTPUT"]),
+            item(["type": "custom_tool_call", "name": "apply_patch", "input": "*** Begin Patch\n*** Update File: Sources/App.swift\n@@\n-a\n+b\n*** End Patch"]),
+            item(["type": "message", "role": "assistant", "content": [["type": "output_text", "text": "Fixed it."]]]),
+            item(["type": "user_message", "message": "Fix the build"], type: "event_msg"),
+            item(["type": "turn_aborted"], type: "event_msg"),
+        ])
+        let snap = try XCTUnwrap(SessionTranscript.read(path: path, format: .codex))
+        XCTAssertEqual(snap.entries.map(\.role), [.user, .tool, .tool, .assistant, .system])
+        XCTAssertEqual(snap.entries.map(\.text), ["Fix the build", "Shell: npm test", "Edit: Sources/App.swift", "Fixed it.", "Interrupted"])
+        XCTAssertEqual(snap.entries[1].tool, "shell")
+        XCTAssertFalse(snap.entries.contains { $0.text.contains("TOP SECRET") })
+        XCTAssertTrue(snap.entries.allSatisfy { $0.id.hasPrefix("o") })
+    }
+
+    // MARK: safety
+
+    func testNeverReadsPrivacyProtectedOrDevicePaths() {
+        // Refused on the literal path, before any filesystem call.
+        XCTAssertNil(BoundedFileRead.tail(NSHomeDirectory() + "/Documents/proj/t.jsonl", maxBytes: 1024))
+        XCTAssertNil(BoundedFileRead.tail("/dev/zero", maxBytes: 1024))
+        XCTAssertNil(SessionTranscript.read(path: NSHomeDirectory() + "/Desktop/t.jsonl", format: .claude))
+        XCTAssertNil(SessionRemote.fileStamp(NSHomeDirectory() + "/Downloads/t.jsonl"))
+    }
+
+    func testTailReadIsBoundedAndRefusesAFifo() throws {
+        let path = write([String(repeating: "z", count: 5000)])
+        let t = try XCTUnwrap(BoundedFileRead.tail(path, maxBytes: 1000))
+        XCTAssertEqual(t.data.count, 1000)
+        XCTAssertTrue(t.truncated)
+        XCTAssertEqual(t.offset, 5001 - 1000)
+        let fifo = dir.appendingPathComponent("fifo").path
+        XCTAssertEqual(mkfifo(fifo, 0o600), 0)
+        XCTAssertNil(BoundedFileRead.tail(fifo, maxBytes: 1000), "a FIFO must not hang the caller")
+    }
+
+    /// Unfamiliar tools get a readable line, never their input as JSON.
+    func testUnfamiliarToolsAreSummarisedNotDumped() {
+        XCTAssertEqual(SessionTranscript.toolLine(name: "Workflow",
+                                                  input: ["scriptPath": "/Users/alex/.claude/projects/x/wf/review.js", "args": ["a": 1]]),
+                       "Workflow: review.js")
+        XCTAssertEqual(SessionTranscript.toolLine(name: "mcp__claude-in-chrome__navigate", input: ["url": "https://example.com"]),
+                       "navigate · claude-in-chrome: https://example.com")
+        XCTAssertEqual(SessionTranscript.toolLine(name: "TodoWrite", input: ["todos": [["content": "x"]]]), "TodoWrite")
+        XCTAssertEqual(SessionTranscript.toolLine(name: "Bash", input: ["command": "npm test"]), "Bash: npm test", "known tools unchanged")
+        XCTAssertFalse(SessionTranscript.toolLine(name: "Workflow", input: ["description": "token sk-ant-abcdefghijklmnopqrstuvwxyz0123456789"]).contains("abcdefghijklmnop"),
+                       "values are redacted")
+    }
+
+    func testScreenLinesAreCleanedCappedAndRedacted() {
+        let raw = "\u{1B}]0;title\u{07}\u{1B}[38;5;208mWorking\u{1B}[0m  \r\nnext\tcol\u{08}\n\n\n"
+        XCTAssertEqual(SessionScreen.lines(from: raw), ["Working", "next\tcol"])
+        let many = (1...200).map { "line \($0)" }.joined(separator: "\n")
+        let kept = SessionScreen.lines(from: many)
+        XCTAssertEqual(kept.count, SessionScreen.maxLines)
+        XCTAssertEqual(kept.last, "line 200", "the bottom is what matters")
+        let wide = SessionScreen.lines(from: String(repeating: "─", count: 1000))
+        XCTAssertEqual(wide.first?.count, SessionScreen.maxLineChars)
+        // Box-drawing is 3 bytes per character: the byte cap still holds.
+        let heavy = SessionScreen.lines(from: Array(repeating: String(repeating: "─", count: 300), count: 80).joined(separator: "\n"))
+        XCTAssertLessThanOrEqual((try JSONSerialization.data(withJSONObject: heavy)).count, SessionScreen.maxPlaintextBytes)
+        XCTAssertNotNil(SessionScreen.plaintext(header: ["kind": "screen", "seq": 1], lines: heavy))
+        XCTAssertFalse(SessionScreen.lines(from: "export GITHUB_TOKEN=ghp_abcdefghijklmnopqrstuvwxyz0123456789").joined().contains("ghp_abcdefghijklmnop"))
+    }
+
+    /// Redaction happens before any cut: a key the terminal wrapped across
+    /// rows, or one straddling the 300-character cap, never leaks a piece.
+    func testScreenRedactsBeforeCutting() {
+        let key = "sk-ant-api03-" + String(repeating: "Q", count: 60)
+        // An 80-column screen with the key wrapped across two rows.
+        let row1 = String(repeating: "x", count: 60) + " " + key.prefix(19)
+        let row2 = String(key.dropFirst(19))
+        let rule = String(repeating: "─", count: 80)
+        let out = SessionScreen.lines(from: [rule, row1, row2, rule].joined(separator: "\n"))
+        XCTAssertFalse(out.joined().contains("QQQQQQ"), "wrapped key redacted whole")
+        XCTAssertFalse(out.joined().contains("api03"))
+        XCTAssertEqual(out.first, rule, "box rules are never joined")
+
+        // Straddling the line cap.
+        let long = String(repeating: "y", count: 280) + " " + key
+        XCTAssertFalse(SessionScreen.lines(from: long).joined().contains("QQQQ"))
+
+        // Short rows aren't joined, even if they end mid-word.
+        XCTAssertEqual(SessionScreen.unwrapped(["abc", "def"]), ["abc", "def"])
+        let w = String(repeating: "a", count: 50)
+        XCTAssertEqual(SessionScreen.unwrapped([w, "b", w, " c"]), [w + "b", w, " c"])
+
+        // Private-key bodies are blanked.
+        let pem = ["-----BEGIN OPENSSH PRIVATE KEY-----", "b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQ", "-----END OPENSSH PRIVATE KEY-----", "after"]
+        XCTAssertEqual(SessionScreen.lines(from: pem.joined(separator: "\n")), ["[redacted private key]", "after"],
+                       "a whole block is caught by the redactor (the screen is redacted in one piece)")
+        // END not printed yet: still caught (BEGIN to end of text).
+        XCTAssertEqual(SessionScreen.lines(from: pem.prefix(2).joined(separator: "\n")), ["[redacted private key]"])
+        // As Claude Code draws it: indented, behind its ⎿ gutter, BEGIN
+        // scrolled off, a short last row.
+        let tui = ["  ⎿  MIIEowIBAAKCAQEAxyzxyzxyzxyzxyzxyzxyzxyz", "     b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAE", "     Ng==", "     -----END RSA PRIVATE KEY-----", "done"]
+        let tuiOut = SessionScreen.lines(from: tui.joined(separator: "\n"))
+        XCTAssertFalse(tuiOut.joined().contains("MIIEow") || tuiOut.joined().contains("b3Blbn") || tuiOut.joined().contains("Ng=="), tuiOut.joined(separator: "|"))
+        XCTAssertEqual(tuiOut.first, "  ⎿  [redacted]", "the gutter is kept")
+        // PGP, BEGIN scrolled off: checksum and short last row too.
+        let pgp = ["lQOYBFxyzxyzxyzxyzxyzxyzxyzxyzxyzxyzxyz", "Ab12", "=AbCd", "-----END PGP PRIVATE KEY BLOCK-----"]
+        XCTAssertEqual(SessionScreen.lines(from: pgp.joined(separator: "\n")),
+                       ["[redacted]", "[redacted]", "[redacted]", "-----END PGP PRIVATE KEY BLOCK-----"])
+        // A token Claude Code wrapped itself onto a padded row.
+        let wrapped = ["export OPENAI_API_KEY=sk-proj-0123456789abcdef", "       ABCDEFGHIJKLMNOPQRSTUVWXYZ012345", "       6789abcd", "next line"]
+        let wrappedOut = SessionScreen.lines(from: wrapped.joined(separator: "\n"))
+        XCTAssertFalse(wrappedOut.joined().contains("ABCDEFGHIJ") || wrappedOut.joined().contains("6789abcd"), wrappedOut.joined(separator: "|"))
+        XCTAssertEqual(wrappedOut.last, "next line")
+        // BEGIN scrolled off the top: the base64 rows above END are blanked.
+        XCTAssertEqual(SessionScreen.lines(from: pem.dropFirst().joined(separator: "\n")),
+                       ["[redacted]", "-----END OPENSSH PRIVATE KEY-----", "after"])
+    }
+
+    func testScreenSourcesOnlyForTmuxAndCmux() {
+        let target = CmuxBridge.Target(surfaceId: "S", workspaceId: "W", cliPath: "/x/cmux", source: "environment")
+        XCTAssertEqual(SessionScreen.source(for: InjectionExecutor.TerminalHost.cmux(target)), .cmux(target))
+        XCTAssertEqual(SessionScreen.source(for: InjectionExecutor.TerminalHost.tmux(tmuxPath: "/t", paneId: "%1", inMode: false)),
+                       .tmux(tmuxPath: "/t", pane: "%1", serverArgs: []))
+        XCTAssertNil(SessionScreen.source(for: InjectionExecutor.TerminalHost.terminalApp(tty: "/dev/ttys1")))
+        XCTAssertNil(SessionScreen.source(for: InjectionExecutor.TerminalHost.unknown))
+    }
+}

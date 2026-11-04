@@ -1,5 +1,6 @@
 import SwiftUI
 import PageWidgetSupport
+@testable import PageCore
 
 /// Render-harness surfaces for the Widgets page (every status row, the guide, the older macOS) and the
 /// widget faces themselves in every state. Fixture data only; nothing asks macOS anything.

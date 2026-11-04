@@ -1,4 +1,5 @@
 import AppKit
+@testable import PageCore
 
 // Must run before anything can spawn a child: writing to a pipe whose reader
 // died (e.g. a crashed `codex app-server`) raises SIGPIPE, whose default

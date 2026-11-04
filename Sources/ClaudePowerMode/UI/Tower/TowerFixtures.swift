@@ -1,4 +1,5 @@
 import Foundation
+@testable import PageCore
 
 /// Tower scenes for the render harness (and for tests): real
 /// `Coordinator.Snapshot` and `NowModel` values, a form from a real `Config`,

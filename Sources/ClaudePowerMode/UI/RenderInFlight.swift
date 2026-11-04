@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+@testable import PageCore
 
 // Fixtures and surfaces for the In-flight cards, buttons in words and the
 // header's jump: one waiting, a finished row, and working sessions with

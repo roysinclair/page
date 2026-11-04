@@ -1,0 +1,13 @@
+  native-path:          BAT0
+  power supply:         yes
+  updated:              Tue 04 Nov 2026 13:00:00 UTC (12 seconds ago)
+  has history:          yes
+  has statistics:       yes
+  battery
+    present:             yes
+    rechargeable:        yes
+    state:               discharging
+    warning-level:       none
+    energy:              23 Wh
+    percentage:          41%
+    icon-name:          'battery-good-symbolic'

@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+@testable import PageCore
 
 /// `--render-ui <dir> --live-check`: puts the Now panel on screen for a few
 /// seconds, wired the way NowPanelController wires it (a non-activating

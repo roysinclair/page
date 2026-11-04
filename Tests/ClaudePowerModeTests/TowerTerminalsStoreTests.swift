@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The Tower's Terminals page in the store: one probe at a time, stale
 /// results dropped, the kitty and Automation flows, the row buttons, and the

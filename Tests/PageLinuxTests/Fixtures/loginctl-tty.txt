@@ -1,0 +1,3 @@
+Type=tty
+IdleHint=yes
+IdleSinceHint=1762261200000000

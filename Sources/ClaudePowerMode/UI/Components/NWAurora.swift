@@ -1,4 +1,5 @@
 import SwiftUI
+@testable import PageCore
 
 /// Drives ambient motion from the clock, at most 30 frames a second and only
 /// while the surface can be seen; holds one still frame when Reduce Motion is

@@ -1,6 +1,7 @@
 import XCTest
 import AppKit
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The Night Watch conversion's wiring: which button each dialog answers with,
 /// what every hook row shows for each installer state (from real files in a

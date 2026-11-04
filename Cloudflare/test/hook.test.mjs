@@ -77,6 +77,8 @@ afterEach(() => { if (home) rmSync(home, { recursive: true, force: true }); });
 function hookEnv(extra = {}) {
   return {
     HOME: home,
+    // The hook's macOS rules (this layout, a fake ioreg), also on a Linux runner.
+    PAGE_HOOK_OS: "Darwin",
     PATH: `${bin}:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/usr/local/bin`,
     TMPDIR: home,
     PAGE_RELAY_URL: `http://127.0.0.1:${port}`,

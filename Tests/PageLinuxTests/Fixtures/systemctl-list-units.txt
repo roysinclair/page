@@ -1,0 +1,4 @@
+local.Page.resume.0b5c2d0e-3f0a-4d3e-9a7c-1c2b3d4e5f60.timer   loaded active waiting Page: resume timer
+local.Page.resume.1b5c2d0e-3f0a-4d3e-9a7c-1c2b3d4e5f60.service loaded active running Page: carry on a rate-limited Claude Code session
+local.Page.resume.1b5c2d0e-3f0a-4d3e-9a7c-1c2b3d4e5f60.timer   loaded active elapsed Page: resume timer
+other.timer                                                    loaded active waiting Something else

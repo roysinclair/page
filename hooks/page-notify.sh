@@ -112,8 +112,13 @@
 #   PAGE_CONTEXT_TOOL_OUTPUT  "1" includes short tool-output excerpts in the
 #                           context sent to your phone (off by default: tool output
 #                           is where secrets tend to live).
-#   PAGE_HOOK_LOG           Log file (default ~/Library/Logs/page-hook.log). The
-#                           token is never logged.
+#   PAGE_HOOK_LOG           Log file (default ~/Library/Logs/page-hook.log; on Linux
+#                           $XDG_STATE_HOME/page/page-hook.log). The token is never logged.
+#
+# Linux (paged): the same script. Files are in the XDG folders paged uses
+# (config ~/.config/page, data ~/.local/share/page, logs ~/.local/state/page),
+# and presence comes from xprintidle, GNOME Mutter's IdleMonitor or logind;
+# with no graphical session nobody can see a dialog, so the user is away.
 #
 # Notes: written for macOS /bin/bash 3.2 (no associative arrays, no ${x,,},
 # no process substitution so `sh page-notify.sh` works too). Every path exits
@@ -129,8 +134,23 @@ umask 077
 PATH="${PATH:+$PATH:}/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/usr/local/bin"
 export PATH
 
-APP_SUPPORT="$HOME/Library/Application Support/ClaudePowerMode"
-CONFIG_FILE="$APP_SUPPORT/config.json"
+PAGE_OS=$(uname -s 2>/dev/null)
+# An XDG base directory only counts when absolute (the spec says to ignore others).
+xdg_dir() {
+    case "$1" in
+        /*) printf '%s' "$1" ;;
+        *) printf '%s' "$HOME/$2" ;;
+    esac
+}
+if [ "$PAGE_OS" = "Linux" ]; then
+    APP_SUPPORT="$(xdg_dir "${XDG_DATA_HOME:-}" .local/share)/page"
+    CONFIG_FILE="$(xdg_dir "${XDG_CONFIG_HOME:-}" .config)/page/config.json"
+    DEFAULT_LOG_FILE="$(xdg_dir "${XDG_STATE_HOME:-}" .local/state)/page/page-hook.log"
+else
+    APP_SUPPORT="$HOME/Library/Application Support/ClaudePowerMode"
+    CONFIG_FILE="$APP_SUPPORT/config.json"
+    DEFAULT_LOG_FILE="$HOME/Library/Logs/page-hook.log"
+fi
 TOKEN_FILE="$APP_SUPPORT/relay_token.txt"
 DETECTOR_MARKER="$APP_SUPPORT/detector.alive"
 # Written by the Page Mac app (unix seconds, one line) right before and
@@ -161,7 +181,7 @@ SETTLE_RESERVE=12
 USER_AGENT="page-hook/3.0"
 START_TS=$(date +%s)
 
-LOG_FILE="${PAGE_HOOK_LOG:-$HOME/Library/Logs/page-hook.log}"
+LOG_FILE="${PAGE_HOOK_LOG:-$DEFAULT_LOG_FILE}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
 
 AGENT="claude"
@@ -656,7 +676,11 @@ make_id() {
 # and hold markers look stale). GNU syntax only as a fallback.
 file_age_seconds() {
     local mtime
-    mtime=$(/usr/bin/stat -f %m "$1" 2>/dev/null) || mtime=$(stat -c %Y "$1" 2>/dev/null) || return 1
+    if [ "$PAGE_OS" = "Linux" ]; then
+        mtime=$(stat -c %Y "$1" 2>/dev/null) || return 1
+    else
+        mtime=$(/usr/bin/stat -f %m "$1" 2>/dev/null) || mtime=$(stat -c %Y "$1" 2>/dev/null) || return 1
+    fi
     case "$mtime" in
         ''|*[!0-9]*) return 1 ;;
     esac
@@ -681,9 +705,73 @@ trim() {
 
 # Seconds since the last keyboard/mouse input, from the HID system. Empty
 # when it can't be read. `ioreg` is looked up on PATH (tests shadow it).
+# On Linux: linux_idle_seconds.
 hid_idle_seconds() {
+    if [ "$PAGE_OS" = "Linux" ]; then
+        linux_idle_seconds
+        return 0
+    fi
     ioreg -c IOHIDSystem -d 4 2>/dev/null |
         awk '/HIDIdleTime/ { print int($NF / 1000000000); exit }'
+}
+
+# Linux: the graphical session logind knows for this user ("" when none).
+linux_graphical_session() {
+    local id type
+    command -v loginctl >/dev/null 2>&1 || return 0
+    id=$(loginctl show-user "$(id -u)" -p Display --value 2>/dev/null | tr -d '[:space:]')
+    case "$id" in
+        ''|*[!A-Za-z0-9_-]*) return 0 ;;
+    esac
+    type=$(loginctl show-session "$id" -p Type --value 2>/dev/null | tr -d '[:space:]')
+    case "$type" in
+        x11|wayland|mir) printf '%s' "$id" ;;
+    esac
+}
+
+# Linux: "headless" when there is no graphical session at all (a server,
+# ssh, a text console): nobody can see the agent's dialog, so it pages.
+linux_headless() {
+    [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ] || return 1
+    [ -z "$(linux_graphical_session)" ]
+}
+
+# Linux idle seconds, from the first source that answers: xprintidle (X11),
+# GNOME Mutter's IdleMonitor (X11 or Wayland), logind's IdleHint. Each is
+# looked up on PATH (tests shadow them). Empty when none answers.
+linux_idle_seconds() {
+    local ms out sid hint since now
+    if [ -n "${DISPLAY:-}" ] && command -v xprintidle >/dev/null 2>&1; then
+        ms=$(xprintidle 2>/dev/null | tr -d '[:space:]')
+        case "$ms" in
+            ''|*[!0-9]*) ;;
+            *) printf '%s' "$(( ms / 1000 ))"; return 0 ;;
+        esac
+    fi
+    if command -v gdbus >/dev/null 2>&1; then
+        out=$(gdbus call --session --dest org.gnome.Mutter.IdleMonitor \
+            --object-path /org/gnome/Mutter/IdleMonitor/Core \
+            --method org.gnome.Mutter.IdleMonitor.GetIdletime 2>/dev/null)
+        ms=$(printf '%s' "$out" | sed -n 's/.*uint64 \([0-9][0-9]*\).*/\1/p')
+        case "$ms" in
+            ''|*[!0-9]*) ;;
+            *) printf '%s' "$(( ms / 1000 ))"; return 0 ;;
+        esac
+    fi
+    sid=$(linux_graphical_session)
+    if [ -n "$sid" ]; then
+        hint=$(loginctl show-session "$sid" -p IdleHint --value 2>/dev/null | tr -d '[:space:]')
+        since=$(loginctl show-session "$sid" -p IdleSinceHint --value 2>/dev/null | tr -d '[:space:]')
+        case "$hint" in
+            no) printf '0'; return 0 ;;
+            yes)
+                case "$since" in
+                    ''|*[!0-9]*) ;;
+                    *) now=$(date +%s); printf '%s' "$(( now - since / 1000000 ))"; return 0 ;;
+                esac ;;
+        esac
+    fi
+    return 0
 }
 
 away_threshold() {
@@ -722,6 +810,10 @@ user_is_present() {
     local threshold idle
     threshold=$(away_threshold)
     [ "$threshold" -gt 0 ] 2>/dev/null || return 1
+    if [ "$PAGE_OS" = "Linux" ] && linux_headless; then
+        log "presence: no graphical session — treating as away"
+        return 1
+    fi
     idle=$(hid_idle_seconds)
     case "$idle" in
         ''|*[!0-9]*) log "presence: HID idle time unreadable — treating as present"; return 0 ;;

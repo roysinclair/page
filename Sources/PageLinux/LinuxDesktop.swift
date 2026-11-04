@@ -74,8 +74,9 @@ final class LinuxPresence: PresenceSource {
 
     /// Pure. gdbus prints "(uint64 12345,)" — milliseconds.
     static func parseMutterIdle(_ out: String) -> TimeInterval? {
-        let digits = out.drop { !$0.isNumber }.prefix { $0.isNumber }
-        guard out.contains("uint64"), let ms = Double(digits) else { return nil }
+        guard let r = out.range(of: "uint64 ") else { return nil }
+        let digits = out[r.upperBound...].prefix { $0.isNumber }
+        guard let ms = Double(digits) else { return nil }
         return ms / 1000
     }
 

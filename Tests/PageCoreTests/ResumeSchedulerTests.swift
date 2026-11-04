@@ -331,6 +331,8 @@ final class ResumeSchedulerTests: XCTestCase {
         let claude = try fakeClaude(exit: 1)
         // A failing claude that prints the error claude really prints.
         try "#!/bin/bash\necho 'No conversation found with session ID: x'\nexit 1\n".write(toFile: claude.bin, atomically: true, encoding: .utf8)
+        // An atomic write is a new file: corelibs Foundation doesn't carry the mode over.
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: claude.bin)
         let v = scriptValues(claude: claude.bin, prompt: "carry on", targetEpoch: Int(Date().timeIntervalSince1970) - 1)
         _ = try runScript(v)
         let res = results()

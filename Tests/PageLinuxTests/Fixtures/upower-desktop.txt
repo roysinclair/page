@@ -1,0 +1,8 @@
+  power supply:         no
+  updated:              Tue 04 Nov 2026 13:00:00 UTC (2 seconds ago)
+  has history:          no
+  has statistics:       no
+  unknown
+    warning-level:       none
+    percentage:          0%
+    icon-name:          'battery-missing-symbolic'

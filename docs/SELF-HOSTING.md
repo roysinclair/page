@@ -412,18 +412,16 @@ The main [README](../README.md#troubleshooting) has the rest.
 
 You can hand steps 1 to 4 to Claude Code running on your Mac. The agent does
 the commands; you do the parts that need you (browser logins, Apple sign-in,
-choosing names, scanning the QR). Open Claude Code in an empty folder, with
-the recommended model and effort below, and paste the prompt.
-
-**Recommended:** Claude Opus 5.5 at **high** effort. Setup is long, touches
-several tools and must stop at the right moments, so a strong model at high
-effort is worth it. Start Claude Code in the folder you cloned like this:
+choosing names, scanning the QR). Start Claude Code in the folder you cloned
+and paste the prompt:
 
 ```sh
-claude --model claude-opus-5-5 --effort high
+claude
 ```
 
-(Already inside Claude Code? Use `/model` to pick Opus 5.5 and `/effort high`.)
+Setup is long, touches several tools and must stop at the right moments, so a
+strong model at high effort is worth it: pick them with `/model` and `/effort`
+before you paste.
 
 ```text
 You are helping me self-host "Page" on this Mac, following docs/SELF-HOSTING.md

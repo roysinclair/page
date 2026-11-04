@@ -131,7 +131,7 @@ paste the prompt from
 [Set it up with an AI agent](docs/SELF-HOSTING.md#set-it-up-with-an-ai-agent):
 
 ```sh
-claude --model claude-opus-5-5 --effort high
+claude
 ```
 
 ## Documentation

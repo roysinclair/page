@@ -62,10 +62,11 @@ Page Studio products: **Page Power** (the Mac menu-bar app and its iPhone and An
 
 | Piece | What it does |
 |---|---|
-| **Page Power for Mac** | The macOS menu-bar app (macOS only today). Detects agent state, keeps the Mac awake, applies your battery policy and delivers your replies. [Getting started](#getting-started) |
+| **Page Power for Mac** | The macOS menu-bar app. Detects agent state, keeps the Mac awake, applies your battery policy and delivers your replies. [Getting started](#getting-started) |
+| **Page Power for Linux** (preview) | `paged`, a background service with a command line: keeps the machine awake while agents work, applies your battery policy, pages your phone and types your replies into tmux, WezTerm, kitty and more. No tray icon yet; build from source. [docs/LINUX.md](docs/LINUX.md) |
 | **Page Power for iPhone and Android** | Pages, lock-screen approvals, live sessions and widgets. [`iOS/`](iOS/README.md) · [`android/`](android/README.md) |
 | **Page Relay** | Your own relay: a Cloudflare Worker with Durable Objects that you deploy to your own account. Setup in [`Cloudflare/`](Cloudflare/README.md) and the [self-hosting guide](docs/SELF-HOSTING.md) |
-| **Page Aura** | A bring-your-own-key chat app for Anthropic’s models (Windows, macOS, Linux, browser) that links into Page Power on a Mac as an agent backend. [github.com/roysinclair/page-studio-apps](https://github.com/roysinclair/page-studio-apps) · [link protocol](docs/AURA-LINK.md) |
+| **Page Aura** | A bring-your-own-key chat app for Anthropic’s models (Windows, macOS, Linux, browser) that links into Page Power (macOS or Linux) as an agent backend. [github.com/roysinclair/page-studio-apps](https://github.com/roysinclair/page-studio-apps) · [link protocol](docs/AURA-LINK.md) |
 | **Page Orbit** | A desktop control room for Anthropic Managed Agents (Windows, macOS, Linux): agents with versions, live sessions, Diagnose, schedules. Links into Page Power so approvals and finished runs page your phone. [Guide](https://github.com/roysinclair/page-studio-apps/blob/main/docs/orbit/README.md) · [link protocol](docs/ORBIT-LINK.md) |
 
 ## A closer look

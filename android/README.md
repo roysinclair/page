@@ -1,6 +1,6 @@
-# Page — Android app
+# Page Relay for Android
 
-The Android phone app for Page, in the v4 "Night Watch" design and with the same behaviour and trust model as
+Page Relay for Android, the Android phone app of Page Studio, in the v4 "Night Watch" design and with the same behaviour and trust model as
 the iOS app. **Now** is the ranked stream of what needs you (Decide, Look, Review), what is working (In flight)
 and what has settled; **Sky** is the fleet as constellations, or as Lanes. A card opens the **Decision sheet**
 (reversibility chip, exactly what will be typed and where, swipe / tap / hold-plus-fingerprint by how reversible
@@ -54,7 +54,7 @@ Sideloading notes:
 
 ## Pair
 
-1. On the Mac: Page menu-bar icon → **Pair phone…**.
+1. On the Mac: Page Studio menu-bar icon → **Pair phone…**.
 2. In the app: **Pair with your Mac** opens the scanner (CameraX with the on-device ZXing decoder), or
    **Paste a pairing link instead** with the JSON from **Copy pairing JSON**. Pasting is the way to pair an
    emulator.
@@ -71,7 +71,7 @@ The relay's push path is APNs-only today (`device.register` needs an
 `apnsToken`), so the Android app registers nothing with the relay and uses two
 mechanisms instead:
 
-- **While Page is open** it holds the relay WebSocket and posts a
+- **While Page Studio is open** it holds the relay WebSocket and posts a
   notification the moment a page opens.
 - **Stay connected** (Tower → Attention, off by default) keeps that
   socket open in the background with a foreground service. You get pages
@@ -80,12 +80,12 @@ mechanisms instead:
   uses the `specialUse` foreground-service type (a user-enabled long-lived
   connection to your own relay; `dataSync` is time-limited on Android 15).
   Battery use is small (one idle socket and a ping every 25 s), but aggressive
-  OEM battery savers may still stop it — exclude Page from battery
+  OEM battery savers may still stop it — exclude Page Studio from battery
   optimisation if pages arrive late.
 - **Otherwise** a WorkManager check runs every 15 minutes (Android's minimum)
   when the phone has a network, and posts any page not notified yet.
 
-All three share one record of what was notified, so a page buzzes once. Page
+All three share one record of what was notified, so a page buzzes once. Page Studio
 notifications carry the same actions as iOS, in words: **Approve / Deny / Tell it…** for an *undoable*
 approval, and **Open to decide / Deny / Tell it…** for anything else (a Considered action needs a tap and an
 Irreversible one a hold plus your fingerprint, which a notification cannot give, so it opens the Decision
@@ -93,7 +93,7 @@ sheet); **Answer…** for questions, **Looks good / Steer…** for a finished tu
 session, **Send after reset** for a rate limit, none for forecasts. Whether Approve is offered is decided from
 the page's full text when the notification is posted, and checked again from the live inbox when it is tapped.
 Every action needs the phone unlocked first. Actions only trust the page id and action in
-the notification's own data URI and Page's record of what it posted, and the
+the notification's own data URI and Page Studio's record of what it posted, and the
 reply is sent by an expedited background job, so a slow network never shows a
 false "not sent"; failures become a notice you can tap.
 
@@ -132,7 +132,7 @@ Release builds contain none of it.
 
 ## Home screen and Quick Settings
 
-- **Quick Settings tile** ("Page"): shows how many need you, lit amber while something does, and opens Now.
+- **Quick Settings tile** ("Page Studio"): shows how many need you, lit amber while something does, and opens Now.
   It never acts on its own.
 - **Home-screen widget** (Glance): "2 need you" / "All quiet" / "Mac offline", what is working, the Mac and its
   power, and the runway on the wide size. Counts and times only: never a project name or a command.

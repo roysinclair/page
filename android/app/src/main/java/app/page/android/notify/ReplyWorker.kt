@@ -31,7 +31,7 @@ class ReplyWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
         val text = inputData.getString(KEY_TEXT) ?: ""
         // How to show the page again comes from Page's own record.
         val info = PostedPages.get(id) ?: PageInfo(id, InterventionKind.USER_INPUT.wire, "", "", null, false)
-        val where = info.projectName.ifEmpty { "your Mac" }
+        val where = info.projectName.ifEmpty { "your computer" }
 
         // A Delete pressed on "Sending your reply…" before this ran: nothing has left the phone, so this is the one
         // moment "Deleted — not sent" is true. Looked at right before the POST, never after.
@@ -72,7 +72,7 @@ class ReplyWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
                         }
                         return@withContext
                     }
-                    val status = if (queued) QueuedReplyNotification.QUEUED else "Sent — waiting for your Mac to confirm."
+                    val status = if (queued) QueuedReplyNotification.QUEUED else "Sent — waiting for your computer to confirm."
                     // Stays until the Mac closes the page, which removes it.
                     PageNotifications.post(info, silent = true, status = status, deleteAction = canDelete)
                 }
@@ -82,10 +82,10 @@ class ReplyWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
                 }
                 ReplyOutcome.Unauthorized -> {
                     PageNotifications.post(info, silent = true, status = null)
-                    PageNotifications.notice("Reply not sent", "Your relay no longer accepts this pairing. Open Page to re-pair with your Mac.", id)
+                    PageNotifications.notice("Reply not sent", "Your relay no longer accepts this pairing. Open Page Relay to re-pair with your computer.", id)
                 }
                 is ReplyOutcome.Retired -> PageNotifications.notice(
-                    "Reply not sent", "${TokenRetirement.sentence(outcome.why)} Open Page to pair again.", id,
+                    "Reply not sent", "${TokenRetirement.sentence(outcome.why)} Open Page Relay to pair again.", id,
                 )
                 is ReplyOutcome.Failed -> {
                     // The page is still open: give its actions back for a retry.

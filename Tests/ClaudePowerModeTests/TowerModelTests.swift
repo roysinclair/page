@@ -25,7 +25,7 @@ final class TowerModelTests: XCTestCase {
     func testSectionOrderAndTitlesMatchTheBoard() {
         XCTAssertEqual(TowerSection.allCases, [.power, .budget, .macsPhones, .attention, .agents, .phoneApprovals, .terminals, .widgets, .shortcuts, .pairing, .about])
         XCTAssertEqual(TowerSection.allCases.map(\.title),
-                       ["Power", "Budget", "Macs & phones", "Attention", "Agents", "Phone approvals", "Terminals", "Widgets", "Shortcuts", "Pairing & encryption", "About Page"])
+                       ["Power", "Budget", "Macs & phones", "Attention", "Agents", "Phone approvals", "Terminals", "Widgets", "Shortcuts", "Pairing & encryption", "About Page Studio"])
     }
 
     func testSectionMovesClampAtTheEnds() {

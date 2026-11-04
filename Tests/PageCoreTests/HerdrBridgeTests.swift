@@ -633,7 +633,7 @@ final class HerdrBridgeTests: XCTestCase {
 
     func testControlCLISenderStopsAtAHerdrPrecheckAndReportsWhatWasTyped() {
         var sent: [Keystroke] = []
-        let reason = "The Herdr pane now holds a different terminal — answer at the Mac"
+        let reason = "The Herdr pane now holds a different terminal — answer at your computer"
         let result = InjectionExecutor.sendViaControlCLI([.text("1"), .enter], method: .herdr, label: "Herdr pane w1:p2",
                                                          awaitClosed: { true },
                                                          precheck: { k in k == .enter ? reason : nil }) { key in

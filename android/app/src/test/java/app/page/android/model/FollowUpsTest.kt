@@ -40,11 +40,11 @@ class FollowUpsTest {
         assertTrue(ReplyRetract.chainsToMac(forwarded, caps))
         assertFalse("an older Mac ignores the op", ReplyRetract.chainsToMac(forwarded, setOf("hold-v1")))
         assertFalse("no list yet, no caps", ReplyRetract.chainsToMac(forwarded, emptySet()))
-        assertFalse("delivered never chains: the Mac reported it typed", ReplyRetract.chainsToMac(ReplyRetract.Outcome.TooLate("delivered"), caps))
+        assertFalse("delivered never chains: the computer reported it typed", ReplyRetract.chainsToMac(ReplyRetract.Outcome.TooLate("delivered"), caps))
         for (o in listOf(ReplyRetract.Outcome.Deleted(), ReplyRetract.Outcome.NothingToDelete, ReplyRetract.Outcome.CouldntTakeBack, ReplyRetract.Outcome.HookHeld, ReplyRetract.Outcome.RelayTooOld, ReplyRetract.Outcome.PageGone)) {
             assertFalse(o.toString(), ReplyRetract.chainsToMac(o, caps))
         }
-        assertEquals("Asking your Mac…", ReplyRetract.ASKING_MAC)
+        assertEquals("Asking your computer…", ReplyRetract.ASKING_MAC)
         // The relay's own answer to the DELETE still decodes to the chained case.
         assertEquals(forwarded, ReplyRetract.from(409, """{"error":"too_late","stage":"forwarded"}"""))
     }
@@ -52,8 +52,8 @@ class FollowUpsTest {
     @Test fun `the Mac's answer to the follow-up retract becomes the delete's outcome, in the existing copy`() {
         // Deleted keeps the Mac's sentence, which may say what still happens at reset (iOS `ForwardedRetract.note`).
         assertEquals(
-            "Deleted — not sent. Page will type your carry-on prompt when the limit resets",
-            ReplyRetract.afterMac(MacRetract.Outcome.Deleted("Deleted — not sent. Page will type your carry-on prompt when the limit resets")).text,
+            "Deleted — not sent. Page Studio will type your carry-on prompt when the limit resets",
+            ReplyRetract.afterMac(MacRetract.Outcome.Deleted("Deleted — not sent. Page Studio will type your carry-on prompt when the limit resets")).text,
         )
         assertEquals("Deleted — not sent", ReplyRetract.afterMac(MacRetract.Outcome.Deleted(null)).text)
         for (answer in listOf<MacRetract.Outcome?>(
@@ -67,12 +67,12 @@ class FollowUpsTest {
             ReplyRetract.Outcome.Failed("Typing from your phone is turned off"),
             ReplyRetract.afterMac(MacRetract.Outcome.Refused("Typing from your phone is turned off")),
         )
-        assertEquals("Too late — your Mac already has it", ReplyRetract.afterMac(null).text)
+        assertEquals("Too late — your computer already has it", ReplyRetract.afterMac(null).text)
         // Through the same mapping a plain DELETE goes through: deleted frees the page, too late is no longer queued.
         val queued = ReplyDelivery.Sent(true, t0)
         assertEquals(ReplyDelivery.Retracted("Deleted — not sent") to null, ReplyDelivery.afterRetract(queued, ReplyRetract.afterMac(MacRetract.Outcome.Deleted(null)), NOW))
         assertEquals(
-            ReplyDelivery.Sent(false, t0) to "Too late — your Mac already has it",
+            ReplyDelivery.Sent(false, t0) to "Too late — your computer already has it",
             ReplyDelivery.afterRetract(queued, ReplyRetract.afterMac(null), NOW),
         )
         // The Mac's answer to a retract for a page, as the wire sends it.
@@ -87,16 +87,16 @@ class FollowUpsTest {
         val queued = ReplyDelivery.Sent(true, t0)
         val late = ReplyRetract.Outcome.TooLate("forwarded")
         // Still being deleted: the ordinary mapping.
-        assertEquals(ReplyDelivery.Sent(false, t0) to "Too late — your Mac already has it", ReplyDelivery.afterMacFollowUp(ReplyDelivery.Retracting, queued, late, NOW).let { (n, t) -> n?.let { it } to t })
+        assertEquals(ReplyDelivery.Sent(false, t0) to "Too late — your computer already has it", ReplyDelivery.afterMacFollowUp(ReplyDelivery.Retracting, queued, late, NOW).let { (n, t) -> n?.let { it } to t })
         assertEquals(ReplyDelivery.Retracted("Deleted — not sent") to null, ReplyDelivery.afterMacFollowUp(ReplyDelivery.Retracting, queued, ReplyRetract.Outcome.Deleted(), NOW))
         // The Mac typed it and said so while it was asked: Delivered stays, with no "too late" over it.
         assertEquals(null to null, ReplyDelivery.afterMacFollowUp(ReplyDelivery.Delivered("Typed into tmux"), queued, late, NOW))
         // Its own `retracted` frame came first: the Mac's detail stays.
         assertEquals(null to null, ReplyDelivery.afterMacFollowUp(ReplyDelivery.Retracted("Deleted — not sent. Nothing will be typed at reset"), queued, ReplyRetract.Outcome.Deleted(), NOW))
-        assertEquals(null to null, ReplyDelivery.afterMacFollowUp(ReplyDelivery.Failed("Your Mac couldn't deliver the reply."), queued, late, NOW))
+        assertEquals(null to null, ReplyDelivery.afterMacFollowUp(ReplyDelivery.Failed("Your computer couldn't deliver the reply."), queued, late, NOW))
         // Still on its way: a too late is noted, and it is no longer queued.
-        assertEquals(ReplyDelivery.Sent(false, t0) to "Too late — your Mac already has it", ReplyDelivery.afterMacFollowUp(queued, queued, late, NOW))
-        assertEquals("already not queued: only the note", null to "Too late — your Mac already has it", ReplyDelivery.afterMacFollowUp(ReplyDelivery.Sent(false, t0), queued, late, NOW))
+        assertEquals(ReplyDelivery.Sent(false, t0) to "Too late — your computer already has it", ReplyDelivery.afterMacFollowUp(queued, queued, late, NOW))
+        assertEquals("already not queued: only the note", null to "Too late — your computer already has it", ReplyDelivery.afterMacFollowUp(ReplyDelivery.Sent(false, t0), queued, late, NOW))
         assertEquals(null to null, ReplyDelivery.afterMacFollowUp(ReplyDelivery.Sent(false, t0), queued, ReplyRetract.Outcome.Deleted(), NOW))
         // The Mac's refusal: its words as the note, and the reply is no longer queued (the relay already handed it over).
         val refused = ReplyRetract.Outcome.Failed("Typing from your phone is turned off")
@@ -146,11 +146,11 @@ class FollowUpsTest {
         fun settle(secondsLater: Double, seen: Boolean = false, listed: Boolean = true, disabled: Boolean = false, state: SessionDeliveryState = h) =
             HeldMessages.settle(state, null, seen = seen, sessionListed = listed, sentAt = sent, now = sent.plusSeconds(secondsLater), macDisabled = disabled)
         assertEquals(30.0, HeldMessages.MISSING_AFTER, 0.0)
-        assertEquals("a list built before the Mac took it lacks it too", h, settle(5.0))
+        assertEquals("a list built before the computer took it lacks it too", h, settle(5.0))
         assertEquals("exactly 30 s is not yet more than 30 s", h, settle(30.0))
         assertEquals(gone, settle(30.5))
         assertEquals(gone, settle(600.0))
-        assertEquals("a Mac with live sessions turned off sends an empty list on purpose", h, settle(600.0, disabled = true))
+        assertEquals("a computer with live sessions turned off sends an empty list on purpose", h, settle(600.0, disabled = true))
         // The other ways in are as before.
         assertEquals(gone, settle(1.0, seen = true))
         assertEquals(gone, settle(1.0, listed = false))
@@ -167,20 +167,20 @@ class FollowUpsTest {
     // MARK: 5. Held detail as a secondary note
 
     @Test fun `a held entry that carries a detail shows it as a note under the headline`() {
-        val h = SessionDeliveryState.Held("Held — Page types it when Claude finishes this turn")
-        val entry = HeldMessage("c7", "t", t0, HeldMessage.State.HELD, null, "Someone is typing at the Mac")
+        val h = SessionDeliveryState.Held("Held — Page Studio types it when Claude finishes this turn")
+        val entry = HeldMessage("c7", "t", t0, HeldMessage.State.HELD, null, "Someone is typing at your computer")
         val noted = HeldMessages.settle(h, entry, seen = true)
-        assertEquals(h.copy(note = "Someone is typing at the Mac"), noted)
+        assertEquals(h.copy(note = "Someone is typing at your computer"), noted)
         // From a bare Sending (the result never arrived), the list alone gives the headline and the note.
-        assertEquals(SessionDeliveryState.Held(null, "Someone is typing at the Mac"), HeldMessages.settle(SessionDeliveryState.Sending, entry, seen = true))
+        assertEquals(SessionDeliveryState.Held(null, "Someone is typing at your computer"), HeldMessages.settle(SessionDeliveryState.Sending, entry, seen = true))
         assertEquals("Held — sends when Claude finishes", HeldMessages.heldHeadline(null))
         val sent = SentSessionCommand("c7", "s1", SessionCommandKind.INPUT, "Then run the linter", t0, noted)
         val receipt = SendReceipt.build(sent, "Claude", t0.plusSeconds(5.0))!!
-        assertEquals("Held — Page types it when Claude finishes this turn", receipt.headline)
-        assertEquals("Someone is typing at the Mac", receipt.detail)
+        assertEquals("Held — Page Studio types it when Claude finishes this turn", receipt.headline)
+        assertEquals("Someone is typing at your computer", receipt.detail)
         assertEquals(SendReceipt.Tone.HELD, receipt.tone)
         // The words a screen reader gets carry both.
-        assertTrue(noted.spokenBubbleStatus(SessionCommandKind.INPUT, "Claude").contains("Someone is typing at the Mac"))
+        assertTrue(noted.spokenBubbleStatus(SessionCommandKind.INPUT, "Claude").contains("Someone is typing at your computer"))
     }
 
     // MARK: 6. An unknown retract value
@@ -188,7 +188,7 @@ class FollowUpsTest {
     @Test fun `an unknown retract value is a refusal in the Mac's words, never a delete`() {
         val r = result(""""ok":true,"code":"delivered","retract":"deferred","detail":"Page will delete it when the turn ends"""")
         assertEquals(CommandResult.Retract.UNKNOWN, r.retract)
-        assertEquals(MacRetract.Outcome.Refused("Page will delete it when the turn ends"), MacRetract.outcome(r))
+        assertEquals(MacRetract.Outcome.Refused("Page Studio will delete it when the turn ends"), MacRetract.outcome(r))
         val bare = result(""""ok":true,"code":"delivered","retract":"deferred"""")
         assertTrue("no detail: the refusal copy a refused result has", MacRetract.outcome(bare) is MacRetract.Outcome.Refused)
         // An empty or missing value is no value: code and ok still speak (as iOS).
@@ -205,8 +205,8 @@ class FollowUpsTest {
     @Test fun `the Update Page on your Mac note waits for the first list, the others do not`() {
         val held = ReplyDelivery.HeldOnMac("Will send it when the limit resets at 3:00 PM")
         assertNull("caps are unknown until a list arrives", QueuedDelete.whyNot(held, false, features, emptySet(), hasList = false))
-        assertEquals("Update Page on your Mac to delete a held reply.", QueuedDelete.whyNot(held, false, features, emptySet(), hasList = true))
-        assertNull("a Mac that can retract has nothing to say", QueuedDelete.whyNot(held, false, features, setOf("retract-v1"), hasList = true))
+        assertEquals("Update Page Studio on your computer to delete a held reply.", QueuedDelete.whyNot(held, false, features, emptySet(), hasList = true))
+        assertNull("a computer that can retract has nothing to say", QueuedDelete.whyNot(held, false, features, setOf("retract-v1"), hasList = true))
         val queued = ReplyDelivery.Sent(true, t0)
         assertEquals("Update your relay to delete queued replies.", QueuedDelete.whyNot(queued, false, setOf("sessions-v1"), emptySet(), hasList = false))
         assertEquals("Waiting on the hook. It can't be deleted from here.", QueuedDelete.whyNot(queued, true, features, emptySet(), hasList = false))
@@ -284,7 +284,7 @@ class FollowUpsTest {
     @Test fun `a Delete pressed while the POST was in flight says why nothing was deleted`() {
         // The relay forwarded it at once: the Mac has it.
         val forwarded = QueuedReplyNotification.afterDeleteDuringSend(queued = false, relayFeatures = features, hookBlocking = false)!!
-        assertEquals("Too late — your Mac already has it", forwarded.status)
+        assertEquals("Too late — your computer already has it", forwarded.status)
         assertFalse("nothing left to delete", forwarded.deleteAgain)
         // The relay queued it and can take it back: ask it.
         assertNull(QueuedReplyNotification.afterDeleteDuringSend(queued = true, relayFeatures = features, hookBlocking = false))

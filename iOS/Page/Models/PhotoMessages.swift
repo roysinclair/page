@@ -69,7 +69,7 @@ struct PhotoOffer: Equatable {
 
     static let busyReason = "Claude is working — send the photo when it finishes"
     static let waitingReason = "Answer the prompt first"
-    static let goneReason = "Your Mac can't take photos any more"
+    static let goneReason = "Your computer can't take photos any more"
     static let pathNote = "Terminal can't paste photos — Claude gets the file's location and opens it itself"
 
     var showsButton: Bool { mode != .hidden }
@@ -215,7 +215,7 @@ enum PhotoEncoder {
 
         var message: String {
             switch self {
-            case .unreadable: return "Page couldn't read that photo."
+            case .unreadable: return "Page Relay couldn't read that photo."
             case .tooBig: return "That photo is too large to send. Try a smaller one."
             case .overTotal: return "The photos are too large together (2.5 MB at most). Remove one and try again."
             }
@@ -390,7 +390,7 @@ struct PhotoUploadMachine: Equatable {
         case stopped(String)
     }
 
-    static let macOfflineMessage = "Your Mac went offline"
+    static let macOfflineMessage = "Your computer went offline"
     static let maxAttempts = 3
     static let maxRateLimits = 12
     static let backoffStart: TimeInterval = 0.5
@@ -569,15 +569,15 @@ enum PhotoCopy {
     /// The reasons only a photo message meets. Anything else falls to `SessionResultCopy`; nil means "not mine".
     static func refusal(reason: String?, detail: String?) -> String? {
         switch reason {
-        case "attachment_missing": return "Part of a photo didn't reach your Mac — send it again"
-        case "attachment_invalid": return detail ?? "Your Mac couldn't use the photo."
-        case "attach_unsupported": return detail ?? "This terminal can't take photos from Page."
+        case "attachment_missing": return "Part of a photo didn't reach your computer — send it again"
+        case "attachment_invalid": return detail ?? "Your computer couldn't use the photo."
+        case "attach_unsupported": return detail ?? "This terminal can't take photos from Page Relay."
         case "attach_busy": return PhotoOffer.busyReason
         default: return nil
         }
     }
 
-    static let noAnswer = "No answer from your Mac. It may still arrive; check the story before sending again."
+    static let noAnswer = "No answer from your computer. It may still arrive; check the story before sending again."
 }
 
 // MARK: - Recognising a photo message in the transcript

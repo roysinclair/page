@@ -42,7 +42,7 @@ data class StatusSnapshot(
     /** What the first line says. Silence has to be earned: a Mac that is offline or not checking in is never "All quiet". */
     val faceHeadline: String
         get() = when (presence) {
-            "offline" -> "Mac offline"
+            "offline" -> "Computer offline"
             "stale" -> "Not checking in"
             else -> headline
         }
@@ -66,7 +66,7 @@ data class StatusSnapshot(
                 MacPresence.Unknown -> "unknown"
             }
             return StatusSnapshot(
-                macName = macName.ifBlank { "Your Mac" }, presence = presence, needsYou = needsYou, working = working, live = status?.activeSessions,
+                macName = macName.ifBlank { "Your computer" }, presence = presence, needsYou = needsYou, working = working, live = status?.activeSessions,
                 headline = headline, subline = subline, markers = runway.markers.map { Marker(it.fraction, it.tone.raw) },
                 onAC = status?.onAC, battery = status?.batteryPercent, fiveHourPct = status?.usage?.fiveHour?.pct, sevenDayPct = status?.usage?.sevenDay?.pct,
                 atMillis = now.toEpochMilli(),

@@ -149,7 +149,7 @@ data class MoonModel(
             val onAC = status?.onAC == true
             var detail: String
             val forecast = status?.forecast
-            if (status == null) detail = "no reading from your Mac"
+            if (status == null) detail = "no reading from your computer"
             else if (onAC) detail = "on power"
             else if (forecast != null && forecast.minutes > 0) detail = "on battery · cutoff in about ${BatteryForecast.duration(forecast.minutes)}"
             else if (status.onAC == false) detail = "on battery"
@@ -273,7 +273,7 @@ data class LanesModel(
             val axis = (0 until hours).map { "-${hours - it}h" } + listOf("now")
             val observed = log.observedSpan(now, hours)
             val note: String? = if (observed >= hours * 3600.0 * 0.95) null
-            else "Drawn from what this phone has seen while Page was open. Earlier time is left blank."
+            else "Drawn from what this phone has seen while Page Relay was open. Earlier time is left blank."
             return LanesModel(groups, axis, note)
         }
 

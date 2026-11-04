@@ -126,12 +126,12 @@ private fun tone(f: ReceiptThread): Rgba = when (f.stage) {
 private fun accessibility(f: ReceiptThread): String = when (val s = f.stage) {
     ReceiptThread.Stage.Arming -> "Sending, tap to cancel"
     ReceiptThread.Stage.Sending -> "Sending"
-    ReceiptThread.Stage.Sent -> "Sent, waiting for your Mac to confirm"
-    ReceiptThread.Stage.Queued -> "Queued until your Mac is back online"
+    ReceiptThread.Stage.Sent -> "Sent, waiting for your computer to confirm"
+    ReceiptThread.Stage.Queued -> "Queued until your computer is back online"
     ReceiptThread.Stage.Deleting -> "Deleting"
     ReceiptThread.Stage.Deleted -> "Deleted, not sent"
-    ReceiptThread.Stage.Held -> "Held on your Mac until the limit resets"
-    ReceiptThread.Stage.Typed, ReceiptThread.Stage.Verified -> "Delivered and verified on your Mac"
+    ReceiptThread.Stage.Held -> "Held on your computer until the limit resets"
+    ReceiptThread.Stage.Typed, ReceiptThread.Stage.Verified -> "Delivered and verified on your computer"
     is ReceiptThread.Stage.Failed -> s.why
     ReceiptThread.Stage.Idle -> ""
 }

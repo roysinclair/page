@@ -142,7 +142,7 @@ struct PairMacView: View {
     private func openScanner() async {
         guard AVCaptureDevice.default(for: .video) != nil else {
             stage = .problem(title: "No camera available",
-                             message: "This device can't scan codes. Use “Enter pairing code manually” and paste the pairing JSON from your Mac (Pair phone… → Copy pairing JSON).",
+                             message: "This device can't scan codes. Use “Enter pairing code manually” and paste the pairing JSON from your computer (Pair phone… → Copy pairing JSON).",
                              retry: nil, openSettings: false)
             return
         }
@@ -162,7 +162,7 @@ struct PairMacView: View {
 
     private var cameraDeniedProblem: Stage {
         .problem(title: "Camera access is off",
-                 message: "Allow camera access for Page in Settings to scan the code, or enter the pairing code manually.",
+                 message: "Allow camera access for Page Relay in Settings to scan the code, or enter the pairing code manually.",
                  retry: nil, openSettings: true)
     }
 
@@ -188,19 +188,19 @@ struct PairMacView: View {
                 stage = .confirm(p, macOnline: snapshot?.macConnected, unused: snapshot?.looksUnused ?? false)
             case .unreachable(let why):
                 stage = .problem(title: "Can't reach the relay",
-                                 message: "\(why) Check your iPhone's connection, and that relayURL in your Mac's Page settings is your deployed Worker (\(p.relayHost)).",
+                                 message: "\(why) Check your iPhone's connection, and that relayURL in Page Studio's settings on your computer is your deployed Worker (\(p.relayHost)).",
                                  retry: p, openSettings: false)
             case .notPageRelay:
-                stage = .problem(title: "That's not a Page relay",
-                                 message: "\(p.relayHost) didn't answer like a Page relay. Check relayURL in your Mac's Page settings, then show the pairing code again.",
+                stage = .problem(title: "That's not a Page Relay Worker",
+                                 message: "\(p.relayHost) didn't answer like a Page Relay Worker. Check relayURL in Page Studio's settings on your computer, then show the pairing code again.",
                                  retry: p, openSettings: false)
             case .unauthorized:
                 stage = .problem(title: "The relay rejected this code",
-                                 message: "Show the pairing code on your Mac again and scan the new one.",
+                                 message: "Show the pairing code on your computer again and scan the new one.",
                                  retry: nil, openSettings: false)
             case .retired(let why):
                 stage = .problem(title: "This code was replaced",
-                                 message: "\(TokenRetirement.sentence(why)) On your Mac, open Page → Pair phone… and scan the code shown there now.",
+                                 message: "\(TokenRetirement.sentence(why)) On your computer, open Page Studio → Pair phone… and scan the code shown there now.",
                                  retry: nil, openSettings: false)
             }
         }
@@ -252,7 +252,7 @@ private struct ManualPairSheet: View {
                     }
                     Text("Enter pairing code").font(.system(size: 30, weight: .bold)).kerning(-0.8)
                         .foregroundColor(NightWatch.Palette.textPrimary.color).accessibilityAddTraits(.isHeader)
-                    Text("On your Mac, click the Page menu-bar icon → Pair phone… → Copy pairing JSON, then paste it here.")
+                    Text("On your computer, open Page Studio → Pair phone… → Copy pairing JSON, then paste it here.")
                         .font(NightWatch.Typo.body).foregroundColor(NightWatch.Palette.textSecondary.color)
                     TextEditor(text: $text)
                         .font(NightWatch.Typo.monoBody)
@@ -380,7 +380,7 @@ private final class QRScannerVC: UIViewController, AVCaptureMetadataOutputObject
         do {
             input = try AVCaptureDeviceInput(device: device)
         } catch {
-            fail("The camera couldn't be started (\(error.localizedDescription)). Check camera access for Page in Settings, or enter the code manually.")
+            fail("The camera couldn't be started (\(error.localizedDescription)). Check camera access for Page Relay in Settings, or enter the code manually.")
             return
         }
         session.beginConfiguration()

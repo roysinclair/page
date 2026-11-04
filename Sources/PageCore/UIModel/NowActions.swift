@@ -15,10 +15,10 @@ enum MacReplyGate {
     /// reply exist.
     static func refusal(forPageId id: String, action: String) -> String? {
         guard ["approve", "deny", "custom"].contains(action) else {
-            return "Page only sends approve, deny or a written reply"
+            return "Page Studio only sends approve, deny or a written reply"
         }
         if id.hasPrefix("hookpre-") {
-            return "Page's phone-approval hook is handling this prompt — answer it at the Mac"
+            return "Page Studio's phone-approval hook is handling this prompt — answer it at the Mac"
         }
         if BatteryForecast.isPageId(id) || UsageForecast.isPageId(id) || BatteryPolicy.isLowBatteryPageId(id)
             || id.hasPrefix("ratelimit-") {
@@ -61,7 +61,10 @@ enum ReplyOutcomeMapper {
             || d.contains("couldn't find the session's terminal") || d.contains("suspended or in the background")
             || d.contains("more than one terminal") || d.contains("allow page to control")
             || d.contains("isn't running in a terminal") || d.contains("background job")
-            || d.contains("answer it at the mac") || d.contains("answer at the mac") || d.contains("reply at the mac") {
+            || d.contains("answer it at the mac") || d.contains("answer at the mac") || d.contains("reply at the mac")
+            // The same refusals as worded since the rename (and an older copy's wording above).
+            || d.contains("allow page studio to control")
+            || d.contains("answer it at your computer") || d.contains("answer at your computer") || d.contains("reply at your computer") {
             return .notTypable
         }
         return .other(f.detail.trimmingCharacters(in: .whitespacesAndNewlines))

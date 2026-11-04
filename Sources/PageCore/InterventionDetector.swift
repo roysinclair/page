@@ -374,7 +374,7 @@ final class InterventionDetector {
                     // this very state, open nothing new.
                     heldBack.insert(event.id)
                     if !heldBackIds.contains(event.id) {
-                        Logger.shared.log("Intervention held back: a Page hook is already paging session \(session.sessionId.prefix(8))")
+                        Logger.shared.log("Intervention held back: a Page Studio hook is already paging session \(session.sessionId.prefix(8))")
                     }
                     for e in previous.values where e.pid == session.pid
                         && e.stateStartedAt != nil && e.stateStartedAt == session.statusUpdatedAt {

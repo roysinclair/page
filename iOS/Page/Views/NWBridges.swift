@@ -40,5 +40,5 @@ extension APIClient.LoadState {
 /// The name every preview and chip uses for the active Mac.
 @MainActor
 func nwMacName(sessions: SessionStore, pairing: PairingStore) -> String {
-    sessions.macName ?? pairing.pairedMac?.name ?? "Your Mac"
+    sessions.macName ?? pairing.pairedMac?.name ?? "Your computer"
 }

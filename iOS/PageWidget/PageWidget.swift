@@ -24,8 +24,8 @@ struct MacStatusWidget: Widget {
                 // Opens Now, where the decisions are.
                 .widgetURL(URL(string: "page://now"))
         }
-        .configurationDisplayName("Page")
-        .description("Sessions that need you, agents at work, and the Runway: when your Mac's battery or your usage will stop the work.")
+        .configurationDisplayName("Page Relay")
+        .description("Sessions that need you, agents at work, and the Runway: when your computer's battery or your usage will stop the work.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryRectangular, .accessoryCircular, .accessoryInline])
     }
 }
@@ -54,7 +54,7 @@ struct StatusProvider: TimelineProvider {
 
     static func fetch() async -> StatusEntry {
         guard let creds = SharedWidgetStore.load(), let base = URL(string: creds.url) else {
-            return StatusEntry(date: Date(), status: nil, problem: "Open Page to pair")
+            return StatusEntry(date: Date(), status: nil, problem: "Open Page Relay to pair")
         }
         var req = URLRequest(url: base.appendingPathComponent("status"), timeoutInterval: 10)
         req.setValue("Bearer \(creds.token)", forHTTPHeaderField: "Authorization")
@@ -110,13 +110,13 @@ struct StatusWidgetView: View {
     private var rectangular: some View {
         if let s = entry.status {
             VStack(alignment: .leading, spacing: 1) {
-                Text("Page · \(presenceText)").font(.caption2.weight(.semibold))
+                Text("Page Relay · \(presenceText)").font(.caption2.weight(.semibold))
                 Text(s.faceHeadline).font(.headline).widgetAccentable()
                 if let d = s.detail { Text(d).font(.caption2) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         } else {
-            Text(entry.problem ?? "Page").font(.caption)
+            Text(entry.problem ?? "Page Relay").font(.caption)
         }
     }
 
@@ -141,7 +141,7 @@ struct StatusWidgetView: View {
     }
 
     private var inline: some View {
-        Text(entry.status.map { "Page: \($0.faceHeadline)" + ($0.presence == .online ? ($0.working.map { ", \($0) working" } ?? "") : "") } ?? "Page")
+        Text(entry.status.map { "Page Relay: \($0.faceHeadline)" + ($0.presence == .online ? ($0.working.map { ", \($0) working" } ?? "") : "") } ?? "Page Relay")
     }
 }
 
@@ -157,7 +157,7 @@ struct UsageWidget: Widget {
                 .widgetURL(URL(string: "page://tower"))
         }
         .configurationDisplayName("Claude usage")
-        .description("Your 5-hour and 7-day Claude usage and when each resets. Turn on usage tracking in Page on your Mac.")
+        .description("Your 5-hour and 7-day Claude usage and when each resets. Turn on usage tracking in Page Studio on your computer.")
         .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular])
     }
 }

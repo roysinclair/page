@@ -152,13 +152,13 @@ struct InFlightActions: Equatable {
             focusable = true
         }
         return InFlightActions(canOpen: focusable, openBlocker: openBlocker, canType: host.canType,
-                               typeBlocker: host.canType ? nil : (host.typeBlocker ?? "Page can't type into this session"))
+                               typeBlocker: host.canType ? nil : (host.typeBlocker ?? "Page Studio can't type into this session"))
     }
 
     /// Local models are not terminals Page can focus or type into.
     static let localModel = InFlightActions(
-        canOpen: false, openBlocker: "Page can't open a local model's window",
-        canType: false, typeBlocker: "Page can't type into a local model")
+        canOpen: false, openBlocker: "Page Studio can't open a local model's window",
+        canType: false, typeBlocker: "Page Studio can't type into a local model")
 }
 
 // MARK: - The row
@@ -237,8 +237,8 @@ struct InFlightHeld: Equatable, Identifiable {
     }
 
     var deleteHelp: String {
-        typing ? "Delete · Page is typing it now, so this may be too late"
-               : "Delete · Page won't type it when the turn ends"
+        typing ? "Delete · Page Studio is typing it now, so this may be too late"
+               : "Delete · Page Studio won't type it when the turn ends"
     }
 }
 

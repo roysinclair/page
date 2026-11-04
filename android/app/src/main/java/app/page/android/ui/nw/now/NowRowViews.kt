@@ -167,7 +167,7 @@ fun NWOutcomeStrip(status: RowStatus, now: Instant, onCancel: () -> Unit, modifi
             horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically,
         ) {
             CircularProgressIndicator(Modifier.size(16.dp), color = NW.Palette.textSecondary.color, strokeWidth = 2.dp)
-            Text("Waiting for your Mac to confirm…", style = NW.Typo.monoMicro, color = NW.Palette.textSecondary.color)
+            Text("Waiting for your computer to confirm…", style = NW.Typo.monoMicro, color = NW.Palette.textSecondary.color)
         }
         is CardOutcome.Delivered -> NWReceiptLine("Delivered · ${o.detail}", modifier)
         is CardOutcome.Problem -> NWReceiptLine(o.why, modifier.clickable(role = Role.Button, onClickLabel = "Open the decision to try again", onClick = onCancel), failed = true)
@@ -238,7 +238,7 @@ fun NWDecideCard(row: NowRow, now: Instant, status: RowStatus, actions: RowActio
                         else NWButton(approve.label, actions.approve, Modifier.weight(1f), kind = NWButtonKind.BRIGHT)
                     }
                 }
-                row.action(RowAction.Kind.OPEN_ON_MAC) != null -> NWButton("Open on Mac", actions.open, Modifier.fillMaxWidth())
+                row.action(RowAction.Kind.OPEN_ON_MAC) != null -> NWButton("Open on your computer", actions.open, Modifier.fillMaxWidth())
             }
         }
     }
@@ -444,7 +444,7 @@ fun NWReviewCard(row: NowRow, now: Instant, status: RowStatus, actions: RowActio
             else Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                 if (steer != null) NWButton(steer.label, actions.steer, Modifier.weight(1f))
                 if (row.action(RowAction.Kind.CARRY_ON) != null) NWButton("Looks good ✦", actions.looksGood, Modifier.weight(1f), kind = NWButtonKind.BRIGHT)
-                else if (row.action(RowAction.Kind.OPEN_ON_MAC) != null) NWButton("Open on Mac", actions.open, Modifier.weight(1f))
+                else if (row.action(RowAction.Kind.OPEN_ON_MAC) != null) NWButton("Open on your computer", actions.open, Modifier.weight(1f))
             }
         }
     }

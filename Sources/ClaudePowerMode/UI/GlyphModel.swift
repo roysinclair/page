@@ -173,7 +173,7 @@ enum StatusGlyphRenderer {
             return true
         }
         image.isTemplate = false
-        image.accessibilityDescription = "Page"
+        image.accessibilityDescription = "Page Studio"
         return image
     }
 

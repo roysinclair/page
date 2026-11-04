@@ -393,7 +393,7 @@ final class AppServerClient: @unchecked Sendable {
                 if self.onServerRequest?(request) != true {
                     Logger.shared.log("Codex: answering unsupported server request \(method) (id=\(id)) with -32601")
                     self.respondError(to: request, code: AppServerProtocol.errorCodeMethodNotFound,
-                                      message: "Page does not handle \(method)")
+                                      message: "Page Studio does not handle \(method)")
                 }
             }
 

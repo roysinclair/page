@@ -93,7 +93,7 @@ final class WidgetSnapshotTests: XCTestCase {
     func testVersionOutsideWhatThisWidgetReadsIsRefused() throws {
         var newer = try json(full())
         newer["version"] = WidgetSnapshot.currentVersion + 1
-        XCTAssertNil(WidgetSnapshotCodec.decode(try data(newer)), "a newer Page's file must not be guessed at")
+        XCTAssertNil(WidgetSnapshotCodec.decode(try data(newer)), "a newer Page Studio's file must not be guessed at")
         var zero = try json(full())
         zero["version"] = 0
         XCTAssertNil(WidgetSnapshotCodec.decode(try data(zero)))

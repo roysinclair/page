@@ -49,9 +49,9 @@ enum TerminalProbe {
         switch access {
         case .granted: return .done
         case .denied:
-            return .needed("macOS is blocking Page from controlling \(appName). Allow it in System Settings ▸ Privacy & Security ▸ Automation.")
+            return .needed("macOS is blocking Page Studio from controlling \(appName). Allow it in System Settings ▸ Privacy & Security ▸ Automation.")
         case .notAsked:
-            return .needed("Page hasn't asked macOS for permission to control \(appName) yet. Click Allow…")
+            return .needed("Page Studio hasn't asked macOS for permission to control \(appName) yet. Click Allow…")
         case .appNotRunning, .unknown:
             return .unchecked
         }
@@ -72,14 +72,14 @@ enum TerminalProbe {
     /// say. Password mode counts only when a password is saved for Page.
     static func cmuxSetupState(_ status: CmuxBridge.SocketStatus?, passwordSaved: Bool) -> TerminalCatalog.SetupState {
         guard let status else {
-            return .needed("Page couldn't read cmux's socket mode, so it can't tell whether cmux lets Page in. Click Set up…")
+            return .needed("Page Studio couldn't read cmux's socket mode, so it can't tell whether cmux lets Page Studio in. Click Set up…")
         }
         let mode = status.effectiveMode
         guard mode.admitsExternalClients else {
-            return .needed("cmux's socket is set to “\(mode.displayName)”, which keeps Page out. Click Set up…")
+            return .needed("cmux's socket is set to “\(mode.displayName)”, which keeps Page Studio out. Click Set up…")
         }
         if mode == .password, !passwordSaved {
-            return .needed("cmux is in Password mode and Page has no password for it. Click Set up…")
+            return .needed("cmux is in Password mode and Page Studio has no password for it. Click Set up…")
         }
         return .done
     }

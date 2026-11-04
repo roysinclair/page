@@ -49,8 +49,8 @@ final class HeldOutboxTests: XCTestCase {
         let r = HeldOutbox.heldResult(backend: .claude)
         XCTAssertEqual(r.code, .queued)
         XCTAssertTrue(r.held)
-        XCTAssertEqual(r.detail, "Held — Page types it when Claude finishes this turn")
-        XCTAssertEqual(HeldOutbox.heldResult(backend: .codex).detail, "Held — Page types it when Codex finishes this turn")
+        XCTAssertEqual(r.detail, "Held — Page Studio types it when Claude finishes this turn")
+        XCTAssertEqual(HeldOutbox.heldResult(backend: .codex).detail, "Held — Page Studio types it when Codex finishes this turn")
         let f = r.fields(clientId: "c1")
         XCTAssertEqual(f["held"] as? Bool, true)
         XCTAssertEqual(f["ok"] as? Bool, true)
@@ -144,7 +144,7 @@ final class HeldOutboxTests: XCTestCase {
             .refused(.ended, SessionInputGate.endedMessage),
             .refused(.notFound, "gone"),
             .refused(.targetMismatch, "moved"),
-            .refused(.notTypable, "Page can't type into Ghostty yet"),
+            .refused(.notTypable, "Page Studio can't type into Ghostty yet"),
             .refused(.error, "The message was empty"),
             .failed("Typed part of it (part of the reply was typed)"),
             .refused(.cancelled, HeldOutbox.deletedDetail),
@@ -217,7 +217,7 @@ final class HeldOutboxTests: XCTestCase {
     func testFirstTryRefusedGivesThatRefusal() throws {
         var box = outbox(message("c1"))
         _ = try XCTUnwrap(box.claimFirstTry("c1", now: t0))
-        let refusal = SessionCommandResult.refused(.notTypable, "Page can't type into Ghostty yet")
+        let refusal = SessionCommandResult.refused(.notTypable, "Page Studio can't type into Ghostty yet")
         XCTAssertEqual(box.finish(clientId: "c1", result: refusal, now: t0).result?.result, refusal)
         XCTAssertTrue(box.isEmpty)
     }
@@ -312,7 +312,7 @@ final class HeldOutboxTests: XCTestCase {
         let r = HeldOutbox.retractResult(.notFound)
         XCTAssertEqual(r.reason, .notFound)
         XCTAssertEqual(r.retract, "not_found")
-        XCTAssertEqual(r.detail, "Page isn't holding that message")
+        XCTAssertEqual(r.detail, "Page Studio isn't holding that message")
         let ok = HeldOutbox.retractResult(.deleted).fields(clientId: "r1")
         XCTAssertEqual(ok["ok"] as? Bool, true)
         XCTAssertEqual(ok["code"] as? String, "delivered")

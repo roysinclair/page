@@ -30,7 +30,7 @@ final class DraftClearTests: XCTestCase {
         XCTAssertTrue(DraftClear.reportable(String(repeating: "a", count: 200)))
         XCTAssertFalse(DraftClear.reportable(String(repeating: "a", count: 201)))
         XCTAssertFalse(DraftClear.reportable(""))
-        XCTAssertFalse(DraftClear.reportable(" padded "), "the Mac reports trimmed text")
+        XCTAssertFalse(DraftClear.reportable(" padded "), "the computer reports trimmed text")
         XCTAssertFalse(DraftClear.reportable("two\nlines"))
         XCTAssertFalse(DraftClear.reportable("tab\there"))
         XCTAssertFalse(DraftClear.reportable("[Pasted text #1 +14 lines]"), "one Backspace deletes the whole paste")
@@ -196,7 +196,7 @@ final class DraftClearTests: XCTestCase {
             w.boxes = [now]
             let r = clear(w)
             XCTAssertEqual(r.reason, .draftChanged, "\(now)")
-            XCTAssertEqual(r.detail, "The text in the input box changed on your Mac, so Page left it alone.")
+            XCTAssertEqual(r.detail, "The text in the input box changed on your computer, so Page Studio left it alone.")
             XCTAssertEqual(w.presses, 0)
         }
     }
@@ -233,7 +233,7 @@ final class DraftClearTests: XCTestCase {
             let w = world()
             let r = clear(w, text)
             XCTAssertEqual(r.reason, .notTypable, text)
-            XCTAssertEqual(r.detail, "Clear it at the Mac")
+            XCTAssertEqual(r.detail, "Clear it at your computer")
             XCTAssertEqual(w.reads, 0)
             XCTAssertEqual(w.presses, 0)
         }
@@ -241,9 +241,9 @@ final class DraftClearTests: XCTestCase {
 
     func testHostsThatCannotPressASingleKeyAreRefusedByName() {
         let cases: [(InjectionExecutor.TerminalHost, String)] = [
-            (.terminalApp(tty: "/dev/ttys003"), "Page can't clear the input box in Terminal.app — clear it at the Mac"),
-            (.iTerm(tty: "/dev/ttys003"), "Page can't clear the input box in iTerm2 — clear it at the Mac"),
-            (.unsupported("Ghostty"), "Page can't clear the input box in Ghostty — clear it at the Mac"),
+            (.terminalApp(tty: "/dev/ttys003"), "Page Studio can't clear the input box in Terminal.app — clear it at your computer"),
+            (.iTerm(tty: "/dev/ttys003"), "Page Studio can't clear the input box in iTerm2 — clear it at your computer"),
+            (.unsupported("Ghostty"), "Page Studio can't clear the input box in Ghostty — clear it at your computer"),
         ]
         for (host, detail) in cases {
             let w = world(host: host)
@@ -285,7 +285,7 @@ final class DraftClearTests: XCTestCase {
         leftover.afterKeys = .text("c")
         let left = clear(leftover, "abc")
         XCTAssertEqual(left.code, .failed)
-        XCTAssertEqual(left.detail, "Couldn't clear the input box — clear it at the Mac")
+        XCTAssertEqual(left.detail, "Couldn't clear the input box — clear it at your computer")
     }
 
     func testTheDraftIsNeverInTheOutcomeDetail() {

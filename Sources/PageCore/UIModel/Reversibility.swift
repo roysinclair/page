@@ -234,7 +234,7 @@ enum Reversibility: Int, Comparable, CaseIterable, Equatable, Hashable, Codable 
         case "Task", "Agent":
             return Verdict(level: .considered, tags: [.runsCommands], reason: "starts a subagent")
         default:
-            return Verdict(level: .considered, tags: [.runsCommands], reason: "\(name) isn't one Page can read")
+            return Verdict(level: .considered, tags: [.runsCommands], reason: "\(name) isn't one Page Studio can read")
         }
     }
 
@@ -701,7 +701,7 @@ enum Reversibility: Int, Comparable, CaseIterable, Equatable, Hashable, Codable 
         }
         // Unknown program: never undoable. Still, spot destructive text.
         if let why = matchesDestructiveText(words.joined(separator: " ")) { return destroy(why) }
-        return considered("\(cmd) isn't one Page recognises")
+        return considered("\(cmd) isn't one Page Studio recognises")
     }
 
     // MARK: helpers for verdicts
@@ -1292,7 +1292,7 @@ enum Reversibility: Int, Comparable, CaseIterable, Equatable, Hashable, Codable 
                 if !f.contains("=") { _ = takeValue() }
                 note("git \(name) points git somewhere else")
             } else if !harmless.contains(f) {
-                note("git option \(f) isn't one Page recognises")
+                note("git option \(f) isn't one Page Studio recognises")
             }
         }
         guard let sub = rest.first else { return ("", [], issue) }

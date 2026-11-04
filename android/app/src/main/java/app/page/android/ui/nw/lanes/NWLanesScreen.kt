@@ -325,7 +325,7 @@ private fun LanesBody(data: LanesScreenData, actions: LanesScreenActions, power:
         }
         if (data.lanes.groups.isEmpty()) item {
             Text(
-                "No live sessions. Start Claude Code or Codex on your Mac, or start one from the + button, and it shows up here with what it's doing right now.",
+                "No live sessions. Start Claude Code or Codex on your computer, or start one from the + button, and it shows up here with what it's doing right now.",
                 style = NW.Typo.caption, color = NW.Palette.textSecondary.color, modifier = Modifier.padding(top = 20.dp),
             )
         }

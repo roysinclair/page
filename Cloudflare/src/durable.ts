@@ -144,7 +144,7 @@ const MAC_FRAME_TYPES = new Set([
 const EPHEMERAL_FRAME_TYPES = new Set(["sessions.update"]);
 
 /// What a retired token answers to everything (see Meta.retired).
-export const TOKEN_RETIRED_WHY = "This pairing was replaced on your Mac — scan the new QR code";
+export const TOKEN_RETIRED_WHY = "This pairing was replaced on your computer — scan the new QR code";
 /// WebSocket close code sent to every socket when the token is retired
 /// (4000–4999 is the application range; 4410 mirrors the HTTP 410).
 export const TOKEN_RETIRED_CLOSE_CODE = 4410;
@@ -218,7 +218,7 @@ export class UserRelay {
           // successful injection would have closed the page. Free it for a
           // retry instead of answering 409 forever.
           migrated.deliveryStatus = "failed";
-          migrated.deliveryDetail = "Your Mac never confirmed this reply — you can send it again";
+          migrated.deliveryDetail = "Your computer never confirmed this reply — you can send it again";
           delete migrated.repliedAt;
           delete migrated.repliedAction;
         }
@@ -487,7 +487,7 @@ export class UserRelay {
     const fx = newEffects();
     for (const [key, entry] of await this.storage.list<QueuedReply>({ prefix: prefixes.queue })) {
       if (queueEntryExpired(entry, now)) {
-        const iv = await this.failQueued(key, entry, "Your Mac was offline too long — reply not delivered");
+        const iv = await this.failQueued(key, entry, "Your computer was offline too long — reply not delivered");
         if (iv) fx.failed.push(iv);
       }
     }
@@ -881,7 +881,7 @@ export class UserRelay {
     if (target.promptKey) entry.promptKey = target.promptKey;
 
     const sent = this.sendToMac({ type: "reply", payload: replyPayload(entry) });
-    updated.deliveryDetail = sent ? "Sent to your Mac" : "Waiting for your Mac to come online";
+    updated.deliveryDetail = sent ? "Sent to your computer" : "Waiting for your computer to come online";
     if (sent) updated.deliveryForwardedAt = isoSeconds(now);
     await this.saveIntervention(updated, rec, archived);
     if (!sent) await this.enqueue(entry);
@@ -908,7 +908,7 @@ export class UserRelay {
       let excess = queue.size - MAX_QUEUE;
       for (const [key, old] of queue) {        // oldest first
         if (excess-- <= 0) break;
-        const iv = await this.failQueued(key, old, "Too many replies were waiting for your Mac");
+        const iv = await this.failQueued(key, old, "Too many replies were waiting for your computer");
         if (iv) failed.push(iv);
       }
     }
@@ -929,13 +929,13 @@ export class UserRelay {
       const now = Date.now();
       for (const [key, entry] of queue) {
         if (queueEntryExpired(entry, now)) {
-          const iv = await this.failQueued(key, entry, "Your Mac was offline too long — reply not delivered");
+          const iv = await this.failQueued(key, entry, "Your computer was offline too long — reply not delivered");
           if (iv) failed.push(iv);
           continue;
         }
         const rec = entry.closed ? undefined : await this.storage.get<PendingRecord>(keys.pending(entry.interventionId));
         if (!entry.closed && !rec) {
-          const iv = await this.failQueued(key, entry, "The page closed before your Mac came back online");
+          const iv = await this.failQueued(key, entry, "The page closed before your computer came back online");
           if (iv) failed.push(iv);
           continue;
         }
@@ -947,7 +947,7 @@ export class UserRelay {
         // delivery times out like a direct forward.
         const loc = await this.locate(entry.interventionId);
         if (loc && loc.iv.deliveryStatus === "pending") {
-          await loc.save({ ...loc.iv, deliveryDetail: "Sent to your Mac", deliveryForwardedAt: isoSeconds(Date.now()) });
+          await loc.save({ ...loc.iv, deliveryDetail: "Sent to your computer", deliveryForwardedAt: isoSeconds(Date.now()) });
         }
         console.log(`flushed queued reply for ${entry.interventionId}`);
       }

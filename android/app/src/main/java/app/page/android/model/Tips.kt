@@ -20,7 +20,7 @@ enum class Tip(val wire: String, val title: String, val body: String) {
     /** The session composer. */
     COMPOSER(
         "composerDelivery", "Your message goes into the terminal",
-        "Page types it into the session on your Mac. Under each message you'll see Sending, then Typed once it lands, or Queued if your Mac is offline.",
+        "Page Studio types it into the session on your computer. Under each message you'll see Sending, then Typed once it lands, or Queued if your computer is offline.",
     ),
 }
 

@@ -73,8 +73,8 @@ data class AgentCharacter(
                 }
                 return AgentCharacter(
                     Kind.LOCAL, if (harness == null) runtime else (if (runtime == "A local model") harness else runtime),
-                    "cpu", "Private · nothing leaves this Mac",
-                    "No usage limits or cost. Page keeps the Mac awake only while it's generating.", runtime,
+                    "cpu", "Private · nothing leaves this computer",
+                    "No usage limits or cost. Page Power keeps your computer awake only while it's generating.", runtime,
                 )
             }
             return when (backend) {
@@ -269,7 +269,7 @@ sealed interface RoomComposerMode {
         val who = if (character.kind == AgentCharacter.Kind.LOCAL) "the model" else character.name
         return when (this) {
             is TellInstead -> Copy("Tell it instead…", "sends Esc first, then your words — never answers the menu", "Send, after Esc")
-            HoldOnly -> Copy("Message $who…", "held on your Mac, typed when this turn ends", "Send message")
+            HoldOnly -> Copy("Message $who…", "held on your computer, typed when this turn ends", "Send message")
             Steer -> when (character.kind) {
                 AgentCharacter.Kind.CODEX -> Copy("Message Codex…", "delivered when this turn ends", "Send message")
                 AgentCharacter.Kind.LOCAL -> Copy("Message the model…", "sent when generation stops", "Send message")
@@ -289,10 +289,10 @@ sealed interface RoomComposerMode {
     fun preview(character: AgentCharacter, route: String?, mac: String, pagePreview: String? = null, sendWhen: SendWhen = SendWhen.NOW): String? = when (this) {
         // The page knows how its answer is delivered: through a hook, or Esc then your words.
         is TellInstead -> pagePreview ?: DeliveryPreview.tellInstead(route, mac)
-        HoldOnly -> DeliveryPreview.line("Held on your Mac · typed when ${character.name} finishes", route, mac)
+        HoldOnly -> DeliveryPreview.line("Held on your computer · typed when ${character.name} finishes", route, mac)
         Steer -> {
             if (sendWhen == SendWhen.WHEN_FINISHED) {
-                DeliveryPreview.line("Held on your Mac · typed when ${character.name} finishes", route, mac)
+                DeliveryPreview.line("Held on your computer · typed when ${character.name} finishes", route, mac)
             } else {
                 val tail = when (character.kind) {
                     AgentCharacter.Kind.CODEX -> "delivered when this turn ends"
@@ -317,12 +317,12 @@ sealed interface RoomComposerMode {
          */
         fun resolve(i: Inputs): RoomComposerMode {
             if (i.ended) return Disabled("This session has ended.")
-            if (!i.ready) return Disabled("Waiting for your Mac.")
+            if (!i.ready) return Disabled("Waiting for your computer.")
             if (i.state.isWaiting || i.pageIsDecide) {
                 if (i.pageId != null && i.pageAcceptsReply) return TellInstead(i.pageId)
                 if (i.pageId != null) return Locked("Answer this prompt from its decision above.")
-                if (i.pageArriving) return Locked("Its decision is still arriving. Answer on your Mac, or wait a moment.")
-                return Locked("Answer the prompt on your Mac. Page won't type over a prompt.")
+                if (i.pageArriving) return Locked("Its decision is still arriving. Answer on your computer, or wait a moment.")
+                return Locked("Answer the prompt on your computer. Page Studio won't type over a prompt.")
             }
             // A busy session Page can't type into right now but the Mac can hold a message for: the hold is the way in.
             if (!i.canType) return if (i.state == LiveSessionState.ACTIVE && i.canHold) HoldOnly else Blocked(i.typeBlocker ?: LiveSession.DEFAULT_BLOCKER)
@@ -447,7 +447,7 @@ data class RoomBanner(
                 return listOf(
                     RoomBanner(
                         "ended", Tone.INFO, "checkmark.circle", "This session has ended",
-                        "It's no longer on your Mac's list. The story below is the last one Page received.", null, null,
+                        "It's no longer on your computer's list. The story below is the last one Page Relay received.", null, null,
                     ),
                 )
             }
@@ -456,7 +456,7 @@ data class RoomBanner(
                 return listOf(
                     RoomBanner(
                         "availability", if (c.tone == SessionAvailabilityCopy.Tone.ERROR) Tone.ERROR else (if (c.tone == SessionAvailabilityCopy.Tone.INFO) Tone.INFO else Tone.WARNING),
-                        c.systemImage, c.title, c.message.ifEmpty { "Waiting for your Mac…" },
+                        c.systemImage, c.title, c.message.ifEmpty { "Waiting for your computer…" },
                         if (c.action == SessionAvailabilityCopy.Action.RETRY || c.action == SessionAvailabilityCopy.Action.REPAIR) c.actionTitle else null,
                         when (c.action) {
                             SessionAvailabilityCopy.Action.RETRY -> Action.Retry
@@ -473,7 +473,7 @@ data class RoomBanner(
                     RoomBanner(
                         "page", Tone.WARNING, "bell.badge",
                         if (session.state == LiveSessionState.WAITING_ON_APPROVAL) "$agent needs your approval" else "$agent is waiting for you",
-                        "Answer the prompt from its decision. Page won't type over a prompt.", "Open decision", Action.OpenDecision(page),
+                        "Answer the prompt from its decision. Page Studio won't type over a prompt.", "Open decision", Action.OpenDecision(page),
                     ),
                 )
             }
@@ -481,7 +481,7 @@ data class RoomBanner(
                 return listOf(
                     RoomBanner(
                         "prompt", Tone.WARNING, "bell.badge", "$agent is showing a prompt",
-                        "There's no decision for it yet. Answer it on your Mac, or wait a moment for it to arrive.", null, null,
+                        "There's no decision for it yet. Answer it on your computer, or wait a moment for it to arrive.", null, null,
                     ),
                 )
             }

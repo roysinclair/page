@@ -13,7 +13,7 @@ object LegacyGestureGuide {
         GuideSection(
             "ANYWHERE",
             listOf(
-                GuideEntry("Pull down", "Refresh the list from your Mac."),
+                GuideEntry("Pull down", "Refresh the list from your computer."),
                 GuideEntry("Press and hold a page or an In flight row", "Open a shortcut menu: the reply screen, the session, its screen, or typing."),
                 GuideEntry("Back button or back gesture", "Close the open page or session."),
             ),
@@ -23,22 +23,22 @@ object LegacyGestureGuide {
             listOf(
                 GuideEntry("Tap a page", "Open its reply screen to approve, deny, carry on or type a reply."),
                 GuideEntry("Open session (on the reply screen)", "Follow what the agent is doing, with its conversation and terminal."),
-                GuideEntry("Approve, Deny or Reply on the notification", "Answer without opening Page."),
+                GuideEntry("Approve, Deny or Reply on the notification", "Answer without opening Page Relay."),
             ),
         ),
         GuideSection(
             "IN FLIGHT: WORKING NOW",
             listOf(
                 GuideEntry("Tap a row", "Open the session: its conversation, plus the message box."),
-                GuideEntry("Screen", "Open the session on its Terminal view. Shown only for terminals your Mac can read (tmux, cmux, WezTerm, kitty, Herdr, Claude Squad)."),
-                GuideEntry("Type", "Open the session with the keyboard up, ready to message the agent. Shown only where Page can type."),
+                GuideEntry("Screen", "Open the session on its Terminal view. Shown only for terminals your computer can read (tmux, cmux, WezTerm, kitty, Herdr, Claude Squad)."),
+                GuideEntry("Type", "Open the session with the keyboard up, ready to message the agent. Shown only where Page Studio can type."),
             ),
         ),
         GuideSection(
             "INSIDE A SESSION",
             listOf(
-                GuideEntry("Conversation, Terminal, Workflows", "Switch what you're looking at, when the Mac has sent more than the conversation."),
-                GuideEntry("Send (arrow)", "Type your message into the session on your Mac. Under it you'll see Sending, Typed or Queued."),
+                GuideEntry("Conversation, Terminal, Workflows", "Switch what you're looking at, when the computer has sent more than the conversation."),
+                GuideEntry("Send (arrow)", "Type your message into the session on your computer. Under it you'll see Sending, Typed or Queued."),
                 GuideEntry("Stop (square)", "Press Esc in the session so the agent stops its current turn."),
                 GuideEntry("Changes", "See the files the session changed."),
                 GuideEntry("Press and hold message text", "Select and copy it."),

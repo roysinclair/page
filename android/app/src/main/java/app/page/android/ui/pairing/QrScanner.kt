@@ -79,7 +79,7 @@ fun QrScanner(onCode: (String) -> Unit, onFailure: (String) -> Unit, modifier: M
                 p.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, analysis)
             } catch (e: Exception) {
                 Log.w("QrScanner", "camera failed: ${e.javaClass.simpleName}")
-                currentOnFailure.value("The camera couldn't be started. Check camera access for Page in Settings, or enter the code manually.")
+                currentOnFailure.value("The camera couldn't be started. Check camera access for Page Relay in Settings, or enter the code manually.")
             }
         }, ContextCompat.getMainExecutor(context))
         onDispose {

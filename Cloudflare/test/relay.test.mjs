@@ -190,7 +190,7 @@ test("unknown intervention → 404", async () => {
   assert.equal(r.body.error, "no_such_intervention");
 });
 
-test("a forwarded reply the Mac never acknowledges frees the page for retry after 20 min", async () => {
+test("a forwarded reply the computer never acknowledges frees the page for retry after 20 min", async () => {
   const mac = connect({ mac: true });
   await open(relay, iv("a"));
   assert.equal((await call(relay, "POST", "/reply/a", { text: "", action: "approve" })).status, 200);
@@ -360,7 +360,7 @@ test("hookpre replies are stored for the hook, never forwarded or queued", async
 
 // MARK: queue
 
-test("offline replies queue with routing info and flush on the Mac's first frame", async () => {
+test("offline replies queue with routing info and flush on your computer's first frame", async () => {
   await open(relay, iv("codex-7", { backend: "codex", sessionId: "thread-1", cwd: "/w" }));
   const r = await call(relay, "POST", "/reply/codex-7", { text: "yes do it" });
   assert.deepEqual(r.body, { ok: true, queued: true });
@@ -410,7 +410,7 @@ test("queued replies older than an hour are dropped and marked failed", async ()
   assert.equal(phone.frames("reply.result")[0].payload.success, false);
 });
 
-test("the alarm expires queued replies even if the Mac never returns", async () => {
+test("the alarm expires queued replies even if the computer never returns", async () => {
   await open(relay, iv("a"));
   await call(relay, "POST", "/reply/a", { text: "hi" });
   clock.now = state.storage.alarm;
@@ -598,7 +598,7 @@ test("v4 subtypes get their own push wording", async () => {
   assert.equal(bodyForPush({ ...base, kind: "idle", subtype: "workflow_stalled", context: "" }), "A workflow stopped making progress");
 });
 
-test("webSocketClose reciprocates and announces the Mac going offline", async () => {
+test("webSocketClose reciprocates and announces the computer going offline", async () => {
   const phone = connect({ mac: false });
   const mac = connect({ mac: true });
   phone.clear();

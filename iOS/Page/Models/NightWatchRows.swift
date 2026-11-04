@@ -54,7 +54,7 @@ enum PhoneReversibility {
             return Reversibility.Verdict(level: .considered, tags: [], reason: DeliveryPreview.unreadableNote)
         }
         guard (iv.backend ?? .claude) == .claude else {
-            return Reversibility.Verdict(level: .considered, tags: [], reason: "\(iv.agentName)'s prompt isn't one Page can read")
+            return Reversibility.Verdict(level: .considered, tags: [], reason: "\(iv.agentName)'s prompt isn't one Page Studio can read")
         }
         if iv.subtype == "plan" {
             return Reversibility.Verdict(level: .considered, tags: [], reason: "plan approval")
@@ -120,7 +120,7 @@ enum DeliveryPreview {
     /// "your Mac" when the name is blank, so a preview never omits the Mac.
     static func macLabel(_ name: String) -> String {
         let t = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        return t.isEmpty ? "your Mac" : t
+        return t.isEmpty ? "your computer" : t
     }
 
     /// "cmux › page": the terminal and the project. nil when neither is known.
@@ -164,7 +164,7 @@ enum DeliveryPreview {
     static let openInTerminal = "Open in terminal to choose this"
 
     /// An agent Page has no adapter for: nothing is typed, and the sheet says so.
-    static let unreadableNote = "Couldn't tell what's on screen · Open on Mac"
+    static let unreadableNote = "Couldn't tell what's on screen · Open on your computer"
     /// The same, as an action preview, which always names the Mac.
     static func unreadable(mac: String) -> String { line("Couldn't tell what's on screen", route: nil, mac: mac) }
 
@@ -288,7 +288,7 @@ enum NowRowBuilder {
             let approveLabel = planned ? "Approve plan" : "Approve"
             let denyLabel = planned ? "Keep planning" : "Deny"
             if unknownAgent && !hook {
-                actions = [act(.openOnMac, "Open on Mac", DeliveryPreview.unreadable(mac: mac))]
+                actions = [act(.openOnMac, "Open on your computer", DeliveryPreview.unreadable(mac: mac))]
                 commit = nil
             } else if hook {
                 actions = [act(.approve, approveLabel, DeliveryPreview.hookAllow(mac: mac)),
@@ -298,7 +298,7 @@ enum NowRowBuilder {
                 actions = [act(.approve, approveLabel, DeliveryPreview.codexAccept(mac: mac)),
                            act(.deny, denyLabel, DeliveryPreview.codexDecline(mac: mac))]
             } else if let blocker {
-                actions = [act(.openOnMac, "Open on Mac", DeliveryPreview.cannotType(blocker, mac: mac))]
+                actions = [act(.openOnMac, "Open on your computer", DeliveryPreview.cannotType(blocker, mac: mac))]
                 commit = nil
             } else {
                 actions = [act(.approve, approveLabel, DeliveryPreview.typeOne(route: route, mac: mac)),
@@ -308,21 +308,21 @@ enum NowRowBuilder {
         case .userInput:
             chip = .question
             if unknownAgent && !hook {
-                actions = [act(.openOnMac, "Open on Mac", DeliveryPreview.unreadable(mac: mac))]
+                actions = [act(.openOnMac, "Open on your computer", DeliveryPreview.unreadable(mac: mac))]
             } else if backend == .claude, blocker == nil || hook {
                 // A written answer to a Claude prompt is Esc, then the text, then Return.
                 actions = [act(.tellInstead, "Answer", hook ? DeliveryPreview.hookTell(mac: mac) : DeliveryPreview.tellInstead(route: route, mac: mac))]
             } else if let blocker {
-                actions = [act(.openOnMac, "Open on Mac", DeliveryPreview.cannotType(blocker, mac: mac))]
+                actions = [act(.openOnMac, "Open on your computer", DeliveryPreview.cannotType(blocker, mac: mac))]
             } else {
                 actions = [act(.tellInstead, "Answer", DeliveryPreview.line("Your answer, as Codex takes it", route: route, mac: mac))]
             }
         case .idle where PageSubtype.isStuck(iv.subtype):
             chip = .looksStuck
             if unknownAgent {
-                actions = [act(.openOnMac, "Open on Mac", DeliveryPreview.unreadable(mac: mac))]
+                actions = [act(.openOnMac, "Open on your computer", DeliveryPreview.unreadable(mac: mac))]
             } else if let blocker {
-                actions = [act(.openOnMac, "Open on Mac", DeliveryPreview.cannotType(blocker, mac: mac))]
+                actions = [act(.openOnMac, "Open on your computer", DeliveryPreview.cannotType(blocker, mac: mac))]
             } else {
                 if PageSubtype.canStop(iv.subtype) {
                     actions.append(act(.stop, "Stop it", DeliveryPreview.pressEsc(route: route, mac: mac)))
@@ -335,9 +335,9 @@ enum NowRowBuilder {
         case .idle:
             chip = .review
             if unknownAgent {
-                actions = [act(.openOnMac, "Open on Mac", DeliveryPreview.unreadable(mac: mac))]
+                actions = [act(.openOnMac, "Open on your computer", DeliveryPreview.unreadable(mac: mac))]
             } else if let blocker {
-                actions = [act(.openOnMac, "Open on Mac", DeliveryPreview.cannotType(blocker, mac: mac))]
+                actions = [act(.openOnMac, "Open on your computer", DeliveryPreview.cannotType(blocker, mac: mac))]
             } else {
                 actions = [act(.carryOn, "Carry on", DeliveryPreview.carryOn(route: route, mac: mac)),
                            act(.tellInstead, "Steer", DeliveryPreview.message(route: route, mac: mac))]

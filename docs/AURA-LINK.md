@@ -1,7 +1,7 @@
 # Page Aura link (`aura-link-v1`)
 
 Page Aura (the bring-your-own-key chat app, github.com/roysinclair/page-studio-apps)
-can hand its chats to Page, so that:
+can hand its chats to Page Studio, so that:
 
 - the Mac **stays awake** while Page Aura is writing a reply (an API stream dies
   if the Mac sleeps);
@@ -10,10 +10,10 @@ can hand its chats to Page, so that:
 - you can **answer from the phone**: Allow once / Deny a tool request, or type a
   message that is sent into that chat.
 
-Page Aura **never talks to the relay**. Page owns the one relay connection, the
-pairing, the end-to-end keys and APNs. Page Aura only talks to Page, over a
+Page Aura **never talks to the relay**. Page Studio owns the one relay connection, the
+pairing, the end-to-end keys and APNs. Page Aura only talks to Page Studio, over a
 Unix socket on the same Mac, and only after the user switches it on in Page
-Aura's settings. Page treats Page Aura as a third agent backend next to Claude
+Aura's settings. Page Studio treats Page Aura as a third agent backend next to Claude
 Code and Codex (`AgentBackendID.aura`, wire `backend: "aura"`, intervention
 ids prefixed `aura-`).
 
@@ -26,13 +26,13 @@ ids prefixed `aura-`).
 - **Socket:** `~/Library/Application Support/ClaudePowerMode/aura.sock` on
   macOS; `$XDG_DATA_HOME/page/aura.sock` (`~/.local/share/page/aura.sock`) on
   Linux, where `paged` is the server ([LINUX.md](LINUX.md)).
-  Page is the server; Page Aura is the client.
-- **Page (server):** creates the folder if missing, unlinks a stale socket,
+  Page Studio is the server; Page Aura is the client.
+- **Page Studio (server):** creates the folder if missing, unlinks a stale socket,
   binds, sets the socket to `0600`. For every accepted connection it checks the
   peer with `getpeereid` (`SO_PEERCRED` on Linux) and closes it unless the
   peer uid equals `getuid()`.
   One client at a time: a new connection replaces the old one. When the
-  backend is switched off (Preferences) or Page quits, it closes the listener
+  backend is switched off (Preferences) or Page Studio quits, it closes the listener
   and removes the socket file.
 - **Page Aura (client):** connects only while the user has switched the link
   on. Before connecting it `lstat`s the path and refuses unless it is a socket
@@ -42,7 +42,7 @@ ids prefixed `aura-`).
   256 KiB; a longer line closes the connection (both sides). Readers ignore
   unknown fields and unknown `t` values.
 
-## 2. Page Aura → Page
+## 2. Page Aura → Page Studio
 
 ### `hello` (first line after connect)
 ```json
@@ -77,7 +77,7 @@ tool is running) or **waiting on a tool approval**. Idle chats are not listed.
  "stopped":false,"snippet":"…the last ≤ 600 characters of the reply…","at":1762160300000}
 ```
 - `ok:false` when the turn ended in an error; `snippet` is then the error.
-- `stopped:true` when the user pressed Stop at the Mac (Page raises no page).
+- `stopped:true` when the user pressed Stop at the Mac (Page Studio raises no page).
 
 ### `ack` (answer to every command, exactly once)
 ```json
@@ -85,7 +85,7 @@ tool is running) or **waiting on a tool approval**. Idle chats are not listed.
 ```
 `detail` is short, human and shown on the phone.
 
-## 3. Page → Page Aura
+## 3. Page Studio → Page Aura
 
 | Command | Meaning | Page Aura's rules |
 |---|---|---|
@@ -96,7 +96,7 @@ tool is running) or **waiting on a tool approval**. Idle chats are not listed.
 Page Aura validates every command (known `t`, ids ≤ 64 chars of
 `[A-Za-z0-9_-]`, `text` length, `decision` value) and drops anything else.
 
-## 4. How Page uses it (AuraBackend)
+## 4. How Page Studio uses it (AuraBackend)
 
 - **Sessions:** each listed chat is an `AgentSession` (backend `.aura`,
   source `.desktop`, title = chat title, state `.active` when busy,
@@ -120,7 +120,7 @@ Page Aura validates every command (known `t`, ids ≤ 64 chars of
   anything else on a permission page fails "Page Aura tool requests take Allow
   or Deny". Idle + text → `send`; + carry_on → `send "Carry on."`;
   approve/deny on an idle page fails. Not connected → fails "Page Aura isn't
-  open on your Mac". Page waits up to 20 s for the `ack`, reports it with
+  open on your computer". Page Studio waits up to 20 s for the `ack`, reports it with
   `sendReplyInjected(method: "aura-link")` and closes the page with `replied`
   on success.
 - **Disconnect:** open Page Aura pages close with `stale`.
@@ -138,7 +138,7 @@ Codex sessions, through the existing live-sessions protocol
 `hello` with `"proto":2`; a proto-1 peer simply never sends or answers these
 frames.
 
-### Page → Page Aura: `watch`
+### Page Studio → Page Aura: `watch`
 ```json
 {"t":"watch","list":true,"chatIds":["k3j9x"]}
 ```
@@ -147,7 +147,7 @@ Sessions view connected; `chatIds` = the Page Aura chats a phone is viewing
 (the sessions-v1 watch set, mapped back from session ids). `{"t":"watch","list":false,"chatIds":[]}`
 stops everything. On (re)connect Page Aura assumes `list:false`.
 
-### Page Aura → Page: `chats` (only while `list:true`)
+### Page Aura → Page Studio: `chats` (only while `list:true`)
 ```json
 {"t":"chats","chats":[
   {"id":"k3j9x","title":"Quarterly numbers","model":"claude-opus-5-5",
@@ -157,10 +157,10 @@ stops everything. On (re)connect Page Aura assumes `list:false`.
 ```
 The 20 most recently updated chats from the last 7 days (busy and
 waiting chats always included), on change (≤ 1 per second) and every 20 s.
-Only when the user has "Show my chats in Page's Sessions tab" on in Page
+Only when the user has "Show my chats in Page Relay’s Sessions tab" on in Page
 Aura (default on when the link is on); otherwise an empty list.
 
-### Page Aura → Page: `transcript` (only for watched chats)
+### Page Aura → Page Studio: `transcript` (only for watched chats)
 ```json
 {"t":"transcript","chatId":"k3j9x","truncated":true,"entries":[
   {"id":"m12","role":"user","text":"…","at":1762160000000},
@@ -174,7 +174,7 @@ Last 40 meaningful entries as a full snapshot, re-sent on change (≤ 1 per
 ("Web search: …", "Ran code", "Used Filesystem · read_file") — tool output
 and results are never included; attachments appear as "(attached: name)".
 
-### How Page maps it
+### How Page Studio maps it
 - Each chat becomes a sessions-v1 row: `id` = `aura-<chatId>`,
   `backend:"aura"`, `title`, `cwd` omitted/empty, `host:"Page Aura"`,
   `provider:"anthropic"`, state `active` (busy) / `waitingOnApproval` /
@@ -182,10 +182,10 @@ and results are never included; attachments appear as "(attached: name)".
   page is open, `canType` true when idle (false with `typeBlocker` "Page Aura
   is still replying" while busy or waiting on an approval), `canInterrupt`
   true while busy. No `ask`, `hold`, `attach` (photos aren't offered: no
-  `attach`, `attachBlocker` "Page can't send photos to Page Aura yet").
+  `attach`, `attachBlocker` "Page Studio can't send photos to Page Aura yet").
 - Phone `input` on an aura row → `send`; `interrupt` → `stop`; results
   reported through the normal sessions-v1 command result with the ack's
-  `detail`. Every input still goes through Page's input gate rules
+  `detail`. Every input still goes through Page Studio's input gate rules
   (fresh, decrypted, not replayed).
 - Page Aura chats don't keep the Mac awake unless busy (unchanged) and don't
   open pages by themselves (pages still follow §4).

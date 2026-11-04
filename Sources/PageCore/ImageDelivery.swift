@@ -43,8 +43,8 @@ enum ImageDelivery {
     static let confirmWait: TimeInterval = 4
 
     static let busyMessage = "Claude is working — send the photo when it finishes"
-    static let leftInBoxMessage = "Your photo and message are in Claude's input box at your Mac, not sent"
-    static let codexMessage = "Page can't send photos to Codex yet"
+    static let leftInBoxMessage = "Your photo and message are in Claude's input box at your computer, not sent"
+    static let codexMessage = "Page Studio can't send photos to Codex yet"
     static let pathLinePrefix = "Photo from my phone: "
     static let pathLineMessage = "A line of your message is a photo's file path, which Claude would try to open as a photo — add a word before it"
     static let tooLongMessage = "The message is too long with the photos (8000 characters at most)"
@@ -91,7 +91,7 @@ enum ImageDelivery {
         case .kitty: id = .kitty
         case .herdr: id = .herdr
         case .unreachable(let why): return .notYet(why)
-        case .unsupported(let app): return .notYet("Page can't type into \(app) yet")
+        case .unsupported(let app): return .notYet("Page Studio can't type into \(app) yet")
         case .unknown: return .notYet("Couldn't find the session's terminal")
         }
         return TerminalCatalog.entry(id).capabilities.attach
@@ -221,7 +221,7 @@ enum ImageDelivery {
         case .failed(let f): return .refused(.notTypable, f.detail)
         case .live(let s, let t): session = s; table = t
         }
-        guard session.tty != nil else { return .refused(.notTypable, "This session isn't running in a terminal Page can type into") }
+        guard session.tty != nil else { return .refused(.notTypable, "This session isn't running in a terminal Page Studio can type into") }
 
         /// The session as it is now: nil when photos may go in.
         func gate() -> SessionCommandResult? {
@@ -240,7 +240,7 @@ enum ImageDelivery {
         let host = io.resolveHost(session, table)
         switch host {
         case .tmux, .terminalApp, .iTerm, .cmux, .wezterm, .kitty, .herdr: break
-        case .unsupported(let app): return .refused(.notTypable, "Page can't type into \(app) yet")
+        case .unsupported(let app): return .refused(.notTypable, "Page Studio can't type into \(app) yet")
         case .unreachable(let why): return .refused(.notTypable, why)
         case .unknown: return .refused(.notTypable, "Couldn't find the session's terminal")
         }

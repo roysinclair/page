@@ -23,8 +23,8 @@ enum WidgetGuide {
             return [
                 Step(number: 1, title: "Right-click the desktop",
                      detail: "On an empty spot (or hold Control and click), then choose Edit Widgets."),
-                Step(number: 2, title: "Search for Page",
-                     detail: "Type Page in the search field. Page and Claude usage show up, each in a few sizes."),
+                Step(number: 2, title: "Search for Page Studio",
+                     detail: "Type Page Studio in the search field. Page Studio and Claude usage show up, each in a few sizes."),
                 Step(number: 3, title: "Drag one out",
                      detail: "Drag it onto the desktop, or click the + on it. Put it anywhere: it keeps itself up to date."),
             ]
@@ -33,9 +33,9 @@ enum WidgetGuide {
             Step(number: 1, title: "Open Notification Center",
                  detail: "Click the date and time at the right of the menu bar."),
             Step(number: 2, title: "Click Edit Widgets",
-                 detail: "It is at the bottom of the panel. Type Page in the search field."),
+                 detail: "It is at the bottom of the panel. Type Page Studio in the search field."),
             Step(number: 3, title: "Add one",
-                 detail: "Click the + on Page or Claude usage, or drag it into the panel."),
+                 detail: "Click the + on Page Studio or Claude usage, or drag it into the panel."),
         ]
     }
 
@@ -49,14 +49,14 @@ enum WidgetGuide {
     /// Pure. The iPhone note: only macOS 14 and later can show iPhone widgets.
     static func iPhoneNote(osMajor: Int) -> String? {
         guard WidgetRegistration.hasDesktopWidgets(osMajor: osMajor) else { return nil }
-        return "Your iPhone’s Page widgets can also appear on this Mac. In \(WidgetRegistration.settingsPath(osMajor: osMajor)), turn on “Use iPhone widgets” (the iPhone has to be nearby and signed in to the same Apple ID). They show what your iPhone knows. Page’s own Mac widgets above work without it."
+        return "Your iPhone’s Page Relay widgets can also appear on this Mac. In \(WidgetRegistration.settingsPath(osMajor: osMajor)), turn on “Use iPhone widgets” (the iPhone has to be nearby and signed in to the same Apple ID). They show what your iPhone knows. Page Studio’s own Mac widgets above work without it."
     }
 
     /// Pure. The line under "Show me how".
     static func addDetail(osMajor: Int) -> String {
         WidgetRegistration.hasDesktopWidgets(osMajor: osMajor)
-            ? "macOS only lets you place a widget yourself, so Page gets everything ready and shows you the three steps."
-            : "macOS only lets you place a widget yourself, so Page gets everything ready and shows you the three steps. Before macOS 14 widgets live in Notification Center."
+            ? "macOS only lets you place a widget yourself, so Page Studio gets everything ready and shows you the three steps."
+            : "macOS only lets you place a widget yourself, so Page Studio gets everything ready and shows you the three steps. Before macOS 14 widgets live in Notification Center."
     }
 
     /// Pure. The line under "Widget settings", or nil when this macOS has no such switches (before macOS 14).
@@ -145,14 +145,14 @@ struct NWWidgetStatusRow: View {
     /// Pure. What to do when it is not fine.
     static func hint(_ s: WidgetRegistration.Status) -> String? {
         switch s {
-        case .notRegistered: return "Page asks on every launch. If it still isn’t found, move Page.app into /Applications and open it once."
+        case .notRegistered: return "Page Studio asks on every launch. If it still isn’t found, move Page.app into /Applications and open it once."
         case .elsewhere: return "Move or delete the other copy, then ask again."
-        case .disabled: return "Switch Page’s widgets back on there, and they appear in the gallery."
+        case .disabled: return "Switch Page Studio’s widgets back on there, and they appear in the gallery."
         case .unavailable(let reason):
             switch reason {
-            case WidgetSetup.Unavailable.notAnApp: return "Open the installed Page (in Applications) to get the widgets."
-            case WidgetSetup.Unavailable.noExtension: return "This build doesn’t include the widget extension. Update Page to a build that has it."
-            case WidgetSetup.Unavailable.noTeam: return "Widgets need a copy of Page signed with an Apple developer certificate. This copy isn’t, so it can’t have them."
+            case WidgetSetup.Unavailable.notAnApp: return "Open the installed Page Studio (in Applications) to get the widgets."
+            case WidgetSetup.Unavailable.noExtension: return "This build doesn’t include the widget extension. Update Page Studio to a build that has it."
+            case WidgetSetup.Unavailable.noTeam: return "Widgets need a copy of Page Studio signed with an Apple developer certificate. This copy isn’t, so it can’t have them."
             case WidgetSetup.Unavailable.noAnswer: return "Open this page again in a moment."
             default: return nil
             }
@@ -178,7 +178,7 @@ struct NWWidgetPreviews: View {
             HStack(alignment: .top, spacing: 24) {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack(alignment: .top, spacing: 24) {
-                        captioned("Page · Small") {
+                        captioned("Page Studio · Small") {
                             WidgetPreviewFrame(size: .small, tone: tone, glow: glow) {
                                 PageStatusWidgetView(snapshot: snapshot, size: .small, now: now, timeZone: tz, interactive: false)
                             }
@@ -189,7 +189,7 @@ struct NWWidgetPreviews: View {
                             }
                         }
                     }
-                    captioned("Page · Medium") {
+                    captioned("Page Studio · Medium") {
                         WidgetPreviewFrame(size: .medium, tone: tone, glow: glow) {
                             PageStatusWidgetView(snapshot: snapshot, size: .medium, now: now, timeZone: tz, interactive: false)
                         }
@@ -201,7 +201,7 @@ struct NWWidgetPreviews: View {
                     }
                 }
                 VStack(alignment: .leading, spacing: 12) {
-                    captioned("Page · Large") {
+                    captioned("Page Studio · Large") {
                         WidgetPreviewFrame(size: .large, tone: tone, glow: glow) {
                             PageStatusWidgetView(snapshot: snapshot, size: .large, now: now, timeZone: tz, interactive: false)
                         }
@@ -215,7 +215,7 @@ struct NWWidgetPreviews: View {
                         }
                     }
                     .frame(width: CGFloat(WidgetFaceSize.large.points.width))
-                    NWNote(text: "Click a widget to open Page’s popover. On the large one, click a row to land on that page. Widgets show what Page shows in its popover, with secrets masked; nothing else leaves Page.")
+                    NWNote(text: "Click a widget to open Page Studio’s popover. On the large one, click a row to land on that page. Widgets show what Page Studio shows in its popover, with secrets masked; nothing else leaves Page Studio.")
                         .frame(width: CGFloat(WidgetFaceSize.large.points.width), alignment: .leading)
                 }
             }
@@ -344,14 +344,14 @@ struct NWWidgetGuideCard: View {
             VStack(spacing: 8) {
                 HStack(spacing: 5) {
                     Image(systemName: "magnifyingglass").font(Font.system(size: 9))
-                    Text("Page").font(Font.system(size: 10, weight: .medium))
+                    Text("Page Studio").font(Font.system(size: 10, weight: .medium))
                     Spacer()
                 }
                 .foregroundColor(P.textPrimary.color)
                 .padding(.horizontal, 7).frame(height: 22)
                 .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color.white.opacity(0.10)))
                 HStack(spacing: 10) {
-                    tile(AnyView(PageStatusWidgetView(snapshot: snapshot, size: .small, now: now, timeZone: timeZone, interactive: false)), "Page")
+                    tile(AnyView(PageStatusWidgetView(snapshot: snapshot, size: .small, now: now, timeZone: timeZone, interactive: false)), "Page Studio")
                     tile(AnyView(ClaudeUsageWidgetView(snapshot: snapshot, size: .small, now: now, timeZone: timeZone)), "Claude usage")
                 }
             }

@@ -113,7 +113,7 @@ struct NWPowerPage: View {
                                     value: store.slider(\.lowBatteryPauseGraceSeconds),
                                     range: Config.Limits.lowBatteryPauseGrace.lowerBound...300, enabled: pauses)
                     }
-                    NWNote(text: "Paused sessions get a phone page each (reply to send them instructions) and are listed in Page’s menu. Never triggers while plugged in, or on a Mac without a battery.")
+                    NWNote(text: "Paused sessions get a phone page each (reply to send them instructions) and are listed in Page Studio’s menu. Never triggers while plugged in, or on a Mac without a battery.")
                         .padding(.horizontal, 4)
                 }
                 VStack(alignment: .leading, spacing: 10) {
@@ -133,7 +133,7 @@ struct NWPowerPage: View {
                                     value: store.slider(\.checkIntervalSeconds),
                                     range: Config.Limits.checkInterval.lowerBound...120)
                     }
-                    NWNote(text: "While Claude Code or Codex is working, Page keeps the Mac from idle-sleeping, and lets it sleep again as soon as they stop.")
+                    NWNote(text: "While Claude Code or Codex is working, Page Power keeps the Mac from idle-sleeping, and lets it sleep again as soon as they stop.")
                         .padding(.horizontal, 4)
                 }
             }
@@ -280,7 +280,7 @@ struct NWPowerHelperCard: View {
             }
             .padding(.horizontal, 16).padding(.vertical, 13)
             NWDivider()
-            Text("On battery macOS always sleeps when the lid closes, so “lid closed on battery” uses “pmset disablesleep” — only while an agent is actually mid-turn (not while waiting on a rate-limit reset, a page or a prompt) and the Mac isn’t running hot. It turns on only above your low-battery level + 5%, and stays on down to that level so agents can pause and write their summary with the lid closed; then the Mac sleeps. Risk: a closed MacBook in a bag stays awake and warm. Page turns it off the moment any of that changes, when it quits, and a watchdog turns it off within a minute if Page crashes (a few minutes if it hangs).")
+            Text("On battery macOS always sleeps when the lid closes, so “lid closed on battery” uses “pmset disablesleep” — only while an agent is actually mid-turn (not while waiting on a rate-limit reset, a page or a prompt) and the Mac isn’t running hot. It turns on only above your low-battery level + 5%, and stays on down to that level so agents can pause and write their summary with the lid closed; then the Mac sleeps. Risk: a closed MacBook in a bag stays awake and warm. Page Studio turns it off the moment any of that changes, when it quits, and a watchdog turns it off within a minute if Page Studio crashes (a few minutes if it hangs).")
                 .font(Font.system(size: 11)).foregroundColor(P.textTertiary.color)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(16)
@@ -345,7 +345,7 @@ struct NWBudgetPage: View {
                         .padding(.horizontal, 16).padding(.bottom, 12)
                 }
             }
-            NWNote(text: "Claude Code only gives these numbers to your status line, so Page wraps it: a small script saves them, then runs your own status line unchanged. Changes ~/.claude/settings.json (backed up first); turning this off puts it back. This one applies straight away.")
+            NWNote(text: "Claude Code only gives these numbers to your status line, so Page Studio wraps it: a small script saves them, then runs your own status line unchanged. Changes ~/.claude/settings.json (backed up first); turning this off puts it back. This one applies straight away.")
                 .padding(.horizontal, 4).padding(.top, -10)
 
             NWCard(title: "WHEN CLAUDE HITS A RATE LIMIT") {
@@ -355,7 +355,7 @@ struct NWBudgetPage: View {
                 NWToggleRow(title: "Auto-schedule a resume", detail: "at the reset time, so the work carries on without you",
                             isOn: store.bind(\.autoResumeEnabled))
                 NWDivider()
-                NWFieldRow(title: "Resume prompt", detail: "what Page sends when the limit resets",
+                NWFieldRow(title: "Resume prompt", detail: "what Page Studio sends when the limit resets",
                            text: store.bind(\.carryOnPrompt), placeholder: "carry on", monospaced: false)
                 NWDivider()
                 NWToggleRow(title: "Keep the Mac awake through the reset wait", detail: "so the resume can run",
@@ -401,7 +401,7 @@ struct NWMacsPhonesPage: View {
         let relay = store.relayLine
         NWPage(section: .macsPhones) {
             NWCard(title: "THIS MAC") {
-                NWRow(title: store.model?.macName ?? store.macName, detail: "Page runs here and holds the keystrokes") {
+                NWRow(title: store.model?.macName ?? store.macName, detail: "Page Studio runs here and holds the keystrokes") {
                     NWStateChip(text: chip.text, color: chipColor(chip.tone), symbol: "dot.radiowaves.left.and.right")
                 }
             }
@@ -561,14 +561,14 @@ struct NWAgentsPage: View {
                 NWNote(text: store.localModelsText, tone: .quiet, mono: f.localModelsEnabled && !store.localLines.isEmpty)
                     .padding(.horizontal, 16).padding(.bottom, 12)
             }
-            NWNote(text: "Only while a model is actually generating — a loaded but idle model never keeps the Mac awake. Terminal tools (opencode, aider, goose, crush, ollama run, llama-cli…) count while they're producing output. Page only looks: it never starts, stops or unloads models. Claude Code and Codex pointed at Ollama or LM Studio are detected automatically, and Page won't restart them in the background on your Anthropic account.")
+            NWNote(text: "Only while a model is actually generating — a loaded but idle model never keeps the Mac awake. Terminal tools (opencode, aider, goose, crush, ollama run, llama-cli…) count while they're producing output. Page Studio only looks: it never starts, stops or unloads models. Claude Code and Codex pointed at Ollama or LM Studio are detected automatically, and Page Studio won't restart them in the background on your Anthropic account.")
                 .padding(.horizontal, 4).padding(.top, -10)
             NWCard(title: "INTEGRATIONS") {
                 NWRow(title: "Terminals", detail: TerminalCatalog.namesLine + ": what works where, and what each needs") {
                     NWButton(title: "See all…", kind: .secondary) { store.selection = .terminals }
                 }
                 NWDivider()
-                NWRow(title: "cmux", detail: "lets Page type into your cmux panes, and start sessions there") {
+                NWRow(title: "cmux", detail: "lets Page Studio type into your cmux panes, and start sessions there") {
                     NWButton(title: "Set up cmux…", kind: .secondary) { store.openCmuxSetup() }
                 }
                 NWDivider()
@@ -576,7 +576,7 @@ struct NWAgentsPage: View {
                     NWButton(title: "Install agent hooks…", kind: .secondary) { store.openPhoneApprovals() }
                 }
                 NWDivider()
-                NWRow(title: "Local-model diagnostics", detail: "copies what Page sees, for a bug report") {
+                NWRow(title: "Local-model diagnostics", detail: "copies what Page Studio sees, for a bug report") {
                     NWButton(title: "Copy diagnostics", kind: .secondary) { store.env.copyLocalDiagnostics() }
                 }
             }
@@ -599,7 +599,7 @@ struct NWShortcutsPage: View {
                     }
                 }
             }
-            NWNote(text: "Page approves by typing option 1, denies with Esc, and sends only what you write. It never presses 2, never offers “Yes, and don’t ask again”, and has no auto-allow or auto-deny.")
+            NWNote(text: "Page Studio approves by typing option 1, denies with Esc, and sends only what you write. It never presses 2, never offers “Yes, and don’t ask again”, and has no auto-allow or auto-deny.")
                 .padding(.horizontal, 4)
         }
     }
@@ -614,7 +614,7 @@ struct NWAboutPage: View {
     var body: some View {
         NWPage(section: .about) {
             NWCard {
-                NWRow(title: "Page", detail: version) {
+                NWRow(title: "Page Studio", detail: version) {
                     Image(systemName: "dot.radiowaves.left.and.right").font(Font.system(size: 20)).foregroundColor(P.teal.color)
                 }
             }
@@ -628,7 +628,7 @@ struct NWAboutPage: View {
                     NWButton(title: "Open Config File…", kind: .secondary) { store.env.openConfigFile() }
                 }
                 NWDivider()
-                NWRow(title: "Log", detail: "everything Page did, in one file (the audit log)") {
+                NWRow(title: "Log", detail: "everything Page Studio did, in one file (the audit log)") {
                     NWButton(title: "Open Log", kind: .secondary) { store.env.openLog() }
                 }
                 NWDivider()

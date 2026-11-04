@@ -101,20 +101,20 @@ extension NWTowerScreen {
             Text(TowerWidgets.previewsTitle.uppercased()).font(NightWatch.Typo.label).kerning(1.2).foregroundColor(P.textTertiary.color).padding(.leading, 4)
                 .accessibilityAddTraits(.isHeader)
             HStack(alignment: .top, spacing: 12) {
-                captioned("Page · small") {
+                captioned("Page Relay · small") {
                     NWWidgetPreviewTile(shape: .small, palette: tone) { NWWidgetStatusFace(status: status, size: .small, now: data.now, timeZone: data.timeZone) }
                 }
                 captioned("Claude usage · small") {
                     NWWidgetPreviewTile(shape: .small, palette: .quiet, strength: 0.5) { NWWidgetUsageFace(model: usage, size: .small, now: data.now, timeZone: data.timeZone) }
                 }
             }
-            captioned("Page · medium") {
+            captioned("Page Relay · medium") {
                 NWWidgetPreviewTile(shape: .medium, palette: tone) { NWWidgetStatusFace(status: status, size: .medium, now: data.now, timeZone: data.timeZone) }
             }
             captioned("Claude usage · medium") {
                 NWWidgetPreviewTile(shape: .medium, palette: .quiet, strength: 0.5) { NWWidgetUsageFace(model: usage, size: .medium, now: data.now, timeZone: data.timeZone) }
             }
-            captioned("Page · large") {
+            captioned("Page Relay · large") {
                 NWWidgetPreviewTile(shape: .large, palette: tone) { NWWidgetStatusFace(status: status, size: .large, now: data.now, timeZone: data.timeZone) }
             }
             .id("widgets-large")
@@ -201,7 +201,7 @@ struct NWLockScreenPreview: View {
                            startPoint: .topLeading, endPoint: .bottomTrailing)
             VStack(spacing: 10) {
                 Text("Tuesday 27 October").font(.system(size: 13, weight: .semibold)).foregroundColor(Color.white.opacity(0.85))
-                Text("Page: \(status.faceHeadline), \(status.working ?? 0) working").font(.system(size: 13, weight: .semibold))
+                Text("Page Relay: \(status.faceHeadline), \(status.working ?? 0) working").font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.white).lineLimit(1).minimumScaleFactor(0.7)
                 HStack(spacing: 10) {
                     rectangular
@@ -218,12 +218,12 @@ struct NWLockScreenPreview: View {
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(Color.white.opacity(0.08), lineWidth: 1))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Preview: the Page widgets on the Lock Screen, in three shapes"))
+        .accessibilityLabel(Text("Preview: the Page Relay widgets on the Lock Screen, in three shapes"))
     }
 
     private var rectangular: some View {
         VStack(alignment: .leading, spacing: 1) {
-            Text("Page · Online").font(.system(size: 11, weight: .semibold)).foregroundColor(Color.white.opacity(0.85))
+            Text("Page Relay · Online").font(.system(size: 11, weight: .semibold)).foregroundColor(Color.white.opacity(0.85))
             Text(status.faceHeadline).font(.system(size: 17, weight: .bold)).foregroundColor(.white)
             if let d = status.detail { Text(d).font(.system(size: 11)).foregroundColor(Color.white.opacity(0.85)).lineLimit(1) }
         }
@@ -345,13 +345,13 @@ struct NWWidgetStepPicture: View {
         VStack(spacing: 7) {
             HStack(spacing: 4) {
                 Image(systemName: "magnifyingglass").font(.system(size: 8))
-                Text("Page").font(.system(size: 9.5, weight: .semibold))
+                Text("Page Relay").font(.system(size: 9.5, weight: .semibold))
                 Spacer()
             }
             .foregroundColor(P.textPrimary.color).padding(.horizontal, 6).frame(height: 18)
             .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color.white.opacity(0.12)))
             HStack(spacing: 8) {
-                tile("Page", color: P.amber)
+                tile("Page Relay", color: P.amber)
                 tile("Usage", color: P.teal)
             }
         }
@@ -449,12 +449,12 @@ struct NWWidgetStepPicture: View {
             VStack(spacing: 6) {
                 HStack(spacing: 4) {
                     Image(systemName: "bell.badge").font(.system(size: 8, weight: .semibold))
-                    Text("Page").font(.system(size: 9, weight: .bold))
+                    Text("Page Relay").font(.system(size: 9, weight: .bold))
                     Spacer()
                 }
                 .foregroundColor(P.textPrimary.color)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("Page · Online").font(.system(size: 6.5, weight: .semibold)).foregroundColor(P.textSecondary.color)
+                    Text("Page Relay · Online").font(.system(size: 6.5, weight: .semibold)).foregroundColor(P.textSecondary.color)
                     Text("2 need you").font(.system(size: 10.5, weight: .bold)).foregroundColor(P.textPrimary.color)
                 }
                 .padding(.horizontal, 7).padding(.vertical, 5).frame(maxWidth: .infinity, alignment: .leading)

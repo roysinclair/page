@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>iPhone lock screen (website)</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* The v4 board's lock screen as the website shows it (power/lock): the board at its own size, 782x1690, with its
+     two "PAGE" labels set to the iPhone app's name, Page Relay. Everything else is the board as drawn. */
+  html, body { background: transparent; }
+  .lock { position: relative; width: 782px; height: 1690px; container-type: inline-size; }
+  .lock > img { display: block; width: 100%; }
+  /* The notification's app name: the same clone-and-set as the widget label (base.css), on the notification's flat glass. */
+  .npatch { position: absolute; z-index: 1; left: calc(100cqw * 108 / 782); top: calc(100cqw * 1414 / 782);
+    width: calc(100cqw * 80 / 782); height: calc(100cqw * 34 / 782);
+    background: url("assets/board-lock-screen.webp") no-repeat; background-size: 100cqw auto;
+    background-position: calc(100cqw * -340 / 782) calc(100cqw * -1414 / 782); }
+  .nlabel { position: absolute; z-index: 1; white-space: nowrap; left: calc(100cqw * 114 / 782); top: calc(100cqw * 1420 / 782);
+    font: 600 calc(100cqw * 22.7 / 782)/1 var(--sans); letter-spacing: .005em; color: rgba(160,163,171,.98); }
+</style></head>
+<body><div class="lock">
+  <img src="assets/board-lock-screen.webp" alt="">
+  <div class="wpatch"></div><div class="wlabel">PAGE RELAY</div>
+  <div class="npatch"></div><div class="nlabel">PAGE RELAY</div>
+</div></body></html>

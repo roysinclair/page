@@ -47,14 +47,14 @@ data class DeliveryReceipt(
         val failureMessage: String?
             get() = when (this) {
                 Delivered -> null
-                TimedOut -> "Didn't confirm in time · Check on Mac"
+                TimedOut -> "Didn't confirm in time · Check on your computer"
                 SessionEnded -> "Session ended"
-                NotTypable -> "This terminal can't take input · Open on Mac"
+                NotTypable -> "This terminal can't take input · Open on your computer"
                 Queued -> "Queued after this turn"
                 PromptClosed -> "Prompt closed before your answer"
-                AnsweredAtMac -> "Already answered at the Mac"
+                AnsweredAtMac -> "Already answered at your computer"
                 UnknownState -> "Review again"
-                MacOffline -> "Waiting for your Mac to come back online"
+                MacOffline -> "Waiting for your computer to come back online"
                 is Other -> if (why.isEmpty()) "Couldn't deliver the reply" else why
             }
     }
@@ -383,7 +383,7 @@ data class NowModel(
             val subline: String
             if (paused) {
                 headline = "Paused for battery"
-                subline = if (i.status?.onAC == true) "plugged in · agents resume soon" else "plug the Mac in to resume"
+                subline = if (i.status?.onAC == true) "plugged in · agents resume soon" else "plug your computer in to resume"
             } else if (need > 0) {
                 headline = "$need ${if (need == 1) "needs" else "need"} you"
                 subline = listOfNotNull(if (working > 0) "$working working" else null, runwayLine(i.status, runway, tz)).joinToString(" · ")
@@ -421,7 +421,7 @@ data class NowModel(
                 rows = rows, runway = runway, receiptLine = latest?.line(tz),
                 receiptFailed = latest?.let { it.outcome != DeliveryReceipt.Outcome.Delivered } ?: false, paused = paused,
                 rings = DayStats.today(i.history, i.now, tz).rings,
-                macName = i.macName, accessibilityLabel = "Page, $headline",
+                macName = i.macName, accessibilityLabel = "Page Relay, $headline",
             )
         }
 

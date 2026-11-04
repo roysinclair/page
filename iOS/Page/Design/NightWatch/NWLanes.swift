@@ -252,7 +252,7 @@ struct NWLanesScreen: View {
                     .accessibilityHidden(true)
                 }
                 if data.lanes.groups.isEmpty && data.standby.isEmpty {
-                    Text("No live sessions. Start Claude Code or Codex on your Mac, or start one from the + button, and it shows up here with what it's doing right now.")
+                    Text("No live sessions. Start Claude Code or Codex on your computer, or start one from the + button, and it shows up here with what it's doing right now.")
                         .font(NightWatch.Typo.caption).foregroundColor(NightWatch.Palette.textSecondary.color).padding(.top, 20)
                 }
                 ForEach(data.lanes.groups) { g in group(g, relights: relights) }

@@ -102,7 +102,7 @@ private fun NWMain(onRequestNotifications: () -> Unit) {
         val demo = PairingStore.isDemoPairing
         app.page.android.ui.nw.components.NWConfirmDialog(
             title = if (demo) "Leave the demo?" else "Unpair ${mac?.name ?: "this Mac"}?",
-            message = if (demo) "This goes back to the pairing screen." else "This phone will stop receiving pages until you scan a pairing code again. On your Mac, open Page → Pair phone… and scan the new code.",
+            message = if (demo) "This goes back to the pairing screen." else "This phone will stop receiving pages until you scan a pairing code again. On your computer, open Page Studio → Pair phone… and scan the new code.",
             confirmLabel = if (demo) "Leave the demo" else "Unpair", destructive = true,
             onConfirm = { AppRouter.clearUnpairRequest(); AppRouter.closeSheet(); if (demo) PairingStore.endDemo() else PairingStore.unpair() },
             onDismiss = AppRouter::clearUnpairRequest,

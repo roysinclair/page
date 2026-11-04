@@ -147,9 +147,9 @@ struct AnswerPlanError: Error, Equatable {
 }
 
 enum AnswerPlan {
-    static let previewMessage = "These options have previews, which Page can't choose — answer at your Mac"
-    static let incompleteMessage = "Answer every question first — Page only submits complete answers"
-    static let arrowsMessage = "Other in a multi-select needs arrow keys, which Page can't send in this terminal — answer at your Mac"
+    static let previewMessage = "These options have previews, which Page Studio can't choose — answer at your computer"
+    static let incompleteMessage = "Answer every question first — Page Studio only submits complete answers"
+    static let arrowsMessage = "Other in a multi-select needs arrow keys, which Page Studio can't send in this terminal — answer at your computer"
 
     /// Checks `picks` against the raw question set: every question answered
     /// once, indices in range, a single-select exactly one choice (an option
@@ -164,7 +164,7 @@ enum AnswerPlan {
             guard let a = picks.first(where: { $0.question == qi }) else { return .failure(.init(incompleteMessage)) }
             let unique = Array(Set(a.picks)).sorted()
             guard unique.count == a.picks.count, unique.allSatisfy({ $0 >= 0 && $0 < q.options.count }) else {
-                return .failure(.init("An answer doesn't match the question on your Mac — close the question and open it again"))
+                return .failure(.init("An answer doesn't match the question on your computer — close the question and open it again"))
             }
             let other = a.other.map(cleanOther).flatMap { $0.isEmpty ? nil : $0 }
             // "Other" chosen with nothing typed, and nothing else picked.
@@ -429,8 +429,8 @@ struct AnswerDriver {
         expected = AnswerPlan.expectedAnswers(asked, answers)
     }
 
-    static let notFirstMessage = "The terminal isn't showing the first question — answer it at your Mac"
-    static let mismatchMessage = "The question on screen isn't the one on your phone — answer it at your Mac"
+    static let notFirstMessage = "The terminal isn't showing the first question — answer it at your computer"
+    static let mismatchMessage = "The question on screen isn't the one on your phone — answer it at your computer"
 
     /// A single-select with one question submits on its own: no Review screen.
     private var submitsWithoutReview: Bool { asked.questions.count == 1 && !asked.questions[0].multi }
@@ -491,11 +491,11 @@ struct AnswerDriver {
             if let other = a.other {
                 if p.cursor == .row(n + 1) {
                     if p.otherIsEmpty(q) { return send(.text(other), .otherShown, "Type the Other answer") }
-                    guard p.otherShows(q, other) else { return .abort("The Other field holds different text — answer at your Mac") }
+                    guard p.otherShows(q, other) else { return .abort("The Other field holds different text — answer at your computer") }
                     return send(.enter, leave, "Submit the Other answer")
                 }
                 guard onOption() else { return cursorProblem(p) }
-                guard p.otherIsEmpty(q) else { return .abort("The Other field already has text — answer at your Mac") }
+                guard p.otherIsEmpty(q) else { return .abort("The Other field already has text — answer at your computer") }
                 return send(.text(String(n + 1)), .cursor(row: n + 1), "Focus the Other row")
             }
             guard onOption() else { return cursorProblem(p) }
@@ -508,7 +508,7 @@ struct AnswerDriver {
             return send(.text(String(j + 1)), .tick(option: j, to: !p.optionTicked(j)), "Toggle option \(j + 1)")
         }
         guard let other = a.other else {
-            if p.rows[n].ticked == true { return .abort("Other is already ticked — answer at your Mac") }
+            if p.rows[n].ticked == true { return .abort("Other is already ticked — answer at your computer") }
             if onOption() { return send(.key(.tab), .left, "Next question") }
             if p.cursor == .next { return send(.enter, .left, "Next question") }
             return cursorProblem(p)
@@ -519,14 +519,14 @@ struct AnswerDriver {
             guard let c = cursorRow(), c <= n else { return cursorProblem(p) }
             return send(.key(.down), .cursor(row: c + 1), "Move to the Other row")
         }
-        guard p.otherShows(q, other) else { return .abort("The Other field holds different text — answer at your Mac") }
+        guard p.otherShows(q, other) else { return .abort("The Other field holds different text — answer at your computer") }
         if p.cursor == .row(n + 1) { return send(.key(.tab), .cursorNext, "Move to Next") }
         if p.cursor == .next { return send(.enter, .left, "Next question") }
         return cursorProblem(p)
     }
 
     private func cursorProblem(_ p: QuestionScreen) -> Decision {
-        p.cursor == .none ? .wait("Can't see the cursor in the question") : .abort("The cursor isn't on an answer row — answer at your Mac")
+        p.cursor == .none ? .wait("Can't see the cursor in the question") : .abort("The cursor isn't on an answer row — answer at your computer")
     }
 
     private mutating func review(_ p: QuestionScreen) -> Decision {
@@ -535,7 +535,7 @@ struct AnswerDriver {
             return .wait("Waiting for the Review screen")
         }
         guard p.reviewMatches(expected) else {
-            return .abort("The Review screen doesn't match your answers — nothing was submitted; check it at your Mac")
+            return .abort("The Review screen doesn't match your answers — nothing was submitted; check it at your computer")
         }
         return send(.text("1"), .closed, "Submit the answers")
     }
@@ -578,7 +578,7 @@ enum AnswerLoop {
         var waitingSince: Date?
         var typed = 0
         while true {
-            if now().timeIntervalSince(start) > overallLimit { return Run(result: .aborted("This took too long — finish at your Mac"), typed: typed) }
+            if now().timeIntervalSince(start) > overallLimit { return Run(result: .aborted("This took too long — finish at your computer"), typed: typed) }
             switch driver.decide(screen: readScreen()) {
             case .done:
                 return Run(result: .submitted, typed: typed)
@@ -591,7 +591,7 @@ enum AnswerLoop {
                 sleep(pollInterval)
             case .send(let key, _):
                 waitingSince = nil
-                if typed >= maxKeys { return Run(result: .aborted("Too many keys — finish at your Mac"), typed: typed) }
+                if typed >= maxKeys { return Run(result: .aborted("Too many keys — finish at your computer"), typed: typed) }
                 if let why = send(key) { return Run(result: .aborted(why), typed: typed) }
                 typed += 1
                 sleep(0.05)

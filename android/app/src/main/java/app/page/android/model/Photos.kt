@@ -90,8 +90,8 @@ object PhotoRecode {
     }
 
     const val TOO_BIG = "That photo is too large to send. Try a smaller one."
-    const val CANT_ENCODE = "Page couldn't read that photo."
-    const val LEFT_METADATA = "Page couldn't remove the photo's hidden details, so it wasn't used."
+    const val CANT_ENCODE = "Page Relay couldn't read that photo."
+    const val LEFT_METADATA = "Page Relay couldn't remove the photo's hidden details, so it wasn't used."
 
     /**
      * Re-encodes [codec]'s picture to at most [budget] bytes. A screenshot (a PNG source) or a picture with real
@@ -382,7 +382,7 @@ data class PhotoOffer(
         const val WAITING = "Answer the prompt first"
 
         /** Photos are staged but the Mac stopped offering them (an older Page, or the terminal changed): the button stays, dimmed. */
-        const val GONE = "Your Mac can't take photos any more"
+        const val GONE = "Your computer can't take photos any more"
         const val PATH_NOTE = "Terminal can't paste photos — Claude gets the file's location and opens it itself"
         const val ACCESSIBILITY_LABEL = "Add photo"
         val none = PhotoOffer(shown = false)

@@ -33,14 +33,14 @@ class RepliesTest {
     @Test
     fun retiredVersusGone() {
         val retiredBody = """{"error":"token_retired","why":"This pairing was replaced on your Mac — scan the new QR code"}"""
-        assertEquals(ReplyOutcome.Retired("This pairing was replaced on your Mac — scan the new QR code"), ReplyOutcome.from(410, retiredBody))
+        assertEquals(ReplyOutcome.Retired("This pairing was replaced on your computer — scan the new QR code"), ReplyOutcome.from(410, retiredBody))
         assertEquals(ReplyOutcome.Gone, ReplyOutcome.from(410, """{"error":"gone","why":"prompt_closed","closeReason":"replied"}"""))
         assertEquals(ReplyOutcome.Gone, ReplyOutcome.from(410, """{"error":"gone","why":"expired"}"""))
     }
 
     @Test
     fun approveOrDenyOnly() {
-        val v1Why = "This page comes from an older Page hook that can only apply Approve or Deny. Update it in Page → Phone approvals."
+        val v1Why = "This page comes from an older Page Studio hook that can only apply Approve or Deny. Update it in Page Studio → Phone approvals."
         assertEquals(ReplyOutcome.Failed(v1Why), ReplyOutcome.from(422, """{"error":"approve_or_deny_only","why":"$v1Why"}"""))
         assertEquals(ReplyOutcome.Failed(ReplyOutcome.DECISIONS_ONLY_MESSAGE), ReplyOutcome.from(422, """{"error":"approve_or_deny_only"}"""))
         assertEquals(ReplyOutcome.Failed(ReplyOutcome.DECISIONS_ONLY_MESSAGE), ReplyOutcome.from(422, """{"error":"approve_or_deny_only","why":"  "}"""))
@@ -74,7 +74,7 @@ class RepliesTest {
         assertEquals(ReplyDelivery.Sent(false, NOW), ReplyDelivery.synced(null, "pending", null, null, NOW, forwardedAt = NOW))
         assertEquals("failed never clobbers an in-progress send", ReplyDelivery.Sending, ReplyDelivery.synced(ReplyDelivery.Sending, "failed", "no", null, NOW))
         assertEquals("not even a retracted record (iOS order)", ReplyDelivery.Sending, ReplyDelivery.synced(ReplyDelivery.Sending, "failed", "Deleted — not sent", null, NOW, deliveryMethod = "retracted"))
-        assertEquals(ReplyDelivery.Failed("Your Mac couldn't deliver the reply."), ReplyDelivery.synced(ReplyDelivery.Sent(false, sentAt), "failed", null, null, NOW))
+        assertEquals(ReplyDelivery.Failed("Your computer couldn't deliver the reply."), ReplyDelivery.synced(ReplyDelivery.Sent(false, sentAt), "failed", null, null, NOW))
         assertEquals(ReplyDelivery.Delivered("Typed"), ReplyDelivery.synced(ReplyDelivery.Sent(false, sentAt), "delivered", "Typed", repAt, NOW))
         assertNull(ReplyDelivery.synced(null, null, null, null, NOW))
         assertEquals(ReplyDelivery.Sent(false, repAt), ReplyDelivery.synced(null, null, null, repAt, NOW))
@@ -83,9 +83,9 @@ class RepliesTest {
     @Test
     fun closedReplyScreen() {
         assertEquals(ClosedReplyPhase.Checking, ClosedReplyPhase.decide(null, true, false))
-        assertEquals(ClosedReplyPhase.Resolved("Resolved on your Mac."), ClosedReplyPhase.decide(null, true, true))
+        assertEquals(ClosedReplyPhase.Resolved("Resolved on your computer."), ClosedReplyPhase.decide(null, true, true))
         assertEquals(ClosedReplyPhase.Delivered, ClosedReplyPhase.decide("replied", true, false))
-        assertEquals(ClosedReplyPhase.Resolved("Resolved on your Mac."), ClosedReplyPhase.decide(null, false, false))
+        assertEquals(ClosedReplyPhase.Resolved("Resolved on your computer."), ClosedReplyPhase.decide(null, false, false))
         assertEquals(ClosedReplyPhase.Resolved("Answered in the terminal."), ClosedReplyPhase.decide("user_resolved_in_terminal", true, false))
         assertEquals(ClosedReplyPhase.Resolved(CloseReason.description("hook_lost") + "."), ClosedReplyPhase.decide("hook_lost", true, false))
         assertEquals(ClosedReplyPhase.Resolved(CloseReason.description("agent_exited") + "."), ClosedReplyPhase.decide("agent_exited", false, true))

@@ -147,7 +147,7 @@ enum TerminalCatalog {
     static let entries: [Entry] = [
         Entry(id: .terminal, name: "Terminal", symbol: "macwindow",
               capabilities: Capabilities(reply: true, viewScreen: false, interrupt: false, startSessions: false,
-                                         answer: .notYet("Terminal adds a Return to every key Page types; use tmux or iTerm2"),
+                                         answer: .notYet("Terminal adds a Return to every key Page Studio types; use tmux or iTerm2"),
                                          attach: .pathOnly(pathOnlyReason)),
               setup: .automation, wireHost: "Terminal", downloadURL: URL(string: "https://support.apple.com/guide/terminal/welcome/mac")!,
               nothingToSetUp: "Built into macOS"),
@@ -306,7 +306,7 @@ enum TerminalCatalog {
 
     /// Pure. "Restart kitty to turn on the lines Page added".
     static func restartKittyText(pageAdded: Bool) -> String {
-        pageAdded ? "Restart kitty to turn on the lines Page added"
+        pageAdded ? "Restart kitty to turn on the lines Page Studio added"
                   : "Restart kitty to turn on the remote control lines in kitty.conf"
     }
 
@@ -317,7 +317,7 @@ enum TerminalCatalog {
         if entry.setup == .kittyConfig, f.setup == .done || f.setup == .needsRestart {
             return restartKittyText(pageAdded: pageAddedKittyLines)
         }
-        return f.use.blocker ?? "Page can't type into it yet"
+        return f.use.blocker ?? "Page Studio can't type into it yet"
     }
 
     // MARK: rows
@@ -387,7 +387,7 @@ enum TerminalCatalog {
         case .needsSetup(let why):
             return why
         case .notInstalled:
-            return "Not installed. Optional: Page works with the terminal you already use."
+            return "Not installed. Optional: Page Studio works with the terminal you already use."
         case .notChecked:
             return "Open \(entry.name) or click Allow… to check"
         case .inUse, .ready:
@@ -399,12 +399,12 @@ enum TerminalCatalog {
             case .none:
                 return entry.nothingToSetUp
             case .automation:
-                if f.setup == .done { return "macOS lets Page control \(entry.name)" }
-                return "Page asks macOS for permission the first time it types here"
+                if f.setup == .done { return "macOS lets Page Studio control \(entry.name)" }
+                return "Page Studio asks macOS for permission the first time it types here"
             case .kittyConfig:
                 return f.setup == .done ? "Remote control is on in kitty.conf" : "Run Claude inside kitty"
             case .cmuxSocket:
-                return f.setup == .done ? "cmux lets Page in" : "Run Claude inside cmux"
+                return f.setup == .done ? "cmux lets Page Studio in" : "Run Claude inside cmux"
             }
         }
     }
@@ -458,8 +458,8 @@ extension TerminalCatalog {
         let lines = added.map { "    " + $0 }.joined(separator: "\n")
         let place = linkTarget.map { "\($0) (\(path) is a link to it)" } ?? path
         let what = creating
-            ? "Page will create \(place) with:"
-            : "Page will add these lines to the end of \(place):"
+            ? "Page Studio will create \(place) with:"
+            : "Page Studio will add these lines to the end of \(place):"
         let backup = creating
             ? "There is no kitty.conf yet, so there is nothing to back up."
             : "A copy of your current file is saved next to it first (kitty.conf.bak-page-…), and Undo takes the lines out again."
@@ -468,7 +468,7 @@ extension TerminalCatalog {
 
     /// Pure. The line under the card once kitty.conf was changed.
     static func kittyDoneText(_ outcome: KittyConfigFile.Outcome) -> TowerStatusLine {
-        if outcome.added.isEmpty { return TowerStatusLine(text: "kitty already lets Page in.", tone: .good) }
+        if outcome.added.isEmpty { return TowerStatusLine(text: "kitty already lets Page Studio in.", tone: .good) }
         let backup = outcome.backup.map { " Your old file is saved as \($0.lastPathComponent)." } ?? ""
         return TowerStatusLine(text: "Added to \(outcome.url.path). Restart kitty to turn it on.\(backup)", tone: .good)
     }
@@ -476,8 +476,8 @@ extension TerminalCatalog {
     /// Pure. The line under the card after Allow… (macOS has answered).
     static func automationNotice(_ access: TerminalProbe.Automation, appName: String) -> TowerStatusLine {
         switch access {
-        case .granted: return TowerStatusLine(text: "macOS lets Page control \(appName).", tone: .good)
-        case .denied: return TowerStatusLine(text: "macOS said no to \(appName). Turn Page on under System Settings ▸ Privacy & Security ▸ Automation — opening it now.", tone: .bad)
+        case .granted: return TowerStatusLine(text: "macOS lets Page Studio control \(appName).", tone: .good)
+        case .denied: return TowerStatusLine(text: "macOS said no to \(appName). Turn Page Studio on under System Settings ▸ Privacy & Security ▸ Automation — opening it now.", tone: .bad)
         case .notAsked: return TowerStatusLine(text: "macOS hasn't asked yet. Click Allow… again.", tone: .quiet)
         case .appNotRunning: return TowerStatusLine(text: "\(appName) didn't start, so macOS couldn't be asked. Open it and click Allow… again.", tone: .bad)
         case .unknown: return TowerStatusLine(text: "Couldn't ask macOS about \(appName).", tone: .bad)

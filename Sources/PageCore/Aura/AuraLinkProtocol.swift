@@ -46,9 +46,9 @@ enum AuraLink {
     static let stillReplyingDetail = "Page Aura is still replying"
     static let chatGoneDetail = "That chat no longer exists"
     static let toolRequestWaitingDetail = "A tool request is waiting — answer it first"
-    static let photosBlocker = "Page can't send photos to Page Aura yet"
+    static let photosBlocker = "Page Studio can't send photos to Page Aura yet"
     static let unsupportedDetail = "Page Aura chats don't support that from the phone"
-    static let holdDetail = "Page can't hold messages for Page Aura chats — send it when the reply is done"
+    static let holdDetail = "Page Studio can't hold messages for Page Aura chats — send it when the reply is done"
 
     static func sessionId(chatId: String) -> String { sessionPrefix + chatId }
 
@@ -60,7 +60,7 @@ enum AuraLink {
     }
 
     /// What the phone is told for each refusal Page makes itself.
-    static let notConnectedDetail = "Page Aura isn't open on your Mac"
+    static let notConnectedDetail = "Page Aura isn't open on your computer"
     static let permissionRepliesDetail = "Page Aura tool requests take Allow or Deny"
     static let chatRepliesDetail = "Page Aura chats take a message, not Allow or Deny"
     static let emptyReplyDetail = "There's nothing to send"

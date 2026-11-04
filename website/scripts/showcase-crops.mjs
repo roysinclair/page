@@ -17,7 +17,7 @@ await mkdir(path.join(W, 'print'), { recursive: true });
 // [source, out name, crop {left, top, width, height}, extra widths for srcset]
 const crops = [
   [`${W}/showcase/hero.webp`, 'hero-visual', { left: 1200, top: 0, width: 1680, height: 1440 }, [960]],
-  [`${D}/family.png`, 'family-visual', { left: 0, top: 372, width: 2400, height: 1128 }, [1200], 'family'],
+  [`${D}/family.png`, 'family-visual', { left: 0, top: 388, width: 2400, height: 1112 }, [1200]], // starts just under the subtitle
   [`${D}/feature-battery.png`, 'feature-battery-visual', { left: 680, top: 90, width: 920, height: 870 }],
   [`${D}/feature-terminals.png`, 'feature-terminals-visual', { left: 640, top: 95, width: 945, height: 815 }],
   [`${D}/feature-widgets.png`, 'feature-widgets-visual', { left: 665, top: 80, width: 895, height: 870 }],
@@ -29,23 +29,9 @@ const crops = [
 ];
 
 const only = process.argv[2];
-for (const [src, name, box, widths = [], special] of crops) {
+for (const [src, name, box, widths = []] of crops) {
   if (only && !name.includes(only)) continue;
-  let img = sharp(src).extract(box);
-  if (special === 'family') {
-    // The subtitle's last line ends 3px above the relay lock box: paint it out with the sky colour,
-    // feathered, so the crop can keep some air above the lock.
-    const buf = await img.png().toBuffer();
-    // The sky behind it is not one colour: darker at the left, lighter round the relay's glow.
-    const veil = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${box.width}" height="${box.height}">
-      <defs>
-        <linearGradient id="h" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="rgb(5,7,12)"/><stop offset="0.29" stop-color="rgb(7,10,19)"/><stop offset="0.54" stop-color="rgb(12,15,27)"/><stop offset="0.79" stop-color="rgb(7,13,20)"/><stop offset="1" stop-color="rgb(6,14,20)"/></linearGradient>
-        <linearGradient id="v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="0.86" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
-        <mask id="m"><rect x="0" y="0" width="${box.width}" height="43" fill="url(#v)"/></mask>
-      </defs>
-      <rect x="0" y="0" width="${box.width}" height="43" fill="url(#h)" mask="url(#m)"/></svg>`);
-    img = sharp(buf).composite([{ input: veil, top: 0, left: 0 }]);
-  }
+  const img = sharp(src).extract(box);
   const png = await img.png().toBuffer();
   await sharp(png).toFile(path.join(T, `${name}.png`));
   await sharp(png).webp({ quality: 82, effort: 6 }).toFile(`${W}/showcase/${name}.webp`);

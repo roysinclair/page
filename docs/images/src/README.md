@@ -7,8 +7,10 @@ Each image is an HTML composition shot by headless Chromium. Nothing opens a win
 |---|---|
 | `hero.html` | `hero.png` 2400×1200 (README), `hero.webp` 2880×1440 (website) |
 | `og.html` | `og.png` / `og.webp` 1200×630 (social card, GitHub social preview) |
+| `og-studio.html` | `website/public/img/og/studio.webp` 1200×630 (the website home page's social card) |
 | `feature-*.html` | 1600×1000 each: battery, lock-screen, sessions, terminals, android, widgets, relay, aura |
 | `family.html` | `family.png` / `family.webp` 2400×1500 (brochure cover, website overview) |
+| `screen-lock.html` | `out/screen-lock.png` 782×1690, the lock-screen board with the Page Relay name, for `website/scripts/product-shots.py` (`power/lock`) |
 
 `base.css` holds the Night Watch tokens, the drawn device frames (generic, with no vendor marks) and the lock-screen
 overlay. `sky.js` draws the seeded star field and aurora. The fonts are Inter and JetBrains Mono (OFL, in `fonts/`).
@@ -45,8 +47,11 @@ android/tools/screens.sh /tmp/r/android --glow full # boots the PageParity AVD w
   Two v4 design boards are used where no render exists: the iPhone lock screen's wallpaper, clock and widgets.
   The board's Live Activity and island count are concepts, because nothing uses ActivityKit yet. `base.css`
   paints them over with a plain island and real-format notifications ("<project> paged you" /
-  "Approval needed: [Bash] …", from `Cloudflare/src/logic.ts`).
-- **Demo data only.** Use the fixture names: page, bottle-flip, payments-api, sensor-hub, llm-play,
+  "Approval needed: [Bash] …", from `Cloudflare/src/logic.ts`). The board's widget and notification still say
+  "PAGE"; `base.css` (`.wpatch` / `.wlabel`) and `screen-lock.html` set the iPhone app's name, Page Relay, there.
+- **Real renders keep their own words.** Old names baked into a render (for example the Mac widget's "Page" label)
+  change only when the app is re-rendered, never by painting over the render.
+- **Demo data only.** Use the fixture names: page (but not next to the brand: prefer payments-api), bottle-flip, payments-api, sensor-hub, llm-play,
   tokenizer-lab, acme-*, Studio MBP. Leave out any screen that shows this repo's own folder name, a real path
   or a QR code.
 - **Copy must match the docs.** For example, live-session content is end-to-end encrypted but pages are not.

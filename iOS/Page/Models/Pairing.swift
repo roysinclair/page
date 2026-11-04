@@ -26,19 +26,19 @@ enum PairingValidationError: Error, Equatable {
     var message: String {
         switch self {
         case .empty:
-            return "Paste the pairing code from your Mac first."
+            return "Paste the pairing code from your computer first."
         case .notPageCode:
-            return "That isn't a Page pairing code. On your Mac, click the Page menu-bar icon → Pair phone… and scan the code shown there."
+            return "That isn't a Page Relay pairing code. On your computer, open Page Studio → Pair phone… and scan the code shown there."
         case .unsupportedVersion(let v):
-            return "This pairing code uses a newer format (v\(v)) than this app understands. Update Page on your iPhone."
+            return "This pairing code uses a newer format (v\(v)) than this app understands. Update Page Relay on your iPhone."
         case .missingToken:
-            return "The pairing code has no relay token. Open Pair phone… on your Mac again and use the new code."
+            return "The pairing code has no relay token. Open Pair phone… on your computer again and use the new code."
         case .invalidRelay:
-            return "The relay address in the pairing code isn't a valid URL. Check relayURL in your Mac's Page settings."
+            return "The relay address in the pairing code isn't a valid URL. Check relayURL in Page Studio's settings on your computer."
         case .insecureRelay:
-            return "The relay address must start with https:// (or wss://). Update relayURL in your Mac's Page settings."
+            return "The relay address must start with https:// (or wss://). Update relayURL in Page Studio's settings on your computer."
         case .placeholderRelay:
-            return "Your Mac is still using the example relay address. Deploy your Cloudflare Worker, set relayURL in your Mac's Page settings, then show the pairing code again."
+            return "Your computer is still using the example relay address. Deploy your Cloudflare Worker, set relayURL in Page Studio's settings on your computer, then show the pairing code again."
         }
     }
 }
@@ -86,7 +86,7 @@ enum PairingValidator {
         }
 
         let host = ((dict["host"] as? String) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        let name = host.isEmpty ? "Your Mac" : String(host.prefix(60))
+        let name = host.isEmpty ? "Your computer" : String(host.prefix(60))
         return .success(ValidatedPairing(token: token, relayBaseURL: relay, macName: name,
                                          sessionKey: sessionKey(dict["sk"])))
     }

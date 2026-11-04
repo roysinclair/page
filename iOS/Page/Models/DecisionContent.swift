@@ -135,10 +135,10 @@ struct DecisionContent: Equatable {
 
         let isInfo: String?
         switch (iv.kind, iv.subtype) {
-        case (.rateLimit, "battery_forecast"?): isInfo = "Nothing to answer. Plug your Mac in to keep the agents going."
-        case (.rateLimit, "usage_forecast"?): isInfo = "Nothing to answer. Page keeps the Mac awake through the reset and can resume sessions when it resets."
+        case (.rateLimit, "battery_forecast"?): isInfo = "Nothing to answer. Plug your computer in to keep the agents going."
+        case (.rateLimit, "usage_forecast"?): isInfo = "Nothing to answer. Page Power keeps your computer awake through the reset and can resume sessions when it resets."
         case (.rateLimit, _) where iv.backend == .codex: isInfo = "Nothing to answer. Codex picks up again once the limit resets."
-        case (.idle, "low_battery"?): isInfo = "Page paused your agents at the battery cutoff. Plug the Mac in and they resume."
+        case (.idle, "low_battery"?): isInfo = "Page Power paused your agents at the battery cutoff. Plug your computer in and they resume."
         default: isInfo = nil
         }
 
@@ -149,7 +149,7 @@ struct DecisionContent: Equatable {
         } else {
             var where_ = "session \(iv.sessionId.prefix(8))"
             if let source = iv.source, source != .unknown { where_ += " (\(source.label))" }
-            footer = "Page types your reply into \(where_) on \(mac)."
+            footer = "Page Studio types your reply into \(where_) on \(mac)."
         }
         let level = row.reversibility
         let unknownAgent = iv.hasUnknownBackend || (session.map { if case .other = $0.backend { return true } else { return false } } ?? false)

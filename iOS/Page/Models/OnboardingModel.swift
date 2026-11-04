@@ -10,11 +10,11 @@ import Foundation
 enum OnboardingCopy {
     static let eyebrow = "PAGE"
     static let welcomeTitle = "Keep watch over your agents."
-    static let welcomeBody = "Your Mac stays awake while they work, and pages you here the moment one needs you. Everything is end-to-end encrypted."
-    static let pairButton = "Pair with your Mac"
+    static let welcomeBody = "Your computer stays awake while they work, and pages you here the moment one needs you. Everything is end-to-end encrypted."
+    static let pairButton = "Pair with your computer"
 
-    static let scanTitle = "Scan the code on your Mac"
-    static let scanHint = "Page menu → Pair phone…"
+    static let scanTitle = "Scan the code on your computer"
+    static let scanHint = "Page Studio → Pair phone…"
     static let scanFacts: [(symbol: String, text: String)] = [
         ("lock", "The code holds your relay address and an encryption key"),
         ("checkmark.shield", "Only this phone can read your sessions"),
@@ -22,7 +22,7 @@ enum OnboardingCopy {
     static let pasteInstead = "Paste a pairing link instead"
 
     /// The warning that stays on the confirm step: whoever runs the relay sees pages and replies.
-    static let confirmWarning = "Only pair with a code from your own Mac: whoever runs this relay sees your pages and replies."
+    static let confirmWarning = "Only pair with a code from your own computer: whoever runs this relay sees your pages and replies."
 }
 
 // MARK: - Paired
@@ -64,8 +64,8 @@ struct PairedWelcome: Equatable {
     static func subtitle(liveSessions: Int?, isFirstMac: Bool) -> String {
         let lead = isFirstMac ? "Your first star. " : ""
         switch liveSessions {
-        case nil: return lead + "Sessions appear as soon as your Mac reports them."
-        case 0?: return lead + "Start an agent on your Mac and it appears here."
+        case nil: return lead + "Sessions appear as soon as your computer reports them."
+        case 0?: return lead + "Start an agent on your computer and it appears here."
         case 1?: return lead + "1 session is live right now."
         case let n?: return lead + "\(n) sessions are live right now."
         }
@@ -154,17 +154,17 @@ struct ProblemState: Equatable, Identifiable {
     /// each of those makes the next one meaningless. Pure.
     static func build(_ i: Inputs) -> ProblemState? {
         let mac = DeliveryPreview.macLabel(i.macName)
-        let macTitle = mac == "your Mac" ? "Your Mac" : mac
+        let macTitle = mac == "your computer" ? "Your computer" : mac
 
         if i.authRejected || i.retired || i.presence == .neverConnected {
             let replaced = i.authRejected || i.retired
             return ProblemState(
                 kind: .pairingReplaced, tone: .amber,
-                title: replaced ? "This pairing was replaced" : "Your Mac hasn't used this pairing",
-                subtitle: replaced ? "Your Mac made a new pairing code" : "The relay has never seen it connect",
+                title: replaced ? "This pairing was replaced" : "Your computer hasn't used this pairing",
+                subtitle: replaced ? "Your computer made a new pairing code" : "The relay has never seen it connect",
                 details: [
                     Detail(symbol: "key.slash", text: replaced ? "The old code can't be used again" : "A code from an old screenshot, or a regenerated token, looks like this"),
-                    Detail(symbol: "qrcode", text: "On your Mac, open Page menu → Pair phone…"),
+                    Detail(symbol: "qrcode", text: "On your computer, open Page Studio → Pair phone…"),
                 ],
                 actionTitle: "Scan the new code", action: .repair, replacesBanners: ["auth", "never"])
         }
@@ -188,7 +188,7 @@ struct ProblemState: Equatable, Identifiable {
         }
         var details = [Detail(symbol: "moon.zzz", text: stale
                               ? "Pages may be late until it checks in again"
-                              : "Pages can't reach you until it wakes or Page reconnects")]
+                              : "Pages can't reach you until it wakes or Page Studio reconnects")]
         if i.onAC == false, let b = i.battery, b > 0, b <= (i.cutoff ?? 10) + 3 {
             details.append(Detail(symbol: "battery.25", text: "It was at \(b)% — probably the cutoff"))
         }
@@ -199,7 +199,7 @@ struct ProblemState: Equatable, Identifiable {
         // Gone a long time: a regenerated token answers exactly like an offline Mac, so offer the re-pair.
         let repair = i.presence.suggestsRepair(now: i.now)
         if repair {
-            details.append(Detail(symbol: "key", text: "If you regenerated the token on your Mac, re-pair this iPhone"))
+            details.append(Detail(symbol: "key", text: "If you regenerated the token on your computer, re-pair this iPhone"))
         }
         let when = seen.map { "Last heartbeat \(RelativeTime.compact(seconds: Int(max(0, i.now.timeIntervalSince($0))))) ago" }
         return ProblemState(

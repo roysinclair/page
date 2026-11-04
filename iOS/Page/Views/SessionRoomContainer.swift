@@ -350,7 +350,7 @@ struct SessionRoomContainer: View {
                 guard photos.contains(where: { $0.id == id }) else { continue }  // removed while waiting
                 let loaded = try? await item.loadTransferable(type: Data.self)
                 guard photos.contains(where: { $0.id == id }) else { continue }
-                guard let loaded else { drop(id, "Page couldn't read that photo."); continue }
+                guard let loaded else { drop(id, "Page Relay couldn't read that photo."); continue }
                 let budget = PhotoEncoder.budget(used: PhotoDraft.usedBytes(photos))
                 let result = await Task.detached(priority: .userInitiated) { PhotoEncoder.prepare(loaded, budget: budget) }.value
                 guard let i = photos.firstIndex(where: { $0.id == id }) else { continue }
@@ -375,7 +375,7 @@ struct SessionRoomContainer: View {
             if sessions.hasList {
                 Image(systemName: "checkmark.circle").font(.system(.largeTitle)).foregroundColor(NightWatch.Palette.textTertiary.color)
                 Text("This session isn't running").font(NightWatch.Typo.headline).foregroundColor(NightWatch.Palette.textPrimary.color)
-                Text("It's not on your Mac's list of live sessions anymore.").font(NightWatch.Typo.body)
+                Text("It's not on your computer's list of live sessions anymore.").font(NightWatch.Typo.body)
                     .foregroundColor(NightWatch.Palette.textSecondary.color).multilineTextAlignment(.center)
                 Button("Close") { dismiss() }.buttonStyle(NWButtonStyle(kind: .quiet)).frame(maxWidth: 200)
             } else {

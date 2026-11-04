@@ -63,16 +63,16 @@ struct HeldOutbox {
     static let alreadyDeletedDetail = "Already deleted — not sent"
     static let tooLateDetail = "Too late — it was already typed"
     /// A delete that waited on a try that failed part way (some of it may be in the input box).
-    static let tooLateFailedDetail = "Too late — Page had started typing it; check the session"
-    static let notHeldDetail = "Page isn't holding that message"
+    static let tooLateFailedDetail = "Too late — Page Studio had started typing it; check the session"
+    static let notHeldDetail = "Page Studio isn't holding that message"
     static let endedDetail = "Not sent — the session ended"
     static let expiredDetail = "Not sent — the turn didn't finish within 6 hours"
-    static let stillBusyMessage = "Still working — Page holds it until the turn ends"
-    static let unconfirmedDetail = "Page restarted while typing it — check the session before sending again"
-    static let tooManyDetail = "Page is already holding \(maxPerSession) messages for this session — delete one first"
-    static let tooManyInAllDetail = "Page is already holding \(maxTotal) messages — delete some first"
+    static let stillBusyMessage = "Still working — Page Studio holds it until the turn ends"
+    static let unconfirmedDetail = "Page Studio restarted while typing it — check the session before sending again"
+    static let tooManyDetail = "Page Studio is already holding \(maxPerSession) messages for this session — delete one first"
+    static let tooManyInAllDetail = "Page Studio is already holding \(maxTotal) messages — delete some first"
 
-    static func heldDetail(agent: String) -> String { "Held — Page types it when \(agent) finishes this turn" }
+    static func heldDetail(agent: String) -> String { "Held — Page Studio types it when \(agent) finishes this turn" }
 
     struct Message: Equatable {
         let clientId: String
@@ -175,7 +175,7 @@ struct HeldOutbox {
     /// Holds `m` (on arrival the try is the caller's: see `firstTry`). nil
     /// when added; otherwise the refusal for the input.
     mutating func add(_ m: Message) -> SessionCommandResult? {
-        guard !messages.contains(where: { $0.clientId == m.clientId }) else { return .refused(.error, "Page already has that message") }
+        guard !messages.contains(where: { $0.clientId == m.clientId }) else { return .refused(.error, "Page Studio already has that message") }
         if waiting(sessionId: m.sessionId).count >= Self.maxPerSession { return .refused(.error, Self.tooManyDetail) }
         if messages.count >= Self.maxTotal { return .refused(.error, Self.tooManyInAllDetail) }
         messages.append(m)
@@ -640,9 +640,9 @@ enum HeldRetract: Equatable {
     case tooLate(String)
     case notFound
 
-    static let resetDeletedWithCarryOn = "Deleted — not sent. Page will type your carry-on prompt when the limit resets"
+    static let resetDeletedWithCarryOn = "Deleted — not sent. Page Studio will type your carry-on prompt when the limit resets"
     static let resetDeletedNothing = "Deleted — not sent. Nothing will be typed at reset"
-    static let resetTooLate = "Too late — Page was already typing it after the limit reset"
+    static let resetTooLate = "Too late — Page Studio was already typing it after the limit reset"
     static let alreadyRunning = "Too late — it's already running"
     static let alreadyDelivered = "Too late — it was already delivered"
 

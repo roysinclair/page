@@ -829,7 +829,7 @@ final class RelayClient: NSObject, RelaySink, SessionsUpdateSink, RelayWebSocket
             reason = "HTTP \(status) — \(reason)"
             if status == 410 && !tokenRetired {
                 tokenRetired = true
-                Logger.shared.log("RelayClient: the relay says this pairing token was retired (regenerated on a Mac) — regenerate the token here and re-pair the phone")
+                Logger.shared.log("RelayClient: the relay says this pairing token was retired (regenerated on a computer) — regenerate the token here and re-pair the phone")
             }
         }
         taskEnded(ws, reason: reason)

@@ -113,7 +113,7 @@ enum RenderFixtures {
 
     /// A long finished-turn reply, as the Mac sends it (the end of the reply is kept).
     static let longReply = """
-        I moved the relay's reply planner out of the router and into its own type, so the phone's custom text and the Mac's own replies go through one path.
+        I moved the relay's reply planner out of the router and into its own type, so the phone's custom text and the computer's own replies go through one path.
 
         What changed:
         - Router.swift now only decides which session a reply belongs to.
@@ -275,7 +275,7 @@ enum RenderFixtures {
             var st = status; st.onAC = true; st.forecast = nil
             return NowModel.build(inputs(open: [], status: st, sessions: sessions.filter { $0.state != .waitingOnApproval }))
         case "now-dusk":
-            let paused = iv("pz", "bottle-flip", .idle, "Page paused your agents at 10% battery.", ago: 600, sub: "low_battery")
+            let paused = iv("pz", "bottle-flip", .idle, "Page Power paused your agents at 10% battery.", ago: 600, sub: "low_battery")
             return NowModel.build(inputs(open: [paused], status: status))
         default:
             return NowModel.build(inputs())
@@ -380,7 +380,7 @@ enum RenderFixtures {
         if screen == "now-arming" { d.scrollTo = m.rows.first(where: { $0.chip == .considered || $0.chip == .undoable })?.id }
         if screen == "now-receipt" {
             if let r = m.rows.first(where: { $0.chip == .undoable }) { d.outcomes[r.id] = .delivered("typed into cmux › page") }
-            if let r = m.rows.first(where: { $0.section == .review }) { d.outcomes[r.id] = .problem("Didn't confirm in time · Check on Mac") }
+            if let r = m.rows.first(where: { $0.section == .review }) { d.outcomes[r.id] = .problem("Didn't confirm in time · Check on your computer") }
             d.scrollTo = m.rows.first(where: { $0.chip == .undoable })?.id
         }
         if screen == "now-banner" {
@@ -421,7 +421,7 @@ enum RenderFixtures {
             // Answered at the Mac while this was being written: the sheet stays, with the message.
             composer = true; draft = "Keep the sanitizer, but also add a test for a leading slash."
             st.fixedKeyboard = keyboardHeight
-            st.phase = .resolved("This turn was answered at the Mac.")
+            st.phase = .resolved("This turn was answered at your computer.")
         case "decision-review-realkb":
             composer = true; draft = "Keep the sanitizer, but also add a test for a leading slash."
         case "decision-composer-realkb":
@@ -460,7 +460,7 @@ enum RenderFixtures {
         case "decision-delivered":
             st.phase = .delivered(nil); st.outcome = .delivered("typed into cmux › page")
         case "decision-failed":
-            st.phase = .failed("Didn't confirm in time · Check on Mac")
+            st.phase = .failed("Didn't confirm in time · Check on your computer")
         default: break
         }
         return (st, composer, draft)
@@ -730,7 +730,7 @@ struct NWGallery: View {
                 NWTonightCard(rings: model.rings)
                 NWDeliveryPreview(text: "Will type 1 · cmux › bottle-flip · Studio MBP")
                 NWReceiptLine(text: "Approved npm test → cmux › page · verified 23:47:12")
-                NWReceiptLine(text: "npm test · Didn't confirm in time · Check on Mac", failed: true)
+                NWReceiptLine(text: "npm test · Didn't confirm in time · Check on your computer", failed: true)
                 NWSegmented(options: CardGlow.allCases.map { ($0, $0.label) }, selection: $seg)
                 Toggle("Night Watch", isOn: $on).toggleStyle(NWToggleStyle())
                     .foregroundColor(NightWatch.Palette.textPrimary.color)

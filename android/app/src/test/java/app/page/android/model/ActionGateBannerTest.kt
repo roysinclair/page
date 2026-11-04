@@ -22,7 +22,7 @@ class ActionGateBannerTest {
     }
 
     @Test fun `a banner on a row Page cannot type into opens the app, never sends`() {
-        val ghost = nwSession("s3", host = "Ghostty", canType = false, blocker = "Page can't type into Ghostty yet")
+        val ghost = nwSession("s3", host = "Ghostty", canType = false, blocker = "Page Studio can't type into Ghostty yet")
         val blocked = NowRowBuilder.row(ap, ghost, mac)
         assertEquals(NotificationDecision.Open, ActionGate.banner(approve, blocked))
         assertEquals(NotificationDecision.Open, ActionGate.banner(deny, blocked))
@@ -51,7 +51,7 @@ class ActionGateBannerTest {
     }
 
     @Test fun `a decision that is not a send is never changed`() {
-        val ghost = nwSession("s3", host = "Ghostty", canType = false, blocker = "Page can't type into Ghostty yet")
+        val ghost = nwSession("s3", host = "Ghostty", canType = false, blocker = "Page Studio can't type into Ghostty yet")
         val blocked = NowRowBuilder.row(ap, ghost, mac)
         assertEquals(NotificationDecision.Ignore, ActionGate.banner(NotificationDecision.Ignore, blocked))
         assertEquals(NotificationDecision.Open, ActionGate.banner(NotificationDecision.Open, blocked))
@@ -73,7 +73,7 @@ class ActionGateBannerTest {
         val stop = NotificationDecision.decide(NotificationResponseKind.Action("STOP"), null, "idle", "looping")
         assertEquals(NotificationDecision.Send("", ReplyAction.DENY), stop)
         assertEquals(stop, ActionGate.banner(stop, row))
-        val ghost = nwSession("s3", host = "Ghostty", canType = false, blocker = "Page can't type into Ghostty yet")
+        val ghost = nwSession("s3", host = "Ghostty", canType = false, blocker = "Page Studio can't type into Ghostty yet")
         assertEquals(NotificationDecision.Open, ActionGate.banner(stop, NowRowBuilder.row(stuck, ghost, mac)))
 
         val done = nwIv("d", InterventionKind.IDLE, "Finished the refactor.", session = "s1")

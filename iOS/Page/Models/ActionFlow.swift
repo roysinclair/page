@@ -161,9 +161,9 @@ enum CardOutcome: Equatable {
         case nil: return pending == nil ? .none : .sending
         case .sending?: return .sending
         case .sent?: return .sending
-        case .delivered(let detail)?: return .delivered(detail ?? "typed into the session on your Mac")
+        case .delivered(let detail)?: return .delivered(detail ?? "typed into the session on your computer")
         case .failed(let why)?: return .problem(why)
-        case .alreadyReplied?: return .problem("Already answered at the Mac")
+        case .alreadyReplied?: return .problem("Already answered at your computer")
         case .gone?: return .problem("Prompt closed before your answer")
         case .heldOnMac?: return .sending
         case .retracted(let why)?: return .problem(why)

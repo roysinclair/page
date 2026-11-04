@@ -101,7 +101,7 @@ final class NowRowTests: XCTestCase {
         XCTAssertEqual(r.keys.map(\.label), ["O"])
         XCTAssertEqual(r.returnAction, .openTerminal)
         XCTAssertNil(r.tellPreview)
-        XCTAssertTrue(r.approvePreview?.contains("Page can't approve") ?? false, r.approvePreview ?? "nil")
+        XCTAssertTrue(r.approvePreview?.contains("Page Studio can't approve") ?? false, r.approvePreview ?? "nil")
     }
 
     func testCodexQuestionIsOpenOnly() {
@@ -132,7 +132,7 @@ final class NowRowTests: XCTestCase {
         let r = row(ev("hookpre-9", context: "[Bash] swift test\nRun the tests"))
         XCTAssertEqual(r.keys.map(\.label), ["O"])
         XCTAssertEqual(r.returnAction, .openTerminal)
-        XCTAssertTrue(r.approvePreview?.contains("Page's hook is handling this prompt") ?? false, r.approvePreview ?? "nil")
+        XCTAssertTrue(r.approvePreview?.contains("Page Studio's hook is handling this prompt") ?? false, r.approvePreview ?? "nil")
     }
 
     func testForecastPagesOfferNoKeys() {

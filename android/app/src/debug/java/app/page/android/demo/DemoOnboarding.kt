@@ -22,12 +22,12 @@ object DemoOnboarding {
         when (screen) {
             "welcome" -> NWWelcomeScreen(onTryDemo = {})
             "welcome-notice" -> NWWelcomeScreen(notice = "Pair again" to "Your relay retired the old pairing token. Your old inbox and history were cleared.", onTryDemo = {})
-            "scan", "scan-hint" -> NWScanScreen(hint = if (screen == "scan-hint") "That QR code isn't a Page pairing code." else null) {
+            "scan", "scan-hint" -> NWScanScreen(hint = if (screen == "scan-hint") "That QR code isn't a Page Relay pairing code." else null) {
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0.20f, 0.20f, 0.20f), Color(0.13f, 0.13f, 0.13f)))))
             }
             "pair-checking" -> NWPairStep(PairStepContent.Checking("page-relay.workers.dev"), secondaryTitle = "Cancel")
             "pair-confirm" -> NWPairStep(PairStepContent.Confirm("Studio MBP", "page-relay.workers.dev", true, false), onPrimary = {}, primaryTitle = "Pair", secondaryTitle = "Cancel")
-            "pair-problem" -> NWPairStep(PairStepContent.Problem("The relay rejected this code", "Show the pairing code on your Mac again and scan the new one."), secondaryTitle = "Start over")
+            "pair-problem" -> NWPairStep(PairStepContent.Problem("The relay rejected this code", "Show the pairing code on your computer again and scan the new one."), secondaryTitle = "Start over")
             "paired-denied" -> NWPairedScreen(PairedWelcome.build("Studio MBP", 14, true, NotificationsState.OFF))
             else -> NWPairedScreen(PairedWelcome.build("Studio MBP", 14, true, NotificationsState.NOT_SET))
         }

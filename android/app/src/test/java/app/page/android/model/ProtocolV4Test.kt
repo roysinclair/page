@@ -130,7 +130,7 @@ class ProtocolV4Test {
         assertNull("malformed window dropped", s.usage!!.sevenDay)
         // Usage is the usage card now, not a strip line.
         val lines = MacStatusStrip.lines(s, MacPresence.evaluate(s, now), now)
-        assertEquals(listOf("Mac online · 2 working", "Battery 42% · cutoff in ~35 min"), lines.map { it.text })
+        assertEquals(listOf("Computer online · 2 working", "Battery 42% · cutoff in ~35 min"), lines.map { it.text })
         val card = UsageCardModel.from(s.usage, now)!!
         assertEquals("5-hour", card.fiveHour?.label)
         assertNull(card.sevenDay)
@@ -140,12 +140,12 @@ class ProtocolV4Test {
         val onAC = parseJsonObject("""{"ts":"2026-10-25T12:00:25Z","activeSessions":1,"battery":90,"onAC":true,"working":"two","usage":{"fiveHour":{"pct":"x"}}}""")!!
         val s2 = MacStatusSnapshot.applyingHeartbeat(s, onAC, now, true)
         assertTrue(s2.forecast == null && s2.usage == null && s2.working == null)
-        assertEquals(listOf("Mac online"), MacStatusStrip.lines(s2, MacPresence.evaluate(s2, now), now).map { it.text })
+        assertEquals(listOf("Computer online"), MacStatusStrip.lines(s2, MacPresence.evaluate(s2, now), now).map { it.text })
         // /status carries them too.
         val st = MacStatusSnapshot.from(parseJsonObject("""{"macConnected":false,"forecast":{"cutoff":10,"minutes":12,"drainPerHour":40},"usage":{"sevenDay":{"pct":80}}}""")!!)
         assertEquals(12, st.forecast?.minutes)
         assertEquals(80.0, st.usage?.sevenDay?.pct ?: 0.0, 0.0)
-        assertEquals(listOf("Mac offline"), MacStatusStrip.lines(st, MacPresence.evaluate(st, now), now).map { it.text })
+        assertEquals(listOf("Computer offline"), MacStatusStrip.lines(st, MacPresence.evaluate(st, now), now).map { it.text })
         assertEquals("1 h 20 min", MacStatusStrip.duration(80))
         assertEquals("2 h", MacStatusStrip.duration(120))
     }

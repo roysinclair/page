@@ -54,9 +54,9 @@ final class BatteryMessageDigitTests: XCTestCase {
         XCTAssertNil(BatteryPolicy.spelledPercent(-1))
         XCTAssertNil(BatteryPolicy.spelledPercent(101))
         XCTAssertTrue(BatteryPolicy.pauseMessage(percent: 7, mode: .afterTurn)
-            .hasPrefix("Battery is at seven percent and the Mac will sleep soon. Finish the step you're on"))
+            .hasPrefix("Battery is at seven percent and the computer will sleep soon. Finish the step you're on"))
         XCTAssertTrue(BatteryPolicy.pauseMessage(percent: -1, mode: .pause)
-            .hasPrefix("Battery is low and the Mac is about to sleep. Pause now"), "unknown level is omitted")
+            .hasPrefix("Battery is low and the computer is about to sleep. Pause now"), "unknown level is omitted")
         // Every message for 0...100 is distinct, so a resume filter can
         // still recognise each one.
         let all = (0...100).map { BatteryPolicy.pauseMessage(percent: $0, mode: .pause) }
@@ -67,8 +67,8 @@ final class BatteryMessageDigitTests: XCTestCase {
     func testLegacyWordingIsAvailable() {
         let legacy = BatteryPolicy.legacyPauseMessages()
         XCTAssertEqual(legacy.count, 202)
-        XCTAssertTrue(legacy.contains { $0.hasPrefix("Battery is at 9% and the Mac is about to sleep. Pause now") })
-        XCTAssertTrue(legacy.contains { $0.hasPrefix("Battery is at 100% and the Mac will sleep soon.") })
+        XCTAssertTrue(legacy.contains { $0.hasPrefix("Battery is at 9% and the computer is about to sleep. Pause now") })
+        XCTAssertTrue(legacy.contains { $0.hasPrefix("Battery is at 100% and the computer will sleep soon.") })
     }
 }
 
@@ -79,7 +79,7 @@ final class AutoResumePresenceTests: XCTestCase {
         typealias D = Coordinator.AutoResumeDecision
         XCTAssertEqual(Coordinator.autoResumeDecision(owed: false, enabled: true, inFlight: false, userPresent: false), D.nothing)
         XCTAssertEqual(Coordinator.autoResumeDecision(owed: true, enabled: true, inFlight: false, userPresent: true), D.hold,
-                       "user at the Mac: keep it owed")
+                       "user at your computer: keep it owed")
         XCTAssertEqual(Coordinator.autoResumeDecision(owed: true, enabled: true, inFlight: false, userPresent: false), D.run)
         XCTAssertEqual(Coordinator.autoResumeDecision(owed: true, enabled: true, inFlight: true, userPresent: false), D.nothing,
                        "a menu resume is already typing")
@@ -179,7 +179,7 @@ final class RelayContextRedactionTests: XCTestCase {
         // Already-redacted text is unchanged; long text is cut to 4000.
         XCTAssertEqual(RelayClient.wireContext(ctx), ctx)
         XCTAssertEqual(RelayClient.wireContext(String(repeating: "x", count: 5000)).count, 4000)
-        XCTAssertEqual(RelayClient.wireContext("Battery 9% — Page paused this session."), "Battery 9% — Page paused this session.")
+        XCTAssertEqual(RelayClient.wireContext("Battery 9% — Page Power paused this session."), "Battery 9% — Page Power paused this session.")
         // A secret straddling the cut is redacted, not left as a fragment.
         let straddle = String(repeating: "x", count: 3990) + " " + key
         XCTAssertFalse(RelayClient.wireContext(straddle).contains("sk-AAAA"))

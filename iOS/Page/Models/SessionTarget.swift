@@ -103,10 +103,10 @@ enum RoomSend {
         case .steer where photos > 0:
             return .refuse(PhotoOffer.busyReason)
         case .tellInstead:
-            guard hasReplyAction else { return .refuse("This prompt's page isn't loaded yet, so nothing was sent. Answer on your Mac, or try again in a moment.") }
+            guard hasReplyAction else { return .refuse("This prompt's page isn't loaded yet, so nothing was sent. Answer on your computer, or try again in a moment.") }
             return text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .refuse(SessionComposer.Problem.empty.message) : .tellInstead
         case .steer, .nextTask:
-            if ended || live == nil { return .refuse("This session isn't on your Mac's list any more, so nothing was sent.") }
+            if ended || live == nil { return .refuse("This session isn't on your computer's list any more, so nothing was sent.") }
             if photos > 0 {
                 // Words are optional with photos; a caption line that is only a path would be taken for another photo.
                 if let why = PhotoCaption.problem(text) { return .refuse(why) }

@@ -26,7 +26,7 @@ enum DispatchAgent: String, CaseIterable, Identifiable, Equatable {
     var note: String {
         switch self {
         case .claude: return "runs claude in cmux"
-        case .codex, .ollama: return "start it on your Mac"
+        case .codex, .ollama: return "start it on your computer"
         }
     }
 
@@ -121,7 +121,7 @@ struct DispatchDraft: Equatable {
 
     /// Under the button.
     static func footer(mac: String) -> String {
-        "Opens a new cmux workspace on \(DeliveryPreview.macLabel(mac)) and runs claude there. Starting from the phone is off until you allow it on the Mac."
+        "Opens a new cmux workspace on \(DeliveryPreview.macLabel(mac)) and runs claude there. Starting from the phone is off until you allow it on your computer."
     }
 }
 
@@ -136,19 +136,19 @@ struct DispatchStatus: Equatable {
     static func from(state: SessionDeliveryState?, startWaitExpired: Bool) -> DispatchStatus? {
         guard let state else { return nil }
         switch state {
-        case .sending: return DispatchStatus(text: "Asking your Mac to start it…", tone: .working, waiting: true)
+        case .sending: return DispatchStatus(text: "Asking your computer to start it…", tone: .working, waiting: true)
         case .typed(let detail), .queued(let detail):
             if startWaitExpired {
-                return DispatchStatus(text: "Started, but it hasn't shown up here yet. Look for it in Lanes, or in cmux on your Mac.", tone: .warn, waiting: false)
+                return DispatchStatus(text: "Started, but it hasn't shown up here yet. Look for it in Lanes, or in cmux on your computer.", tone: .warn, waiting: false)
             }
-            return DispatchStatus(text: (detail ?? "Started") + ". Opening it here as soon as it appears. On your Mac it's a new cmux workspace.", tone: .good, waiting: true)
+            return DispatchStatus(text: (detail ?? "Started") + ". Opening it here as soon as it appears. On your computer it's a new cmux workspace.", tone: .good, waiting: true)
         case .refused(_, let message), .failed(let message):
             return DispatchStatus(text: message, tone: .problem, waiting: false)
         case .noAnswer:
-            return DispatchStatus(text: "No answer from your Mac", tone: .warn, waiting: false)
+            return DispatchStatus(text: "No answer from your computer", tone: .warn, waiting: false)
         // A start is never counted down, held or taken back.
         case .counting, .held, .deleted, .unconfirmed:
-            return DispatchStatus(text: "Asking your Mac to start it…", tone: .working, waiting: true)
+            return DispatchStatus(text: "Asking your computer to start it…", tone: .working, waiting: true)
         }
     }
 }

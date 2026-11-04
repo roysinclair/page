@@ -411,7 +411,7 @@ final class SessionStore: ObservableObject {
             // An `inputImages` sent again after `attachment_missing`, or answered late, belongs to the first message.
             let key = photoRoutes.bubble(for: r.clientId, now: Date()) ?? r.clientId
             if let sid = diffClients.removeValue(forKey: r.clientId) {
-                diffErrors[sid] = r.detail ?? "Your Mac couldn't read the changes."
+                diffErrors[sid] = r.detail ?? "Your computer couldn't read the changes."
                 return
             }
             if let subject = retractSubjects.removeValue(forKey: r.clientId) {
@@ -477,7 +477,7 @@ final class SessionStore: ObservableObject {
         let command = SessionCommand.input(sessionId: sessionId, text: clean, target: target, hold: hold)
         guard let body = encrypt(command, clientId: clientId) else {
             record(clientId: clientId, sessionId: sessionId, kind: .input, text: clean,
-                   state: .failed("This iPhone has no session key. Re-pair with your Mac."), target: target)
+                   state: .failed("This iPhone has no session key. Re-pair with your computer."), target: target)
             return nil
         }
         guard SessionComposer.fitsRelay(body) else { return .tooLarge }
@@ -516,7 +516,7 @@ final class SessionStore: ObservableObject {
         #endif
         guard let body = encrypt(.clearDraft(sessionId: original.sessionId, text: draft, target: original.target), clientId: id) else {
             record(clientId: id, sessionId: original.sessionId, kind: .clearDraft, text: draft,
-                   state: .failed("This iPhone has no session key. Re-pair with your Mac."), target: original.target, subject: clientId)
+                   state: .failed("This iPhone has no session key. Re-pair with your computer."), target: original.target, subject: clientId)
             settleClearDraft(commands[id])
             return
         }
@@ -571,7 +571,7 @@ final class SessionStore: ObservableObject {
         guard var recovery = replyRecoveries[pageId], case .offer(let draft) = recovery.stage else { return }
         let clientId = UUID().uuidString.lowercased()
         guard let body = encrypt(.clearDraft(sessionId: sessionId, text: draft, target: target), clientId: clientId) else {
-            recovery.stage = .clearFailed("This iPhone has no session key. Re-pair with your Mac.")
+            recovery.stage = .clearFailed("This iPhone has no session key. Re-pair with your computer.")
             replyRecoveries[pageId] = recovery
             return
         }
@@ -666,7 +666,7 @@ final class SessionStore: ObservableObject {
             guard var cmd = commands[id] else { endBackground(id); return }
             // Encrypted now, so the Mac's replay guard sees a fresh timestamp.
             guard let body = encrypt(.input(sessionId: q.sessionId, text: q.text, target: cmd.target), clientId: id) else {
-                cmd.state = .failed("This iPhone has no session key. Re-pair with your Mac.")
+                cmd.state = .failed("This iPhone has no session key. Re-pair with your computer.")
                 commands[id] = cmd
                 endBackground(id)
                 return
@@ -754,7 +754,7 @@ final class SessionStore: ObservableObject {
                                       data: p.data.subdata(in: range)), clientId: UUID().uuidString.lowercased())
         }
         guard body(PhotoPieceRef(photo: 0, index: 0)) != nil else {
-            failPhotos(id, "This iPhone has no session key. Re-pair with your Mac.")
+            failPhotos(id, "This iPhone has no session key. Re-pair with your computer.")
             return
         }
         await withTaskGroup(of: (PhotoPieceRef, SessionCommandOutcome).self) { group in
@@ -762,7 +762,7 @@ final class SessionStore: ObservableObject {
             while true {
                 guard photoPayloads[id] != nil else { group.cancelAll(); return }
                 for ref in machine.startable(now: Date()) {
-                    guard let data = body(ref) else { machine.finished(ref, .failed("This iPhone has no session key. Re-pair with your Mac."), now: Date()); continue }
+                    guard let data = body(ref) else { machine.finished(ref, .failed("This iPhone has no session key. Re-pair with your computer."), now: Date()); continue }
                     inFlight += 1
                     group.addTask { @MainActor in (ref, await APIClient.shared.postSessionCommand(body: data)) }
                 }
@@ -796,7 +796,7 @@ final class SessionStore: ObservableObject {
         let command = SessionCommand.inputImages(sessionId: payload.sessionId, text: payload.caption,
                                                  photos: payload.photos.map(PhotoRef.init), target: cmd.target)
         guard let data = encrypt(command, clientId: clientId) else {
-            failPhotos(id, "This iPhone has no session key. Re-pair with your Mac.")
+            failPhotos(id, "This iPhone has no session key. Re-pair with your computer.")
             return
         }
         photoRoutes.record(clientId: clientId, bubble: id, now: Date())
@@ -926,7 +926,7 @@ final class SessionStore: ObservableObject {
         #endif
         let rid = UUID().uuidString.lowercased()
         guard let body = encrypt(command, clientId: rid) else {
-            retractNotes[subject] = chained ? ForwardedRetract.timeoutNote : .failed("This iPhone has no session key. Re-pair with your Mac.")
+            retractNotes[subject] = chained ? ForwardedRetract.timeoutNote : .failed("This iPhone has no session key. Re-pair with your computer.")
             return
         }
         retractNotes[subject] = chained ? .askingMac : .deleting
@@ -978,7 +978,7 @@ final class SessionStore: ObservableObject {
         let command = SessionCommand.answer(sessionId: sessionId, promptKey: sheet.ask.id, answers: answers, target: target)
         guard let body = encrypt(command, clientId: clientId) else {
             record(clientId: clientId, sessionId: sessionId, kind: .answer, text: summary,
-                   state: .failed("This iPhone has no session key. Re-pair with your Mac."), target: target, promptKey: sheet.ask.id)
+                   state: .failed("This iPhone has no session key. Re-pair with your computer."), target: target, promptKey: sheet.ask.id)
             return
         }
         record(clientId: clientId, sessionId: sessionId, kind: .answer, text: summary, state: .sending, target: target, promptKey: sheet.ask.id)
@@ -996,7 +996,7 @@ final class SessionStore: ObservableObject {
         let clientId = UUID().uuidString.lowercased()
         guard let body = encrypt(.interrupt(sessionId: sessionId, target: target), clientId: clientId) else {
             record(clientId: clientId, sessionId: sessionId, kind: .interrupt, text: "",
-                   state: .failed("This iPhone has no session key. Re-pair with your Mac."), target: target)
+                   state: .failed("This iPhone has no session key. Re-pair with your computer."), target: target)
             return
         }
         record(clientId: clientId, sessionId: sessionId, kind: .interrupt, text: "", state: .sending, target: target)
@@ -1012,7 +1012,7 @@ final class SessionStore: ObservableObject {
         diffErrors[sessionId] = nil
         let clientId = UUID().uuidString.lowercased()
         guard let body = encrypt(.diff(sessionId: sessionId), clientId: clientId) else {
-            diffErrors[sessionId] = "This iPhone has no session key. Re-pair with your Mac."
+            diffErrors[sessionId] = "This iPhone has no session key. Re-pair with your computer."
             return
         }
         diffClients[clientId] = sessionId
@@ -1028,7 +1028,7 @@ final class SessionStore: ObservableObject {
     func requestFolders() {
         startFoldersError = nil
         guard let body = encrypt(.folders, clientId: UUID().uuidString.lowercased()) else {
-            startFoldersError = "This iPhone has no session key. Re-pair with your Mac."
+            startFoldersError = "This iPhone has no session key. Re-pair with your computer."
             return
         }
         Task {
@@ -1048,7 +1048,7 @@ final class SessionStore: ObservableObject {
         let key = "new:" + folder
         guard let body = encrypt(.start(folder: folder, prompt: prompt), clientId: clientId) else {
             record(clientId: clientId, sessionId: key, kind: .start, text: prompt,
-                   state: .failed("This iPhone has no session key. Re-pair with your Mac."))
+                   state: .failed("This iPhone has no session key. Re-pair with your computer."))
             return clientId
         }
         record(clientId: clientId, sessionId: key, kind: .start, text: prompt, state: .sending)
@@ -1072,7 +1072,7 @@ final class SessionStore: ObservableObject {
     func interruptAll() async -> SessionCommandOutcome {
         let clientId = UUID().uuidString.lowercased()
         guard let body = encrypt(.interruptAll, clientId: clientId) else {
-            return .failed("This iPhone has no session key. Re-pair with your Mac.")
+            return .failed("This iPhone has no session key. Re-pair with your computer.")
         }
         let outcome = await APIClient.shared.postSessionCommand(body: body)
         noteOutcome(outcome)
@@ -1241,7 +1241,7 @@ final class SessionStore: ObservableObject {
                 let busy = target.state == .active
                 if hold && busy {
                     self.apply(.result(CommandResult(clientId: clientId, ok: true, code: .queued, reason: nil,
-                                                     detail: "Held — Page types it when Claude finishes this turn (simulated)", interventionId: nil, held: true)))
+                                                     detail: "Held — Page Studio types it when Claude finishes this turn (simulated)", interventionId: nil, held: true)))
                     return
                 }
                 if target.state.isWaiting {

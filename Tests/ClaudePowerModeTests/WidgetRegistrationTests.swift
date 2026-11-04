@@ -103,7 +103,7 @@ final class WidgetRegistrationTests: XCTestCase {
     func testEveryStatusHasWordsAndOnlyRegisteredIsGood() {
         let statuses: [WidgetRegistration.Status] = [
             .checking, .registered(path: appex), .disabled(path: appex), .elsewhere(path: appex),
-            .notRegistered, .unavailable(reason: "No widgets in this copy of Page"),
+            .notRegistered, .unavailable(reason: "No widgets in this copy of Page Studio"),
         ]
         for s in statuses {
             let l = WidgetRegistration.line(s)

@@ -231,7 +231,7 @@ object SessionComposer {
                 Empty -> "Type a message first."
                 is TooLong -> "That's $count characters. Keep it to $MAX_CHARACTERS or fewer."
                 TooLarge -> "That message is too large to send. Shorten it (emoji and symbols take more space)."
-                HoldUnavailable -> "Your Mac can't hold a message until Claude finishes. Update Page on your Mac, or send it now."
+                HoldUnavailable -> "Your computer can't hold a message until Claude finishes. Update Page Studio on your computer, or send it now."
             }
     }
 
@@ -284,11 +284,11 @@ sealed interface SessionCommandOutcome {
     val failureMessage: String?
         get() = when (this) {
             Accepted -> null
-            MacOffline -> "Your Mac is offline, so nothing was sent. Try again when Page on your Mac is connected."
-            Invalid -> "The relay couldn't read this message. Re-pair with your Mac if this keeps happening."
+            MacOffline -> "Your computer is offline, so nothing was sent. Try again when Page Studio on your computer is connected."
+            Invalid -> "The relay couldn't read this message. Re-pair with your computer if this keeps happening."
             TooLarge -> SessionComposer.Problem.TooLarge.message
             RateLimited -> "Too many messages in a minute. Wait a moment and try again."
-            Unauthorized -> "The relay no longer accepts this pairing. Re-pair with your Mac."
+            Unauthorized -> "The relay no longer accepts this pairing. Re-pair with your computer."
             is Retired -> why
             RelayTooOld -> "Your relay doesn't support live sessions yet. Update your Cloudflare Worker."
             is Failed -> message

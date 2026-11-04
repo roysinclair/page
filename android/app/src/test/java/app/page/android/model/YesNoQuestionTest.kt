@@ -65,7 +65,7 @@ class YesNoQuestionTest {
         "Should I go ahead\nand commit?" to null,
         "Can you share the error log?" to null,
         "Could you paste the stack trace?" to null,
-        "Will you be at the Mac later?" to null,
+        "Will you be at your computer later?" to null,
         "Is the build green?" to null,
         "Are there any other changes?" to null,
         "Do the tests pass?" to null,
@@ -106,7 +106,7 @@ class YesNoQuestionTest {
         assertEquals("Should I commit?", offer(items = listOf(user("u1", "fix it"), q)))
         assertNull("mid-turn", offer(mode = RoomComposerMode.Steer, state = LiveSessionState.ACTIVE, items = listOf(q)))
         assertNull("a prompt waits", offer(mode = RoomComposerMode.TellInstead("p1"), state = LiveSessionState.WAITING_ON_APPROVAL, items = listOf(q)))
-        for (m in listOf(RoomComposerMode.Blocked("x"), RoomComposerMode.Locked("x"), RoomComposerMode.Disabled("x"))) assertNull("where Page cannot type", offer(mode = m, items = listOf(q)))
+        for (m in listOf(RoomComposerMode.Blocked("x"), RoomComposerMode.Locked("x"), RoomComposerMode.Disabled("x"))) assertNull("where Page Studio cannot type", offer(mode = m, items = listOf(q)))
         assertNull("rate-limited", offer(state = LiveSessionState.RATE_LIMITED, items = listOf(q)))
         assertNull("ended", offer(ended = true, items = listOf(q)))
         assertNull("Mac unreachable", offer(ready = false, items = listOf(q)))

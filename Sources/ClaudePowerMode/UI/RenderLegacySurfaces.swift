@@ -34,7 +34,7 @@ extension RenderSurfaces {
         typealias Row = TowerHooksModel.AgentRow
         let installed = Row(text: "Installed.", chip: .installed, installTitle: "Reinstall…", canInstall: true, canUninstall: true)
         let notInstalled = Row(text: "Not installed.", chip: .notInstalled, installTitle: "Install…", canInstall: true, canUninstall: false)
-        let stale = Row(text: "An older or partial Page hook is installed (/Users/studio/.claude/hooks/page-notify.sh --codex). Update replaces it with the current one.",
+        let stale = Row(text: "An older or partial Page Studio hook is installed (/Users/studio/.claude/hooks/page-notify.sh --codex). Update replaces it with the current one.",
                         chip: .needsUpdate, installTitle: "Update…", canInstall: true, canUninstall: true)
         let missing = Row(text: "Codex doesn't seem to be set up for this user (~/.codex is missing).", chip: .unavailable,
                           installTitle: "Install…", canInstall: false, canUninstall: false)
@@ -96,16 +96,16 @@ extension RenderSurfaces {
         cmuxBlocked.cmuxSetupOpen = true
         cmuxBlocked.cmux.setFixture(
             version: .init(text: "cmux: cmux 0.62.1 (build 4180)"),
-            mode: .init(text: "Socket mode: cmux processes only — cmux blocks Page. Follow the steps below.", tone: .warn),
+            mode: .init(text: "Socket mode: cmux processes only — cmux blocks Page Studio. Follow the steps below.", tone: .warn),
             passwordStatus: .init(text: "No password saved."))
         let cmuxGood = TowerFixtures.store(section: .terminals)
         cmuxGood.cmuxSetupOpen = true
         cmuxGood.cmux.setFixture(
             version: .init(text: "cmux: cmux 0.62.1 (build 4180)"),
-            mode: .init(text: "Socket mode: Automation — Page can connect (no password needed).", tone: .good),
+            mode: .init(text: "Socket mode: Automation — Page Studio can connect (no password needed).", tone: .good),
             passwordStatus: .init(text: "A password is saved in your Keychain."), canRemovePassword: true,
-            testStatus: .init(text: "Connected — Page can reach your cmux sessions.", tone: .good),
-            enableStatus: .init(text: "Done — Page can type into your cmux sessions.", tone: .good))
+            testStatus: .init(text: "Connected — Page Studio can reach your cmux sessions.", tone: .good),
+            enableStatus: .init(text: "Done — Page Studio can type into your cmux sessions.", tone: .good))
 
         // MARK: pairing
         let qr = QRCode.image(from: "page-render-fixture: not a real pairing payload", size: CGSize(width: 300, height: 300))
@@ -139,11 +139,11 @@ extension RenderSurfaces {
             ok: "Add the lines", tone: .info)
         let regenerate = NWDialogSpec.confirm(
             "Regenerate the pairing token?",
-            "Phones paired with the current token stop receiving pages until they scan the new QR code. Page asks the relay to retire the old token, so (on an up-to-date relay) those phones are told to re-pair. This Mac reconnects with the new token right away.",
+            "Phones paired with the current token stop receiving pages until they scan the new QR code. Page Studio asks the relay to retire the old token, so (on an up-to-date relay) those phones are told to re-pair. This Mac reconnects with the new token right away.",
             ok: "Regenerate", tone: .warning, destructive: true)
         let lid = NWDialogSpec.confirm(
             "Keep agents running with the lid closed on battery?",
-            "While an agent is mid-turn, Page will stop the Mac sleeping when you close the lid on battery. At your low-battery level it asks the agents to pause, then lets the Mac sleep. A closed MacBook in a bag will stay awake and warm while agents work.\n\nmacOS will ask for your password once to allow this.",
+            "While an agent is mid-turn, Page Power will stop the Mac sleeping when you close the lid on battery. At your low-battery level it asks the agents to pause, then lets the Mac sleep. A closed MacBook in a bag will stay awake and warm while agents work.\n\nmacOS will ask for your password once to allow this.",
             ok: "Turn On", tone: .warning)
         let broken = NWDialogSpec.confirm(
             "config.json couldn’t be read",

@@ -60,7 +60,7 @@ const detector = (t = 100, o = {}) => iv(`${SID}-permission-${t}`, { sessionId: 
 
 // MARK: F1 — the deployed v1 blocking hook
 
-test("v1 blocking hook page: reply stored for the hook, never forwarded to the Mac, never erased", async () => {
+test("v1 blocking hook page: reply stored for the hook, never forwarded to your computer, never erased", async () => {
   const mac = connect(true);
   const r = await postAs("page-hook/1.0", "intervention.opened", v1PreToolUse("hook-11111111-1-1"));
   assert.equal(r.status, 200);
@@ -69,7 +69,7 @@ test("v1 blocking hook page: reply stored for the hook, never forwarded to the M
 
   const reply = await call(relay, "POST", "/reply/hook-11111111-1-1", { text: "", action: "approve" });
   assert.deepEqual(reply.body, { ok: true, queued: false });
-  assert.equal(mac.frames("reply").length, 0, "the Mac must not get it (its refusal used to erase the answer)");
+  assert.equal(mac.frames("reply").length, 0, "the computer must not get it (its refusal used to erase the answer)");
   // What the v1 hook polls for: `.[] | select(.id == $id) | .repliedAction`.
   const [polled] = (await call(relay, "GET", "/interventions")).body;
   assert.equal(polled.repliedAction, "approve");
@@ -103,7 +103,7 @@ test("v1 blocking hook page only accepts Approve or Deny (it turns anything else
   assert.equal(deny.status, 200);
 });
 
-test("v1 Notification pages, v2 hook pages and WS opens are still delivered by the Mac", async () => {
+test("v1 Notification pages, v2 hook pages and WS opens are still delivered by the computer", async () => {
   const mac = connect(true);
   // v1 Notification path: kind "question" — the Mac types the reply.
   await postAs("page-hook/1.0", "intervention.opened", v1PreToolUse("hook-11111111-2-1", { kind: "question", sessionId: "s-q" }));
@@ -182,7 +182,7 @@ test("hook answered the prompt: the replaced page stays closed and a late open i
   assert.equal(again.body.ignored, "closed");
 });
 
-test("user_returned restores the card without a buzz; a Mac close meanwhile keeps it closed", async () => {
+test("user_returned restores the card without a buzz; a computer close meanwhile keeps it closed", async () => {
   await open(relay, detector());
   await open(relay, iv("hookpre-11111111-4-1", { sessionId: SID }));
   calls = [];
@@ -280,7 +280,7 @@ test("a failed reply to a page that closed meanwhile is pushed, with an action-l
   assert.equal(buildReplyFailedPush(iv("p", { kind: "permission" }), "x", clock.now).payload.aps.category, "PAGE_APPROVAL");
 });
 
-test("a queued reply whose page closed before the Mac returned is reported by push", async () => {
+test("a queued reply whose page closed before the computer returned is reported by push", async () => {
   await open(relay, iv("q-1"));
   await call(relay, "POST", "/reply/q-1", { text: "do it", action: "custom" });   // Mac offline: queued
   await close(relay, "q-1", "user_resolved_in_terminal");
@@ -333,7 +333,7 @@ test("flushing a queued reply to a closed page records the forward on the archiv
   await macFrame(relay, mac, "heartbeat", { ts: "t", activeSessions: 1, battery: 50 });
   assert.equal(mac.frames("reply").length, 1);
   const [h] = (await call(relay, "GET", "/history")).body;
-  assert.equal(h.deliveryDetail, "Sent to your Mac");
+  assert.equal(h.deliveryDetail, "Sent to your computer");
   assert.match(h.deliveryForwardedAt, /Z$/);
 });
 

@@ -89,24 +89,24 @@ enum CloseReason {
     /// Reads on its own (History) and after "Resolved — " (reply screen).
     static func description(_ reason: String?) -> String {
         switch reason {
-        case "replied":                   return "Answered from Page"
+        case "replied":                   return "Answered from Page Relay"
         case "user_resolved_in_terminal": return "Answered in the terminal"
         case "superseded":                return "Replaced by a newer page from this session"
         case "evicted":                   return "Removed to make room for newer pages"
         case "timeout":                   return "Timed out"
         case "stale":                     return "The session is no longer waiting"
-        case "session_resolved":          return "Resolved on your Mac"
-        case "hook_lost":                 return "Lost contact with the hook on your Mac, so the prompt went back to the terminal"
+        case "session_resolved":          return "Resolved on your computer"
+        case "hook_lost":                 return "Lost contact with the hook on your computer, so the prompt went back to the terminal"
         case "expired":                   return "Expired after a day without an answer"
         case "agent_exited":              return "The agent exited before your answer could be applied"
         case "too_late":                  return "Your reply arrived too late to apply, so the prompt went back to the terminal"
-        case "token_retired":             return "This pairing was replaced on your Mac"
-        case "hook_exited":               return "The hook on your Mac stopped waiting"
-        case "hook_fallback":             return "Handed back to the terminal on your Mac"
-        case "user_returned":             return "You came back to your Mac, so it's waiting there"
+        case "token_retired":             return "This pairing was replaced on your computer"
+        case "hook_exited":               return "The hook on your computer stopped waiting"
+        case "hook_fallback":             return "Handed back to the terminal on your computer"
+        case "user_returned":             return "You came back to your computer, so it's waiting there"
         case "resolved_elsewhere":        return "Answered somewhere else"
         case "not_a_decision":            return "That reply wasn't an approve or deny, so the prompt went back to the terminal"
-        default:                          return "Resolved on your Mac"
+        default:                          return "Resolved on your computer"
         }
     }
 }
@@ -118,7 +118,7 @@ enum CloseReason {
 /// `410 {error:"token_retired", why}` and sends `relay.retired` to phone
 /// sockets. Either means this pairing is dead for good: re-pair.
 enum TokenRetirement {
-    static let defaultWhy = "This pairing was replaced on your Mac — scan the new QR code"
+    static let defaultWhy = "This pairing was replaced on your computer — scan the new QR code"
     static let maxWhyLength = 300
 
     /// The why text when this HTTP response says the token was retired.
@@ -273,7 +273,7 @@ enum ReplyOutcome: Equatable {
     case failed(String)
 
     /// Fallback for a 422 `approve_or_deny_only` without a `why`.
-    static let decisionsOnlyMessage = "This page comes from an older Page hook that can only apply Approve or Deny. Use one of those, or update the hook in Page → Phone approvals on your Mac."
+    static let decisionsOnlyMessage = "This page comes from an older Page Studio hook that can only apply Approve or Deny. Use one of those, or update the hook in Page Studio → Phone approvals on your computer."
 
     static func from(status: Int, body: Data) -> ReplyOutcome {
         // Before the 410 arm below: a retired token also answers 410.
@@ -361,7 +361,7 @@ enum ReplyDelivery: Equatable {
         case "failed":
             if local == .sending { return local }
             if deliveryMethod == RetractedReply.method { return .retracted(deliveryDetail ?? SessionDeliveryState.deletedCopy) }
-            return .failed(ReplyRecoveryCopy.failure(reason: deliveryReason) ?? deliveryDetail ?? "Your Mac couldn't deliver the reply.")
+            return .failed(ReplyRecoveryCopy.failure(reason: deliveryReason) ?? deliveryDetail ?? "Your computer couldn't deliver the reply.")
         case "delivered":
             if deliveryMethod == HeldUntilReset.method { return .heldOnMac(detail: deliveryDetail) }
             return .delivered(detail: deliveryDetail)
@@ -547,13 +547,13 @@ enum NotificationDecision: Equatable {
             switch id {
             case NotificationActionID.approve, NotificationActionID.deny:
                 if let kind, kind != .approval {
-                    return .refuse("Approve and Deny only apply to approval requests. Open Page to answer this one.")
+                    return .refuse("Approve and Deny only apply to approval requests. Open Page Relay to answer this one.")
                 }
                 if id == NotificationActionID.approve, approveLevel != .undoable { return .open }
                 return .send(text: "", action: id == NotificationActionID.approve ? .approve : .deny)
             case NotificationActionID.carryOn:
                 if kind == .approval {
-                    return .refuse("This session is waiting for an approval. Open Page to approve or deny it.")
+                    return .refuse("This session is waiting for an approval. Open Page Relay to approve or deny it.")
                 }
                 return .send(text: "", action: .carryOn)
             case NotificationActionID.reply:

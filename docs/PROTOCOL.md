@@ -1,4 +1,4 @@
-# Page wire protocol (v2)
+# Page Studio wire protocol (v2)
 
 This is the protocol as implemented by the relay Worker
 (`Cloudflare/src/types.ts`, `logic.ts`, `durable.ts`), the Mac app
@@ -19,7 +19,7 @@ working against newer peers (see [Compatibility rules](#15-compatibility-rules))
 4. [Intervention ids](#4-intervention-ids)
 5. [Frames](#5-frames)
 6. [HTTP routes](#6-http-routes)
-7. [Page lifecycle on the Worker](#7-page-lifecycle-on-the-worker)
+7. [Page Studio lifecycle on the Worker](#7-page-lifecycle-on-the-worker)
 8. [Replies and delivery confirmation](#8-replies-and-delivery-confirmation)
 9. [Presence](#9-presence)
 10. [Token retirement](#10-token-retirement)
@@ -123,7 +123,7 @@ the v1 names so old phones decode them:
 |---|---|
 | `permission` | An approval prompt (tool call). With `subtype: "plan"`: a plan approval. The Mac sends plans as `permission` + `plan`; it never puts `plan` in `kind` |
 | `question` | The agent asked something (AskUserQuestion, elicitation) |
-| `idle` | The turn finished and the session waits. With `subtype: "low_battery"`: Page paused it at the battery cutoff. Codex `Stop`-hook pages are `idle` too |
+| `idle` | The turn finished and the session waits. With `subtype: "low_battery"`: Page Studio paused it at the battery cutoff. Codex `Stop`-hook pages are `idle` too |
 | `rate_limit` | A usage limit was hit (information only). A written reply is queued and typed into the session when the limit resets (v4). With `subtype: "battery_forecast"` (session id `page-mac-battery`): the battery reaches the cutoff in about 15 min while agents work. With `subtype: "usage_forecast"` (session id `page-mac-usage`): the 5-hour limit is about 30 min away at the current pace. Both are Mac-wide, opened and closed by the Coordinator; replies are answered "nothing to answer" |
 | `idle` + `subtype: "looping"` / `"stuck"` / `"workflow_stalled"` | v4 stuck watch: a busy session repeats a failing call, has written nothing for the configured time, or one of its workflows stopped making progress. A written reply is typed as a message (queued while busy); Deny on `looping`/`stuck` presses Esc (Stop). Id `<sessionId>-<subtype>-<epoch>` |
 
@@ -264,7 +264,7 @@ means the whole pairing is dead.
 | `relay.retire` | `{ok:true, retired:true}`. A repeat gets `410 token_retired`, which the Mac treats as success |
 | others | `{ok:true}` |
 
-## 7. Page lifecycle on the Worker
+## 7. Page Studio lifecycle on the Worker
 
 - **One current page per session (supersede).** When a page opens, the
   session's other pending pages close as `superseded`. They're archived but
@@ -366,13 +366,13 @@ and `deliveryStatus: "pending"`, then does one of:
   the Claude Code hook to pick it up" / "…Codex hook…"). Nothing goes to the
   Mac.
 - **Mac page, Mac connected:** sends `reply`, sets `deliveryForwardedAt`
-  (detail "Sent to your Mac").
-- **Mac page, Mac offline:** queues it (detail "Waiting for your Mac to come
+  (detail "Sent to your computer").
+- **Mac page, Mac offline:** queues it (detail "Waiting for your computer to come
   online"). The queue is flushed on the Mac's next frame (normally its
   heartbeat), oldest first, after that frame is handled, so a `sync` has
   already closed pages the Mac no longer has. A queue entry is deleted only
   once a Mac socket accepted it. A page that closed meanwhile fails the entry
-  ("The page closed before your Mac came back online"). Queued replies expire
+  ("The page closed before your computer came back online"). Queued replies expire
   after 1 h, or 10 min for closed-page replies ("Your Mac was offline too
   long — reply not delivered"). At most 200 are queued.
 
@@ -431,7 +431,7 @@ The Mac reports every delivery attempt:
 
 On a failure the Mac may add `reason`, so the phone can offer more than the
 `detail`: `draft` (there is real text in the session's input box) or
-`input_unverified` (Page couldn't see the box, so typed nothing). The Worker
+`input_unverified` (Page Studio couldn't see the box, so typed nothing). The Worker
 keeps only those two values, stores one as `deliveryReason` (cleared by the
 next reply) and passes it on in `reply.result`. This frame is not end-to-end
 encrypted, so it never carries the text in the box: for that the phone sends
@@ -449,7 +449,7 @@ Mac sends no `reason`.
   phone socket open, it also sends an alert push "Reply to <project> not
   delivered" ([§11](#11-phones-and-apns)). That happens even when the page has
   closed meanwhile.
-- Missing `detail` defaults to "Delivered to your Mac" / "Your Mac couldn't
+- Missing `detail` defaults to "Delivered to your computer" / "Your Mac couldn't
   deliver the reply".
 
 `method` values in use:
@@ -515,7 +515,7 @@ about 2 s) before switching. The Worker then:
    dropped page, then `relay.retired {reason, why}`.
 4. Closes every socket with code **4410**, reason `token_retired`.
 5. From then on answers **every** request on that token with
-   `410 {error: "token_retired", why: "This pairing was replaced on your Mac — scan the new QR code"}`.
+   `410 {error: "token_retired", why: "This pairing was replaced on your computer — scan the new QR code"}`.
 
 Phones treat `410 token_retired` from any route, the `relay.retired` frame
 and close code 4410 as "re-pair needed". The hook treats a `410` like a

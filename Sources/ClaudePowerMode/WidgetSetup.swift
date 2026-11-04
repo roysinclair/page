@@ -12,11 +12,11 @@ enum WidgetSetup {
     /// The reasons a copy cannot have widgets. The Widgets page chooses its hint by these, so they are
     /// constants, not loose strings.
     enum Unavailable {
-        static let notAnApp = "This copy of Page isn’t an app (it runs from a build folder), so it has no widgets"
-        static let noExtension = "This copy of Page was built without its widgets"
-        static let noTeam = "This copy of Page isn’t signed with a developer team, so its widgets couldn’t get any data"
+        static let notAnApp = "This copy of Page Studio isn’t an app (it runs from a build folder), so it has no widgets"
+        static let noExtension = "This copy of Page Studio was built without its widgets"
+        static let noTeam = "This copy of Page Studio isn’t signed with a developer team, so its widgets couldn’t get any data"
         static let noAnswer = "Couldn’t ask macOS about widgets (pluginkit didn’t answer)"
-        static let noneHere = "No widgets in this copy of Page"
+        static let noneHere = "No widgets in this copy of Page Studio"
     }
 
     typealias Run = (_ path: String, _ args: [String]) -> ProcessRunner.Result

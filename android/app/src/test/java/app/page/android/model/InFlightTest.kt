@@ -11,7 +11,7 @@ class InFlightTest {
         canType: Boolean = true, preview: String = "Bash: ls",
     ) = LiveSession(
         id = id, backend = AgentBackend.Known(InterventionBackend.CLAUDE), title = title, cwd = "~/$title", state = state,
-        host = host, canType = canType, typeBlocker = if (canType) null else "Page can't type into $host yet",
+        host = host, canType = canType, typeBlocker = if (canType) null else "Page Studio can't type into $host yet",
         canInterrupt = true, provider = null, lastActivityAt = t?.let(::at), interventionId = null, preview = preview,
     )
 

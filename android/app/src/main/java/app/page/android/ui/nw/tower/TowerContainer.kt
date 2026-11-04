@@ -62,7 +62,7 @@ fun TowerContainer(scrollTo: TowerSection?, onRequestNotifications: () -> Unit, 
     val availability = sessionState.availability(presence, connection == RelayClient.ConnectionState.CONNECTED, now)
     val live = when (availability) {
         SessionAvailability.Ready -> sessionState.sessions.size.let { "$it live session${if (it == 1) "" else "s"} · end-to-end encrypted" }
-        is SessionAvailability.NeedsRepair -> "Re-pair with your Mac to turn on live sessions"
+        is SessionAvailability.NeedsRepair -> "Re-pair with your computer to turn on live sessions"
         else -> SessionAvailabilityCopy.of(availability).shortStatus
     }
     val data = TowerScreenData(

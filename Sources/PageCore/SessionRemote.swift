@@ -192,12 +192,12 @@ extension SessionRemoteBackends {
     func readScreen(_ source: SessionScreen.Source) -> String? { SessionScreen.read(source) }
     func typeHeld(_ session: AgentSession, clientId: String, text: String, claim: HeldClaim,
                   completion: @escaping (SessionCommandResult) -> Void) {
-        completion(.refused(.notTypable, "Page can't hold messages for this session"))
+        completion(.refused(.notTypable, "Page Studio can't hold messages for this session"))
     }
     func retractReply(interventionId: String) -> HeldRetract { .notFound }
     func inputImages(_ session: AgentSession, clientId: String, images: [AssembledImage], text: String,
                      interventionId: String?, completion: @escaping (SessionCommandResult) -> Void) {
-        completion(.refused(.attachUnsupported, "Page can't send photos to this session"))
+        completion(.refused(.attachUnsupported, "Page Studio can't send photos to this session"))
     }
 }
 
@@ -395,7 +395,7 @@ struct RemoteSessionRow: Equatable {
             "provider": host.provider.rawValue
         ]
         if let cwd { o["cwd"] = cwd }
-        if !host.canType { o["typeBlocker"] = host.typeBlocker ?? "Page can't type into this session" }
+        if !host.canType { o["typeBlocker"] = host.typeBlocker ?? "Page Studio can't type into this session" }
         if let lastActivityAt { o["lastActivityAt"] = SessionTranscript.isoFormatter.string(from: lastActivityAt) }
         if let interventionId { o["interventionId"] = interventionId }
         if let preview, !preview.isEmpty { o["preview"] = preview }
@@ -727,7 +727,7 @@ final class SessionRemote {
     func performLocal(_ cmd: SessionCommand, completion: @escaping (SessionCommandResult) -> Void) {
         queue.async {
             guard !self.stopped else {
-                completion(.refused(.error, "Page is shutting down"))
+                completion(.refused(.error, "Page Studio is shutting down"))
                 return
             }
             var local = cmd
@@ -798,7 +798,7 @@ final class SessionRemote {
         }
         guard enabled else {
             if isPart { return .drop("image part while disabled") }
-            return .reply(clientId: cmd.clientId, .refused(.disabled, "Live sessions are turned off in Page's settings on your Mac"))
+            return .reply(clientId: cmd.clientId, .refused(.disabled, "Live sessions are turned off in Page Studio's settings on your computer"))
         }
         return .accept(cmd)
     }
@@ -1464,7 +1464,7 @@ final class SessionRemote {
             if let refusal = auraRefusal(s, op: "answer", .answerUnsupported) { return sendResult(cmd.clientId, refusal) }
             guard s.backend == .claude, let promptKey = cmd.promptKey, let answers = cmd.answers else {
                 Logger.shared.log("Sessions: answer \(sid) → refused/answer_unsupported")
-                return sendResult(cmd.clientId, .refused(.answerUnsupported, "Page can't answer that question from here"))
+                return sendResult(cmd.clientId, .refused(.answerUnsupported, "Page Studio can't answer that question from here"))
             }
             Logger.shared.log("Sessions: answer \(sid) (\(answers.count) question(s))")
             let clientId = cmd.clientId
@@ -1489,7 +1489,7 @@ final class SessionRemote {
             let st = state(of: s)
             if st != .active || hosts[id]?.info.canInterrupt == false {
                 let r: SessionCommandResult = st == .active
-                    ? .refused(.interruptUnsupported, "Page can't press Esc where this session runs")
+                    ? .refused(.interruptUnsupported, "Page Studio can't press Esc where this session runs")
                     : .refused(.interruptUnsupported, SessionInputGate.notIdleMessage)
                 Logger.shared.log("Sessions: interrupt \(sid) → refused/interrupt_unsupported")
                 return sendResult(cmd.clientId, r)
@@ -1652,7 +1652,7 @@ final class SessionRemote {
             if let refusal = auraRefusal(s, op: "inputImages", .attachUnsupported, AuraLink.photosBlocker) { return sendResult(cmd.clientId, refusal) }
             guard let refs = cmd.images else {
                 Logger.shared.log("Sessions: inputImages \(sid) → refused/attachment_invalid (no usable photo list)")
-                return sendResult(cmd.clientId, .refused(.attachmentInvalid, "The photos didn't arrive in a form Page understands"))
+                return sendResult(cmd.clientId, .refused(.attachmentInvalid, "The photos didn't arrive in a form Page Studio understands"))
             }
             let text = (cmd.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             guard text.count <= SessionInputGate.maxTextLength else {
@@ -1728,7 +1728,7 @@ final class SessionRemote {
             guard final else { return }
             imageWaits[clientId] = nil
             Logger.shared.log("Sessions: inputImages \(sid) → refused/attachment_missing (\(ids.count) of \(w.refs.count))")
-            var r = SessionCommandResult.refused(.attachmentMissing, "Part of a photo didn't reach your Mac — send it again")
+            var r = SessionCommandResult.refused(.attachmentMissing, "Part of a photo didn't reach your computer — send it again")
             r.missing = ids
             sendResult(clientId, r)
         case .invalid(let why):
@@ -1789,12 +1789,12 @@ final class SessionRemote {
         // A terminal Page can't type into would only refuse it later.
         if let info = hosts[s.sessionId]?.info, !info.canType {
             Logger.shared.log("Sessions: input \(sid) hold → refused/not_typable (\(text.count) chars)")
-            return sendResult(cmd.clientId, .refused(.notTypable, info.typeBlocker ?? "Page can't type into this session"))
+            return sendResult(cmd.clientId, .refused(.notTypable, info.typeBlocker ?? "Page Studio can't type into this session"))
         }
         if let info = hosts[s.sessionId]?.info, !Self.canHold(backend: s.backend, probed: info) {
             Logger.shared.log("Sessions: input \(sid) hold → refused/not_typable (Codex in Terminal)")
             return sendResult(cmd.clientId, .refused(.notTypable,
-                "Page can't hold messages for Codex in Terminal — it would bring Terminal to the front later. Send it now instead"))
+                "Page Studio can't hold messages for Codex in Terminal — it would bring Terminal to the front later. Send it now instead"))
         }
         var m = HeldOutbox.Message(clientId: cmd.clientId, sessionId: s.sessionId, backend: s.backend, text: text, heldAt: t)
         m.expectCwd = cmd.expectCwd
@@ -2011,7 +2011,7 @@ final class LiveSessionBackends: SessionRemoteBackends {
                 out[s.sessionId] = Self.claudeHost(candidates: live[s.sessionId] ?? [], table: table, cmuxBlocker: cmuxBlocker)
             case .codex:
                 guard let t = codex.remoteThread(s.sessionId) else {
-                    out[s.sessionId] = .blocked("unknown", "Page no longer knows this Codex session")
+                    out[s.sessionId] = .blocked("unknown", "Page Studio no longer knows this Codex session")
                     continue
                 }
                 let provider = ModelProviderClassifier.codex(argv: [], threadModelProvider: t.modelProvider)
@@ -2051,7 +2051,7 @@ final class LiveSessionBackends: SessionRemoteBackends {
                            cmuxBlocker: (CmuxBridge.Target) -> String? = { _ in nil },
                            squadPaused: (ClaudeLiveSession, InjectionExecutor.TerminalHost) -> Bool
                                = { ClaudeSquad.isPausedLive(session: $0, host: $1) }) -> SessionHostInfo {
-        guard !candidates.isEmpty else { return .blocked("unknown", "Page can't tell which Claude session this is") }
+        guard !candidates.isEmpty else { return .blocked("unknown", "Page Studio can't tell which Claude session this is") }
         switch InjectionExecutor.pickSession(candidates, pagePid: nil, pageStateStart: nil) {
         case .failure(let f):
             return .blocked("unknown", f.detail)
@@ -2090,7 +2090,7 @@ final class LiveSessionBackends: SessionRemoteBackends {
             // the reason mentions (cmux unless it's WezTerm, kitty or Herdr).
             let app = why.contains("kitty") ? "kitty" : why.contains("WezTerm") ? "WezTerm" : why.contains("Herdr") ? "Herdr" : "cmux"
             return .blocked(app, why, provider: provider)
-        case .unsupported(let app): return .blocked(wireHost(app: app), "Page can't type into \(app) yet", provider: provider)
+        case .unsupported(let app): return .blocked(wireHost(app: app), "Page Studio can't type into \(app) yet", provider: provider)
         case .unknown: return .blocked("unknown", "Couldn't find the session's terminal", provider: provider)
         }
     }
@@ -2098,8 +2098,8 @@ final class LiveSessionBackends: SessionRemoteBackends {
     /// Desktop / editor / exec threads have no terminal to type into.
     static func codexHostForSource(_ source: AgentSessionSource, provider: ModelProvider) -> SessionHostInfo? {
         switch source {
-        case .desktop: return .blocked("desktop", "Page can't type into the Codex app — use the Codex CLI in tmux or cmux", provider: provider)
-        case .vscode: return .blocked("VS Code", "Page can't type into Codex in VS Code yet", provider: provider)
+        case .desktop: return .blocked("desktop", "Page Studio can't type into the Codex app — use the Codex CLI in tmux or cmux", provider: provider)
+        case .vscode: return .blocked("VS Code", "Page Studio can't type into Codex in VS Code yet", provider: provider)
         case .exec: return .blocked("unknown", "A background codex exec run — there's nothing to type into", provider: provider)
         case .remote: return .blocked("unknown", "This session runs somewhere else", provider: provider)
         case .terminal, .unknown: return nil
@@ -2131,7 +2131,7 @@ final class LiveSessionBackends: SessionRemoteBackends {
     static func cmuxBlockerText(_ detail: String) -> String {
         switch detail {
         case CmuxBridge.blockedDetail, CmuxBridge.needsPasswordDetail, CmuxBridge.passwordRejectedDetail:
-            return "cmux isn't letting Page type yet — on your Mac, open Page ▸ Integrations ▸ Set up cmux… and click “Let Page type into cmux”"
+            return "cmux isn't letting Page Studio type yet — on your computer, open Page Studio ▸ Integrations ▸ Set up cmux… and click “Let Page Studio type into cmux”"
         default:
             return detail
         }
@@ -2216,7 +2216,7 @@ final class LiveSessionBackends: SessionRemoteBackends {
         case .claude:
             claude.remoteAnswer(sessionId: session.sessionId, request: request, completion: completion)
         case .codex:
-            completion(.refused(.answerUnsupported, "Page can't answer Codex's questions from here"))
+            completion(.refused(.answerUnsupported, "Page Studio can't answer Codex's questions from here"))
         case .aura, .orbit:
             completion(.refused(.answerUnsupported, Self.auraMessage))
         }

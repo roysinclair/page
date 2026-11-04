@@ -21,7 +21,7 @@ class RoomDataTest {
     private val now = Instant.ofEpochSecond(1_800_000_000)
     private fun session(state: LiveSessionState, canType: Boolean = true) = LiveSession(
         id = "w1", backend = AgentBackend.Known(InterventionBackend.CLAUDE), title = "relay", cwd = "~/projects/page", state = state, host = "cmux",
-        canType = canType, typeBlocker = if (canType) null else "Page can't type into Ghostty yet", canInterrupt = true, provider = null, lastActivityAt = now.minusSeconds(4),
+        canType = canType, typeBlocker = if (canType) null else "Page Studio can't type into Ghostty yet", canInterrupt = true, provider = null, lastActivityAt = now.minusSeconds(4),
         interventionId = null, preview = "Bash: vitest",
     )
 

@@ -86,7 +86,7 @@ extension SessionRoomData {
         var loading = false
         if items.isEmpty {
             if i.transcript != nil { emptyStory = "Nothing in this session yet." }
-            else if !ready { emptyStory = "The story appears once your Mac is connected." }
+            else if !ready { emptyStory = "The story appears once your computer is connected." }
             else { emptyStory = "Loading the story…"; loading = true }
         }
 

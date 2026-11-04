@@ -298,7 +298,7 @@ fun NWStopOverlay(phase: StopFlowPhase, plan: StopPlan, modifier: Modifier = Mod
             StopFlowPhase.Idle -> ""
             is StopFlowPhase.Holding -> if (plan.canStop) HoldRingSpec.prompt(phase.progress, biometry).replaceFirstChar { it.uppercase() } else plan.scope
             StopFlowPhase.Authenticating -> "Confirm with your $biometry"
-            StopFlowPhase.Sending -> "Asking your Mac…"
+            StopFlowPhase.Sending -> "Asking your computer…"
             is StopFlowPhase.Result -> phase.outcome.message
         }
         val captionColor = if (phase is StopFlowPhase.Result && phase.outcome.isSuccess) NW.Palette.teal else NW.Palette.red.mixed(Rgba(1.0, 1.0, 1.0), 0.35)

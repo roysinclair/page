@@ -106,11 +106,11 @@ final class TowerCmuxModel: ObservableObject {
         var line: Line
         switch m {
         case .password:
-            line = Line(text: "Socket mode: \(m.displayName) — Page can connect with the password below.", tone: .good)
+            line = Line(text: "Socket mode: \(m.displayName) — Page Studio can connect with the password below.", tone: .good)
         case .automation, .allowAll:
-            line = Line(text: "Socket mode: \(m.displayName) — Page can connect (no password needed).", tone: .good)
+            line = Line(text: "Socket mode: \(m.displayName) — Page Studio can connect (no password needed).", tone: .good)
         case .cmuxOnly, .off, .unknown:
-            line = Line(text: "Socket mode: \(m.displayName) — cmux blocks Page. Follow the steps below.", tone: .warn)
+            line = Line(text: "Socket mode: \(m.displayName) — cmux blocks Page Studio. Follow the steps below.", tone: .warn)
         }
         if let configured = status.configuredMode, configured != m {
             line.text += " (configured: \(configured.displayName))"
@@ -128,7 +128,7 @@ final class TowerCmuxModel: ObservableObject {
             passwordStatus = Line(text: "No password saved.")
             canRemovePassword = false
         case .interactionRequired:
-            passwordStatus = Line(text: "A password is saved, but macOS needs it saved again since Page was updated — enter it and click Save.")
+            passwordStatus = Line(text: "A password is saved, but macOS needs it saved again since Page Studio was updated — enter it and click Save.")
             canRemovePassword = true
         case .failed(let status):
             passwordStatus = Line(text: "Couldn't read the Keychain (error \(status)).")
@@ -182,7 +182,7 @@ final class TowerCmuxModel: ObservableObject {
                     outcome = (false, f.detail)
                 case .success(let client):
                     switch client.verifyAccess() {
-                    case .success: outcome = (true, "Connected — Page can reach your cmux sessions.")
+                    case .success: outcome = (true, "Connected — Page Studio can reach your cmux sessions.")
                     case .failure(let f): outcome = (false, f.detail)
                     }
                 }
@@ -225,7 +225,7 @@ final class TowerCmuxModel: ObservableObject {
         if let status = CmuxBridge.socketStatus(cliPath: cli, useCache: false), status.effectiveMode.admitsExternalClients,
            case .success(let client) = CmuxBridge.connect(cliPath: cli, secrets: secrets, allowKeychainUI: true),
            case .success = client.verifyAccess() {
-            return (true, "Already set up — Page can type into your cmux sessions.")
+            return (true, "Already set up — Page Studio can type into your cmux sessions.")
         }
         let backup: URL?
         switch CmuxConfigFile.enableAutomationMode() {
@@ -250,9 +250,9 @@ final class TowerCmuxModel: ObservableObject {
                 break
             }
         }
-        guard admitted else { return undo("cmux didn't let Page in within 8 seconds.") }
-        log("cmux switched to Automation mode for Page (backup: \(backup?.lastPathComponent ?? "none"))")
-        return (true, "Done — Page can type into your cmux sessions.")
+        guard admitted else { return undo("cmux didn't let Page Studio in within 8 seconds.") }
+        log("cmux switched to Automation mode for Page Studio (backup: \(backup?.lastPathComponent ?? "none"))")
+        return (true, "Done — Page Studio can type into your cmux sessions.")
     }
 
     func openCmux() {
@@ -322,7 +322,7 @@ struct NWCmuxSetupPage: View {
                 Text("Set up cmux")
                     .font(Font.system(size: 28, weight: .bold)).kerning(-0.6)
                     .foregroundColor(P.textPrimary.color)
-                Text("Page types phone replies into your cmux sessions and answers the approvals cmux is holding. cmux only lets apps it started control it, so it needs one setting changed first.")
+                Text("Page Studio types phone replies into your cmux sessions and answers the approvals cmux is holding. cmux only lets apps it started control it, so it needs one setting changed first.")
                     .font(Font.system(size: 14))
                     .foregroundColor(P.textSecondary.color)
                     .fixedSize(horizontal: false, vertical: true)
@@ -344,9 +344,9 @@ struct NWCmuxSetupPage: View {
             }
 
             NWCard(title: "LET PAGE IN") {
-                NWRow(title: "Let Page type into cmux",
+                NWRow(title: "Let Page Studio type into cmux",
                       detail: "Switches cmux to Automation mode by adding one setting to ~/.config/cmux/cmux.json, after backing the file up. No password needed. In this mode any app running as you can control cmux, much as any app can script Terminal.") {
-                    NWButton(title: model.enabling ? "Setting up…" : "Let Page type into cmux", kind: .primary, enabled: !model.enabling) { model.enableForPage() }
+                    NWButton(title: model.enabling ? "Setting up…" : "Let Page Studio type into cmux", kind: .primary, enabled: !model.enabling) { model.enableForPage() }
                 }
                 if !model.enableStatus.text.isEmpty {
                     NWNote(text: model.enableStatus.text, tone: tone(model.enableStatus.tone))
@@ -358,7 +358,7 @@ struct NWCmuxSetupPage: View {
                 VStack(alignment: .leading, spacing: 8) {
                     step("1", "In cmux, open Settings ▸ Automation ▸ Socket Control Mode and choose “Password mode”.")
                     step("2", "Under Socket Password, click Set and choose a password.")
-                    step("3", "Enter the same password below and click Save. Page keeps it in your Keychain and hands it only to cmux’s own command-line tool (signed by cmux’s developer), in an environment variable, never on the command line.")
+                    step("3", "Enter the same password below and click Save. Page Studio keeps it in your Keychain and hands it only to cmux’s own command-line tool (signed by cmux’s developer), in an environment variable, never on the command line.")
                 }
                 .padding(.horizontal, 16).padding(.vertical, 14)
                 NWDivider()
@@ -390,7 +390,7 @@ struct NWCmuxSetupPage: View {
             }
 
             NWCard(title: "ONE PAGE PER ALERT") {
-                NWNote(text: "Page pages your iPhone itself. If you also use cmux on your iPhone, turn off cmux ▸ Settings ▸ Notifications ▸ “Forward notifications to my iPhone” (also under Settings ▸ Mobile ▸ “Forward Notifications to iPhone”), or every alert will reach your phone twice.")
+                NWNote(text: "Page Relay pages your iPhone itself. If you also use cmux on your iPhone, turn off cmux ▸ Settings ▸ Notifications ▸ “Forward notifications to my iPhone” (also under Settings ▸ Mobile ▸ “Forward Notifications to iPhone”), or every alert will reach your phone twice.")
                     .padding(16)
                 NWDivider()
                 HStack(spacing: 8) {

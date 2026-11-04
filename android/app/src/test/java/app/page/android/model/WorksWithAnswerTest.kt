@@ -44,8 +44,8 @@ class WorksWithAnswerTest {
 
     @Test fun `Terminal's reason is the Mac's word for word, and names tmux and iTerm2 as the way round`() {
         val terminal = TowerHosts.hosts.first { it.name == "Terminal" }
-        assertEquals(TowerHosts.Answer.NotYet("Terminal adds a Return to every key Page types; use tmux or iTerm2"), terminal.answer)
-        assertEquals("Answer questions: not yet — Terminal adds a Return to every key Page types; use tmux or iTerm2", terminal.answer.line)
+        assertEquals(TowerHosts.Answer.NotYet("Terminal adds a Return to every key Page Studio types; use tmux or iTerm2"), terminal.answer)
+        assertEquals("Answer questions: not yet — Terminal adds a Return to every key Page Studio types; use tmux or iTerm2", terminal.answer.line)
     }
 
     // The phone never decides by host: the Mac sends `ask` for a terminal that takes answer keys, and the sheet is offered for exactly that.
@@ -71,8 +71,8 @@ class WorksWithAnswerTest {
     }
 
     @Test fun `a refused answer shows the Mac's own words, and an old Mac's falls back on the phone's line`() {
-        val why = "Terminal.app adds a Return to every key Page types, which would skip or dismiss questions — answer at your Mac, or use tmux or iTerm2"
+        val why = "Terminal.app adds a Return to every key Page Studio types, which would skip or dismiss questions — answer at your Mac, or use tmux or iTerm2"
         assertEquals(why, SessionResultCopy.refusal("answer_unsupported", why, "Claude"))
-        assertEquals("Page can't answer this question from here. Answer it on your Mac.", SessionResultCopy.refusal("answer_unsupported", null, "Claude"))
+        assertEquals("Page Studio can't answer this question from here. Answer it on your computer.", SessionResultCopy.refusal("answer_unsupported", null, "Claude"))
     }
 }

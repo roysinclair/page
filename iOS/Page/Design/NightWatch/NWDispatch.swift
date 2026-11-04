@@ -80,12 +80,12 @@ struct NWDispatchScreen: View {
                         .font(NightWatch.Typo.body)
                 case .disabledOnMac:
                     problem(symbol: "lock", title: "Starting sessions from your phone is off",
-                            text: "On your Mac, open Page → Settings → Phone and turn on “Let my phone start new Claude sessions”.")
+                            text: "On your computer, open Page Studio → Settings → Phone and turn on “Let my phone start new Claude sessions”.")
                 case .noFolders:
                     problem(symbol: "folder.badge.questionmark", title: "No folders yet",
-                            text: "Page hasn't seen Claude work in any folder in the last 30 days. Run claude in a project on your Mac once, and it appears here.")
+                            text: "Page Studio hasn't seen Claude work in any folder in the last 30 days. Run claude in a project on your computer once, and it appears here.")
                 case .failed(let why):
-                    problem(symbol: "wifi.exclamationmark", title: "Couldn't ask your Mac", text: why, action: ("Try again", actions.retry))
+                    problem(symbol: "wifi.exclamationmark", title: "Couldn't ask your computer", text: why, action: ("Try again", actions.retry))
                 }
             }
             .padding(.horizontal, NightWatch.Space.xl)

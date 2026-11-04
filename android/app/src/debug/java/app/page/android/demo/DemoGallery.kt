@@ -92,7 +92,7 @@ fun DemoGallery(widgetsPlaceholder: Boolean = false, lower: Boolean = false) {
             item { NWTonightCard(m.rings) }
             item { NWDeliveryPreview("Will type 1 · cmux › bottle-flip · Studio MBP") }
             item { NWReceiptLine("Approved npm test → cmux › page · verified 23:47:12") }
-            item { NWReceiptLine("npm test · Didn't confirm in time · Check on Mac", failed = true) }
+            item { NWReceiptLine("npm test · Didn't confirm in time · Check on your computer", failed = true) }
             item { NWSegmented(CardGlow.entries.map { it to it.label }, seg, { seg = it }) }
             item { Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) { Text("Night Watch", style = NW.Typo.body, color = NW.Palette.textPrimary.color, modifier = Modifier.weight(1f)); NWSwitch(on, onChange = { on = it }) } }
             item {

@@ -3,8 +3,8 @@ import { u, GITHUB, AURA_GITHUB, GUIDE, PDF, BLOB, ORBIT_DEMO, ORBIT_GUIDE, AURA
 import { imageSrc } from '../data/images';
 import ProductIcon from './ProductIcon.astro';
 const cols = [
-  { product: 'power' as const, title: 'Page Power', links: [
-    ['Mac', u('mac/')], ['iPhone', u('iphone/')], ['Android', u('android/')], ['Page Relay', u('relay/')], ['Self-hosting guide', GUIDE],
+  { product: 'power' as const, title: 'Page Studio', links: [
+    ['Page Studio for Mac', u('mac/')], ['Linux (preview)', BLOB + 'docs/LINUX.md'], ['Page Relay for iPhone', u('iphone/')], ['Page Relay for Android', u('android/')], ['Page Relay Worker', u('relay/')], ['Self-hosting guide', GUIDE],
   ] },
   { product: 'aura' as const, title: 'Page Aura', links: [
     ['Overview', u('aura/')], ['Open in your browser', AURA_APP], ['Download', STUDIO_RELEASES], ['Guide', AURA_GUIDE],
@@ -48,6 +48,6 @@ const ext = (href: string) => href.startsWith('http');
     </nav>
   </div>
   <div class="wrap-wide border-t border-white/[0.06] py-7">
-    <p class="fine max-w-4xl">Page Studio (Page Power, Page Aura and Page Orbit) is an independent project, <strong class="font-semibold text-ink-2">not affiliated with, endorsed by or sponsored by Anthropic</strong>, OpenAI or Cloudflare. Claude and Claude Code are trademarks of Anthropic, PBC, named here only to say what the apps work with. Page Studio is built on Anthropic’s Claude Code, OpenAI’s Codex, Cloudflare Workers and Durable Objects, and XcodeGen. No analytics, no tracking, no third-party scripts.</p>
+    <p class="fine max-w-4xl">Page Studio (Page Power, Page Relay, Page Aura and Page Orbit) is an independent project, <strong class="font-semibold text-ink-2">not affiliated with, endorsed by or sponsored by Anthropic</strong>, OpenAI or Cloudflare. Claude and Claude Code are trademarks of Anthropic, PBC, named here only to say what the apps work with. Page Studio is built on Anthropic’s Claude Code, OpenAI’s Codex, Cloudflare Workers and Durable Objects, and XcodeGen. No analytics, no tracking, no third-party scripts.</p>
   </div>
 </footer>

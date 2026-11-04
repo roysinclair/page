@@ -115,11 +115,11 @@ object RoomSend {
             is RoomComposerMode.Blocked -> Decision.Refuse(mode.why)
             is RoomComposerMode.Disabled -> Decision.Refuse(mode.why)
             is RoomComposerMode.TellInstead -> {
-                if (!hasReplyAction) Decision.Refuse("This prompt's page isn't loaded yet, so nothing was sent. Answer on your Mac, or try again in a moment.")
+                if (!hasReplyAction) Decision.Refuse("This prompt's page isn't loaded yet, so nothing was sent. Answer on your computer, or try again in a moment.")
                 else if (Sw.trimWsNl(text).isEmpty()) Decision.Refuse(SessionComposer.Problem.Empty.message) else Decision.TellInstead
             }
             RoomComposerMode.Steer, RoomComposerMode.NextTask, RoomComposerMode.HoldOnly -> {
-                if (ended || live == null) return Decision.Refuse("This session isn't on your Mac's list any more, so nothing was sent.")
+                if (ended || live == null) return Decision.Refuse("This session isn't on your computer's list any more, so nothing was sent.")
                 val v = SessionComposer.validate(text)
                 if (v is SessionComposer.Validation.Bad) return Decision.Refuse(v.problem.message)
                 // Where nothing can be typed now, the only way is to hold it; never a "now" the Mac would refuse.

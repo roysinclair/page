@@ -56,7 +56,7 @@ class DispatchReturnOnboardingTest {
     @Test fun `the start title and footer name the Mac`() {
         val draft = DispatchDraft()
         assertEquals("Start on Studio MBP", draft.startTitle("Studio MBP"))
-        assertEquals("Start on your Mac", draft.startTitle(" "))
+        assertEquals("Start on your computer", draft.startTitle(" "))
         assertTrue(DispatchDraft.footer("Studio MBP").contains("Studio MBP"))
     }
 
@@ -158,9 +158,9 @@ class DispatchReturnOnboardingTest {
     // MARK: first run and the paired welcome
 
     @Test fun `a blank Mac is named Your Mac, and the first star reads its subtitle`() {
-        assertEquals("Your Mac is paired", PairedWelcome.build("", null, true, NotificationsState.NOT_SET).title)
+        assertEquals("Your computer is paired", PairedWelcome.build("", null, true, NotificationsState.NOT_SET).title)
         val first = PairedWelcome.build("Studio MBP", null, true, NotificationsState.NOT_SET)
-        assertEquals("Your first star. Sessions appear as soon as your Mac reports them.", first.subtitle)
+        assertEquals("Your first star. Sessions appear as soon as your computer reports them.", first.subtitle)
         assertEquals(PairedWelcome.Action.ALLOW_NOTIFICATIONS, first.action)
         assertEquals("Not now", first.skipTitle)
     }
@@ -168,7 +168,7 @@ class DispatchReturnOnboardingTest {
     @Test fun `the paired subtitle counts the live sessions`() {
         assertEquals("Your first star. 14 sessions are live right now.", PairedWelcome.subtitle(14, true))
         assertEquals("1 session is live right now.", PairedWelcome.subtitle(1, false))
-        assertEquals("Start an agent on your Mac and it appears here.", PairedWelcome.subtitle(0, false))
+        assertEquals("Start an agent on your computer and it appears here.", PairedWelcome.subtitle(0, false))
     }
 
     @Test fun `allowed continues with no skip, and off opens Settings`() {
@@ -206,7 +206,7 @@ class DispatchReturnOnboardingTest {
         assertEquals(ProblemState.Action.REPAIR, replaced.action)
         assertEquals(setOf("auth", "never"), replaced.replacesBanners)
         assertEquals("This pairing was replaced", replaced.title)
-        assertEquals("Your Mac hasn't used this pairing", ProblemState.build(inputs(presence = MacPresence.NeverConnected))?.title)
+        assertEquals("Your computer hasn't used this pairing", ProblemState.build(inputs(presence = MacPresence.NeverConnected))?.title)
     }
 
     @Test fun `an unreachable relay rechecks and names the host`() {

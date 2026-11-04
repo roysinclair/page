@@ -35,7 +35,7 @@ const snapshot = () => JSON.stringify([[...state.storage.map].sort(), state.stor
 
 // MARK: sessions.update
 
-test("sessions.update from the Mac goes to every phone socket and no Mac socket", async () => {
+test("sessions.update from your computer goes to every phone socket and no Mac socket", async () => {
   const mac = connect(true);
   const otherMac = connect(true);
   const p1 = connect(false), p2 = connect(false);
@@ -91,7 +91,7 @@ test("malformed or oversized sessions.update frames are dropped", async () => {
   assert.equal(phone.frames("sessions.update").length, 2);
 });
 
-test("only a Mac socket can send sessions.update", async () => {
+test("only a computer socket can send sessions.update", async () => {
   const mac = connect(true);
   const phone = connect(false);
   // Over HTTP: refused before anything is written (no macEverSeen either).
@@ -100,7 +100,7 @@ test("only a Mac socket can send sessions.update", async () => {
   assert.equal(r.body.error, "mac_socket_only");
   assert.equal(phone.frames("sessions.update").length, 0);
   assert.equal(state.storage.writes, 0);
-  assert.equal((await call(relay, "GET", "/status")).body.macEverSeen, true, "a Mac socket is open");
+  assert.equal((await call(relay, "GET", "/status")).body.macEverSeen, true, "a computer socket is open");
 
   // Over WS, an untagged socket sending sessions.update is NOT promoted to
   // the Mac (unlike the legacy rule for older Mac frames): it stays a phone,
@@ -114,7 +114,7 @@ test("only a Mac socket can send sessions.update", async () => {
   assert.equal(state.storage.writes, 0);
   await update(mac);
   assert.equal(phone.frames("sessions.update").length, 1);
-  assert.equal(intruder.frames("sessions.update").length, 1, "still a phone: gets the Mac's update");
+  assert.equal(intruder.frames("sessions.update").length, 1, "still a phone: gets the computer's update");
   await call(relay, "POST", "/sessions/command", { e: E });
   assert.equal(intruder.frames("sessions.command").length, 0, "never gets commands");
 });

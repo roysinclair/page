@@ -380,7 +380,7 @@ final class NowActionsTests: XCTestCase {
         XCTAssertNil(MacReplyGate.refusal(forPageId: "sess-a-permission-1", action: "custom"))
         for action in ["2", "approve_always", "carry_on", ""] {
             XCTAssertEqual(MacReplyGate.refusal(forPageId: "sess-a-permission-1", action: action),
-                           "Page only sends approve, deny or a written reply", action)
+                           "Page Studio only sends approve, deny or a written reply", action)
         }
     }
 
@@ -439,7 +439,7 @@ final class NowActionsTests: XCTestCase {
 
     func testNotTypableOutcomes() {
         XCTAssertEqual(ReplyOutcomeMapper.outcome(for: finished(InjectionExecutor.notForegroundMessage)), .notTypable)
-        XCTAssertEqual(ReplyOutcomeMapper.outcome(for: finished("This session isn't running in a terminal Page can type into")), .notTypable)
+        XCTAssertEqual(ReplyOutcomeMapper.outcome(for: finished("This session isn't running in a terminal Page Studio can type into")), .notTypable)
         XCTAssertEqual(ReplyOutcomeMapper.outcome(for: finished("Please reply at the Mac")), .notTypable)
     }
 

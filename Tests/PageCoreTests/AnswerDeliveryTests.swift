@@ -206,7 +206,7 @@ final class AnswerDeliveryTests: XCTestCase {
         for entry in TerminalCatalog.entries {
             XCTAssertEqual(entry.capabilities.answer.takesKeys, measured.contains(entry.id), entry.name)
         }
-        XCTAssertEqual(TerminalCatalog.entry(.terminal).capabilities.answer, .notYet("Terminal adds a Return to every key Page types; use tmux or iTerm2"))
+        XCTAssertEqual(TerminalCatalog.entry(.terminal).capabilities.answer, .notYet("Terminal adds a Return to every key Page Studio types; use tmux or iTerm2"))
         XCTAssertFalse(AnswerDelivery.takesAnswerKeys(SessionHostInfo(host: "Ghostty", canType: true, canInterrupt: true)))
         XCTAssertFalse(AnswerDelivery.takesAnswerKeys(.checking))
         XCTAssertFalse(AnswerDelivery.takesAnswerKeys(.blocked(ClaudeSquad.hostName, ClaudeSquad.pausedMessage)))
@@ -318,18 +318,18 @@ final class AnswerDeliveryTests: XCTestCase {
         }
         XCTAssertEqual(AnswerDelivery.capabilities(of: .terminalApp(tty: "/dev/ttys009")),
                        .failure(AnswerPlanError(AnswerDelivery.terminalAppMessage)))
-        XCTAssertEqual(AnswerDelivery.capabilities(of: .unreachable("Page can't find this pane")),
-                       .failure(AnswerPlanError("Page can't find this pane")))
+        XCTAssertEqual(AnswerDelivery.capabilities(of: .unreachable("Page Studio can't find this pane")),
+                       .failure(AnswerPlanError("Page Studio can't find this pane")))
         XCTAssertEqual(AnswerDelivery.capabilities(of: .unsupported("Ghostty")),
-                       .failure(AnswerPlanError("Page can't type into Ghostty yet — use tmux or iTerm2")))
+                       .failure(AnswerPlanError("Page Studio can't type into Ghostty yet — use tmux or iTerm2")))
         XCTAssertEqual(AnswerDelivery.capabilities(of: .unknown), .failure(AnswerPlanError("Couldn't find the session's terminal")))
     }
 
     func testEveryUnenabledHostRefusesWithItsReasonBeforeAnyKey() {
         let refusals: [(InjectionExecutor.TerminalHost, String)] = [
             (.terminalApp(tty: "/dev/ttys009"), AnswerDelivery.terminalAppMessage),
-            (.unreachable("Page can't find this pane"), "Page can't find this pane"),
-            (.unsupported("Ghostty"), "Page can't type into Ghostty yet — use tmux or iTerm2"),
+            (.unreachable("Page Studio can't find this pane"), "Page Studio can't find this pane"),
+            (.unsupported("Ghostty"), "Page Studio can't type into Ghostty yet — use tmux or iTerm2"),
             (.unknown, "Couldn't find the session's terminal"),
         ]
         for (host, message) in refusals {

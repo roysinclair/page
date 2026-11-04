@@ -53,7 +53,7 @@ final class KeychainSecretStore: SecretStore {
     static let cmuxSocketPassword = KeychainSecretStore(
         service: CmuxBridge.keychainService,
         account: CmuxBridge.keychainAccount,
-        label: "Page — cmux socket password"
+        label: "Page Studio — cmux socket password"
     )
 
     init(service: String, account: String, label: String? = nil) {

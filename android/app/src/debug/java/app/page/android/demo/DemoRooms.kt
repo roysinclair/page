@@ -239,7 +239,7 @@ object DemoRooms {
                 )
                 val mine = SentSessionCommand(
                     "c-held", "room-claude", SessionCommandKind.INPUT, "Then run the linter", ago(240),
-                    SessionDeliveryState.Held("Held — Page types it when Claude finishes this turn"), target = SessionTarget.of(s, mac),
+                    SessionDeliveryState.Held("Held — Page Studio types it when Claude finishes this turn"), target = SessionTarget.of(s, mac),
                 )
                 i = i.copy(
                     session = s, caps = holdCaps, choiceExplained = true, sent = HeldMessages.pending(s, i.sent + mine), latestInput = mine,
@@ -265,7 +265,7 @@ object DemoRooms {
             )
             // A Codex-style row: it can type but takes no photos, and the Mac said why.
             "room-photos-blocked" -> i = i.copy(
-                session = session("room-codex", "payments-api", "codex", "unknown", LiveSessionState.IDLE, host = "tmux", attachBlocker = "Page can't send photos to Codex yet", ago = 30),
+                session = session("room-codex", "payments-api", "codex", "unknown", LiveSessionState.IDLE, host = "tmux", attachBlocker = "Page Studio can't send photos to Codex yet", ago = 30),
                 transcript = SessionTranscript("room-codex", codexEntries, false), caps = photoCaps, screen = null, runs = emptyList(), fiveHourPct = null, sent = emptyList(),
             )
             // Photos going up: the receipt's ring fills as pieces are accepted, and the bubble says how far.
@@ -289,7 +289,7 @@ object DemoRooms {
             }
             "room-ended" -> i = i.copy(session = session("room-claude", "mac-on-claude-code", state = LiveSessionState.IDLE, ago = 400), ended = true)
             "room-blocked" -> i = i.copy(
-                session = session("room-claude", "mac-on-claude-code", state = LiveSessionState.IDLE, host = "Ghostty", canType = false, blocker = "Page can't type into Ghostty yet", ago = 300),
+                session = session("room-claude", "mac-on-claude-code", state = LiveSessionState.IDLE, host = "Ghostty", canType = false, blocker = "Page Studio can't type into Ghostty yet", ago = 300),
                 screen = null, runs = emptyList(),
             )
             "room-receipt", "room-receipt-refused" -> {
@@ -471,7 +471,7 @@ object DemoRooms {
             "ask-story-sending" -> SessionDeliveryState.Sending
             "ask-story-refused" -> SessionDeliveryState.Refused("question_changed", "That question changed — look at your phone for the new one")
             // The Mac's own words for a question it would not answer in Terminal.app (AnswerDelivery.terminalAppMessage).
-            "ask-story-refused-terminal" -> SessionDeliveryState.Refused("answer_unsupported", "Terminal.app adds a Return to every key Page types, which would skip or dismiss questions — answer at your Mac, or use tmux or iTerm2")
+            "ask-story-refused-terminal" -> SessionDeliveryState.Refused("answer_unsupported", "Terminal.app adds a Return to every key Page Studio types, which would skip or dismiss questions — answer at your Mac, or use tmux or iTerm2")
             "ask-story-answered" -> SessionDeliveryState.Typed("Answered 3 questions in tmux pane %1")
             else -> return null
         }

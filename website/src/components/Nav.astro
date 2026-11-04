@@ -24,13 +24,13 @@ const top = [
       <a href={u(top[0].href)} aria-current={isCur('') ? 'page' : undefined} class={`nav-link ${isCur('') ? 'is-cur' : ''}`}>Studio</a>
       <div class="nav-group">
         <a href={u('mac/')} class={`nav-link ${inPower ? 'is-cur' : ''}`} aria-current={inPower && current === 'mac/' ? 'page' : undefined}>
-          <ProductIcon product="power" size={18} /> Power
+          <ProductIcon product="power" size={18} /> Power &amp; Relay
           <svg width="10" height="10" viewBox="0 0 14 14" aria-hidden="true" class="opacity-60"><path d="M2 5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
-        <div class="nav-menu" role="group" aria-label="Page Power">
+        <div class="nav-menu" role="group" aria-label="Page Studio for Mac and Page Relay">
           {powerPages.map((p) => (
             <a href={u(p.href)} aria-current={isCur(p.href) ? 'page' : undefined} class={isCur(p.href) ? 'is-cur' : ''}>
-              <strong>{p.label === 'Relay' ? 'Page Relay' : `Page Power for ${p.label}`}</strong>
+              <strong>{p.title}</strong>
               <small>{p.note}</small>
             </a>
           ))}
@@ -52,7 +52,7 @@ const top = [
       </summary>
       <div class="mobile-menu absolute right-0 top-14 w-[min(88vw,340px)] rounded-3xl p-2 shadow-2xl">
         <a href={u()} aria-current={isCur('') ? 'page' : undefined} class={isCur('') ? 'is-cur' : ''}>Page Studio</a>
-        <p class="mm-label"><ProductIcon product="power" size={16} /> Page Power</p>
+        <p class="mm-label"><ProductIcon product="power" size={16} /> Page Power &amp; Page Relay</p>
         {powerPages.map((p) => (
           <a href={u(p.href)} aria-current={isCur(p.href) ? 'page' : undefined} class={`sub ${isCur(p.href) ? 'is-cur' : ''}`}>{p.label}</a>
         ))}
@@ -66,9 +66,9 @@ const top = [
   </div>
 
   {inPower && (
-    <nav aria-label="Page Power" class="subnav">
+    <nav aria-label="Page Studio for Mac and Page Relay" class="subnav">
       <div class="wrap-wide flex items-center gap-1 overflow-x-auto py-2">
-        <span class="mr-2 hidden items-center gap-2 text-[13px] font-semibold text-ink sm:flex"><ProductIcon product="power" size={18} /> Page Power</span>
+        <span class="mr-2 hidden items-center gap-2 text-[13px] font-semibold text-ink sm:flex"><ProductIcon product="power" size={18} /> Page Power &amp; Page Relay</span>
         {powerPages.map((p) => (
           <a href={u(p.href)} aria-current={isCur(p.href) ? 'page' : undefined} class={isCur(p.href) ? 'is-cur' : ''}>{p.label}</a>
         ))}

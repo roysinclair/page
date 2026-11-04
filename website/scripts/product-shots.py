@@ -1,13 +1,16 @@
 """Make the website's product images (public/img/{aura,orbit,power}/) from the apps' real screenshots.
 
     python3 website/scripts/product-shots.py            # from the repo root; needs Pillow
+    python3 website/scripts/product-shots.py power/lock # only the jobs whose names start with these
     PAGE_AURA=/path/to/page-studio-apps python3 ...             # if page-studio-apps isn't checked out next to this repo
 
 Reads (never writes) page-studio-apps' docs/ screenshots and this repo's docs/images/src/assets/ renders (fixture
-data). Writes WebP files, each with smaller copies for srcset, and prints the sizes to register in
+data). power/lock is the lock-screen board with the Page Relay name, shot by docs/images/src (node shoot.mjs
+screen-lock) into docs/images/src/out/. Writes WebP files, each with smaller copies for srcset, and prints the sizes to register in
 src/data/images.ts (imageSize and imageVariants). Crop boxes are in 2000-px-wide preview coordinates.
 """
 import os
+import sys
 from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -15,6 +18,7 @@ REPO = os.path.abspath(os.path.join(HERE, '..', '..'))
 AURA = os.path.join(os.environ.get('PAGE_AURA', os.path.join(REPO, '..', 'page-studio-apps')), 'docs')
 ORBIT = os.path.join(AURA, 'orbit')
 ASSETS = os.path.join(REPO, 'docs', 'images', 'src', 'assets')
+SHOTS = os.path.join(REPO, 'docs', 'images', 'src', 'out')
 OUT = os.path.join(REPO, 'website', 'public', 'img')
 
 # name: (source, crop box in preview px or None, preview width or None, output widths (largest first))
@@ -45,7 +49,7 @@ JOBS = {
     'orbit/memory':   (f'{ORBIT}/memory.png', (360, 20, 1880, 975), 2000, [1300, 760]),
     'orbit/environment': (f'{ORBIT}/environment.png', (360, 20, 1880, 900), 2000, [1300, 760]),
     # ---- Page Power: raw app renders (fixture data) ----
-    'power/lock':     (f'{ASSETS}/board-lock-screen.webp', None, None, [782, 480]),
+    'power/lock':     (f'{SHOTS}/screen-lock.png', None, None, [782, 480]),
     'power/now':      (f'{ASSETS}/ios-now.webp', None, None, [720, 440]),
     'power/decision': (f'{ASSETS}/ios-decision-undoable.webp', None, None, [720, 440]),
     'power/pairing':  (f'{ASSETS}/ios-pairing.webp', None, None, [834, 480]),
@@ -53,7 +57,10 @@ JOBS = {
 
 sizes, variants = {}, {}
 total = 0
+only = sys.argv[1:]
 for name, (src, box, pw, widths) in JOBS.items():
+    if only and not any(name.startswith(o) for o in only):
+        continue
     im = Image.open(src).convert('RGB')
     if box:
         s = im.width / pw

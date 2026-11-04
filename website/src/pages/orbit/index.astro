@@ -9,7 +9,7 @@ import TrustBand from '../../components/TrustBand.astro';
 import Device from '../../components/Device.astro';
 import { u, AURA_GITHUB, ORBIT_GUIDE, ORBIT_DEMO, STUDIO_RELEASES, BLOB } from '../../data/site';
 ---
-<Layout current="orbit/" world="orbit" title="Page Orbit" og={{ image: 'img/og/orbit.webp', alt: 'Page Orbit: mission control for your AI agents. A live agent session with its timeline of events, timing and cost.' }} description="Page Orbit is a free desktop app for Anthropic’s Managed Agents: build agents with versions, talk to them live, see every step and every cent, and let a model diagnose what went wrong. Your key stays in your keychain. Linked to Page Power, your phone is paged when an agent wants your approval or has finished.">
+<Layout current="orbit/" world="orbit" title="Page Orbit" og={{ image: 'img/og/orbit.webp', alt: 'Page Orbit: mission control for your AI agents. A live agent session with its timeline of events, timing and cost.' }} description="Page Orbit is a free desktop app for Anthropic’s Managed Agents: build agents with versions, talk to them live, see every step and every cent, and let a model diagnose what went wrong. Your key stays in your keychain. Linked to Page Relay, your phone is paged when an agent wants your approval or has finished.">
   <!-- ================================================================ HERO -->
   <section class="relative isolate overflow-hidden pb-20 pt-14 sm:pb-28 sm:pt-20">
     <Field layout="hero" />
@@ -243,9 +243,9 @@ import { u, AURA_GITHUB, ORBIT_GUIDE, ORBIT_DEMO, STUDIO_RELEASES, BLOB } from '
             <span class="h-px w-8 bg-gradient-to-r from-orbit-magenta to-pulse-teal" aria-hidden="true"></span>
             <ProductIcon product="power" size={40} />
           </div>
-          <p class="label mt-6">The Page Power link</p>
+          <p class="label mt-6">The Page Relay link</p>
           <h2 class="h2 mt-4">Your agents work in the cloud. <span class="text-world">Your phone tells you when they need you.</span></h2>
-          <p class="lede mt-5">On a Mac, Page Orbit can hand its sessions to Page Power. An agent that stops to ask for approval, or one that finishes while you’re away, pages your phone like Claude Code and Codex do.</p>
+          <p class="lede mt-5">On a Mac or a Linux machine running Page Studio, Page Orbit can hand its sessions to Page Relay. An agent that stops to ask for approval, or one that finishes while you’re away, pages your phone like Claude Code and Codex do.</p>
           <div class="mt-10 grid gap-4 sm:grid-cols-3">
             <div class="card !p-5"><span class="ico !h-10 !w-10"><Icon name="bell" size={20} /></span><h3 class="mt-4 text-[17px] font-bold">Approvals</h3><p class="body mt-1.5 text-[14.5px]">See what and why, and Allow once or Deny from the lock screen.</p></div>
             <div class="card !p-5"><span class="ico !h-10 !w-10"><Icon name="check" size={20} /></span><h3 class="mt-4 text-[17px] font-bold">Finished</h3><p class="body mt-1.5 text-[14.5px]">The end of the agent’s last message. Reply to give it its next task.</p></div>
@@ -254,7 +254,7 @@ import { u, AURA_GITHUB, ORBIT_GUIDE, ORBIT_DEMO, STUDIO_RELEASES, BLOB } from '
         </div>
         <div class="world-power relative mx-auto w-full max-w-[320px]" data-reveal="scale" style="--d:120ms">
           <div class="rings" aria-hidden="true"><i style="--r:175%;--dl:0s"></i><i style="--r:175%;--dl:-2s"></i><i style="--r:175%;--dl:-4s"></i></div>
-          <Device name="power/now" island class="relative" sizes="(min-width: 1024px) 320px, 70vw" alt="Page Power's Now screen on iPhone: 2 need you, 5 working, with the runway, and a decision card to delete every Dev build that needs a hold to approve." />
+          <Device name="power/now" island class="relative" sizes="(min-width: 1024px) 320px, 70vw" alt="The Now screen of Page Relay for iPhone: 2 need you, 5 working, with the runway, and a decision card to delete every Dev build that needs a hold to approve." />
         </div>
       </div>
 
@@ -262,18 +262,18 @@ import { u, AURA_GITHUB, ORBIT_GUIDE, ORBIT_DEMO, STUDIO_RELEASES, BLOB } from '
         <div class="card !p-7 sm:!p-9">
           <h3 class="h3">Turn it on</h3>
           <ol class="steps mt-6">
-            <li>Run Page Power on the same Mac.</li>
-            <li>In Page Orbit, open Settings ▸ <strong>Page Power on this Mac</strong> and switch on <strong>Link Page Orbit to Page Power</strong>.</li>
-            <li>The line under the switch reads <em>Connected to Page Power</em>, or <em>Waiting for Page Power</em> while it retries.</li>
+            <li>Run Page Studio on the same computer (Page Studio for Mac, or <code class="code-inline">paged</code> on Linux).</li>
+            <li>In Page Orbit, open Settings ▸ <strong>Page Relay on this computer</strong> and switch on <strong>Link Page Orbit to Page Relay</strong>.</li>
+            <li>The line under the switch reads <em>Connected to Page Relay</em>, or <em>Waiting for Page Relay</em> while it retries.</li>
           </ol>
-          <p class="fine mt-6">In Page Power, Preferences ▸ Agents ▸ <strong>Page Orbit</strong> must be on. It is on by default, because it only opens a local socket. The opt-in lives in Page Orbit, where the link is off by default. It exists in the macOS and Linux desktop apps. Page Power never keeps the Mac awake for Page Orbit: its agents run in Anthropic’s cloud.</p>
+          <p class="fine mt-6">In Page Studio, Preferences ▸ Agents ▸ <strong>Page Orbit</strong> must be on. It is on by default, because it only opens a local socket. The opt-in lives in Page Orbit, where the link is off by default. It exists in the macOS and Linux desktop apps. Page Power never keeps the computer awake for Page Orbit: its agents run in Anthropic’s cloud.</p>
         </div>
         <div class="card !p-7 sm:!p-9">
-          <h3 class="h3">What leaves the Mac</h3>
-          <p class="body mt-4">Page Orbit never talks to the relay. It talks to Page Power over a Unix socket on the same computer, readable only by you. Page Power then sends, through <strong class="text-ink">your own</strong> Page Relay to <strong class="text-ink">your</strong> phone:</p>
+          <h3 class="h3">What leaves your computer</h3>
+          <p class="body mt-4">Page Orbit never talks to the relay. It talks to Page Studio over a Unix socket on the same computer, readable only by you. Page Relay then sends, through <strong class="text-ink">your own</strong> Page Relay to <strong class="text-ink">your</strong> phone:</p>
           <ul class="list-dots mt-4">
             <li>the titles of sessions that are working or waiting on you, and their agent’s name;</li>
-            <li>the tool an agent wants to use, with its input clipped and redacted by Page Power;</li>
+            <li>the tool an agent wants to use, with its input clipped and redacted by Page Studio;</li>
             <li>the end of a finished session’s last message.</li>
           </ul>
           <p class="fine mt-4">Never sent: your API key, transcripts or files. The protocol is documented in <a class="link" href={BLOB + 'docs/ORBIT-LINK.md'} rel="noopener">docs/ORBIT-LINK.md</a>.</p>
@@ -294,7 +294,7 @@ import { u, AURA_GITHUB, ORBIT_GUIDE, ORBIT_DEMO, STUDIO_RELEASES, BLOB } from '
           <a href={STUDIO_RELEASES} rel="noopener" class="btn-ghost btn-lg">Download</a>
           <a href={ORBIT_GUIDE} rel="noopener" class="btn-ghost btn-lg">Read the guide</a>
         </div>
-        <p class="fine mt-7"><a class="link" href={AURA_GITHUB} rel="noopener">Page Orbit on GitHub</a> · <a class="link" href={u('aura/')}>Page Aura</a> · <a class="link" href={u('mac/')}>Page Power for Mac</a></p>
+        <p class="fine mt-7"><a class="link" href={AURA_GITHUB} rel="noopener">Page Orbit on GitHub</a> · <a class="link" href={u('aura/')}>Page Aura</a> · <a class="link" href={u('mac/')}>Page Studio for Mac</a></p>
       </div>
     </div>
   </section>

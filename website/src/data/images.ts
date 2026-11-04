@@ -26,7 +26,7 @@ export const imageSize: Record<string, [number, number]> = {
   'showcase/og': [1200, 630],
   'showcase/family': [2400, 1500],
   'showcase/hero-visual': [1680, 1440],
-  'showcase/family-visual': [2400, 1128],
+  'showcase/family-visual': [2400, 1112],
   'showcase/feature-battery-visual': [920, 870],
   'showcase/feature-terminals-visual': [945, 815],
   'showcase/feature-widgets-visual': [895, 870],

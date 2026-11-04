@@ -51,8 +51,8 @@ enum TowerWidgets {
 
     /// Mirrors the extension's `supportedFamilies` and display names (PageWidget.swift); a logic test pins the kinds.
     static let widgets: [Widget] = [
-        Widget(kind: .macStatus, name: "Page",
-               detail: "Sessions that need you, agents at work, and the Runway: when your Mac’s battery or your usage will stop the work.",
+        Widget(kind: .macStatus, name: "Page Relay",
+               detail: "Sessions that need you, agents at work, and the Runway: when your computer’s battery or your usage will stop the work.",
                homeSizes: [.small, .medium, .large], lockSizes: [.rectangular, .circular, .inline]),
         Widget(kind: .claudeUsage, name: "Claude usage",
                detail: "Your 5-hour and 7-day Claude usage and when each resets.",
@@ -124,8 +124,8 @@ enum TowerWidgets {
                      detail: "On your Home Screen, press on a gap between the icons until they start to wiggle."),
                 Step(number: 2, title: "Tap Edit, then Add Widget",
                      detail: "Edit is at the top left. Choose Add Widget from the menu."),
-                Step(number: 3, title: "Search for Page",
-                     detail: "Type Page in the search field. Page and Claude usage show up."),
+                Step(number: 3, title: "Search for Page Relay",
+                     detail: "Type Page Relay in the search field. Page Relay and Claude usage show up."),
                 Step(number: 4, title: "Pick a size",
                      detail: "Swipe sideways to see small, medium and large, and stop on the one you like."),
                 Step(number: 5, title: "Tap Add Widget",
@@ -139,8 +139,8 @@ enum TowerWidgets {
                      detail: "Customize is at the bottom. Choose the Lock Screen side, not the Home Screen."),
                 Step(number: 3, title: "Tap the row of widgets",
                      detail: "It is just under the time, or above it for the small line."),
-                Step(number: 4, title: "Choose Page",
-                     detail: "Search for Page or find it in the list, then tap the widget you want. Tap Done."),
+                Step(number: 4, title: "Choose Page Relay",
+                     detail: "Search for Page Relay or find it in the list, then tap the widget you want. Tap Done."),
             ]
         }
     }
@@ -152,24 +152,24 @@ enum TowerWidgets {
     static let hideLabel = "Hide the steps"
 
     /// The honest line: Apple does not let an app place widgets.
-    static let honestLine = "iPhone only lets you place a widget yourself, so Page gets everything ready and shows you the steps."
+    static let honestLine = "iPhone only lets you place a widget yourself, so Page Relay gets everything ready and shows you the steps."
 
     /// What the status row says underneath, by state.
     static func hint(_ status: Status) -> String {
         switch status.placed {
-        case nil: return "Asking your iPhone which Page widgets are on your screens."
+        case nil: return "Asking your iPhone which Page Relay widgets are on your screens."
         case true?: return "They keep themselves up to date. Touch and hold one to change it or remove it."
-        case false?: return "Page can’t put one there for you. Tap “Show me how” and it takes a minute."
+        case false?: return "Page Relay can’t put one there for you. Tap “Show me how” and it takes a minute."
         }
     }
 
     static let previewsTitle = "What you’ll get"
     static let lockScreenTitle = "On the Lock Screen"
-    static let examplesNote = "Example data. Yours show your Mac right now, with secrets masked. Tap a widget to open Page."
+    static let examplesNote = "Example data. Yours show your computer right now, with secrets masked. Tap a widget to open Page Relay."
     static let lockNote = "The Lock Screen draws these in your wallpaper’s tint, so they look a little different there."
 
     /// Your Mac can show these too, and has its own.
-    static let macNote = "Your Mac can show iPhone widgets as well: in System Settings ▸ Desktop & Dock, turn on “Use iPhone widgets”. The Mac also has widgets of its own, set up in Page ▸ Tower ▸ Widgets on the Mac."
+    static let macNote = "Your Mac can show iPhone widgets as well: in System Settings ▸ Desktop & Dock, turn on “Use iPhone widgets”. The Mac also has widgets of its own, set up in Page Studio ▸ Tower ▸ Widgets on the Mac."
 
     // MARK: Example data for the previews
 

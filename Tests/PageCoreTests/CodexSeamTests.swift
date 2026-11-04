@@ -55,7 +55,7 @@ final class CodexRolloutHolderTests: XCTestCase {
             seenArgs = $0
             return self.result("p61999\nccodex\np7\ncPage\n")
         }
-        XCTAssertEqual(held, .held([.init(pid: 61999, command: "codex")]), "Page's own pid never counts")
+        XCTAssertEqual(held, .held([.init(pid: 61999, command: "codex")]), "Page Studio's own pid never counts")
         XCTAssertEqual(seenArgs.last, path)
         XCTAssertTrue(seenArgs.contains("--"))
 
@@ -87,7 +87,7 @@ final class CodexRolloutHolderTests: XCTestCase {
             return self.result("p61999\nfcwd\nn/Users/me/p\nf30\nn/Users/me/.codex/sessions/2026/10/24/rollout-2026-10-24T10-00-00-019a-thread.jsonl\n")
         }
         XCTAssertEqual(held, .held([.init(pid: 61999, command: desktopAppServer)]))
-        XCTAssertEqual(asked[asked.firstIndex(of: "-p")! + 1], "61999", "only codex-family processes other than Page")
+        XCTAssertEqual(asked[asked.firstIndex(of: "-p")! + 1], "61999", "only codex-family processes other than Page Studio")
 
         // Another thread's rollout: not ours.
         XCTAssertEqual(CodexInjector.rolloutHolders(rolloutPath: nil, threadId: "019a-thread", table: table, ownPid: 7) { _ in
@@ -131,7 +131,7 @@ final class CodexRolloutHolderTests: XCTestCase {
 
         let unnamed = CodexInjector.execResumeBlocker(table: [row(1, "x")], processes: [], project: "p",
                                                       holders: .held([.init(pid: 30, command: "python3")]))
-        XCTAssertEqual(unnamed, "Another Codex process has this session open — reply there or on the Mac")
+        XCTAssertEqual(unnamed, "Another Codex process has this session open — reply there or on your computer")
 
         XCTAssertNotNil(CodexInjector.execResumeBlocker(table: table, processes: [], project: "p", holders: .unknown))
         XCTAssertNil(CodexInjector.execResumeBlocker(table: table, processes: [], project: "p", holders: .none))

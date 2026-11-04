@@ -656,7 +656,7 @@ final class QuestionAnswerTests: XCTestCase {
         let result = drive(dialog, answers, caps: .plainKeysOnly)
         XCTAssertEqual(result, .aborted(AnswerPlan.arrowsMessage))
         noForbiddenKeys(dialog)
-        XCTAssertFalse(dialog.closed, "the dialog is left open at the Mac")
+        XCTAssertFalse(dialog.closed, "the dialog is left open at your computer")
     }
 
     func testReviewMismatchPressesNothing() throws {

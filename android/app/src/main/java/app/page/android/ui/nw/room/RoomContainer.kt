@@ -239,7 +239,7 @@ fun RoomContainer(sessionId: String, entry: RoomEntry, modifier: Modifier = Modi
             Column(Modifier.padding(32.dp).widthIn(max = 360.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 if (sessionState.hasList) {
                     Text("This session isn't running", style = NW.Typo.headline, color = NW.Palette.textPrimary.color, textAlign = TextAlign.Center)
-                    Text("It's not on your Mac's list of live sessions anymore.", style = NW.Typo.body, color = NW.Palette.textSecondary.color, textAlign = TextAlign.Center)
+                    Text("It's not on your computer's list of live sessions anymore.", style = NW.Typo.body, color = NW.Palette.textSecondary.color, textAlign = TextAlign.Center)
                     NWButton("Close", AppRouter::closeSheet)
                 } else {
                     CircularProgressIndicator(color = NW.Palette.textSecondary.color, strokeWidth = 2.dp)
@@ -317,7 +317,7 @@ fun RoomContainer(sessionId: String, entry: RoomEntry, modifier: Modifier = Modi
             is PhotoSend.Decision.Refuse -> { composerProblem = d.why; return }
             PhotoSend.Decision.Send -> Unit
         }
-        if (ended || live == null || data.session.id != sessionId) { composerProblem = "This session isn't on your Mac's list any more, so nothing was sent."; return }
+        if (ended || live == null || data.session.id != sessionId) { composerProblem = "This session isn't on your computer's list any more, so nothing was sent."; return }
         val problem = SessionStore.sendPhotos(sessionId, text, photoDraft.ready, SessionTarget.of(live, macName))
         if (problem != null) { composerProblem = problem; return }
         photoDraft = PhotoDraft()

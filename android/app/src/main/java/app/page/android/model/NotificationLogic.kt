@@ -24,7 +24,7 @@ object NotificationActionId {
  */
 object QueuedReplyNotification {
     const val SENDING = "Sending your reply…"
-    const val QUEUED = "Queued — your Mac is offline. It'll be typed in when it reconnects."
+    const val QUEUED = "Queued — your computer is offline. It'll be typed in when it reconnects."
     const val DELETING = "Deleting…"
     const val NOT_SENT = "Deleted — not sent"
 
@@ -128,7 +128,7 @@ sealed interface NotificationDecision {
                 is NotificationResponseKind.Action -> when (response.id) {
                     NotificationActionId.APPROVE, NotificationActionId.DENY -> {
                         if (kind != null && kind != InterventionKind.APPROVAL) {
-                            Refuse("Approve and Deny only apply to approval requests. Open Page to answer this one.")
+                            Refuse("Approve and Deny only apply to approval requests. Open Page Relay to answer this one.")
                         } else if (response.id == NotificationActionId.APPROVE && approveLevel != Reversibility.UNDOABLE) {
                             Open
                         } else {
@@ -139,22 +139,22 @@ sealed interface NotificationDecision {
                         if (kind != null && PageSubtype.canStop(kind, subtype)) {
                             Send("", ReplyAction.DENY)
                         } else {
-                            Refuse("Stop only applies to a session that looks stuck. Open Page to answer this one.")
+                            Refuse("Stop only applies to a session that looks stuck. Open Page Relay to answer this one.")
                         }
                     }
                     NotificationActionId.CARRY_ON -> when {
                         kind == InterventionKind.APPROVAL ->
-                            Refuse("This session is waiting for an approval. Open Page to approve or deny it.")
+                            Refuse("This session is waiting for an approval. Open Page Relay to approve or deny it.")
                         kind != null && PageSubtype.isStuck(kind, subtype) ->
-                            Refuse("This session looks stuck, so carrying on won't help. Open Page to tell it what to do.")
-                        forecast -> Refuse("Nothing to answer: this is a heads-up from your Mac.")
+                            Refuse("This session looks stuck, so carrying on won't help. Open Page Relay to tell it what to do.")
+                        forecast -> Refuse("Nothing to answer: this is a heads-up from your computer.")
                         else -> Send("", ReplyAction.CARRY_ON)
                     }
                     NotificationActionId.REPLY -> {
                         val text = (userText ?: "").trim()
                         when {
                             text.isEmpty() -> Ignore
-                            forecast -> Refuse("Nothing to answer: this is a heads-up from your Mac.")
+                            forecast -> Refuse("Nothing to answer: this is a heads-up from your computer.")
                             else -> Send(text, ReplyAction.CUSTOM)
                         }
                     }

@@ -10,7 +10,7 @@ const { class: cls = '', mode = 'viewport', thread = true } = Astro.props;
 const wideCls = mode === 'viewport' ? 'cd-wide hidden h-auto w-full md:block' : 'cd-wide block h-auto w-full';
 const tallCls = mode === 'viewport' ? 'cd-tall mx-auto block h-auto w-full max-w-[380px] md:hidden' : 'cd-tall mx-auto hidden h-auto w-full max-w-[380px]';
 const title = 'How the pieces of Page Studio connect';
-const desc = 'AI agents on your Mac are watched by Page Power for Mac. Page Power for Mac connects out to your own relay on Cloudflare. Your iPhone and Android phone connect out to the same relay. Apple push notifications are optional and go from the relay to the iPhone. Page Aura talks to Page Power for Mac over a local Unix socket on the same Mac and never touches the relay.';
+const desc = 'AI agents on your Mac are watched by Page Studio for Mac: Page Power keeps the Mac awake, and Page Relay connects out to your own relay Worker on Cloudflare. Page Relay for iPhone and Page Relay for Android connect out to the same relay. Apple push notifications are optional and go from the relay to the iPhone. Page Aura talks to Page Studio over a local Unix socket on the same computer and never touches the relay.';
 ---
 <div class={cls} data-motion={thread ? "receipt-thread" : undefined}>
   <!-- Wide -->
@@ -37,15 +37,15 @@ const desc = 'AI agents on your Mac are watched by Page Power for Mac. Page Powe
     <g>
       <rect x="40" y="230" width="250" height="130" rx="22" fill="url(#gbox)" stroke="#5EEAD4" stroke-opacity=".55" stroke-width="1.5"/>
       <text x="62" y="272" fill="#5EEAD4" font-size="11.5" font-weight="700" letter-spacing="2">YOUR MAC</text>
-      <text x="62" y="304" fill="#fff" font-size="20" font-weight="800">Page Power for Mac</text>
-      <text x="62" y="331" fill="#B3B7C0" font-size="13.5">keep-awake · pause · replies</text>
+      <text x="62" y="304" fill="#fff" font-size="20" font-weight="800">Page Studio for Mac</text>
+      <text x="62" y="331" fill="#B3B7C0" font-size="13.5">Page Power · Page Relay</text>
     </g>
 
     <!-- relay -->
     <g>
       <rect x="395" y="230" width="210" height="130" rx="22" fill="url(#gbox)" stroke="#38BDF8" stroke-opacity=".6" stroke-width="1.5"/>
       <text x="417" y="272" fill="#38BDF8" font-size="11.5" font-weight="700" letter-spacing="2">YOUR CLOUDFLARE</text>
-      <text x="417" y="304" fill="#fff" font-size="20" font-weight="800">Your relay</text>
+      <text x="417" y="304" fill="#fff" font-size="20" font-weight="800">Page Relay</text>
       <text x="417" y="331" fill="#B3B7C0" font-size="13.5">a Worker on your account</text>
     </g>
 
@@ -53,8 +53,8 @@ const desc = 'AI agents on your Mac are watched by Page Power for Mac. Page Powe
     <g>
       <rect x="710" y="230" width="250" height="130" rx="22" fill="url(#gbox)" stroke="#F5B14C" stroke-opacity=".6" stroke-width="1.5"/>
       <text x="732" y="272" fill="#F5B14C" font-size="11.5" font-weight="700" letter-spacing="2">YOUR PHONE</text>
-      <text x="732" y="304" fill="#fff" font-size="20" font-weight="800">Page Power for iPhone</text>
-      <text x="732" y="331" fill="#B3B7C0" font-size="13.5">and Page Power for Android</text>
+      <text x="732" y="304" fill="#fff" font-size="20" font-weight="800">Page Relay for iPhone</text>
+      <text x="732" y="331" fill="#B3B7C0" font-size="13.5">and Page Relay for Android</text>
     </g>
 
     <!-- Mac <-> relay <-> phone -->
@@ -65,23 +65,23 @@ const desc = 'AI agents on your Mac are watched by Page Power for Mac. Page Powe
 
     <!-- APNs -->
     <g>
-      <rect x="430" y="60" width="140" height="56" rx="14" fill="#0A0C11" stroke="rgba(255,255,255,.16)" stroke-dasharray="5 5"/>
-      <text x="500" y="84" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">Apple push</text>
+      <rect x="418" y="58" width="164" height="60" rx="15" fill="#0A0C11" stroke="rgba(255,255,255,.16)" stroke-dasharray="5 5"/>
+      <text x="500" y="83" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">Apple push</text>
       <text x="500" y="104" fill="#B3B7C0" font-size="12" text-anchor="middle">optional · iPhone only</text>
     </g>
-    <path d="M500 228V118" stroke="#8a92a3" stroke-dasharray="5 5" marker-end="url(#ahd)"/>
-    <path d="M572 88H835Q850 88 850 103V228" fill="none" stroke="#8a92a3" stroke-dasharray="5 5" marker-end="url(#ahd)"/>
+    <path d="M500 228V120" stroke="#8a92a3" stroke-dasharray="5 5" marker-end="url(#ahd)"/>
+    <path d="M584 88H835Q850 88 850 103V228" fill="none" stroke="#8a92a3" stroke-dasharray="5 5" marker-end="url(#ahd)"/>
 
     <!-- Aura -->
     <g>
       <rect x="40" y="430" width="250" height="90" rx="22" fill="url(#gbox)" stroke="#A78BFA" stroke-opacity=".6" stroke-width="1.5"/>
-      <text x="62" y="466" fill="#A78BFA" font-size="11.5" font-weight="700" letter-spacing="2">BRING YOUR OWN KEY</text>
+      <text x="62" y="466" fill="#A78BFA" font-size="11.5" font-weight="700" letter-spacing="2">YOUR OWN CREDITS</text>
       <text x="62" y="496" fill="#fff" font-size="20" font-weight="800">Page Aura</text>
     </g>
     <path d="M165 362V428" stroke="#A78BFA" stroke-width="2" marker-start="url(#ahv)" marker-end="url(#ahv)"/>
     <text x="182" y="402" fill="#B3B7C0" font-size="13">local Unix socket, same computer only</text>
     <text x="320" y="480" fill="#B3B7C0" font-size="13.5">Page Aura never talks to the relay.</text>
-    <text x="320" y="502" fill="#B3B7C0" font-size="13.5">Page owns the pairing, the keys and push.</text>
+    <text x="320" y="502" fill="#B3B7C0" font-size="13.5">Page Studio owns the pairing, the keys and push.</text>
 
     {thread && (
       <g class="rt" aria-hidden="true">
@@ -121,15 +121,15 @@ const desc = 'AI agents on your Mac are watched by Page Power for Mac. Page Powe
 
     <rect x="20" y="124" width="320" height="86" rx="18" fill="#14161C" stroke="#5EEAD4" stroke-opacity=".55" stroke-width="1.5"/>
     <text x="40" y="150" fill="#5EEAD4" font-size="11" font-weight="700" letter-spacing="2">YOUR MAC</text>
-    <text x="40" y="178" fill="#fff" font-size="19" font-weight="800">Page Power for Mac</text>
-    <text x="40" y="198" fill="#B3B7C0" font-size="12.5">keep-awake · pause · replies</text>
+    <text x="40" y="178" fill="#fff" font-size="19" font-weight="800">Page Studio for Mac</text>
+    <text x="40" y="198" fill="#B3B7C0" font-size="12.5">Page Power · Page Relay</text>
 
     <path d="M180 212V256" stroke="#5EEAD4" stroke-width="2" marker-start="url(#bh)" marker-end="url(#bh)"/>
     <text x="196" y="239" fill="#B3B7C0" font-size="12.5">wss</text>
 
     <rect x="20" y="260" width="320" height="86" rx="18" fill="#14161C" stroke="#38BDF8" stroke-opacity=".6" stroke-width="1.5"/>
     <text x="40" y="286" fill="#38BDF8" font-size="11" font-weight="700" letter-spacing="2">YOUR CLOUDFLARE</text>
-    <text x="40" y="314" fill="#fff" font-size="19" font-weight="800">Your relay</text>
+    <text x="40" y="314" fill="#fff" font-size="19" font-weight="800">Page Relay</text>
     <text x="40" y="334" fill="#B3B7C0" font-size="12.5">a Worker on your own account</text>
 
     <path d="M180 348V392" stroke="#5EEAD4" stroke-width="2" marker-start="url(#bh)" marker-end="url(#bh)"/>
@@ -138,15 +138,15 @@ const desc = 'AI agents on your Mac are watched by Page Power for Mac. Page Powe
 
     <rect x="20" y="396" width="320" height="86" rx="18" fill="#14161C" stroke="#F5B14C" stroke-opacity=".6" stroke-width="1.5"/>
     <text x="40" y="422" fill="#F5B14C" font-size="11" font-weight="700" letter-spacing="2">YOUR PHONE</text>
-    <text x="40" y="450" fill="#fff" font-size="19" font-weight="800">Page Power for iPhone</text>
-    <text x="40" y="470" fill="#B3B7C0" font-size="12.5">and Page Power for Android</text>
+    <text x="40" y="450" fill="#fff" font-size="19" font-weight="800">Page Relay for iPhone</text>
+    <text x="40" y="470" fill="#B3B7C0" font-size="12.5">and Page Relay for Android</text>
 
     <line x1="20" y1="520" x2="340" y2="520" stroke="rgba(255,255,255,.12)" stroke-dasharray="4 6"/>
-    <text x="20" y="548" fill="#B3B7C0" font-size="12.5">Back on the Mac:</text>
+    <text x="20" y="548" fill="#B3B7C0" font-size="12.5">Back on your computer:</text>
     <rect x="20" y="568" width="320" height="76" rx="18" fill="#14161C" stroke="#A78BFA" stroke-opacity=".6" stroke-width="1.5"/>
-    <text x="40" y="594" fill="#A78BFA" font-size="11" font-weight="700" letter-spacing="2">BRING YOUR OWN KEY</text>
+    <text x="40" y="594" fill="#A78BFA" font-size="11" font-weight="700" letter-spacing="2">YOUR OWN CREDITS</text>
     <text x="40" y="622" fill="#fff" font-size="19" font-weight="800">Page Aura</text>
-    <text x="20" y="670" fill="#B3B7C0" font-size="12.5">Talks to Page Power for Mac over a local socket.</text>
+    <text x="20" y="670" fill="#B3B7C0" font-size="12.5">Talks to Page Studio over a local socket.</text>
     <text x="20" y="688" fill="#B3B7C0" font-size="12.5">Never touches the relay.</text>
 
     {thread && (

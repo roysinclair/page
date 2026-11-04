@@ -12,20 +12,20 @@ import HoldRing from '../components/HoldRing.astro';
 import Showcase from '../components/Showcase.astro';
 import { u, GITHUB, GUIDE, PDF, AURA_APP, AURA_GUIDE, ORBIT_DEMO, ORBIT_GUIDE, STUDIO_RELEASES } from '../data/site';
 
-// The pages your phone can get, across the family. From the kinds of page in data/site.ts (Page Power),
+// The pages your phone can get through Page Relay, across the family. From the kinds of page in data/site.ts (Page Studio),
 // docs/AURA-LINK.md (Page Aura) and docs/ORBIT-LINK.md (Page Orbit).
 const moments = [
   { p: 'power', kind: 'Approval', when: 'A tool call or plan from Claude Code is waiting for your OK.', act: 'Approve · Deny · Deny with instructions' },
   { p: 'power', kind: 'Looks stuck', when: 'The same command failed three times in a row, or nothing was written for 15 minutes.', act: 'Steer · Stop it' },
   { p: 'power', kind: 'Low battery', when: 'Your agents were paused at your cutoff, each with a two-line summary.', act: 'Carry on · stay paused' },
-  { p: 'aura', kind: 'Tool request', when: 'A chat asks to use an app on your Mac (a local MCP tool).', act: 'Allow once · Deny' },
-  { p: 'aura', kind: 'Reply ready', when: 'A reply finished while you were away from the Mac.', act: 'Read the end · send a message' },
+  { p: 'aura', kind: 'Tool request', when: 'A chat asks to use an app on your computer (a local MCP tool).', act: 'Allow once · Deny' },
+  { p: 'aura', kind: 'Reply ready', when: 'A reply finished while you were away from your computer.', act: 'Read the end · send a message' },
   { p: 'orbit', kind: 'Approval', when: 'An agent wants to run a command or use a tool that asks first.', act: 'Allow once · Deny' },
   { p: 'orbit', kind: 'Finished', when: 'A session finished while you were away, with the end of its last message.', act: 'Reply with its next task' },
 ] as const;
-const pname = { power: 'Page Power', aura: 'Page Aura', orbit: 'Page Orbit' } as const;
+const pname = { power: 'Page Studio', aura: 'Page Aura', orbit: 'Page Orbit' } as const;
 ---
-<Layout current="" world="studio" og={{ image: 'img/og/studio.webp', alt: 'Page Studio: run your AI agents, answer them from anywhere. Page Aura and Page Orbit windows behind an iPhone lock screen paged by Page Power.' }}>
+<Layout current="" world="studio" og={{ image: 'img/og/studio.webp', alt: 'Page Studio: run your AI agents, answer them from anywhere. Page Aura and Page Orbit windows behind an iPhone lock screen paged by Page Relay.' }}>
   <!-- ================================================================ HERO -->
   <section class="relative isolate overflow-hidden pb-10 pt-14 sm:pt-20">
     <Field layout="hero" />
@@ -36,17 +36,17 @@ const pname = { power: 'Page Power', aura: 'Page Aura', orbit: 'Page Orbit' } as
           <ProductIcon product="aura" size={22} class="rounded-[7px] ring-2 ring-night-900" />
           <ProductIcon product="orbit" size={22} class="rounded-[7px] ring-2 ring-night-900" />
         </span>
-        <span>Page Studio · three free apps<span class="hidden sm:inline"> you run yourself</span></span>
+        <span>Page Studio · free apps<span class="hidden sm:inline"> you run yourself</span></span>
       </a>
       <h1 class="display mx-auto mt-7 max-w-[1240px]">Run your AI agents. <span class="text-spectrum block pb-2">Answer them from anywhere.</span></h1>
-      <p class="lede mx-auto mt-6 max-w-2xl">Keep watch over your coding agents, chat with Anthropic’s models on your own key, and run cloud agents from one control room. When something needs you, your phone is paged. Nothing goes through us.</p>
+      <p class="lede mx-auto mt-6 max-w-2xl">Keep your coding agents running, chat over the API on your own credits, and run cloud agents from one control room. When something needs you, Page Relay pages your phone. Nothing goes through us.</p>
       <div class="mt-9 flex flex-wrap justify-center gap-3">
         <a href="#apps" class="btn-primary btn-lg">Meet the apps</a>
         <a href="#connect" class="btn-ghost btn-lg">How they connect</a>
       </div>
     </div>
 
-    <!-- The family in one picture: Page Aura and Page Orbit on the desktop, Page Power paging the phone in front. -->
+    <!-- The family in one picture: Page Aura and Page Orbit on the desktop, Page Relay paging the phone in front. -->
     <div class="wrap-wide stage mt-14 sm:mt-20">
       <div class="hs tilt">
         <div class="hs-aura">
@@ -59,7 +59,7 @@ const pname = { power: 'Page Power', aura: 'Page Aura', orbit: 'Page Orbit' } as
           <div class="rings" aria-hidden="true">
             <i style="--r:150%;--dl:0s"></i><i style="--r:150%;--dl:-2s"></i><i style="--r:150%;--dl:-4s"></i>
           </div>
-          <Device name="power/lock" eager sizes="(min-width: 1024px) 300px, 40vw" alt="An iPhone lock screen paged by Page Power: a live activity reading 2 need you, 5 working, as bottle-flip wants to delete builds, with Open; and a page saying llm-play looks stuck after cargo test failed 6 times in a row." />
+          <Device name="power/lock" eager sizes="(min-width: 1024px) 300px, 40vw" alt="An iPhone lock screen paged by Page Relay: a live activity reading 2 need you, 5 working, as bottle-flip wants to delete builds, with Open; and a page saying llm-play looks stuck after cargo test failed 6 times in a row." />
         </div>
         <div class="hs-chip hs-chip-aura floaty" style="--dl:-1s" aria-hidden="true"><ProductIcon product="aura" size={22} /> Reply ready</div>
         <div class="hs-chip hs-chip-orbit floaty" style="--dl:-3.5s" aria-hidden="true"><ProductIcon product="orbit" size={22} /> Approval needed</div>
@@ -72,19 +72,19 @@ const pname = { power: 'Page Power', aura: 'Page Aura', orbit: 'Page Orbit' } as
         <li>
           <a href="#power" class="legend world-power">
             <ProductIcon product="power" size={40} />
-            <span><strong>Page Power</strong><small>Keeps your Mac awake while coding agents work, and pages your phone.</small><small class="plat">macOS · Linux preview · iPhone · Android · your Cloudflare relay</small></span>
+            <span><strong>Page Studio</strong><small>Page Power keeps your computer awake while coding agents work; Page Relay pages your phone.</small><small class="plat">macOS · Linux preview · iPhone · Android · your Cloudflare relay</small></span>
           </a>
         </li>
         <li>
           <a href="#aura" class="legend world-aura">
             <ProductIcon product="aura" size={40} />
-            <span><strong>Page Aura</strong><small>A beautiful chat for Anthropic’s models, on your own API key.</small><small class="plat">Windows · macOS · Linux · browser</small></span>
+            <span><strong>Page Aura</strong><small>Chat over the API on your own credits, with context, web search and tools.</small><small class="plat">Windows · macOS · Linux · browser</small></span>
           </a>
         </li>
         <li>
           <a href="#orbit" class="legend world-orbit">
             <ProductIcon product="orbit" size={40} />
-            <span><strong>Page Orbit</strong><small>Mission control for Anthropic’s Managed Agents.</small><small class="plat">Windows · macOS · Linux</small></span>
+            <span><strong>Page Orbit</strong><small>Manage, control and diagnose Anthropic’s Managed Agents.</small><small class="plat">Windows · macOS · Linux</small></span>
           </a>
         </li>
       </ul>
@@ -93,29 +93,29 @@ const pname = { power: 'Page Power', aura: 'Page Aura', orbit: 'Page Orbit' } as
 
   <!-- ================================================================ THE APPS -->
   <div id="apps">
-    <!-- PAGE POWER -->
+    <!-- PAGE STUDIO FOR MAC: PAGE POWER + PAGE RELAY -->
     <section id="power" class="world world-power relative isolate overflow-hidden py-24 sm:py-32">
       <Field layout="right" full />
       <div class="wrap-wide grid items-center gap-12 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-10">
         <div data-reveal>
           <div class="flex items-center gap-4">
             <ProductIcon product="power" size={60} glow />
-            <div><p class="text-[15px] font-semibold">Page Power</p><p class="label mt-1">macOS menu bar · iPhone · Android</p></div>
+            <div><p class="text-[15px] font-semibold">Page Studio for Mac</p><p class="label mt-1">Page Power · Page Relay · iPhone · Android</p></div>
           </div>
           <h2 class="h2 world-h mt-8">Your agents keep working. <span class="text-world">You get paged only when it matters.</span></h2>
-          <p class="lede mt-6">A Mac menu-bar app that keeps the Mac awake while Claude Code, Codex and local models work, pauses them gracefully at your battery cutoff, and pages your phone when a decision is yours. Your reply is typed into the exact terminal that asked.</p>
+          <p class="lede mt-6">A Mac menu-bar app with two halves. Page Power keeps the Mac awake while Claude Code, Codex and local models work and pauses them gracefully at your battery cutoff. Page Relay pages your phone when a decision is yours and types your reply into the exact terminal that asked. A Linux preview runs headless.</p>
           <ul class="feats mt-8">
-            <li><span class="ico"><Icon name="bolt" /></span><span><strong>Awake exactly as long as the work needs.</strong> Real session state, not CPU guesses, lid closed too on AC.</span></li>
+            <li><span class="ico"><Icon name="bolt" /></span><span><strong>Page Power: awake exactly as long as the work needs.</strong> Real session state, not CPU guesses, lid closed too on AC.</span></li>
             <li><span class="ico"><Icon name="battery" /></span><span><strong>A graceful pause at your cutoff.</strong> Agents stop and write a two-line summary, then the Mac sleeps.</span></li>
-            <li><span class="ico"><Icon name="lock" /></span><span><strong>Your own relay.</strong> A Worker on your Cloudflare account; live sessions are end-to-end encrypted.</span></li>
+            <li><span class="ico"><Icon name="lock" /></span><span><strong>Page Relay: your own relay.</strong> A Worker on your Cloudflare account; live sessions are end-to-end encrypted.</span></li>
           </ul>
           <div class="mt-9 flex flex-wrap gap-3">
-            <a href={u('mac/')} class="btn-primary btn-arrow">Explore Page Power</a>
-            <a href={u('iphone/')} class="btn-ghost">The phone apps</a>
+            <a href={u('mac/')} class="btn-primary btn-arrow">Explore Page Studio for Mac</a>
+            <a href={u('iphone/')} class="btn-ghost">Page Relay for phones</a>
           </div>
         </div>
         <div class="halo lg:-mr-16 xl:-mr-24" data-reveal="scale" style="--d:120ms">
-          <Showcase name="showcase/hero-visual" class="-mx-4 sm:mx-0" sizes="(min-width: 1024px) 660px, 100vw" alt="Page Power across your devices, linked through your own relay on Cloudflare. An Android phone shows two items that need you, first an irreversible request to delete every Dev build with Deny and Hold; an iPhone lock screen shows two pages asking for approval; the Mac's menu-bar popover lists what needs you and what is working." />
+          <Showcase name="showcase/hero-visual" class="-mx-4 sm:mx-0" sizes="(min-width: 1024px) 660px, 100vw" alt="Page Studio across your devices, linked through Page Relay on your own Cloudflare account. An Android phone shows two items that need you, first an irreversible request to delete every Dev build with Deny and Hold; an iPhone lock screen shows two pages asking for approval; the Mac's menu-bar popover lists what needs you and what is working." />
         </div>
       </div>
     </section>
@@ -198,17 +198,17 @@ const pname = { power: 'Page Power', aura: 'Page Aura', orbit: 'Page Orbit' } as
       <div class="sec-head center" data-reveal>
         <p class="label">Better together</p>
         <h2 class="h2">One phone for <span class="text-spectrum">all of it.</span></h2>
-        <p class="lede mx-auto">Page Aura and Page Orbit hand their chats and sessions to Page Power on the same Mac. Page Power carries the pages through your own relay to your phone, and brings your answers back.</p>
+        <p class="lede mx-auto">Page Aura and Page Orbit hand their chats and sessions to Page Studio on the same computer. Page Relay carries the pages through your own relay to your phone, from any iPhone or Android device, and brings your answers back.</p>
       </div>
       <div class="glass-panel mt-14 px-4 py-6 md:px-10 md:py-11" data-reveal="scale">
         <Flow />
       </div>
       <ul class="mt-10 grid gap-4 md:grid-cols-3">
-        <li class="mini" data-reveal style="--d:0ms"><Icon name="lock" /><span><strong>A private local socket.</strong> Page Aura and Page Orbit only ever talk to Page Power, on the same Mac, readable only by you.</span></li>
-        <li class="mini" data-reveal style="--d:90ms"><Icon name="cloud" /><span><strong>Your relay, your account.</strong> The Mac and the phone both connect out to it. Page Studio’s authors have no access.</span></li>
+        <li class="mini" data-reveal style="--d:0ms"><Icon name="lock" /><span><strong>A private local socket.</strong> Page Aura and Page Orbit only ever talk to Page Studio, on the same computer, readable only by you.</span></li>
+        <li class="mini" data-reveal style="--d:90ms"><Icon name="cloud" /><span><strong>Your relay, your account.</strong> Your computer and your phone both connect out to it. Page Studio’s authors have no access.</span></li>
         <li class="mini" data-reveal style="--d:180ms"><Icon name="shield" /><span><strong>Sealed end to end.</strong> Live session content is encrypted with AES-256-GCM, with a key from the pairing QR.</span></li>
       </ul>
-      <p class="fine mx-auto mt-8 max-w-3xl text-center" data-reveal>Page Aura and Page Orbit run on Windows, macOS and Linux. Page Power, and with it the link to your phone, runs on macOS, with a Linux preview (the <code class="code-inline">paged</code> service, built from source). On a Mac or a Linux machine running Page Power, Page Aura and Page Orbit can page your phone. On Windows they work fully on their own.</p>
+      <p class="fine mx-auto mt-8 max-w-3xl text-center" data-reveal>Page Aura and Page Orbit run on Windows, macOS and Linux. Page Studio, and with it Page Relay, runs on macOS, with a Linux preview (the <code class="code-inline">paged</code> service, built from source). On a Mac or a Linux machine running Page Studio, Page Aura and Page Orbit can page your phone. On Windows they work fully on their own.</p>
     </div>
   </section>
 
@@ -217,7 +217,7 @@ const pname = { power: 'Page Power', aura: 'Page Aura', orbit: 'Page Orbit' } as
     <div class="wrap-wide grid items-center gap-16 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
       <div class="relative mx-auto w-full max-w-[340px] world-power" data-reveal="scale">
         <div class="rings" aria-hidden="true"><i style="--r:170%;--dl:0s"></i><i style="--r:170%;--dl:-2s"></i><i style="--r:170%;--dl:-4s"></i></div>
-        <Device name="power/decision" island sizes="(min-width: 1024px) 340px, 80vw" alt="Page Power's decision sheet on iPhone for an undoable command: Run this command? swift test --filter StuckTests, which Page will type into cmux on Studio MBP, with Approve, Deny and Tell it instead." class="relative" />
+        <Device name="power/decision" island sizes="(min-width: 1024px) 340px, 80vw" alt="The Page Relay decision sheet on iPhone for an undoable command: Run this command? swift test --filter StuckTests, which Page Studio will type into cmux on Studio MBP, with Approve, Deny and Tell it instead." class="relative" />
       </div>
       <div>
         <div class="sec-head" data-reveal>
@@ -275,13 +275,13 @@ const pname = { power: 'Page Power', aura: 'Page Aura', orbit: 'Page Orbit' } as
       <div class="sec-head center" data-reveal>
         <p class="label">Get started</p>
         <h2 class="h2">Pick a door. <span class="text-spectrum">They all link up.</span></h2>
-        <p class="lede mx-auto">Each app works on its own. To link Page Aura or Page Orbit to Page Power, switch it on in each app on the same Mac. Nothing to deploy.</p>
+        <p class="lede mx-auto">Each app works on its own. To link Page Aura or Page Orbit to Page Relay, switch it on in each app and in Page Studio on the same computer. Nothing to deploy.</p>
       </div>
       <div class="mt-14 grid gap-5 lg:grid-cols-3">
         <article class="door world-power" data-reveal>
           <ProductIcon product="power" size={56} glow />
-          <h3 class="mt-6 text-[26px] font-bold tracking-tight">Page Power</h3>
-          <p class="mt-3 text-ink-2">Build the Mac app, deploy your relay to Cloudflare, and pair your phone by QR. From nothing to a phone that pages you in 30 to 60 minutes.</p>
+          <h3 class="mt-6 text-[26px] font-bold tracking-tight">Page Studio</h3>
+          <p class="mt-3 text-ink-2">Build the Mac app (or the Linux preview), deploy your relay to Cloudflare, and pair your phone by QR. From nothing to a phone that pages you in 30 to 60 minutes.</p>
           <div class="mt-auto flex flex-wrap gap-2.5 pt-8">
             <a href={GUIDE} rel="noopener" class="btn-primary">Self-hosting guide</a>
             <a href={GITHUB} rel="noopener" class="btn-ghost">GitHub</a>
@@ -291,7 +291,7 @@ const pname = { power: 'Page Power', aura: 'Page Aura', orbit: 'Page Orbit' } as
         <article class="door world-aura" data-reveal style="--d:90ms">
           <ProductIcon product="aura" size={56} glow />
           <h3 class="mt-6 text-[26px] font-bold tracking-tight">Page Aura</h3>
-          <p class="mt-3 text-ink-2">Open it in your browser right now, or install the desktop app for Windows, macOS or Linux. Add your Anthropic API key and start a chat.</p>
+          <p class="mt-3 text-ink-2">Open it in your browser right now, or install the desktop app for Windows, macOS or Linux. Add your Anthropic API key and start a chat on your own credits.</p>
           <div class="mt-auto flex flex-wrap gap-2.5 pt-8">
             <a href={AURA_APP} rel="noopener" class="btn-primary">Open Page Aura</a>
             <a href={STUDIO_RELEASES} rel="noopener" class="btn-ghost">Download</a>

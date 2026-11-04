@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Define how Claude Power Mode and Page should support Codex sessions without
+Define how Claude Power Mode and Page Studio should support Codex sessions without
 forking the product into separate Claude and Codex implementations.
 
 This document covers:
@@ -22,7 +22,7 @@ Where the two disagree, this section describes what actually ships.
 
 ### Why the shipped design differs from the plan
 
-The plan assumed Page's own `codex app-server` child could watch and steer
+The plan assumed Page Studio's own `codex app-server` child could watch and steer
 the user's sessions. It can't. Each Codex surface (the CLI TUI, Codex Desktop,
 the VS Code extension) embeds its own app-server. A separately spawned child
 can list every thread on disk (`thread/list`, `thread/read`), but it never
@@ -38,13 +38,13 @@ rollout files for live state.
 
 | Capability | How | Surfaces |
 |---|---|---|
-| Discovery | `thread/list` through Page's app-server child. It requests `sortKey: "updated_at"`, `sortDirection: "desc"` (dropped after an RPC error on older servers) and follows `nextCursor` for up to 4 pages of 50. Pages are merged and deduplicated by id. Sub-agent threads are skipped. | all |
+| Discovery | `thread/list` through Page Studio's app-server child. It requests `sortKey: "updated_at"`, `sortDirection: "desc"` (dropped after an RPC error on older servers) and follows `nextCursor` for up to 4 pages of 50. Pages are merged and deduplicated by id. Sub-agent threads are skipped. | all |
 | Which threads count | A thread is watched if it was updated in the last 30 min, or it has an open idle page, or it is the newest thread in a directory where a live interactive `codex` process runs. Older threads in the same directory are history and are ignored. | all |
 | Keep-awake | State is re-derived from the rollout tail on every tick. In a turn (`task_started`/`response_item` after the last `task_complete`/`turn_aborted`) means active, for up to 15 min without writes. A turn that has been silent longer counts as stalled and stops holding power. After the turn ends the session is idle. Pending pages also hold power, but only for `holdAwakeForPendingPageMinutes`. | all |
 | Idle pages | The latest turn ended with `task_complete`, at least `idlePageDelaySeconds` ago and at most 4h ago. The page is held back while the user is at the Mac (`idlePageOnlyWhenAwaySeconds`). Its id is `codex-idle-<threadId>-<task_complete epoch>`, keyed on the turn end rather than the file mtime, because `thread_settings_applied` can be written after `task_complete`. Some sessions never page: aborted turns (the user hit Esc), `codex exec` threads, and terminal sessions whose `codex` process has exited. | all |
 | Rate limits | The `rate_limits` snapshot in rollout `token_count` events (snake_case) and `account/rateLimits/updated` (camelCase, nested under `rateLimits`). Limited means either window has `usedPercent >= 100` or `rateLimitReachedType` is set. The limit clears when a newer snapshot shows it isn't limited, or when `resetsAt` passes. It is reported once per limit, tagged `backend: .codex` and attributed to "Codex account". It is never auto-resumed. | all |
 | Replies | `Codex/CodexInjector.swift`, and only when the thread's latest turn has ended (see below). | CLI in tmux or Terminal.app; Desktop and VS Code through exec resume |
-| Approvals arriving at Page's own child | Correctly classified as JSON-RPC server requests (id + method). `item/commandExecution/requestApproval` and `item/fileChange/requestApproval` become `.permission` pages and are answered with `{decision: "accept" \| "decline"}`. Every other server request (for example `item/tool/requestUserInput`) gets a `-32601` reply so the server never blocks. This only fires if a turn runs against Page's child, which doesn't happen today. | none in practice |
+| Approvals arriving at Page Studio's own child | Correctly classified as JSON-RPC server requests (id + method). `item/commandExecution/requestApproval` and `item/fileChange/requestApproval` become `.permission` pages and are answered with `{decision: "accept" \| "decline"}`. Every other server request (for example `item/tool/requestUserInput`) gets a `-32601` reply so the server never blocks. This only fires if a turn runs against Page Studio's child, which doesn't happen today. | none in practice |
 
 ### What does not work, and why
 
@@ -54,7 +54,7 @@ rollout files for live state.
   session blocked on an approval looks mid-turn, so it shows as active for
   15 min and then as stalled. A heuristic such as "tool call without output,
   quiet for N seconds" was rejected. It fires on every long-running command,
-  and it would put Approve buttons on the phone that Page can't honour safely.
+  and it would put Approve buttons on the phone that Page Studio can't honour safely.
   The parser does recognise `exec_approval_request`,
   `apply_patch_approval_request` and `request_user_input` if a future Codex
   persists them, but it only uses them for session state, not pages.
@@ -73,17 +73,17 @@ rollout files for live state.
    wrapper and the native binary share one. Two terminals means the reply is
    refused as ambiguous.
 3. tmux: the pane whose `#{pane_tty}` is that tty gets `send-keys -l` (or a
-   bracketed `paste-buffer -p` for multi-line text). Page then waits 0.4s,
+   bracketed `paste-buffer -p` for multi-line text). Page Studio then waits 0.4s,
    because Codex folds an Enter that arrives inside a paste burst into the
    text, and sends an `Enter` key. Every exit code is checked.
 4. Terminal.app: `do script` into the tab with that tty, then select the tab
-   and bring it to the front. Page then checks that Terminal is frontmost
+   and bring it to the front. Page Studio then checks that Terminal is frontmost
    with that tab selected immediately before sending Return through System
    Events `tell process "Terminal"`. Codex treats a typed newline as a newline
    inside the composer, so submitting needs a real Return key event.
    `ok_no_enter` (Accessibility not granted) is reported as a failure, and the
    reply says the text is waiting in the composer.
-5. Other hosts (iTerm2, VS Code's terminal, cmux, ...) fail with "Page can't
+5. Other hosts (iTerm2, VS Code's terminal, cmux, ...) fail with "Page Studio can't
    type into <App> yet — use tmux or Terminal.app".
 6. `codex exec resume <thread> <text>` runs in the background (15-min
    timeout, output in `~/Library/Logs/Page-codex-replies/`). This happens only
@@ -91,7 +91,7 @@ rollout files for live state.
    `headlessResumeFallbackEnabled` is on. This is the Desktop / VS Code path.
    `--skip-git-repo-check` is added (before `resume`, because it is an `exec`
    option) only after the CLI's own refusal message names it. That message
-   proves the flag exists in the installed build, without Page having to
+   proves the flag exists in the installed build, without Page Studio having to
    probe `codex exec --help`.
 
 ### App-server client hardening
@@ -118,9 +118,9 @@ rollout files for live state.
 To make approvals, steering and live status first-class, sessions have to run
 against one shared app-server instead of each surface's embedded one:
 
-- Page runs a long-lived app-server on a local socket, and users start the TUI
+- Page Studio runs a long-lived app-server on a local socket, and users start the TUI
   with `codex --remote <addr>` (or a wrapper that does). Approval requests
-  then arrive at Page as server requests and can be answered with the
+  then arrive at Page Studio as server requests and can be answered with the
   decision enum. Replies become `turn/steer` / `turn/start` instead of
   keystrokes, and `thread/status/changed` becomes authoritative. The routing
   for this is already in place in `AppServerClient` and
@@ -176,7 +176,7 @@ streamed agent events.
 ## Goals
 
 - Support Codex terminal and desktop sessions through one internal abstraction.
-- Preserve the current Page product model:
+- Preserve the current Page Studio product model:
   keep a machine awake while the agent is active, detect waiting states, relay
   prompts to a phone, and send replies back into the session.
 - Minimize Claude regressions by isolating backend-specific logic.
@@ -639,7 +639,7 @@ Mitigation:
 
 ### Cross-client contention
 
-If desktop app, terminal TUI, and Page all act on the same thread, approvals and
+If desktop app, terminal TUI, and Page Studio all act on the same thread, approvals and
 steering requests can race.
 
 Mitigation:
@@ -751,7 +751,7 @@ and `modelProvider`. See "Empirical findings" section below.
 
 One caveat that surfaced: threads come back with `status: {type:"notLoaded"}`.
 The original plan was to `thread/read` each watched thread to subscribe.
-In practice `thread/read` doesn't attach Page's child to a thread another
+In practice `thread/read` doesn't attach Page Studio's child to a thread another
 process is driving, so no notifications arrive (see "Current implementation
 status"). The shipped backend no longer calls it per thread.
 
@@ -856,14 +856,14 @@ obvious from the docs alone.
 
 These still need proof during implementation:
 
-1. Which exact app-server messages map best to the current Page intervention
+1. Which exact app-server messages map best to the current Page Studio intervention
    kinds? The method names exist as server *requests* (id + method):
    `item/commandExecution/requestApproval`, `item/fileChange/requestApproval`,
    `item/tool/requestUserInput` (not `tool/requestUserInput`). Approval decisions
    are `accept | acceptForSession | decline | cancel`. `thread/status/changed`
    is `{threadId, status: {type, activeFlags?}}`, with flags `waitingOnApproval`
    and `waitingOnUserInput`. None of these has been observed firing live, and
-   they only reach Page under the shared-server architecture (future work).
+   they only reach Page Studio under the shared-server architecture (future work).
 2. Does the same Codex auth grant cover the desktop app's threads, or are
    they isolated per surface? `thread/list` returned a `vscode`-source
    thread on the spike, suggesting they share state — but this needs

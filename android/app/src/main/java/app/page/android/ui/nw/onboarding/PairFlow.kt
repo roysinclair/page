@@ -104,28 +104,28 @@ fun PairFlow() {
             stage = when (result) {
                 is RelayClient.ProbeResult.Ok -> Stage.Confirm(p, result.snapshot?.macConnected, result.snapshot?.looksUnused ?: false)
                 is RelayClient.ProbeResult.Unreachable -> Stage.Problem(
-                    "Can't reach the relay", "${result.why} Check your phone's connection, and that relayURL in your Mac's Page settings is your deployed Worker (${p.relayHost}).", p, false,
+                    "Can't reach the relay", "${result.why} Check your phone's connection, and that relayURL in Page Studio's settings on your computer is your deployed Worker (${p.relayHost}).", p, false,
                 )
                 RelayClient.ProbeResult.NotPageRelay -> Stage.Problem(
-                    "That's not a Page relay", "${p.relayHost} didn't answer like a Page relay. Check relayURL in your Mac's Page settings, then show the pairing code again.", p, false,
+                    "That's not a Page Relay Worker", "${p.relayHost} didn't answer like a Page Relay Worker. Check relayURL in Page Studio's settings on your computer, then show the pairing code again.", p, false,
                 )
-                RelayClient.ProbeResult.Unauthorized -> Stage.Problem("The relay rejected this code", "Show the pairing code on your Mac again and scan the new one.", null, false)
+                RelayClient.ProbeResult.Unauthorized -> Stage.Problem("The relay rejected this code", "Show the pairing code on your computer again and scan the new one.", null, false)
                 is RelayClient.ProbeResult.Retired -> Stage.Problem(
-                    "This code was replaced", "${TokenRetirement.sentence(result.why)} On your Mac, open Page → Pair phone… and scan the code shown there now.", null, false,
+                    "This code was replaced", "${TokenRetirement.sentence(result.why)} On your computer, open Page Studio → Pair phone… and scan the code shown there now.", null, false,
                 )
             }
         }
     }
 
     val cameraPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) showingScanner = true else stage = Stage.Problem("Camera access is off", "Allow camera access for Page in Settings to scan the code, or paste the pairing code instead.", null, true)
+        if (granted) showingScanner = true else stage = Stage.Problem("Camera access is off", "Allow camera access for Page Relay in Settings to scan the code, or paste the pairing code instead.", null, true)
     }
 
     fun openScanner() {
         if (!context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
             stage = Stage.Problem(
                 "No camera available",
-                "This device can't scan codes. Use “Paste a pairing link instead” and paste the pairing JSON from your Mac (Pair phone… → Copy pairing JSON).", null, false,
+                "This device can't scan codes. Use “Paste a pairing link instead” and paste the pairing JSON from your computer (Pair phone… → Copy pairing JSON).", null, false,
             )
             return
         }
@@ -212,7 +212,7 @@ private fun ManualPairScreen(onPair: (ValidatedPairing) -> Unit, onCancel: () ->
         NWBackdrop()
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("Paste a pairing link", style = NW.Typo.headline, color = NW.Palette.textPrimary.color, modifier = Modifier.semantics { heading() })
-            Text("On your Mac, click the Page menu-bar icon → Pair phone… → Copy pairing JSON, then paste it here.", style = NW.Typo.subline, color = NW.Palette.textSecondary.color)
+            Text("On your computer, open Page Studio → Pair phone… → Copy pairing JSON, then paste it here.", style = NW.Typo.subline, color = NW.Palette.textSecondary.color)
             NWTextField(text, { text = it; error = null }, "{\"v\":1,\"token\":…}", Modifier.fillMaxWidth().heightIn(min = 160.dp), maxLines = 12, label = "Pairing code", imeAction = ImeAction.Done, onImeAction = { if (text.isNotBlank()) attempt() })
             NWButton("Paste from clipboard", {
                 val clip = (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).primaryClip

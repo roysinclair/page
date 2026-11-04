@@ -6,8 +6,8 @@ import Pic from '../../components/Pic.astro';
 import ConnectDiagram from '../../components/ConnectDiagram.astro';
 import { GUIDE, GUIDE_AI, BLOB, u } from '../../data/site';
 ---
-<Layout current="relay/" title="Run your own relay" description="Page's relay is a small Cloudflare Worker you deploy to your own account. It carries pages and replies between your Mac and your phone, keeps live session content end-to-end encrypted, and the authors have no access to it.">
-  <PageHero label="Your relay" title="A Worker on" accent="your own Cloudflare account." lede="It carries pages from your Mac to your phone and your replies back. You deploy it, you own it, and the authors of Page have no access to it. Cloudflare’s free plan is enough for one person.">
+<Layout current="relay/" title="Page Relay Worker" description="Page Relay runs through a small Cloudflare Worker you deploy to your own account. It carries pages and replies between your computer and your phone, keeps live session content end-to-end encrypted, and the authors have no access to it.">
+  <PageHero label="Page Relay Worker" title="A Worker on" accent="your own Cloudflare account." lede="It carries pages from Page Studio on your computer to Page Relay on your phone, and your replies back. You deploy it, you own it, and the authors of Page Studio have no access to it. Cloudflare’s free plan is enough for one person.">
     <Fragment slot="actions">
       <a href="#steps" class="btn-primary">Deploy it</a>
       <a href="#stores" class="btn-ghost">What it stores</a>
@@ -31,15 +31,15 @@ import { GUIDE, GUIDE_AI, BLOB, u } from '../../data/site';
       </div>
       <div class="mt-5 grid gap-5 md:grid-cols-2">
         <div class="card">
-          <h3 class="h3">Matches your Mac and your phone</h3>
-          <p class="body mt-3">The pairing token is made on your Mac and reaches your phone in the QR code. Each pairing gets its own Durable Object, isolated from everyone else’s. No accounts: the token is the credential, and requests without a valid one are refused.</p>
+          <h3 class="h3">Matches your computer and your phone</h3>
+          <p class="body mt-3">The pairing token is made on your computer and reaches your phone in the QR code. Each pairing gets its own Durable Object, isolated from everyone else’s. No accounts: the token is the credential, and requests without a valid one are refused.</p>
         </div>
         <div class="card">
           <h3 class="h3">Holds the live connections</h3>
-          <p class="body mt-3">The Mac and the phone each connect out to it over a WebSocket. The Mac sends pages, heartbeats and delivery results; the phone receives them live. The agent hooks reach it over HTTPS.</p>
+          <p class="body mt-3">Your computer and your phone each connect out to it over a WebSocket. Your computer sends pages, heartbeats and delivery results; the phone receives them live. The agent hooks reach it over HTTPS.</p>
         </div>
         <div class="card">
-          <h3 class="h3">Queues replies while the Mac is offline</h3>
+          <h3 class="h3">Queues replies while your computer is offline</h3>
           <p class="body mt-3">Up to 200 replies are buffered, each for at most an hour. After that the phone is told the reply wasn’t delivered. A reply to a page that has moved on is refused rather than guessed at.</p>
         </div>
         <div class="card">
@@ -54,7 +54,7 @@ import { GUIDE, GUIDE_AI, BLOB, u } from '../../data/site';
     <div class="wrap">
       <p class="label">Privacy</p>
       <h2 class="h2 mt-3 max-w-3xl">What it stores, and what it can’t see.</h2>
-      <p class="lede mt-5 max-w-3xl">Page has no account, analytics or third-party SDKs, and nothing goes to the authors. But a page has to travel, so it is worth being exact.</p>
+      <p class="lede mt-5 max-w-3xl">Page Studio has no account, analytics or third-party SDKs, and nothing goes to the authors. But a page has to travel, so it is worth being exact.</p>
       <div class="mt-12 grid gap-5 lg:grid-cols-3">
         <div class="card card-tone tone-amber">
           <h3 class="h3">Stored in your relay</h3>
@@ -63,12 +63,12 @@ import { GUIDE, GUIDE_AI, BLOB, u } from '../../data/site';
             <li>The last 300 closed pages, with their context and your reply text.</li>
             <li>Queued replies (up to an hour), your phone’s push token, and short-lived records so a late message can’t reopen a closed page.</li>
           </ul>
-          <p class="fine mt-4">Page masks common secret shapes (keys, bearer tokens, PEM blocks) before context leaves the Mac. That is best-effort pattern matching: assume anything on your screen can reach your Worker.</p>
+          <p class="fine mt-4">Page Studio masks common secret shapes (keys, bearer tokens, PEM blocks) before context leaves your computer. That is best-effort pattern matching: assume anything on your screen can reach your Worker.</p>
         </div>
         <div class="card card-tone tone-teal">
           <h3 class="h3">Never readable by the relay</h3>
           <ul class="list-dots mt-4 text-[15px]">
-            <li><strong>Live session content</strong> (the Sessions view): titles, folders, transcripts, screens, diffs and what you type are sealed on the Mac and opened on the phone with AES-256-GCM.</li>
+            <li><strong>Live session content</strong> (the Sessions view): titles, folders, transcripts, screens, diffs and what you type are sealed on your computer and opened on the phone with AES-256-GCM.</li>
             <li>The key comes from the pairing QR and never goes to the relay, which forwards opaque envelopes, stores none of them and logs only their size.</li>
             <li>The session list is sent only while your phone has the app open, and a transcript only for the session on screen.</li>
           </ul>
@@ -82,7 +82,7 @@ import { GUIDE, GUIDE_AI, BLOB, u } from '../../data/site';
           <p class="fine mt-4">Skip the APNs key and none of this goes to Apple.</p>
         </div>
       </div>
-      <p class="body mt-8 max-w-3xl">The QR code is your credential. If it leaks, <strong>Regenerate token…</strong> on the Mac retires the old one on your Worker, and phones paired with it are told to re-pair. The full list of what is stored and for how long is in <a class="link" href={BLOB + 'SECURITY.md'} rel="noopener">SECURITY.md</a>.</p>
+      <p class="body mt-8 max-w-3xl">The QR code is your credential. If it leaks, <strong>Regenerate token…</strong> in Page Studio retires the old one on your Worker, and phones paired with it are told to re-pair. The full list of what is stored and for how long is in <a class="link" href={BLOB + 'SECURITY.md'} rel="noopener">SECURITY.md</a>.</p>
     </div>
   </section>
 
@@ -100,7 +100,7 @@ import { GUIDE, GUIDE_AI, BLOB, u } from '../../data/site';
             <li>With a paid Apple team, create an APNs key and store it as three Worker secrets. Skip this otherwise.</li>
             <li><code class="code-inline">npm run deploy</code> runs the type check and tests, then deploys. Wrangler prints your relay URL.</li>
             <li>Check <code class="code-inline">/health</code>. <code class="code-inline">apnsConfigured</code> is <code class="code-inline">false</code> if you skipped the secrets, which is fine for Android-only or open-app-only use.</li>
-            <li>On the Mac, turn on <em>Send pages to my phone</em>, paste the URL and click Test.</li>
+            <li>In Page Studio for Mac, turn on <em>Send pages to my phone</em>, paste the URL and click Test.</li>
           </ol>
           <p class="mt-6"><a class="link text-[15px] font-semibold" href={GUIDE} rel="noopener">Every step, with the values that are yours →</a></p>
         </div>

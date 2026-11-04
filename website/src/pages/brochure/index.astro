@@ -6,7 +6,7 @@ import { u, kinds, PDF, GITHUB, AURA_GITHUB, GUIDE } from '../../data/site';
 // JPEG/PNG copies in img/print: Chromium embeds JPEG as-is in the PDF, which keeps the PDF small.
 // The showcase ones are made by scripts/showcase-crops.mjs (npm run crops) (the *-visual ones are the device side of a slide).
 const sizes: Record<string, [number, number, string]> = {
-  'family': [1800, 846, 'jpg'], 'feature-battery': [1400, 875, 'jpg'], 'feature-lock-screen': [1400, 875, 'jpg'],
+  'family': [1800, 834, 'jpg'], 'feature-battery': [1400, 875, 'jpg'], 'feature-lock-screen': [1400, 875, 'jpg'],
   'feature-terminals-visual': [900, 776, 'jpg'], 'feature-android-visual': [900, 836, 'jpg'],
   'feature-relay-visual': [900, 930, 'jpg'], 'feature-aura-visual': [900, 646, 'jpg'],
   'app-icon': [200, 200, 'png'], 'iphone-scan': [520, 1198, 'jpg'], 'iphone-tower': [520, 1432, 'jpg'],
@@ -43,14 +43,14 @@ const pTower = img('iphone-tower');
       <div class="in">
         <div class="brand"><img src={icon.src} width="64" height="64" alt="" /><span class="mono">PAGE STUDIO</span></div>
         <figure class="cover-art">
-          <img src={cover.src} width={cover.w} height={cover.h} alt="Page Studio together: Page Orbit, Page Aura and the Page Power menu on a MacBook, Page Power on an Android phone and an iPhone, and your relay on your own Cloudflare account linking them." />
+          <img src={cover.src} width={cover.w} height={cover.h} alt="Page Studio together: Page Orbit, Page Aura and the Page Studio menu on a MacBook, Page Relay on an Android phone and an iPhone, and your relay on your own Cloudflare account linking them." />
         </figure>
         <div class="grow"></div>
         <p class="mono kick">Free · Source-available · Run it yourself</p>
         <h2 class="cover-h">Page Studio keeps watch so you don’t have to.</h2>
-        <p class="lead">Three apps that work together. Page Power (macOS, iPhone, Android) keeps your Mac awake while AI coding agents work and pages your phone only when something truly needs you. Page Aura (chat) and Page Orbit (Managed Agents) run on Windows, macOS and Linux, on your own API key.</p>
+        <p class="lead">Apps that work together. Page Studio for Mac (and Linux, in preview) has two halves: Page Power keeps your computer awake while AI coding agents work, and Page Relay pages your phone only when something truly needs you. Page Aura (chat) and Page Orbit (Managed Agents) run on Windows, macOS and Linux, on your own API credits.</p>
         <ul class="cover-chips" aria-label="The apps">
-          <li>Page Power for Mac</li><li>Page Power for iPhone &amp; Android</li><li>Page Relay</li><li>Page Aura</li><li>Page Orbit</li>
+          <li>Page Studio for Mac</li><li>Page Power</li><li>Page Relay for iPhone &amp; Android</li><li>Page Aura</li><li>Page Orbit</li>
         </ul>
         <p class="foot">roysinclair.github.io/page · Page Studio License</p>
       </div>
@@ -60,15 +60,15 @@ const pTower = img('iphone-tower');
     <section class="sheet" aria-label="What Page Studio is">
       <div class="in">
         <p class="mono kick">What it is</p>
-        <h2 class="h2">Agents do the work. Page Power keeps watch.</h2>
+        <h2 class="h2">Agents do the work. Page Studio keeps watch.</h2>
         <p class="lead">You start AI coding agents (Claude Code, Codex, local models) and walk away. Page Studio is the set of tools you run yourself to keep them going and to bring you back only when it matters.</p>
         <figure class="slide">
           <img src={battery.src} width={battery.w} height={battery.h} alt="Stays awake. Pauses gracefully. Page Power keeps the Mac awake while agents work, lid closed too, and at your battery cutoff asks them to stop and summarise, then resumes them on power. Shown: the Tower's Power page at 41 percent and the menu-bar popover." />
         </figure>
         <ul class="bul">
-          <li><b>Real session state, not CPU guesses.</b> Page Power reads the state Claude Code itself writes and holds the Mac awake only while something is mid-turn, lid closed too on AC.</li>
+          <li><b>Real session state, not CPU guesses.</b> Page Studio reads the state Claude Code itself writes, and Page Power holds the computer awake only while something is mid-turn, lid closed too on AC.</li>
           <li><b>Only the moments that need you.</b> Approvals and questions page at once; idle and rate-limit pages wait until you step away.</li>
-          <li><b>Answer from anywhere.</b> Approve, deny or reply from the lock screen, and Page Power types it into the exact terminal that asked, or says why it couldn’t.</li>
+          <li><b>Answer from anywhere.</b> Approve, deny or reply from the lock screen, and Page Relay types it into the exact terminal that asked, or says why it couldn’t.</li>
           <li><b>Yours to run.</b> Free and source-available, with no account, no analytics and nothing sent to the authors.</li>
         </ul>
       </div>
@@ -83,26 +83,26 @@ const pTower = img('iphone-tower');
           <article class="card tone-teal">
             <div class="thumb"><img src={tMac.src} width={tMac.w} height={tMac.h} alt="" /></div>
             <p class="mono tag">Menu-bar app</p>
-            <h3>Page Power for Mac</h3>
-            <p>Keeps the Mac awake while agents work, pauses them at your cutoff, forecasts battery and usage, and types replies into Terminal.app, iTerm2, tmux, cmux, WezTerm, kitty, Herdr and Claude Squad.</p>
+            <h3>Page Studio for Mac</h3>
+            <p>Page Power keeps the Mac awake while agents work and pauses them at your cutoff; Page Relay pages your phone, forecasts battery and usage, and types replies into Terminal.app, iTerm2, tmux, cmux, WezTerm, kitty, Herdr and Claude Squad.</p>
           </article>
           <article class="card tone-amber">
             <div class="thumb"><img src={tPhones.src} width={tPhones.w} height={tPhones.h} alt="" /></div>
             <p class="mono tag">The pages</p>
-            <h3>Page Power for iPhone and Android</h3>
+            <h3>Page Relay for iPhone and Android</h3>
             <p>Approve, deny or reply from the lock screen. Live sessions with a transcript, a decision sheet, new sessions, photos and what-changed diffs. Android has no push; it stays connected instead.</p>
           </article>
           <article class="card tone-sky">
             <div class="thumb thumb-top"><img src={tRelay.src} width={tRelay.w} height={tRelay.h} alt="" /></div>
             <p class="mono tag">Cloudflare Worker</p>
-            <h3>Your relay</h3>
+            <h3>Page Relay Worker</h3>
             <p>A small Worker on your own Cloudflare account carries pages and replies. Live session content is end-to-end encrypted. The authors have no access to it.</p>
           </article>
           <article class="card tone-violet">
             <div class="thumb"><img src={tAura.src} width={tAura.w} height={tAura.h} alt="" /></div>
             <p class="mono tag">Windows · macOS · Linux</p>
             <h3>Page Aura and Page Orbit</h3>
-            <p>Page Aura is a chat app for Anthropic’s models; Page Orbit is a control room for Managed Agents. Both run on your own API key. On a Mac they link to Page Power, so your phone is paged when a reply is ready or an agent needs your approval.</p>
+            <p>Page Aura is chat over the API on your own credits, with context, web search and tools; Page Orbit manages and controls Managed Agents, with deep diagnostics. With Page Studio on the same computer they work with Page Relay, so your phone is paged when a reply is ready or an agent needs your approval.</p>
           </article>
         </div>
       </div>
@@ -123,9 +123,9 @@ const pTower = img('iphone-tower');
           ))}
         </div>
         <figure class="slide">
-          <img src={lock.src} width={lock.w} height={lock.h} alt="Answer from the lock screen: an iPhone lock screen with two Page Power notifications, and the decision sheet that names the exact keystroke and terminal before you approve. Only undoable commands approve in one tap." />
+          <img src={lock.src} width={lock.w} height={lock.h} alt="Answer from the lock screen: an iPhone lock screen with two Page Relay notifications, and the decision sheet that names the exact keystroke and terminal before you approve. Only undoable commands approve in one tap." />
         </figure>
-        <p class="note"><b>Your reply is never a guess.</b> Page Power types your answer only into the exact terminal that owns the session. The phone shows sending, queued, delivered or failed, with the reason.</p>
+        <p class="note"><b>Your reply is never a guess.</b> Page Relay types your answer only into the exact terminal that owns the session. The phone shows sending, queued, delivered or failed, with the reason.</p>
       </div>
     </section>
 
@@ -134,7 +134,7 @@ const pTower = img('iphone-tower');
       <div class="in">
         <p class="mono kick">How they connect</p>
         <h2 class="h2">The Mac and the phone never talk directly.</h2>
-        <p class="lead">The Mac connects out to your relay. The phone connects out to your relay. A secret token, shown on the Mac as a QR code, matches the two.</p>
+        <p class="lead">Your computer connects out to your relay. The phone connects out to your relay. A secret token, shown in Page Studio as a QR code, matches the two.</p>
         <div class="diagram"><ConnectDiagram mode="container" thread={false} /></div>
         <div class="parts">
           <div class="box tone-teal"><h3>The Mac</h3><p>Does the detecting: session state, keep-awake, battery policy and delivering your reply.</p></div>
@@ -142,8 +142,8 @@ const pTower = img('iphone-tower');
           <div class="box tone-amber"><h3>The phone</h3><p>Shows pages and sends replies. Live session content is decrypted only here.</p></div>
         </div>
         <ul class="bul">
-          <li><b>Mac ⇄ relay ⇄ phone.</b> Pages go up and replies come down. Replies wait up to an hour if the Mac is offline.</li>
-          <li><b>Page Aura and Page Orbit ⇄ Page Power.</b> A Unix socket on the same computer only. Neither app ever touches the relay.</li>
+          <li><b>Computer ⇄ relay ⇄ phone.</b> Pages go up and replies come down. Replies wait up to an hour if your computer is offline.</li>
+          <li><b>Page Aura and Page Orbit ⇄ Page Studio.</b> A Unix socket on the same computer only. Neither app ever touches the relay.</li>
           <li><b>Apple push (optional).</b> With a paid Apple developer team, the relay wakes your iPhone. Android has no push.</li>
           <li><b>Agent hooks (optional).</b> Let approvals from the Claude desktop app, VS Code and JetBrains reach your phone too.</li>
         </ul>
@@ -155,9 +155,9 @@ const pTower = img('iphone-tower');
       <div class="in">
         <p class="mono kick">Privacy and self-hosting</p>
         <h2 class="h2">Yours to run. Honest about what travels.</h2>
-        <p class="lead">No account, no analytics, no third-party SDKs, and nothing goes to the authors. But a page has to travel from your Mac to your phone, so “nothing leaves your devices” would not be true.</p>
+        <p class="lead">No account, no analytics, no third-party SDKs, and nothing goes to the authors. But a page has to travel from your computer to your phone, so “nothing leaves your devices” would not be true.</p>
         <div class="three">
-          <div class="box tone-teal"><h3>Yours</h3><p>The relay runs in your Cloudflare account. The phone apps are built with your own Apple or Android developer setup. The pairing token is made on your Mac.</p></div>
+          <div class="box tone-teal"><h3>Yours</h3><p>The relay runs in your Cloudflare account. The phone apps are built with your own Apple or Android developer setup. The pairing token is made on your computer.</p></div>
           <div class="box tone-sky"><h3>Encrypted end to end</h3><p>Live session content (titles, folders, transcripts, what you type) is sealed with AES-256-GCM using a key from the pairing QR. The relay stores none of it.</p></div>
           <div class="box tone-amber"><h3>Not encrypted</h3><p>Pages pass through your own relay with up to 4000 characters of context, and the last 300 closed pages are kept. Apple’s push service sees the project name and up to 180 characters.</p></div>
         </div>
@@ -171,10 +171,10 @@ const pTower = img('iphone-tower');
           <li>Optional: agent hooks, installed with a diff preview and a backup</li>
         </ul>
         <div class="duo">
-          <figure><div class="ph"><img src={pScan.src} width={pScan.w} height={pScan.h} alt="The pairing screen on iPhone: scan the code on your Mac. The code holds your relay address and an encryption key." /></div><figcaption>Pair once by QR: it carries your relay address and the encryption key</figcaption></figure>
+          <figure><div class="ph"><img src={pScan.src} width={pScan.w} height={pScan.h} alt="The pairing screen on iPhone: scan the code on your computer. The code holds your relay address and an encryption key." /></div><figcaption>Pair once by QR: it carries your relay address and the encryption key</figcaption></figure>
           <figure><div class="ph"><img src={pTower.src} width={pTower.w} height={pTower.h} alt="The Tower on iPhone: power, usage budget, paired Macs, attention settings, and an end-to-end encrypted row." /></div><figcaption>The Tower: power, budget, Macs, attention, encryption</figcaption></figure>
         </div>
-        <p class="note"><b>Treat the QR code as a password.</b> Anyone with the token can read your pages and send replies. Regenerate it on the Mac if it leaks. Redaction of secret shapes before context leaves the Mac is best effort.</p>
+        <p class="note"><b>Treat the QR code as a password.</b> Anyone with the token can read your pages and send replies. Regenerate it in Page Studio if it leaks. Redaction of secret shapes before context leaves your computer is best effort.</p>
       </div>
     </section>
 
@@ -186,9 +186,9 @@ const pTower = img('iphone-tower');
         <p class="lead">Plan on 30 to 60 minutes the first time.</p>
         <ol class="steps">
           <li><b>Deploy your relay.</b> <span>A free Cloudflare account and Node.js 22.18 or later: install, log in, deploy, check <code>/health</code>.</span></li>
-          <li><b>Install Page Power for Mac.</b> <span>Clone the repo and run <code>./install.sh</code>. It builds the menu-bar app and never uses sudo. Point it at your relay in Preferences.</span></li>
-          <li><b>Build the phone app.</b> <span>Xcode and your Apple ID for iPhone, or the Android SDK for Android. Choose Pair phone… on the Mac and scan the QR.</span></li>
-          <li><b>Optional: Page Aura or Page Orbit.</b> <span>Switch on the Page Power link in the app’s settings. Nothing to deploy.</span></li>
+          <li><b>Install Page Studio for Mac.</b> <span>Clone the repo and run <code>./install.sh</code>. It builds the menu-bar app and never uses sudo. Point it at your relay in Preferences.</span></li>
+          <li><b>Build Page Relay for your phone.</b> <span>Xcode and your Apple ID for iPhone, or the Android SDK for Android. Choose Pair phone… in Page Studio (or run <code>paged pair</code> on Linux) and scan the QR.</span></li>
+          <li><b>Optional: Page Aura or Page Orbit.</b> <span>Switch on the Page Relay link in the app’s settings. Nothing to deploy.</span></li>
         </ol>
         <div class="term" aria-label="The commands in short">
           <div><span class="c"># 1 · relay</span></div>
@@ -203,7 +203,7 @@ const pTower = img('iphone-tower');
           <pre>claude --model claude-opus-5-5 --effort high</pre>
           <p>Then paste the prompt from the guide. The agent never invents values, never commits, never prints secrets, and stops whenever a step needs you.</p>
         </div>
-        <p class="note"><b>Honest limits.</b> iPhone push needs a paid Apple Developer team. Android has no push. Codex support is narrower than Claude Code’s. Terminals Page Power can’t type into, such as Ghostty, VS Code’s terminal and Warp, work through tmux or hooks.</p>
+        <p class="note"><b>Honest limits.</b> iPhone push needs a paid Apple Developer team. Android has no push. Codex support is narrower than Claude Code’s. Terminals Page Relay can’t type into, such as Ghostty, VS Code’s terminal and Warp, work through tmux or hooks.</p>
       </div>
     </section>
 
@@ -304,10 +304,13 @@ const pTower = img('iphone-tower');
   /* four products */
   .four { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 2); flex: 1; min-height: 0; }
   .four .card { display: flex; flex-direction: column; gap: calc(var(--u) * .6); padding: calc(var(--u) * 1.6); min-height: 0; }
-  .four .card p:last-child { font-size: calc(var(--u) * 1.75); line-height: 1.45; }
+  .four .card p:last-child { font-size: calc(var(--u) * 1.66); line-height: 1.43; }
   .thumb { border-radius: calc(var(--u) * 1.4); overflow: hidden; height: calc(var(--u) * 33); background: #0A0C11; border: 1px solid rgba(255,255,255,.08); margin-bottom: calc(var(--u) * 1); position: relative; flex: none; }
   .thumb img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
   .thumb-top img { object-position: center top; }
+  /* The second row's art is wider (Page Aura's visual is 1.39:1), so its thumbs are shorter and show all of it. */
+  .four .thumb { height: calc(var(--u) * 31); }
+  .four .card:nth-child(n+3) .thumb { height: calc(var(--u) * 27); }
 
   /* moments */
   .kinds { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 1.4); }

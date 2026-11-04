@@ -242,7 +242,7 @@ struct NWStopOverlay: View {
         case .idle: return ""
         case .holding(let p): return plan.canStop ? HoldRingSpec.prompt(progress: p, biometry: biometry) : plan.scope
         case .authenticating: return "Confirm with \(biometry)"
-        case .sending: return "Asking your Mac…"
+        case .sending: return "Asking your computer…"
         case .result(let r): return r.message
         }
     }

@@ -62,8 +62,8 @@ final class BatteryForecastTests: XCTestCase {
         let e = BatteryForecast.Estimate(percent: 18, cutoff: 10, drainPerHour: 40, minutesToCutoff: 12)
         XCTAssertEqual(BatteryForecast.menuLine(e), "Cutoff (10%) in about 12 min at this rate")
         XCTAssertEqual(BatteryForecast.pageContext(e, busy: 3, action: .pause, earlyPause: false),
-                       "Battery 18% — at this rate it reaches the 10% cutoff in about 12 min. 3 sessions are mid-task; Page will ask them to pause then. Plug in to keep them going.")
-        XCTAssertTrue(BatteryForecast.pageContext(e, busy: 1, action: .pause, earlyPause: true).contains("1 session is mid-task; Page will ask it to pause about 10 min before the cutoff"))
+                       "Battery 18% — at this rate it reaches the 10% cutoff in about 12 min. 3 sessions are mid-task; Page Studio will ask them to pause then. Plug in to keep them going.")
+        XCTAssertTrue(BatteryForecast.pageContext(e, busy: 1, action: .pause, earlyPause: true).contains("1 session is mid-task; Page Studio will ask it to pause about 10 min before the cutoff"))
     }
 
     func testPageHysteresis() {

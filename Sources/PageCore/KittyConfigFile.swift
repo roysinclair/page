@@ -103,7 +103,7 @@ enum KittyConfigFile {
         }
         if let listen = settings.listenOn {
             if !KittyBridge.isLocalSocket(listen) {
-                return .conflict("\(settings.listenSource ?? "kitty.conf") says “\(listenKey) \(listen)”. Page only uses a local socket: change it to “\(listenLine)”, then restart kitty.")
+                return .conflict("\(settings.listenSource ?? "kitty.conf") says “\(listenKey) \(listen)”. Page Studio only uses a local socket: change it to “\(listenLine)”, then restart kitty.")
             }
         } else {
             added.append(listenLine)
@@ -213,9 +213,9 @@ enum KittyConfigFile {
         var message: String {
             switch self {
             case .conflict(let s): return s
-            case .unreadable: return "Page couldn't read kitty.conf."
-            case .symlink: return "kitty.conf is a link to a file that isn’t there, so Page left it alone."
-            case .writeFailed: return "Page couldn't write kitty.conf."
+            case .unreadable: return "Page Studio couldn't read kitty.conf."
+            case .symlink: return "kitty.conf is a link to a file that isn’t there, so Page Studio left it alone."
+            case .writeFailed: return "Page Studio couldn't write kitty.conf."
             }
         }
     }
@@ -347,11 +347,11 @@ enum KittyConfigFile {
     /// The setup state for the Terminals page: the file's effective settings.
     static func setupState(url: URL = defaultURL) -> TerminalCatalog.SetupState {
         guard case .success(let p) = preview(url: url) else {
-            return .needed("Page can't read kitty.conf, so it can't tell whether kitty's remote control is on")
+            return .needed("Page Studio can't read kitty.conf, so it can't tell whether kitty's remote control is on")
         }
         switch p.plan {
         case .alreadyDone: return .done
-        case .write: return .needed("Remote control is off in kitty. Page adds two lines to kitty.conf; restart kitty after.")
+        case .write: return .needed("Remote control is off in kitty. Page Studio adds two lines to kitty.conf; restart kitty after.")
         case .conflict(let why): return .needed(why)
         }
     }

@@ -24,7 +24,7 @@ class StatusSnapshotTest {
     @Test fun `silence is earned`() {
         val offline = StatusSnapshot.of("Studio MBP", status(false), 0, 0, "All quiet", "", RunwayModel.empty, now)
         assertTrue(offline.isUnreachable)
-        assertEquals("Mac offline", offline.faceHeadline)
+        assertEquals("Computer offline", offline.faceHeadline)
         val online = StatusSnapshot.of("Studio MBP", status(true), 0, 0, "All quiet", "", RunwayModel.empty, now)
         assertFalse(online.isUnreachable)
         assertEquals("All quiet", online.faceHeadline)

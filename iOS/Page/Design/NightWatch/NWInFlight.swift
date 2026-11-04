@@ -538,7 +538,7 @@ struct NWInFlightCardView: View {
             .buttonStyle(NWButtonStyle(kind: enabled ? kind : .quiet))
             .opacity(enabled ? 1 : 0.55)
             .accessibilityHint(Text(enabled ? (entry == .type ? "Opens the session with the keyboard up" : "Shows its terminal")
-                                    : (entry == .type ? "Page can't type into this terminal; opens the session to say why" : "Page can't mirror this terminal; opens the session")))
+                                    : (entry == .type ? "Page Studio can't type into this terminal; opens the session to say why" : "Page Studio can't mirror this terminal; opens the session")))
     }
 }
 

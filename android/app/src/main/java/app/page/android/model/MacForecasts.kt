@@ -82,12 +82,12 @@ object MacStatusStrip {
     private fun presenceText(presence: MacPresence, snapshot: MacStatusSnapshot?, now: Instant): String = when (presence) {
         is MacPresence.Online -> {
             val working = snapshot?.working
-            if (working != null && working > 0) "Mac online · $working working" else "Mac online"
+            if (working != null && working > 0) "Computer online · $working working" else "Computer online"
         }
-        is MacPresence.Stale -> "Mac not responding · last heartbeat ${RelativeTime.ago(presence.lastSeen, now)}"
-        is MacPresence.Offline -> presence.lastSeen?.let { "Mac offline · last seen ${RelativeTime.ago(it, now)}" } ?: "Mac offline"
-        MacPresence.NeverConnected -> "Mac never connected with this pairing"
-        MacPresence.Unknown -> "Checking your Mac…"
+        is MacPresence.Stale -> "Computer not responding · last heartbeat ${RelativeTime.ago(presence.lastSeen, now)}"
+        is MacPresence.Offline -> presence.lastSeen?.let { "Computer offline · last seen ${RelativeTime.ago(it, now)}" } ?: "Computer offline"
+        MacPresence.NeverConnected -> "Computer never connected with this pairing"
+        MacPresence.Unknown -> "Checking your computer…"
     }
 
     /** "35 min", "1 h 20 min". */

@@ -237,7 +237,7 @@ enum TurnSummary {
         guard let changes else {
             obj["files"] = [Any]()
             obj["patch"] = ""
-            obj["note"] = cwd == nil ? "Page doesn't know this session's folder." : "This folder isn't a git repository."
+            obj["note"] = cwd == nil ? "Page Studio doesn't know this session's folder." : "This folder isn't a git repository."
             return obj
         }
         if let root = changes.root { obj["repo"] = (root as NSString).lastPathComponent }

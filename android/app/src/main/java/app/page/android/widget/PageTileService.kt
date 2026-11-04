@@ -42,11 +42,11 @@ class PageTileService : TileService() {
     private fun render() {
         val tile = qsTile ?: return
         val snap = if (runCatching { AppGraph.app }.isSuccess && PairingStore.isPaired) StatusSnapshotStore.read() else null
-        tile.label = "Page"
+        tile.label = "Page Relay"
         tile.icon = Icon.createWithResource(this, R.drawable.ic_stat_page)
         if (snap == null) {
             tile.state = Tile.STATE_INACTIVE
-            if (Build.VERSION.SDK_INT >= 29) tile.subtitle = if (PairingStore.isPaired) "Opens Now" else "Open Page to pair"
+            if (Build.VERSION.SDK_INT >= 29) tile.subtitle = if (PairingStore.isPaired) "Opens Now" else "Open Page Relay to pair"
         } else {
             tile.state = if (snap.needsYou > 0 && !snap.isUnreachable) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
             if (Build.VERSION.SDK_INT >= 29) tile.subtitle = if (snap.isUnreachable) snap.faceHeadline else snap.headline

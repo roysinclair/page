@@ -153,7 +153,7 @@ data class LiveSession(
     val openPageId: String? get() = if (state.isWaiting) interventionId else null
 
     companion object {
-        const val DEFAULT_BLOCKER = "Page can't type into this session."
+        const val DEFAULT_BLOCKER = "Page Studio can't type into this session."
         const val ATTACH_IMAGE = "image"
         const val ATTACH_PATH = "path"
 

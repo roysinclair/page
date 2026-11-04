@@ -256,7 +256,7 @@ enum class Reversibility(val raw: Int) {
                 "Task", "Agent" ->
                     return Verdict(CONSIDERED, listOf(Tag.RUNS_COMMANDS), "starts a subagent")
                 else ->
-                    return Verdict(CONSIDERED, listOf(Tag.RUNS_COMMANDS), "$name isn't one Page can read")
+                    return Verdict(CONSIDERED, listOf(Tag.RUNS_COMMANDS), "$name isn't one Page Studio can read")
             }
         }
 
@@ -551,7 +551,7 @@ enum class Reversibility(val raw: Int) {
                 "rm", "rmdir", "unlink", "shred", "srm" -> return destroy("$cmd deletes files")
                 "dd", "fdisk", "gdisk", "parted", "newfs", "newfs_apfs" -> return destroy("$cmd writes straight to a disk")
                 "truncate" -> return destroy("truncate empties files")
-                "reboot", "shutdown", "halt", "poweroff" -> return destroy("$cmd stops the Mac")
+                "reboot", "shutdown", "halt", "poweroff" -> return destroy("$cmd stops the computer")
                 "diskutil" -> {
                     val sub = args.firstOrNull()?.lowercase() ?: ""
                     if (sub in listOf("list", "info", "activity")) return readOnly("disk info")
@@ -719,7 +719,7 @@ enum class Reversibility(val raw: Int) {
             }
             // Unknown program: never undoable. Still, spot destructive text.
             matchesDestructiveText(words.joinToString(" "))?.let { return destroy(it) }
-            return considered("$cmd isn't one Page recognises")
+            return considered("$cmd isn't one Page Studio recognises")
         }
 
         // MARK: helpers for verdicts
@@ -1175,7 +1175,7 @@ enum class Reversibility(val raw: Int) {
                     if (hasShort(args, "s") || args.any { Sw.hasPrefix(it, "--set") }) return "date sets the clock"
                 }
                 "hostname" -> {
-                    if (nonFlagCount(args, emptySet()) > 0) return "hostname renames the Mac"
+                    if (nonFlagCount(args, emptySet()) > 0) return "hostname renames the computer"
                 }
                 "file" -> {
                     if (hasShort(args, "C") || "--compile" in args) return "file compiles a magic file"
@@ -1415,7 +1415,7 @@ enum class Reversibility(val raw: Int) {
                     if (!f.contains("=")) takeValue()
                     note("git $name points git somewhere else")
                 } else if (f !in harmless) {
-                    note("git option $f isn't one Page recognises")
+                    note("git option $f isn't one Page Studio recognises")
                 }
             }
             val sub = rest.firstOrNull() ?: return Triple("", emptyList(), issue)

@@ -27,10 +27,10 @@ object ReplyDraft {
     const val REASON_DRAFT = "draft"
     const val REASON_INPUT_UNVERIFIED = "input_unverified"
 
-    const val UNSENT_COPY = "There's unsent text in the session's input box on your Mac."
-    const val CLEAR_COPY = "The input box on your Mac is clear now."
-    const val NO_CLEAR_CONFIRM = "Your Mac didn't confirm clearing the input box, so your message wasn't sent. Check the session on your Mac, then try again."
-    const val CLEAR_AND_SEND_SPOKEN = "Clear the text in the input box on your Mac and send your message"
+    const val UNSENT_COPY = "There's unsent text in the session's input box on your computer."
+    const val CLEAR_COPY = "The input box on your computer is clear now."
+    const val NO_CLEAR_CONFIRM = "Your computer didn't confirm clearing the input box, so your message wasn't sent. Check the session on your computer, then try again."
+    const val CLEAR_AND_SEND_SPOKEN = "Clear the text in the input box on your computer and send your message"
 
     /**
      * Page's sentence for a failed reply's `reason`, so the Mac's raw detail ("You have a half-typed message in that
@@ -64,7 +64,7 @@ object ReplyDraft {
     /** The sentence under a failed reply, from what the recovery has learned. */
     fun copy(recovery: ReplyDraftRecovery?): String? = when (recovery) {
         null, ReplyDraftRecovery.Asking, ReplyDraftRecovery.Unknown -> null
-        is ReplyDraftRecovery.Typed -> "There's “${SessionResultCopy.shownDraft(recovery.draft)}” typed in the session's input box on your Mac."
+        is ReplyDraftRecovery.Typed -> "There's “${SessionResultCopy.shownDraft(recovery.draft)}” typed in the session's input box on your computer."
         ReplyDraftRecovery.Clear -> CLEAR_COPY
         is ReplyDraftRecovery.Problem -> recovery.message
     }

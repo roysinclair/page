@@ -193,9 +193,9 @@ struct BatteryPolicy: Codable, Equatable {
         let level = spelledPercent(percent).map { "Battery is at \($0)" } ?? "Battery is low"
         switch mode {
         case .afterTurn:
-            return "\(level) and the Mac will sleep soon. Finish the step you're on, then stop: don't start anything new, and reply with a two-line summary of where you stopped and what's next."
+            return "\(level) and the computer will sleep soon. Finish the step you're on, then stop: don't start anything new, and reply with a two-line summary of where you stopped and what's next."
         case .pause, .off:
-            return "\(level) and the Mac is about to sleep. Pause now: don't start anything new, and reply with a two-line summary of where you stopped and what's next."
+            return "\(level) and the computer is about to sleep. Pause now: don't start anything new, and reply with a two-line summary of where you stopped and what's next."
         }
     }
 
@@ -204,8 +204,8 @@ struct BatteryPolicy: Codable, Equatable {
     /// to recognise Page's own text should include these too.
     static func legacyPauseMessages() -> [String] {
         (0...100).flatMap { percent in [
-            "Battery is at \(percent)% and the Mac will sleep soon. Finish the step you're on, then stop: don't start anything new, and reply with a two-line summary of where you stopped and what's next.",
-            "Battery is at \(percent)% and the Mac is about to sleep. Pause now: don't start anything new, and reply with a two-line summary of where you stopped and what's next."
+            "Battery is at \(percent)% and the computer will sleep soon. Finish the step you're on, then stop: don't start anything new, and reply with a two-line summary of where you stopped and what's next.",
+            "Battery is at \(percent)% and the computer is about to sleep. Pause now: don't start anything new, and reply with a two-line summary of where you stopped and what's next."
         ] }
     }
 
@@ -229,7 +229,7 @@ struct BatteryPolicy: Codable, Equatable {
     }
 
     static func pageContext(percent: Int) -> String {
-        "Battery \(percent)% — Page paused this session. Plug in to continue, or reply to send instructions."
+        "Battery \(percent)% — Page Power paused this session. Plug in to continue, or reply to send instructions."
     }
 
     /// What a phone reply to a low-battery page asks for.

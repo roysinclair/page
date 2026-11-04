@@ -5,12 +5,12 @@
 <title>Page Studio hero</title>
 <link rel="stylesheet" href="base.css">
 <style>
-  .copy { position: absolute; left: 64px; top: 118px; width: 440px; }
+  .copy { position: absolute; left: 64px; top: 50%; transform: translateY(-50%); width: 440px; }
   .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
   .brand .name { font: 700 15px/1 var(--sans); letter-spacing: -.01em; color: var(--ink); }
   .brand .eyebrow { margin-left: 4px; }
   .copy h1 { font-size: 45px; }
-  .copy p { margin-top: 22px; font-size: 15.5px; max-width: 440px; }
+  .copy p { margin-top: 22px; font-size: 15px; line-height: 1.45; max-width: 428px; text-wrap: balance; }
   .copy .chip { font-size: 11.5px; padding: 6px 10px; gap: 6px; }
   .chips { gap: 7px !important; flex-wrap: nowrap !important; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
@@ -38,6 +38,7 @@
   .android { left: 520px; top: 190px; --w: 180px; z-index: 6; }
   .iphone { left: 682px; top: 178px; --w: 192px; z-index: 7; }
   .iphone .screen img { width: 101.2%; margin: -.6% 0 0 -.6%; }
+  .iphone .lock { --bw: 101.2cqw; --bo: -.6cqw; }
   .home { position: absolute; left: 0; right: 0; bottom: 0; height: 9%;
     background: linear-gradient(180deg, rgba(5,7,13,0), rgba(5,7,13,.92) 55%); }
   .home::after { content: ""; position: absolute; left: 50%; bottom: 7px; width: 34%; height: 4px; border-radius: 4px; transform: translateX(-50%); background: rgba(255,255,255,.7); }
@@ -62,13 +63,12 @@
   <div class="copy">
     <div class="brand"><span class="pulse" style="--s:26px"><b></b></span><span class="name">Page Studio</span></div>
     <h1 class="headline">Your agents<br>keep working.<br><em>You get paged only<br>when it matters.</em></h1>
-    <p class="caption">Page keeps your Mac awake while Claude Code and Codex work, pauses them gracefully at your battery cutoff, and pages your phone when a decision is yours.</p>
+    <p class="caption">Page Studio keeps your Mac awake while Claude Code and Codex work and pauses them gracefully at your battery cutoff (Page Power), and pages your phone when a decision is yours (Page Relay).</p>
     <div class="chips">
-      <span class="chip"><span class="dot"></span>Mac</span>
-      <span class="chip"><span class="dot" style="background:var(--amber);box-shadow:0 0 8px var(--amber)"></span>iPhone</span>
-      <span class="chip"><span class="dot" style="background:#34D399;box-shadow:0 0 8px #34D399"></span>Android</span>
-      <span class="chip"><span class="dot" style="background:var(--sky);box-shadow:0 0 8px var(--sky)"></span>Your relay</span>
-      <span class="chip"><span class="dot" style="background:var(--violet);box-shadow:0 0 8px var(--violet)"></span>Page Aura</span>
+      <span class="chip"><span class="dot"></span>Page Power</span>
+      <span class="chip"><span class="dot" style="background:var(--sky);box-shadow:0 0 8px var(--sky)"></span>Page Relay</span>
+      <span class="chip"><span class="dot" style="background:#9b7bff;box-shadow:0 0 8px #9b7bff"></span>Page Aura</span>
+      <span class="chip"><span class="dot" style="background:#da2978;box-shadow:0 0 8px #da2978"></span>Page Orbit</span>
     </div>
   </div>
 
@@ -121,9 +121,9 @@
   <div class="phone android reflect"><div class="cam"></div><div class="screen"><img src="assets/android-now.webp" alt=""></div></div>
   <div class="phone iphone reflect"><div class="screen lock">
     <img src="assets/board-lock-screen.webp" alt="">
-    <div class="sky-patch"></div><div class="plain-island"></div><div class="dim"></div>
+    <div class="sky-patch"></div><div class="plain-island"></div><div class="dim"></div><div class="wpatch"></div><div class="wlabel">PAGE RELAY</div>
     <div class="notifs">
-      <div class="notif"><img class="icon" src="assets/app-icon.webp" alt=""><div class="txt"><div class="top"><b>page paged you</b><span>now</span></div><div class="body">Approval needed: [Bash] <code>swift test --filter StuckTests</code></div></div></div>
+      <div class="notif"><img class="icon" src="assets/app-icon.webp" alt=""><div class="txt"><div class="top"><b>payments-api paged you</b><span>now</span></div><div class="body">Approval needed: [Bash] <code>npm test -- charges.idem</code></div></div></div>
       <div class="notif"><img class="icon" src="assets/app-icon.webp" alt=""><div class="txt"><div class="top"><b>bottle-flip paged you</b><span>4m ago</span></div><div class="body">Approval needed: [Bash] <code>rm -rf Builds/Dev/*.app</code></div></div></div>
     </div>
     <div class="homebar"></div>

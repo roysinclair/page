@@ -221,7 +221,7 @@ public struct PageStatusWidgetView: View {
         VStack(alignment: .leading, spacing: 6) {
             glyph(size == .small ? 34 : 44)
             Spacer(minLength: 0)
-            Text("Page").font(Font.system(size: 15, weight: .semibold)).foregroundColor(primary).lineLimit(1)
+            Text("Page Studio").font(Font.system(size: 15, weight: .semibold)).foregroundColor(primary).lineLimit(1)
             Text(WidgetDisplay.missing).font(Font.system(size: 12, weight: .medium)).foregroundColor(secondary)
                 .lineLimit(2).minimumScaleFactor(0.8)
         }
@@ -233,7 +233,7 @@ public struct PageStatusWidgetView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     glyph(g)
-                    Text("Page").font(Font.system(size: 12, weight: .semibold)).foregroundColor(tertiary).lineLimit(1)
+                    Text("Page Studio").font(Font.system(size: 12, weight: .semibold)).foregroundColor(tertiary).lineLimit(1)
                     Spacer(minLength: 0)
                 }
                 Spacer(minLength: 0)
@@ -256,7 +256,7 @@ public struct PageStatusWidgetView: View {
         func face(battery: Bool, top: Bool) -> some View {
             HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(s.macName.isEmpty ? "PAGE" : "PAGE · " + s.macName.uppercased()).nwLabelStyle(vibrant: vibrant)
+                    Text(s.macName.isEmpty ? "PAGE STUDIO" : "PAGE STUDIO · " + s.macName.uppercased()).nwLabelStyle(vibrant: vibrant)
                         .lineLimit(1).minimumScaleFactor(0.8)
                     Text(WidgetDisplay.headline(s)).font(Font.system(size: 29, weight: .bold)).kerning(-0.7)
                         .foregroundColor(color).lineLimit(1).minimumScaleFactor(0.6).pageAccent()
@@ -338,7 +338,7 @@ public struct PageStatusWidgetView: View {
                     ForEach(Array(s.decisions.prefix(rows.decisions))) { d in
                         link(.item(id: d.id)) { decisionRow(d) }
                     }
-                    if moreDecisions > 0 { moreLine("+\(moreDecisions) more in Page") }
+                    if moreDecisions > 0 { moreLine("+\(moreDecisions) more in Page Studio") }
                 }
             }
             if rows.inFlight > 0 {
@@ -436,7 +436,7 @@ public struct ClaudeUsageWidgetView: View {
     private var empty: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Claude usage").font(Font.system(size: 15, weight: .semibold)).foregroundColor(primary).lineLimit(1)
-            Text(snapshot == nil ? WidgetDisplay.missing : "Turn on “Show my Claude usage” in Page’s Budget settings")
+            Text(snapshot == nil ? WidgetDisplay.missing : "Turn on “Show my Claude usage” in Page Studio’s Budget settings")
                 .font(Font.system(size: 12, weight: .medium)).foregroundColor((vibrant ? P.textPrimary.opacity(0.8) : P.textSecondary).color)
                 .lineLimit(3).minimumScaleFactor(0.8)
             Spacer(minLength: 0)

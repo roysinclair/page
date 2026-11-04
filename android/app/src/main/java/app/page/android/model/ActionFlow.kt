@@ -158,9 +158,9 @@ sealed interface CardOutcome {
                 null -> if (pending == null) None else Sending
                 ReplyDelivery.Sending -> Sending
                 is ReplyDelivery.Sent -> Sending
-                is ReplyDelivery.Delivered -> Delivered(delivery.detail ?: "typed into the session on your Mac")
+                is ReplyDelivery.Delivered -> Delivered(delivery.detail ?: "typed into the session on your computer")
                 is ReplyDelivery.Failed -> Problem(delivery.message)
-                ReplyDelivery.AlreadyReplied -> Problem("Already answered at the Mac")
+                ReplyDelivery.AlreadyReplied -> Problem("Already answered at your computer")
                 ReplyDelivery.Gone -> Problem("Prompt closed before your answer")
                 ReplyDelivery.Retracting -> Sending
                 // Deleted: the page is open for a fresh reply, so the card goes back to its actions.

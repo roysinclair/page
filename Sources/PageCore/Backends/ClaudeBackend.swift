@@ -591,7 +591,7 @@ final class ClaudeBackend: AgentBackend {
         }
     }
 
-    static let resetExpiredDetail = "Not sent — the limit reset over 2 hours ago and Page didn't type it"
+    static let resetExpiredDetail = "Not sent — the limit reset over 2 hours ago and Page Studio didn't type it"
     static let resetClearedDetail = "Not sent — the session got going again before the limit reset"
     static let resetBusyDetail = "Not sent — the session was busy when the limit reset"
 
@@ -1201,13 +1201,13 @@ extension ClaudeBackend: BatteryPausable {
         // they aren't burning battery, and Esc on a menu would deny it.
         guard status == .busy else { return .skip("not busy (\(status.rawValue))") }
         switch host {
-        case .unsupported(let app): return .skip("Page can't type into \(app)")
+        case .unsupported(let app): return .skip("Page Studio can't type into \(app)")
         case .unreachable(let detail): return .skip(detail)
         case .unknown: return .skip("terminal not found")
         case .tmux, .terminalApp, .iTerm, .cmux, .wezterm, .kitty, .herdr: break
         }
         if isLocal {
-            if mode == .afterTurn { return .skip("local model — Page doesn't queue a summary request on battery") }
+            if mode == .afterTurn { return .skip("local model — Page Studio doesn't queue a summary request on battery") }
             if !host.canSendLoneEscape { return .skip("local model, and \(host.label) can't press Esc") }
             return .interrupt
         }
@@ -1289,8 +1289,8 @@ extension ClaudeBackend: BatteryPausable {
                 Logger.shared.log("Low-battery pause: Esc failed for \(work[i].session.sessionId.prefix(8)): \(r.detail) [\(r.output.prefix(160))]")
                 // Local model: Esc only, never a queued summary request.
                 work[i].strategy = work[i].session.provider.isLocal
-                    ? .skip("local model, and Page couldn't press Esc there")
-                    : .queue(reason: "Page couldn't press Esc there, so it stops after this turn")
+                    ? .skip("local model, and Page Studio couldn't press Esc there")
+                    : .queue(reason: "Page Studio couldn't press Esc there, so it stops after this turn")
             }
         }
 

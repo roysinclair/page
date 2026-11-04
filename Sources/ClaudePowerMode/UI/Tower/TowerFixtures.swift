@@ -83,11 +83,11 @@ enum TowerFixtures {
         typealias U = TerminalCatalog.HostUse
         return TerminalProbe.Snapshot(facts: [
             .terminal: F(installed: true, use: U(), setup: .unchecked),
-            .iTerm: F(installed: true, use: U(), setup: .needed("Page hasn’t asked macOS for permission to control iTerm2 yet. Click Allow…")),
+            .iTerm: F(installed: true, use: U(), setup: .needed("Page Studio hasn’t asked macOS for permission to control iTerm2 yet. Click Allow…")),
             .tmux: F(installed: true, use: U(typable: 3), setup: .notNeeded),
-            .cmux: F(installed: true, use: U(typable: 0, blocked: 1, blocker: "cmux isn’t letting Page type yet — click Set up…"), setup: .needed("cmux’s socket is set to “cmux processes only”, which keeps Page out. Click Set up…")),
+            .cmux: F(installed: true, use: U(typable: 0, blocked: 1, blocker: "cmux isn’t letting Page Studio type yet — click Set up…"), setup: .needed("cmux’s socket is set to “cmux processes only”, which keeps Page Studio out. Click Set up…")),
             .wezterm: F(installed: true, use: U(), setup: .notNeeded),
-            .kitty: F(installed: true, use: U(), setup: .needed("Remote control is off in kitty. Page adds two lines to kitty.conf; restart kitty after.")),
+            .kitty: F(installed: true, use: U(), setup: .needed("Remote control is off in kitty. Page Studio adds two lines to kitty.conf; restart kitty after.")),
             .herdr: F(installed: false, use: U(), setup: .notNeeded),
             .claudeSquad: F(installed: true, use: U(typable: 2), setup: .notNeeded),
         ], pageAddedKittyLines: false)

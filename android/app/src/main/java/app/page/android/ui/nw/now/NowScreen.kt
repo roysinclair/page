@@ -338,7 +338,7 @@ fun NowScreen(modifier: Modifier = Modifier) {
                         pulse = p?.let { if (it.tone == ProblemState.Tone.SLATE) NWPulseStyle.Style.HOLLOW_SLATE else NWPulseStyle.Style.HOLLOW_AMBER } ?: NWPulseStyle.Style.of(m.mood),
                         headline = p?.title ?: screen.handover ?: m.headline,
                         subline = p?.subtitle ?: (if (screen.handover == null) NowModel.sublineBesideChip(m.subline, screen.macChip.text) else m.headline),
-                        footnote = if (p == null && quiet && m.headline == "All quiet") "Page is keeping watch. Go to sleep." else null,
+                        footnote = if (p == null && quiet && m.headline == "All quiet") "Page Relay is keeping watch. Go to sleep." else null,
                         height = horizonHeight, topInset = topInset, model = screen.pulse, workingJump = jump,
                         onPulseTap = { AppRouter.openTower() }, onSwipe = AppRouter::selectDestination, current = NWDestination.NOW,
                     )

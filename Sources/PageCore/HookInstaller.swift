@@ -377,10 +377,10 @@ enum HookInstallerError: Error, LocalizedError, Equatable {
                 ? "~/.claude doesn't exist — run Claude Code once first."
                 : "~/.codex doesn't exist — run Codex once first."
         case .unreadable(let m): return "Couldn't read the file: \(m)"
-        case .invalidJSON(let m): return "The file isn't valid JSON (\(m)). Page won't touch it; fix it by hand first."
-        case .notAnObject: return "The file's top level isn't a JSON object. Page won't touch it."
-        case .hooksNotAnObject: return "\"hooks\" in the file isn't an object. Page won't touch it."
-        case .eventNotAList(let e): return "\"hooks.\(e)\" isn't a list. Page won't touch it."
+        case .invalidJSON(let m): return "The file isn't valid JSON (\(m)). Page Studio won't touch it; fix it by hand first."
+        case .notAnObject: return "The file's top level isn't a JSON object. Page Studio won't touch it."
+        case .hooksNotAnObject: return "\"hooks\" in the file isn't an object. Page Studio won't touch it."
+        case .eventNotAList(let e): return "\"hooks.\(e)\" isn't a list. Page Studio won't touch it."
         case .changedSincePreview: return "The file changed since the preview was made. Review the new preview and try again."
         case .writeFailed(let m): return "Couldn't write the file: \(m)"
         case .scriptUnavailable(let m): return m
@@ -508,10 +508,10 @@ struct HookInstaller {
     /// image. Returns a reason, or nil when the path is fine to persist.
     static func unsuitableScriptReason(_ path: String) -> String? {
         if path.contains("/AppTranslocation/") {
-            return "Page is running from a temporary location. Move Page.app to Applications, reopen it, then install the hooks."
+            return "Page Studio is running from a temporary location. Move Page.app to Applications, reopen it, then install the hooks."
         }
         if path.hasPrefix("/Volumes/") {
-            return "Page is running from a disk image. Copy Page.app to Applications first."
+            return "Page Studio is running from a disk image. Copy Page.app to Applications first."
         }
         return nil
     }

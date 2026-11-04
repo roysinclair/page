@@ -16,7 +16,7 @@ struct TowerHookSource {
 
 /// The words of the Phone approvals page, in one place and pure.
 enum TowerHookText {
-    static let scriptMissing = "Page's hook script wasn't found inside Page.app — reinstall Page to use phone approvals."
+    static let scriptMissing = "Page Studio's hook script wasn't found inside Page.app — reinstall Page Studio to use phone approvals."
 
     /// Pure. One agent's status line.
     static func describe(_ st: HookStatus, agent: HookAgent) -> String {
@@ -27,7 +27,7 @@ enum TowerHookText {
                 : "Installed."
         case .needsUpdate:
             let paths = Set(st.pageCommands).sorted().joined(separator: ", ")
-            return "An older or partial Page hook is installed (\(paths)). Update replaces it with the current one."
+            return "An older or partial Page Studio hook is installed (\(paths)). Update replaces it with the current one."
         case .notInstalled:
             return "Not installed."
         case .agentMissing:
@@ -44,14 +44,14 @@ enum TowerHookText {
         return "cmux adds its own approval hook to its sessions (\(info.withPermissionRequestHook) found). "
             + "Both hooks run for those sessions, and Claude Code doesn't document how it combines two different approval answers, "
             + "so don't count on one overriding the other. "
-            + "For one alert and one predictable decision per prompt, turn off \"Forward notifications to my iPhone\" in cmux and let Page page you."
+            + "For one alert and one predictable decision per prompt, turn off \"Forward notifications to my iPhone\" in cmux and let Page Studio page you."
     }
 
     /// Pure. What in ~/.codex/config.toml works against the hooks, or nil.
     static func codexWarning(_ info: CodexConfigInfo) -> String? {
         var warnings: [String] = []
         if info.hooksFeatureDisabled {
-            warnings.append("Hooks are switched off in ~/.codex/config.toml ([features] hooks = false); Codex won't run Page's hook until you turn them back on.")
+            warnings.append("Hooks are switched off in ~/.codex/config.toml ([features] hooks = false); Codex won't run Page Studio's hook until you turn them back on.")
         }
         if info.hasInlineHooks {
             warnings.append("~/.codex/config.toml also defines [hooks]; Codex merges both and warns about it at startup.")
@@ -68,11 +68,11 @@ enum TowerHookText {
     static func confirmSpec(_ plan: HookChangePlan, action: HookChangePlan.Action, agent: HookAgent,
                             path: String, diff: String) -> NWDialogSpec {
         let install = action == .install
-        let text = "Page will change \(path) as shown. "
+        let text = "Page Studio will change \(path) as shown. "
             + (plan.originalData == nil ? "The file doesn't exist yet and will be created."
                                         : "The current file is saved first as \(plan.writeURL.lastPathComponent).page-backup-<date> next to it.")
             + (install ? "" : " Other tools' hooks are left alone.")
-        return NWDialogSpec.confirm(install ? "Install Page's \(agent.displayName) hooks?" : "Remove Page's \(agent.displayName) hooks?",
+        return NWDialogSpec.confirm(install ? "Install Page Studio's \(agent.displayName) hooks?" : "Remove Page Studio's \(agent.displayName) hooks?",
                                     text, ok: install ? "Install" : "Remove",
                                     tone: install ? .info : .warning, destructive: !install, detail: .diff(diff))
     }
@@ -81,7 +81,7 @@ enum TowerHookText {
     static func doneText(action: HookChangePlan.Action, agent: HookAgent, backupPath: String?) -> String {
         var msg = backupPath.map { "Backup: \($0)" } ?? ""
         if action == .install && agent == .codex {
-            msg = "Now open Codex and run /hooks to trust Page's hook — Codex won't run it until you do."
+            msg = "Now open Codex and run /hooks to trust Page Studio's hook — Codex won't run it until you do."
                 + (msg.isEmpty ? "" : "\n\n" + msg)
         }
         if action == .install && agent == .claude {
@@ -192,7 +192,7 @@ final class TowerHooksModel: ObservableObject {
         let agent = previewAgent
         let path = displayPath(src.installer.fileURL(for: agent))
         guard src.scriptPath != nil else {
-            preview = Preview(path: path, text: "Page's hook script wasn't found, so there's nothing to preview.", isDiff: false)
+            preview = Preview(path: path, text: "Page Studio's hook script wasn't found, so there's nothing to preview.", isDiff: false)
             return
         }
         do {
@@ -254,8 +254,8 @@ final class TowerHooksModel: ObservableObject {
         }
         guard plan.changed else {
             notice(action == .install ? "Already up to date" : "Nothing to remove",
-                   action == .install ? "\(displayPath(plan.fileURL)) already has Page's current hook entries."
-                                      : "\(displayPath(plan.fileURL)) has no Page hook entries.", tone: .info)
+                   action == .install ? "\(displayPath(plan.fileURL)) already has Page Studio's current hook entries."
+                                      : "\(displayPath(plan.fileURL)) has no Page Studio hook entries.", tone: .info)
             refresh()
             return
         }
@@ -301,7 +301,7 @@ struct NWPhoneApprovalsPage: View {
                 NWDivider()
                 NWRow(title: "Away only",
                       detail: "If you've used the keyboard or mouse in the last 2 minutes, the normal dialog appears as usual, "
-                        + "and touching the Mac while it waits brings the dialog back. Page never approves or denies on its own — "
+                        + "and touching the Mac while it waits brings the dialog back. Page Studio never approves or denies on its own — "
                         + "no answer within \(HookInstaller.hookWaitSeconds / 60) minutes, relay down or anything unexpected, and the agent shows its normal dialog.") {
                     Image(systemName: "moon.zzz").font(Font.system(size: 16)).foregroundColor(P.textTertiary.color)
                 }
@@ -328,7 +328,7 @@ struct NWPhoneApprovalsPage: View {
                             detail: "keeps the finished turn open while you're away",
                             isOn: Binding(get: { model.codexStop }, set: { model.codexStop = $0 }))
                 NWDivider()
-                NWNote(text: "One-time step after installing: open Codex and run /hooks, then trust Page's hooks. Codex skips new or "
+                NWNote(text: "One-time step after installing: open Codex and run /hooks, then trust Page Studio's hooks. Codex skips new or "
                        + "changed hooks until you do, and asks again whenever the hook command changes (e.g. after moving Page.app).")
                     .padding(.horizontal, 16).padding(.vertical, 12)
                 if let warning = model.codexWarning {

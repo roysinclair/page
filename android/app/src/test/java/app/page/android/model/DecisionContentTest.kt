@@ -32,7 +32,7 @@ class DecisionContentTest {
     @Test fun `a page from an agent Page cannot read gets the screen note`() {
         val gem = pageFromJson("""{"id":"g2","sessionId":"s9","kind":"approval","openedAt":"2027-01-15T08:00:00Z","context":"[Bash] ls","backend":"gemini"}""")
         val c = content(gem, session = null)
-        assertEquals("Couldn't tell what's on screen · Open on Mac", c.screenNote)
+        assertEquals("Couldn't tell what's on screen · Open on your computer", c.screenNote)
     }
 
     @Test fun `a plan page asks for a plan`() {

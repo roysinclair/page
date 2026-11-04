@@ -12,8 +12,8 @@ class ReplyDraftTest {
     private fun result(json: String): CommandResult =
         (SessionsPlaintext.decode("""{"kind":"result","seq":1,"ts":1761300000000,"clientId":"c1",$json}""")!!.update as SessionsUpdate.Result).result
 
-    private val unsent = "There's unsent text in the session's input box on your Mac."
-    private val unverified = "Page couldn't see the session's input box on your Mac, so it didn't type anything. Try again in a moment."
+    private val unsent = "There's unsent text in the session's input box on your computer."
+    private val unverified = "Page Studio couldn't see the session's input box on your computer, so it didn't type anything. Try again in a moment."
 
     @Test fun `a draft failure says Page's words, not the Mac's raw detail`() {
         val d = ReplyResultFrame.delivery(false, "cmux", "You have a half-typed message in that pane", reason = "draft")
@@ -24,7 +24,7 @@ class ReplyDraftTest {
     @Test fun `no reason or an unknown one is as before`() {
         assertEquals(ReplyDelivery.Failed("Nope"), ReplyResultFrame.delivery(false, "cmux", "Nope"))
         assertEquals(ReplyDelivery.Failed("Nope"), ReplyResultFrame.delivery(false, "cmux", "Nope", reason = "something_new"))
-        assertEquals(ReplyDelivery.Failed("Your Mac couldn't deliver the reply."), ReplyResultFrame.delivery(false, null, null))
+        assertEquals(ReplyDelivery.Failed("Your computer couldn't deliver the reply."), ReplyResultFrame.delivery(false, null, null))
     }
 
     @Test fun `a reason on a success or a delete changes nothing`() {
@@ -67,9 +67,9 @@ class ReplyDraftTest {
     }
 
     @Test fun `the copy names the draft, shortened for display only`() {
-        assertEquals("There's “fix it” typed in the session's input box on your Mac.", ReplyDraft.copy(ReplyDraftRecovery.Typed("fix it")))
-        assertEquals("There's “" + "a".repeat(40) + "…” typed in the session's input box on your Mac.", ReplyDraft.copy(ReplyDraftRecovery.Typed("a".repeat(60))))
-        assertEquals("The input box on your Mac is clear now.", ReplyDraft.copy(ReplyDraftRecovery.Clear))
+        assertEquals("There's “fix it” typed in the session's input box on your computer.", ReplyDraft.copy(ReplyDraftRecovery.Typed("fix it")))
+        assertEquals("There's “" + "a".repeat(40) + "…” typed in the session's input box on your computer.", ReplyDraft.copy(ReplyDraftRecovery.Typed("a".repeat(60))))
+        assertEquals("The input box on your computer is clear now.", ReplyDraft.copy(ReplyDraftRecovery.Clear))
         assertNull(ReplyDraft.copy(ReplyDraftRecovery.Asking))
         assertNull(ReplyDraft.copy(ReplyDraftRecovery.Unknown))
         assertNull(ReplyDraft.copy(null))
@@ -77,7 +77,7 @@ class ReplyDraftTest {
 
     @Test fun `the sheet shows the recovery's copy only on a draft failure`() {
         val failed = ReplyDelivery.Failed(unsent, "draft")
-        assertEquals("There's “x” typed in the session's input box on your Mac.", (ReplyDraft.shown(failed, ReplyDraftRecovery.Typed("x")) as ReplyDelivery.Failed).message)
+        assertEquals("There's “x” typed in the session's input box on your computer.", (ReplyDraft.shown(failed, ReplyDraftRecovery.Typed("x")) as ReplyDelivery.Failed).message)
         assertEquals(failed, ReplyDraft.shown(failed, ReplyDraftRecovery.Asking))
         assertEquals(failed, ReplyDraft.shown(failed, null))
         val other = ReplyDelivery.Failed(unverified, "input_unverified")
@@ -90,7 +90,7 @@ class ReplyDraftTest {
         val a = ReplyDraft.action(failed, ReplyDraftRecovery.Typed("x"), canResend = true)!!
         assertEquals(ReplyDraft.Action.Kind.CLEAR_AND_SEND, a.kind)
         assertEquals("Clear it and send", a.label)
-        assertEquals("Clear the text in the input box on your Mac and send your message", a.spoken)
+        assertEquals("Clear the text in the input box on your computer and send your message", a.spoken)
         assertTrue(a.enabled)
         assertFalse(ReplyDraft.action(failed, ReplyDraftRecovery.Typed("x", clearing = true), canResend = true)!!.enabled)
     }
@@ -114,11 +114,11 @@ class ReplyDraftTest {
         assertNull("already clear", ReplyDraft.afterClear(result(""""ok":true,"code":"delivered","detail":"Already clear""""), "Claude"))
         assertEquals(ReplyDraftRecovery.Typed("new"), ReplyDraft.afterClear(result(""""ok":false,"code":"refused","reason":"draft","draft":"new""""), "Claude"))
         assertEquals(
-            ReplyDraftRecovery.Problem("The text in the input box changed on your Mac, so Page left it alone."),
+            ReplyDraftRecovery.Problem("The text in the input box changed on your computer, so Page Studio left it alone."),
             ReplyDraft.afterClear(result(""""ok":false,"code":"refused","reason":"draft_changed""""), "Claude"),
         )
         assertEquals(
-            ReplyDraftRecovery.Problem("Claude is showing a prompt on your Mac. Answer it from its page instead."),
+            ReplyDraftRecovery.Problem("Claude is showing a prompt on your computer. Answer it from its page instead."),
             ReplyDraft.afterClear(result(""""ok":false,"code":"refused","reason":"waiting""""), "Claude"),
         )
         assertEquals(ReplyDraftRecovery.Problem("It broke"), ReplyDraft.afterClear(result(""""ok":false,"code":"failed","detail":"It broke""""), "Claude"))
@@ -132,7 +132,7 @@ class ReplyDraftTest {
         assertNull(ReplyDraft.action(failed, recovery, canResend = true))
 
         recovery = ReplyDraft.afterPeek(result(""""ok":false,"code":"refused","reason":"draft","draft":"fix it""""))
-        assertEquals("There's “fix it” typed in the session's input box on your Mac.", (ReplyDraft.shown(failed, recovery) as ReplyDelivery.Failed).message)
+        assertEquals("There's “fix it” typed in the session's input box on your computer.", (ReplyDraft.shown(failed, recovery) as ReplyDelivery.Failed).message)
         assertEquals(ReplyDraft.Action.Kind.CLEAR_AND_SEND, ReplyDraft.action(failed, recovery, canResend = true)!!.kind)
 
         recovery = (recovery as ReplyDraftRecovery.Typed).copy(clearing = true)
@@ -145,7 +145,7 @@ class ReplyDraftTest {
     @Test fun `peek finds the box clear, then Send again`() {
         val failed = ReplyResultFrame.delivery(false, "cmux", "raw", reason = "draft")
         val recovery = ReplyDraft.afterPeek(result(""""ok":true,"code":"delivered","detail":"Already clear""""))
-        assertEquals("The input box on your Mac is clear now.", (ReplyDraft.shown(failed, recovery) as ReplyDelivery.Failed).message)
+        assertEquals("The input box on your computer is clear now.", (ReplyDraft.shown(failed, recovery) as ReplyDelivery.Failed).message)
         assertEquals(ReplyDraft.Action.Kind.SEND_AGAIN, ReplyDraft.action(failed, recovery, canResend = true)!!.kind)
         assertNull(ReplyDraft.action(failed, recovery, canResend = false))
     }

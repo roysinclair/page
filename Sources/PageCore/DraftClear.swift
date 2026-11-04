@@ -21,16 +21,16 @@ enum DraftClear {
     static let maxLength = 200
     private static let placeholderPattern = #"\[[^\]]*#[0-9]+[^\]]*\]"#
 
-    static let changedMessage = "The text in the input box changed on your Mac, so Page left it alone."
+    static let changedMessage = "The text in the input box changed on your computer, so Page Studio left it alone."
     static let alreadyClearMessage = "Already clear"
     static let clearedMessage = "Cleared"
-    static let failedMessage = "Couldn't clear the input box — clear it at the Mac"
-    static let atTheMacMessage = "Clear it at the Mac"
-    static let unreadableMessage = "Couldn't read the session's input box — clear it at the Mac"
-    static let codexMessage = "Page can't clear the input box in this session — clear it at the Mac"
+    static let failedMessage = "Couldn't clear the input box — clear it at your computer"
+    static let atTheMacMessage = "Clear it at your computer"
+    static let unreadableMessage = "Couldn't read the session's input box — clear it at your computer"
+    static let codexMessage = "Page Studio can't clear the input box in this session — clear it at your computer"
 
     static func unsupportedMessage(_ app: String) -> String {
-        "Page can't clear the input box in \(app) — clear it at the Mac"
+        "Page Studio can't clear the input box in \(app) — clear it at your computer"
     }
 
     /// What the input box holds, as far as Page can tell.
@@ -120,7 +120,7 @@ extension InjectionExecutor {
         case .tmux(let tmux, let pane, let inMode, _):
             return {
                 // A pane in copy mode would take the key as a mode command.
-                if inMode { return "tmux pane \(pane) is in copy mode — clear the input box at the Mac" }
+                if inMode { return "tmux pane \(pane) is in copy mode — clear the input box at your computer" }
                 return ProcessRunner.run(tmux, ["send-keys", "-t", pane, "BSpace"], timeout: 3).succeeded ? nil : failed
             }
         case .wezterm(let target):
@@ -185,7 +185,7 @@ extension SessionInputGate {
         let host = io.resolveHost(session, table)
         switch host {
         // A pane in copy mode would take the key as a mode command.
-        case .tmux(_, let pane, true, _): return .failure(.refused(.notTypable, "tmux pane \(pane) is in copy mode — clear the input box at the Mac"))
+        case .tmux(_, let pane, true, _): return .failure(.refused(.notTypable, "tmux pane \(pane) is in copy mode — clear the input box at your computer"))
         case .tmux, .cmux, .wezterm, .kitty, .herdr: break
         case .terminalApp: return .failure(.refused(.notTypable, DraftClear.unsupportedMessage("Terminal.app")))
         case .iTerm: return .failure(.refused(.notTypable, DraftClear.unsupportedMessage("iTerm2")))

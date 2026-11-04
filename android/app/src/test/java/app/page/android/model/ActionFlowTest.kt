@@ -37,7 +37,7 @@ class ActionFlowTest {
         assertEquals("Stop 4 busy sessions on Studio MBP. Presses Esc in each.", plan.biometricReason)
         assertTrue(plan.canStop)
         assertEquals("t1, t2, t3, +1", plan.names)
-        assertEquals("Press Esc in 4 busy sessions on your Mac", StopPlan.build(nine, hasSessionList = true).scope)
+        assertEquals("Press Esc in 4 busy sessions on your computer", StopPlan.build(nine, hasSessionList = true).scope)
     }
 
     @Test fun `nothing busy cannot stop, and a status count stands in before the list arrives`() {
@@ -123,12 +123,12 @@ class ActionFlowTest {
         assertEquals("sent is sending, never success", CardOutcome.Sending, CardOutcome.from(null, ReplyDelivery.Sent(queued = false, at = nwNow), nwNow))
         assertEquals(CardOutcome.Sending, CardOutcome.from(null, ReplyDelivery.Sending, nwNow))
         assertEquals(
-            CardOutcome.Delivered("typed into the session on your Mac"),
+            CardOutcome.Delivered("typed into the session on your computer"),
             CardOutcome.from(null, ReplyDelivery.Delivered(null), nwNow),
         )
         assertEquals(CardOutcome.Delivered("x"), CardOutcome.from(null, ReplyDelivery.Delivered("x"), nwNow))
         assertEquals(CardOutcome.Problem("x"), CardOutcome.from(null, ReplyDelivery.Failed("x"), nwNow))
-        assertEquals(CardOutcome.Problem("Already answered at the Mac"), CardOutcome.from(null, ReplyDelivery.AlreadyReplied, nwNow))
+        assertEquals(CardOutcome.Problem("Already answered at your computer"), CardOutcome.from(null, ReplyDelivery.AlreadyReplied, nwNow))
         assertEquals(CardOutcome.Problem("Prompt closed before your answer"), CardOutcome.from(null, ReplyDelivery.Gone, nwNow))
     }
 
@@ -194,7 +194,7 @@ class ActionFlowTest {
             listOf(DecisionPhase.Sending, DecisionPhase.Delivered(null), DecisionPhase.AlreadyReplied, DecisionPhase.Loading, DecisionPhase.Missing, DecisionPhase.Resolved("x"))
                 .any { it.acceptsInput },
         )
-        assertEquals("Already answered at the Mac", DecisionPhase.AlreadyReplied.statusLine(false)?.text)
+        assertEquals("Already answered at your computer", DecisionPhase.AlreadyReplied.statusLine(false)?.text)
         assertNull(DecisionPhase.Open.statusLine(false))
         assertEquals(DecisionPhase.Tone.GOOD, DecisionPhase.Delivered(null).statusLine(false)?.tone)
         assertEquals(DecisionPhase.Tone.NEUTRAL, DecisionPhase.Sent(false, false).statusLine(false)?.tone)

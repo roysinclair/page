@@ -34,7 +34,7 @@ class SessionRoomTest {
         assertEquals("Gemini", other.name)
         assertEquals(AgentCharacter.Kind.LOCAL, ollama.kind)
         assertEquals("Ollama", ollama.runtime)
-        assertEquals("Private · nothing leaves this Mac", ollama.privacyTitle)
+        assertEquals("Private · nothing leaves this computer", ollama.privacyTitle)
         assertEquals("LM Studio", AgentCharacter.from(AgentBackend.Known(InterventionBackend.CLAUDE), "lmStudio").runtime)
         assertEquals("A local model", AgentCharacter.from(AgentBackend.Known(InterventionBackend.CLAUDE), "otherLocal").runtime)
     }
@@ -81,7 +81,7 @@ class SessionRoomTest {
         assertEquals(RoomComposerMode.NextTask, idlePlan.mode)
         val photos = PhotoOffer.evaluate(setOf(SessionCaps.IMAGES), idle, idlePlan.mode)
         assertFalse(photos.shown)
-        assertEquals("Page can't send photos to Page Aura yet", photos.blockerNote)
+        assertEquals("Page Studio can't send photos to Page Aura yet", photos.blockerNote)
     }
 
     @Test fun `Claude gets every lens with something behind it, and the others get fewer`() {
@@ -167,7 +167,7 @@ class SessionRoomTest {
         val arriving = mode(RoomComposerMode.Inputs(LiveSessionState.WAITING_ON_APPROVAL, canType = true, pageArriving = true))
         assertTrue((arriving as RoomComposerMode.Locked).why.contains("still arriving"))
         val noPage = mode(RoomComposerMode.Inputs(LiveSessionState.WAITING_ON_APPROVAL, canType = true))
-        assertTrue((noPage as RoomComposerMode.Locked).why.contains("on your Mac"))
+        assertTrue((noPage as RoomComposerMode.Locked).why.contains("on your computer"))
     }
 
     @Test fun `a session that cannot be typed into is blocked with its reason, and the default reason when there is none`() {
@@ -181,7 +181,7 @@ class SessionRoomTest {
     @Test fun `an ended session is never steerable, a room not ready is disabled, and ended beats waiting`() {
         assertFalse(mode(RoomComposerMode.Inputs(LiveSessionState.ACTIVE, canType = true, ended = true)) == RoomComposerMode.Steer)
         assertEquals(
-            RoomComposerMode.Disabled("Waiting for your Mac."),
+            RoomComposerMode.Disabled("Waiting for your computer."),
             mode(RoomComposerMode.Inputs(LiveSessionState.ACTIVE, canType = true, ready = false)),
         )
         assertEquals(

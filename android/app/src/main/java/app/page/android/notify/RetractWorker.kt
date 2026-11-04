@@ -65,9 +65,9 @@ object ReplyRetractor {
             ReplyRetract.Outcome.Unauthorized -> {
                 NotificationReplyState.clear(listOf(id))
                 PageNotifications.post(info, silent = true, status = null)
-                PageNotifications.notice("Reply not deleted", "Your relay no longer accepts this pairing. Open Page to re-pair with your Mac.", id)
+                PageNotifications.notice("Reply not deleted", "Your relay no longer accepts this pairing. Open Page Relay to re-pair with your computer.", id)
             }
-            is ReplyRetract.Outcome.Retired -> PageNotifications.notice("Reply not deleted", "${TokenRetirement.sentence(outcome.why)} Open Page to pair again.", id)
+            is ReplyRetract.Outcome.Retired -> PageNotifications.notice("Reply not deleted", "${TokenRetirement.sentence(outcome.why)} Open Page Relay to pair again.", id)
             else -> {
                 // Gone from the relay's queue (deleted, or nothing live): the page's own actions are back. Anything
                 // else is the reply as it was, with the relay's words; a delete that never reached it can be tried again.

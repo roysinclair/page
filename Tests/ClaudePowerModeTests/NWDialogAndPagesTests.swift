@@ -97,7 +97,7 @@ final class NWDialogAndPagesTests: XCTestCase {
         let before = try String(contentsOf: home.appendingPathComponent(".claude/settings.json"))
         s.hooks.run(.install, .claude)
         XCTAssertEqual(shown.count, 1)
-        XCTAssertEqual(shown[0].title, "Install Page's Claude Code hooks?")
+        XCTAssertEqual(shown[0].title, "Install Page Studio's Claude Code hooks?")
         XCTAssertEqual(shown[0].buttons.map(\.title), ["Install", "Cancel"])
         if case .diff(let d)? = shown[0].detail { XCTAssertTrue(d.contains("PermissionRequest")) } else { XCTFail("no diff shown") }
         XCTAssertEqual(try String(contentsOf: home.appendingPathComponent(".claude/settings.json")), before)
@@ -107,7 +107,7 @@ final class NWDialogAndPagesTests: XCTestCase {
         var titles: [String] = []
         let s = hookStore(answer: 0) { titles.append($0.title) }
         s.hooks.run(.install, .claude)
-        XCTAssertEqual(titles, ["Install Page's Claude Code hooks?", "Hooks installed"])
+        XCTAssertEqual(titles, ["Install Page Studio's Claude Code hooks?", "Hooks installed"])
         XCTAssertEqual(s.hooks.claude.chip, .installed)
         XCTAssertEqual(s.hooks.claude.installTitle, "Reinstall…")
         let files = try FileManager.default.contentsOfDirectory(atPath: home.appendingPathComponent(".claude").path)
@@ -117,7 +117,7 @@ final class NWDialogAndPagesTests: XCTestCase {
         XCTAssertEqual(titles, ["Already up to date"])
         titles = []
         s.hooks.run(.uninstall, .claude)
-        XCTAssertEqual(titles, ["Remove Page's Claude Code hooks?", "Hooks removed"])
+        XCTAssertEqual(titles, ["Remove Page Studio's Claude Code hooks?", "Hooks removed"])
         XCTAssertEqual(s.hooks.claude.chip, .notInstalled)
     }
 

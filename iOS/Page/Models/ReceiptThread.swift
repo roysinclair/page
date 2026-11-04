@@ -118,22 +118,22 @@ struct ReceiptThread: Equatable {
         case .sending?:
             return sending(since: since)
         case .sent(let queued, let at)?:
-            if queued { return ReceiptThread(stage: .queued, arm: 1, reach: 0.5, relayLit: true, word: "queued · Mac offline") }
+            if queued { return ReceiptThread(stage: .queued, arm: 1, reach: 0.5, relayLit: true, word: "queued · computer offline") }
             let waited = max(0, now.timeIntervalSince(at))
             let moving = waited < glintFor
             let glint = moving ? 0.5 + 0.5 * (waited / glintPeriod).truncatingRemainder(dividingBy: 1) : nil
             return ReceiptThread(stage: .sent, arm: 1, reach: 0.5, glint: glint, relayLit: true,
-                                 word: waited > ReplyConfirmation.slowAfter ? "sent · waiting for your Mac" : "sent", moving: moving)
+                                 word: waited > ReplyConfirmation.slowAfter ? "sent · waiting for your computer" : "sent", moving: moving)
         case .delivered?:
             return resolved(since: since)
         case .failed(let why)?:
             return failed(why.isEmpty ? "Couldn't deliver the reply" : why, since: since)
         case .alreadyReplied?:
-            return failed("Already answered at the Mac", since: since)
+            return failed("Already answered at your computer", since: since)
         case .gone?:
             return failed("Prompt closed before your answer", since: since)
         case .heldOnMac?:
-            return ReceiptThread(stage: .held, arm: 1, reach: 0.5, relayLit: true, word: "held on your Mac")
+            return ReceiptThread(stage: .held, arm: 1, reach: 0.5, relayLit: true, word: "held on your computer")
         case .retracted(let why)?:
             return ReceiptThread(stage: .retracted(why), arm: 0, word: why)
         }

@@ -63,7 +63,7 @@ enum TowerHosts {
     }
 
     static let hosts: [Host] = [
-        Host(name: "Terminal", symbol: "macwindow", line: "reply and approve; the Mac asks macOS for permission once", answer: .notYet("Terminal adds a Return to every key Page types; use tmux or iTerm2")),
+        Host(name: "Terminal", symbol: "macwindow", line: "reply and approve; the Mac asks macOS for permission once", answer: .notYet("Terminal adds a Return to every key Page Studio types; use tmux or iTerm2")),
         Host(name: "iTerm2", symbol: "terminal", line: "reply, approve and stop; the Mac asks macOS for permission once", answer: .yes),
         Host(name: "tmux", symbol: "rectangle.split.3x1", line: "reply, approve, stop and see the screen, in any terminal app", answer: .yes),
         Host(name: "cmux", symbol: "square.grid.2x2", line: "everything, and start new sessions from here", answer: .yes),
@@ -74,9 +74,9 @@ enum TowerHosts {
     ]
 
     /// Where to set them up.
-    static let setUpLine = "Set them up on your Mac in Page ▸ Tower ▸ Terminals. Each one shows there whether it is installed, in use or needs a step."
+    static let setUpLine = "Set them up on your Mac in Page Studio ▸ Tower ▸ Terminals. Each one shows there whether it is installed, in use or needs a step. On Linux, Page Studio types into tmux (and Claude Squad), WezTerm, kitty and Herdr."
     /// For anything else.
-    static let othersLine = "Ghostty, Warp and VS Code’s terminal can’t be typed into yet: run Claude inside tmux, or use Page’s hooks for approvals."
+    static let othersLine = "Ghostty, Warp and VS Code’s terminal can’t be typed into yet: run Claude inside tmux, or use Page Studio’s hooks for approvals."
 }
 
 // MARK: - The Mac chip
@@ -126,8 +126,8 @@ struct TowerPower: Equatable {
 
     static func build(status: MacStatusSnapshot?) -> TowerPower {
         guard let status else {
-            return TowerPower(headline: "No reading from your Mac", state: "unknown",
-                              note: "Power is read from Page on your Mac.", fraction: nil, cutoffFraction: nil, warn: false)
+            return TowerPower(headline: "No reading from your computer", state: "unknown",
+                              note: "Power is read from Page Studio on your computer.", fraction: nil, cutoffFraction: nil, warn: false)
         }
         let pct = status.batteryPercent
         let cutoff = status.forecast?.cutoff
@@ -140,7 +140,7 @@ struct TowerPower: Equatable {
         } else if status.onAC == false {
             headline += " · on battery"
         }
-        let note = cutoff.map { "Pause agents at \($0)% · set in Page on your Mac" } ?? "Cutoff and keep-awake are set in Page on your Mac."
+        let note = cutoff.map { "Pause agents at \($0)% · set in Page Studio on your computer" } ?? "Cutoff and keep-awake are set in Page Studio on your computer."
         return TowerPower(headline: headline, state: onAC ? "on power" : (status.onAC == false ? "on battery" : "unknown"),
                           note: note, fraction: pct.map { Double($0) / 100 }, cutoffFraction: cutoff.map { Double($0) / 100 },
                           warn: !onAC && (status.forecast?.minutes ?? 99) < MacChipModel.warnMinutes)
@@ -244,7 +244,7 @@ struct TowerBudget: Equatable {
 
     static func build(usage: MacUsage?, now: Date) -> TowerBudget {
         TowerBudget(model: UsageCardModel(usage, now: now),
-                    emptyNote: "Turn on usage tracking in Page on your Mac to see your 5-hour and 7-day limits here.")
+                    emptyNote: "Turn on usage tracking in Page Studio on your computer to see your 5-hour and 7-day limits here.")
     }
 }
 

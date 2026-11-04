@@ -59,7 +59,7 @@ object PageNotifications : PageNotifier {
         val nm = context.getSystemService(NotificationManager::class.java) ?: return
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_PAGES, "Pages", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "An agent on your Mac needs you: approvals, questions, idle sessions."
+                description = "An agent on your computer needs you: approvals, questions, idle sessions."
                 enableVibration(true)
             }
         )
@@ -70,7 +70,7 @@ object PageNotifications : PageNotifier {
         )
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_CONNECTION, "Stay connected", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Shown while Page keeps its connection to your relay open in the background."
+                description = "Shown while Page Relay keeps its connection to your relay open in the background."
                 setShowBadge(false)
             }
         )
@@ -141,7 +141,7 @@ object PageNotifications : PageNotifier {
         PostedPages.record(info)
         // Title is what it is ("Looks stuck", "Run this command?"), body the one redacted line, and the sub-text
         // says where and how reversible it is. Older records without those fall back to the plain wording.
-        val title = info.headline.ifEmpty { "${info.projectName.ifEmpty { "Your Mac" }} paged you" }
+        val title = info.headline.ifEmpty { "${info.projectName.ifEmpty { "Your computer" }} paged you" }
         val body = status ?: note ?: info.summary.ifEmpty { bodyText(info) }
         val sub = listOfNotNull(info.projectName.takeIf { it.isNotEmpty() }, classWord(info)).joinToString(" · ")
         val builder = NotificationCompat.Builder(context, CHANNEL_PAGES)

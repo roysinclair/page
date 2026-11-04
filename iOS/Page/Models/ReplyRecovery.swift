@@ -17,16 +17,16 @@ enum ReplyFailureReason {
 
 enum ReplyRecoveryCopy {
     /// Text is in the box and the phone has not (yet) been told what it is.
-    static let unsentText = "There's unsent text in the session's input box on your Mac."
+    static let unsentText = "There's unsent text in the session's input box on your computer."
     /// The box was emptied meanwhile, so the reply can simply go again.
-    static let nowClear = "The input box on your Mac is clear now."
+    static let nowClear = "The input box on your computer is clear now."
 
     /// The box is clear but the reply could not go (the page changed meanwhile).
-    static let couldNotResend = "The input box is clear, but Page couldn't send your message again. Try again from here."
+    static let couldNotResend = "The input box is clear, but Page Studio couldn't send your message again. Try again from here."
 
     /// "There's “<draft>” typed in…", cut for display exactly as the room cuts it.
     static func typed(_ draft: String) -> String {
-        "There's “\(ClearDraft.shown(draft))” typed in the session's input box on your Mac."
+        "There's “\(ClearDraft.shown(draft))” typed in the session's input box on your computer."
     }
 
     /// What a failed reply says for a `reason` the phone knows; nil means the Mac's own detail stands.

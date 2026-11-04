@@ -162,9 +162,9 @@ fun NWSendReceiptView(r: SendReceipt, onAction: (SendReceipt) -> Unit, onDismiss
                 hint = when (a) {
                     SendReceipt.Action.UNDO -> "Puts your message back in the box. Nothing is sent."
                     SendReceipt.Action.DELETE -> "Takes the held message back. Nothing is typed."
-                    SendReceipt.Action.CLEAR_AND_SEND -> "Clears the text in the input box on your Mac, then sends your message."
+                    SendReceipt.Action.CLEAR_AND_SEND -> "Clears the text in the input box on your computer, then sends your message."
                 },
-                spoken = if (a == SendReceipt.Action.CLEAR_AND_SEND) "Clear the text in the input box on your Mac and send your message" else null,
+                spoken = if (a == SendReceipt.Action.CLEAR_AND_SEND) "Clear the text in the input box on your computer and send your message" else null,
                 enabled = r.actionEnabled,
             )
         }

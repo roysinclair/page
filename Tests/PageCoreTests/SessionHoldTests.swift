@@ -177,14 +177,14 @@ final class SessionHoldTests: XCTestCase {
         XCTAssertEqual(r["code"] as? String, "queued")
         XCTAssertEqual(r["ok"] as? Bool, true)
         XCTAssertEqual(r["held"] as? Bool, true)
-        XCTAssertEqual(r["detail"] as? String, "Held — Page types it when Claude finishes this turn")
+        XCTAssertEqual(r["detail"] as? String, "Held — Page Studio types it when Claude finishes this turn")
         XCTAssertTrue(backends.inputs.isEmpty, "not typed at once")
         XCTAssertTrue(backends.tries.isEmpty)
         let held = heldRow()
         XCTAssertEqual(held.map { $0["clientId"] as? String }, ["c1"])
         XCTAssertEqual(held.first?["state"] as? String, "held")
         XCTAssertEqual(held.first?["text"] as? String, "then run the linter")
-        XCTAssertEqual(remote.heldMessages().map(\.clientId), ["c1"], "the Mac's panel sees it too")
+        XCTAssertEqual(remote.heldMessages().map(\.clientId), ["c1"], "the computer's panel sees it too")
     }
 
     func testItIsTypedWhenTheTurnEndsWithNoPhoneLooking() throws {
@@ -269,7 +269,7 @@ final class SessionHoldTests: XCTestCase {
     }
 
     func testHoldIsRefusedWhereTypingIsImpossible() {
-        backends.hosts = ["s1": .blocked("Ghostty", "Page can't type into Ghostty yet")]
+        backends.hosts = ["s1": .blocked("Ghostty", "Page Studio can't type into Ghostty yet")]
         backends.statuses = ["s1": .busy]
         setSessions([session("s1", .active)])
         _ = lastList()   // runs the host probe
@@ -277,7 +277,7 @@ final class SessionHoldTests: XCTestCase {
         hold("c1")
         let r = results("c1").last
         XCTAssertEqual(r?["reason"] as? String, "not_typable")
-        XCTAssertEqual(r?["detail"] as? String, "Page can't type into Ghostty yet")
+        XCTAssertEqual(r?["detail"] as? String, "Page Studio can't type into Ghostty yet")
         XCTAssertTrue(remote.heldMessages().isEmpty)
     }
 
@@ -288,7 +288,7 @@ final class SessionHoldTests: XCTestCase {
         _ = lastList()
         remote.waitUntilIdle()
         hold("m1", session: "c1")
-        XCTAssertEqual(results("m1").last?["detail"] as? String, "Held — Page types it when Codex finishes this turn")
+        XCTAssertEqual(results("m1").last?["detail"] as? String, "Held — Page Studio types it when Codex finishes this turn")
         advance(3)
         XCTAssertTrue(backends.tries.isEmpty)
         setSessions([session("c1", .idle, backend: .codex)])
@@ -299,7 +299,7 @@ final class SessionHoldTests: XCTestCase {
         backends.hosts = [
             "s1": SessionHostInfo(host: "tmux", canType: true, canInterrupt: true, provider: .anthropic),
             "c1": SessionHostInfo(host: "tmux", canType: true, canInterrupt: true, provider: .unknown),
-            "g1": .blocked("Ghostty", "Page can't type into Ghostty yet"),
+            "g1": .blocked("Ghostty", "Page Studio can't type into Ghostty yet"),
         ]
         setSessions([session("s1", .active), session("c1", .active, backend: .codex), session("g1", .active), session("u1", .active)])
         _ = lastList()   // runs the host probe
@@ -310,7 +310,7 @@ final class SessionHoldTests: XCTestCase {
         // Codex mid-turn in tmux: no composer for "Send now", but it can be held.
         XCTAssertEqual(row("c1")?["canType"] as? Bool, false)
         XCTAssertEqual(row("c1")?["canHold"] as? Bool, true)
-        XCTAssertNil(row("g1")?["canHold"], "a terminal Page can't type into")
+        XCTAssertNil(row("g1")?["canHold"], "a terminal Page Studio can't type into")
         XCTAssertNil(row("u1")?["canHold"], "not probed yet")
     }
 

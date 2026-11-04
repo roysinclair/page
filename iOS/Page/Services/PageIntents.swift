@@ -7,12 +7,12 @@ import Foundation
 
 struct AgentsStatusIntent: AppIntent {
     static let title: LocalizedStringResource = "What are my agents doing?"
-    static let description = IntentDescription("Says how many sessions need you, how many agents are working, and your Mac's battery.")
+    static let description = IntentDescription("Says how many sessions need you, how many agents are working, and your computer's battery.")
     static let openAppWhenRun = false
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
         guard let creds = RelayCredentials.current(), let url = creds.url("status") else {
-            return .result(dialog: "Page isn't paired with a Mac yet.")
+            return .result(dialog: "Page Relay isn't paired with a computer yet.")
         }
         var req = URLRequest(url: url, timeoutInterval: 10)
         req.setValue("Bearer \(creds.token)", forHTTPHeaderField: "Authorization")
@@ -46,23 +46,23 @@ struct AgentsStatusIntent: AppIntent {
 
 struct StopAgentsIntent: AppIntent {
     static let title: LocalizedStringResource = "Stop my agents"
-    static let description = IntentDescription("Presses Esc in every agent session that's working on your Mac.")
+    static let description = IntentDescription("Presses Esc in every agent session that's working on your computer.")
     static let openAppWhenRun = false
     /// Never from a locked phone (like the notification actions).
     static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        guard RelayCredentials.current() != nil else { return .result(dialog: "Page isn't paired with a Mac yet.") }
-        try await requestConfirmation(result: .result(dialog: "Stop every agent that's working on your Mac?"))
+        guard RelayCredentials.current() != nil else { return .result(dialog: "Page Relay isn't paired with a computer yet.") }
+        try await requestConfirmation(result: .result(dialog: "Stop every agent that's working on your computer?"))
         let outcome = await SessionStore.shared.interruptAll()
         if let why = outcome.failureMessage { return .result(dialog: IntentDialog(stringLiteral: why)) }
-        return .result(dialog: "Asked your Mac to stop your working agents.")
+        return .result(dialog: "Asked your computer to stop your working agents.")
     }
 }
 
 struct OpenSessionsIntent: AppIntent {
-    static let title: LocalizedStringResource = "Open Page sessions"
+    static let title: LocalizedStringResource = "Open Page Relay sessions"
     static let openAppWhenRun = true
 
     @MainActor

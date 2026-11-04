@@ -15,16 +15,16 @@ interface Props {
   bare?: boolean; // brochure: no footer on print is handled in CSS; bare drops the footer entirely
   motion?: boolean; // false: no signature motion at all (the brochure, which is also printed to PDF)
   world?: 'studio' | 'power' | 'aura' | 'orbit'; // the product colours this page wears (styles/global.css)
-  og?: { image: string; alt: string }; // social card (1200 x 630, under public/); Page Power's card by default
+  og?: { image: string; alt: string }; // social card (1200 x 630, under public/); Page Studio for Mac's card by default
 }
 const {
   title = 'Page Studio',
-  description = 'Page Studio is a family of free, source-available apps you run yourself: Page Power keeps watch over your AI coding agents and pages your phone, Page Aura is a chat app on your own key, and Page Orbit is a control room for Anthropic Managed Agents.',
+  description = 'Page Studio is a family of free, source-available apps you run yourself. On your Mac (and Linux, in preview), Page Power keeps your AI coding agents running and Page Relay pages your phone and types your replies back. Page Aura is chat on your own credits, and Page Orbit manages and controls Anthropic Managed Agents.',
   current = '',
   bare = false,
   motion = true,
   world = 'power',
-  og = { image: OG_IMAGE, alt: 'Page Studio: your agents keep working, you get paged only when it matters. An iPhone lock screen with two Page notifications beside Page Power’s menu-bar popover.' },
+  og = { image: OG_IMAGE, alt: 'Page Studio: your agents keep working, you get paged only when it matters. An iPhone lock screen with two Page Relay notifications beside the Page Studio menu-bar popover.' },
 } = Astro.props;
 const full = title === 'Page Studio' ? 'Page Studio — run your AI agents, answer them from anywhere' : `${title} · Page Studio`;
 const canonical = new URL(Astro.url.pathname, Astro.site).toString();

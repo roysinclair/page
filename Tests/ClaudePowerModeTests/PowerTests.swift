@@ -48,7 +48,7 @@ final class BatteryPolicyTests: XCTestCase {
         guard case let .pauseSessions(message, mode, percent) = effects[0] else { return XCTFail("\(effects)") }
         XCTAssertEqual(mode, .pause)
         XCTAssertEqual(percent, 10)
-        XCTAssertTrue(message.hasPrefix("Battery is at ten percent and the Mac is about to sleep. Pause now"), message)
+        XCTAssertTrue(message.hasPrefix("Battery is at ten percent and the computer is about to sleep. Pause now"), message)
         XCTAssertTrue(message.contains("two-line summary"))
         XCTAssertTrue(p.pauseInFlight)
         XCTAssertEqual(p.graceEndsAt, t0.addingTimeInterval(90))
@@ -366,7 +366,7 @@ final class BatteryPolicyTests: XCTestCase {
 
     func testPageContextCopy() {
         XCTAssertEqual(BatteryPolicy.pageContext(percent: 10),
-                       "Battery 10% — Page paused this session. Plug in to continue, or reply to send instructions.")
+                       "Battery 10% — Page Power paused this session. Plug in to continue, or reply to send instructions.")
     }
 
     func testLegacyLockoutPolicyUsesTheSameRules() {
@@ -810,7 +810,7 @@ extension SleepGuardTests {
         g.update(shouldDisableSleep: false, reason: "tick")
         XCTAssertTrue(g.cleanupPending)
         // Off (no SleepDisabled line, as macOS prints it).
-        fake.pmsetGOutput = "System-wide power settings:\nCurrently in use:\n standby              1\n sleep                0 (sleep prevented by Page)\n"
+        fake.pmsetGOutput = "System-wide power settings:\nCurrently in use:\n standby              1\n sleep                0 (sleep prevented by Page Studio)\n"
         g.update(shouldDisableSleep: false, reason: "tick")
         XCTAssertFalse(g.cleanupPending)
         XCTAssertFalse(g.isActive)

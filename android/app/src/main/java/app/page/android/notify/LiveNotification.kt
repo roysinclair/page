@@ -40,7 +40,7 @@ object LiveNotification {
             context, 0, Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP).setData(android.net.Uri.parse("page://now")),
             PendingIntent.FLAG_IMMUTABLE,
         )
-        val sub = (if (s.connected) "Page · live" else "Page · reconnecting") + s.subline.takeIf { it.isNotEmpty() }?.let { " · $it" }.orEmpty()
+        val sub = (if (s.connected) "Page Relay · live" else "Page Relay · reconnecting") + s.subline.takeIf { it.isNotEmpty() }?.let { " · $it" }.orEmpty()
         val views = RemoteViews(context.packageName, R.layout.notification_live).apply {
             setTextViewText(R.id.live_title, s.headline)
             setTextViewText(R.id.live_text, sub)
@@ -61,7 +61,7 @@ object LiveNotification {
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setPublicVersion(
-                NotificationCompat.Builder(context, channel).setSmallIcon(R.drawable.ic_stat_page).setContentTitle("Page is live").build(),
+                NotificationCompat.Builder(context, channel).setSmallIcon(R.drawable.ic_stat_page).setContentTitle("Page Relay is live").build(),
             )
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)

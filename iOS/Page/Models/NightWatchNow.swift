@@ -35,14 +35,14 @@ struct DeliveryReceipt: Equatable {
         var failureMessage: String? {
             switch self {
             case .delivered: return nil
-            case .timedOut: return "Didn't confirm in time · Check on Mac"
+            case .timedOut: return "Didn't confirm in time · Check on your computer"
             case .sessionEnded: return "Session ended"
-            case .notTypable: return "This terminal can't take input · Open on Mac"
+            case .notTypable: return "This terminal can't take input · Open on your computer"
             case .queued: return "Queued after this turn"
             case .promptClosed: return "Prompt closed before your answer"
-            case .answeredAtMac: return "Already answered at the Mac"
+            case .answeredAtMac: return "Already answered at your computer"
             case .unknownState: return "Review again"
-            case .macOffline: return "Waiting for your Mac to come back online"
+            case .macOffline: return "Waiting for your computer to come back online"
             case .heldUntilReset(let when): return when
             case .deleted: return SessionDeliveryState.deletedCopy
             case .other(let why): return why.isEmpty ? "Couldn't deliver the reply" : why
@@ -384,7 +384,7 @@ struct NowModel: Equatable {
         let subline: String
         if paused {
             headline = "Paused for battery"
-            subline = i.status?.onAC == true ? "plugged in · agents resume soon" : "plug the Mac in to resume"
+            subline = i.status?.onAC == true ? "plugged in · agents resume soon" : "plug your computer in to resume"
         } else if need > 0 {
             headline = "\(need) \(need == 1 ? "needs" : "need") you"
             subline = ([working > 0 ? "\(working) working" : nil, runwayLine(status: i.status, runway: runway, timeZone: tz)]
@@ -437,7 +437,7 @@ struct NowModel: Equatable {
             rows: rows, runway: runway, receiptLine: latest?.line(timeZone: tz),
             receiptFailed: latest.map { $0.outcome != .delivered } ?? false, receiptRetract: retract, paused: paused,
             rings: DayStats.today(history: i.history, now: i.now, calendar: i.calendar).rings,
-            macName: i.macName, accessibilityLabel: "Page, \(headline)")
+            macName: i.macName, accessibilityLabel: "Page Relay, \(headline)")
     }
 
     /// "runway clear till 03:40 · 41%", "on battery · 41%", "runway clear".

@@ -35,7 +35,7 @@ object PhotoPrep {
         data class Failed(val why: String) : Result
     }
 
-    const val CANT_OPEN = "Page couldn't open that photo. Try another."
+    const val CANT_OPEN = "Page Relay couldn't open that photo. Try another."
     const val TOO_LARGE = "That photo is too large to open on this phone. Try another."
     const val UNSUPPORTED = "This phone can't open that kind of photo. Try a JPEG or PNG."
 

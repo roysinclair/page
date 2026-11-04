@@ -63,7 +63,7 @@ class SteerSafetyTest {
     }
 
     @Test fun `an unknown terminal and a blank Mac name drop out of the route, and the home folder reads tilde`() {
-        assertEquals("b · your Mac", SessionTarget.of(nwSession("x1", host = "unknown", cwd = "~/a/b"), "").route)
+        assertEquals("b · your computer", SessionTarget.of(nwSession("x1", host = "unknown", cwd = "~/a/b"), "").route)
         assertEquals("~", SessionTarget.of(nwSession("zz", title = "Some thread", cwd = "~"), "M").project)
         assertEquals("#abcd", SessionTarget.of(nwSession("abcd1234", cwd = ""), "M").whereLine)
     }
@@ -130,9 +130,9 @@ class SteerSafetyTest {
     }
 
     @Test fun `locked, blocked and disabled rooms say why`() {
-        assertEquals(RoomSend.Decision.Refuse("Answer the prompt on your Mac."), decide(RoomComposerMode.Locked("Answer the prompt on your Mac.")))
+        assertEquals(RoomSend.Decision.Refuse("Answer the prompt on your computer."), decide(RoomComposerMode.Locked("Answer the prompt on your computer.")))
         assertEquals(RoomSend.Decision.Refuse("Ghostty can't be typed into"), decide(RoomComposerMode.Blocked("Ghostty can't be typed into")))
-        assertEquals(RoomSend.Decision.Refuse("Waiting for your Mac."), decide(RoomComposerMode.Disabled("Waiting for your Mac.")))
+        assertEquals(RoomSend.Decision.Refuse("Waiting for your computer."), decide(RoomComposerMode.Disabled("Waiting for your computer.")))
     }
 
     @Test fun `tell-instead goes through the page, and without its page it is refused with a reason`() {
@@ -201,7 +201,7 @@ class SteerSafetyTest {
         assertEquals("Refused: Nothing was typed.", refused?.headline)
         assertEquals(SendReceipt.Tone.PROBLEM, refused?.tone)
         assertEquals("Target: rover-tracker · cmux · Studio MBP", refused?.detail)
-        assertEquals("Not sent: Your Mac is offline.", receipt(cmd(SessionDeliveryState.Failed("Your Mac is offline.")), 2.0)?.headline)
+        assertEquals("Not sent: Your computer is offline.", receipt(cmd(SessionDeliveryState.Failed("Your computer is offline.")), 2.0)?.headline)
         assertEquals(SendReceipt.Tone.PROBLEM, receipt(cmd(SessionDeliveryState.Failed("x")), 2.0)?.tone)
     }
 
@@ -233,7 +233,7 @@ class SteerSafetyTest {
             SendReceipt.stopLine(cmd(SessionDeliveryState.Sending, kind = SessionCommandKind.INTERRUPT), "Claude"),
         )
         assertTrue(
-            SendReceipt.stopLine(cmd(SessionDeliveryState.Refused(null, "Page can't stop this."), kind = SessionCommandKind.INTERRUPT), "Claude")
+            SendReceipt.stopLine(cmd(SessionDeliveryState.Refused(null, "Page Studio can't stop this."), kind = SessionCommandKind.INTERRUPT), "Claude")
                 ?.startsWith("Couldn't stop rover-tracker") == true,
         )
         assertNull(SendReceipt.stopLine(cmd(SessionDeliveryState.Typed(null)), "Claude"))

@@ -42,7 +42,7 @@ The pairing payload stays `"v": 1` and gains one optional field:
   key is stored in the Keychain beside the token and cleared on unpair,
   `reset()` and token retirement. A pairing without `sk` (an older Mac, or
   a phone paired before this shipped) shows the Sessions tab with "Re-pair
-  with your Mac to see live sessions" plus how to do it.
+  with your computer to see live sessions" plus how to do it.
 - Old phones ignore the extra field (`PairingValidator` reads only known
   keys).
 
@@ -163,14 +163,14 @@ When it changes, the phone resets its `seq` tracking.
 - `typeBlocker` is present only when `canType` is false.
 - `ask` is optional and present only while a Claude session is blocked on
   exactly one pending AskUserQuestion call, read from its transcript: either
-  `waitingOn*` with the dialog on screen, or held by Page's own question hook
+  `waitingOn*` with the dialog on screen, or held by Page Studio's own question hook
   (PreToolUse on `AskUserQuestion`) after the user has been away for a while,
   when the session still reads `active` and no dialog is drawn. In that second
   case the phone answers the hook's page by text, with the option numbers as
   `map_answers` in `hooks/page-notify.sh` reads them, and the Mac's `answer`
   op refuses. (Observed on Claude Code 2.1.311: the assistant's tool call is in
   the transcript while the dialog is up only when a PreToolUse hook is
-  installed for the tool, as Page's hook does; in a session with no hook it
+  installed for the tool, as Page Studio's hook does; in a session with no hook it
   was not written until the question was answered, and then there is no
   `ask`.) Text is redacted and clipped (question 400, header
   40, label 120, description 200 characters; at most 4 questions and 7
@@ -183,11 +183,11 @@ When it changes, the phone resets its `seq` tracking.
   (Esc, then the words) otherwise. `hasPreview` is true when an option carries
   a `preview`: that dialog lays out differently and is answered at the Mac.
   Phones ignore a malformed `ask` and keep the session.
-- `canHold` (optional, `hold-v1`): `true` when Page can type into this
+- `canHold` (optional, `hold-v1`): `true` when Page Studio can type into this
   session's terminal once its turn ends, so the phone may offer "Send when it
   finishes". It follows the probed host before the Codex mid-turn rule, so a
   busy Codex session outside cmux has `canType: false` (no "Send now") but
-  `canHold: true`. Absent means no: a host Page can't type into, or one not
+  `canHold: true`. Absent means no: a host Page Studio can't type into, or one not
   probed yet. A phone offers holding only when `caps` has `hold-v1` and the
   row has `canHold`.
 - `held` is optional and present only while the Mac holds messages for this
@@ -201,7 +201,7 @@ When it changes, the phone resets its `seq` tracking.
   - `state`: `held` (waiting for the turn to end), `typing` (being typed
     right now), or a settled outcome: `typed`, `deleted`, `ended` (the
     session ended first), `expired` (6 hours passed), `failed` (refused or
-    failed when Page tried; `detail` says why), or `unconfirmed` (Page
+    failed when Page Studio tried; `detail` says why), or `unconfirmed` (Page Studio
     restarted while typing it and does not retype it: check the session).
   - `at` (settled only): ISO 8601, when it settled. `detail`: on a settled
     entry, the sentence the final `result` carried; on a `held` entry, why
@@ -214,10 +214,10 @@ When it changes, the phone resets its `seq` tracking.
   reaches this session. `"image"`: pasted, so Claude attaches it as an image.
   `"path"`: the photo's location is typed as text and Claude opens the file
   itself (not attached). Present only on a Claude row with `canType` true, in
-  a terminal Page has a photo route for ("Images"). A phone shows the photo
+  a terminal Page Studio has a photo route for ("Images"). A phone shows the photo
   button only when `caps` has `images-v1` and the row has `attach`.
-- `attachBlocker` (optional): why a row Page can type into takes no photos,
-  e.g. "Page can't send photos to Codex yet". Absent when `canType` is false
+- `attachBlocker` (optional): why a row Page Studio can type into takes no photos,
+  e.g. "Page Studio can't send photos to Codex yet". Absent when `canType` is false
   (the `typeBlocker` already says why).
 - **Working-session fields** (all optional, only on a row whose `state` is
   `active`, each left out when the Mac doesn't know it; older phones ignore
@@ -234,7 +234,7 @@ When it changes, the phone resets its `seq` tracking.
     "total", "running" }` (agents done / in the run / running now; name at most
     60 characters, phase 40, redacted), and `workflowsRunning`: how many are
     running in all.
-  - `health`: present only when it is not normal: `"stuck"` (Page's stuck
+  - `health`: present only when it is not normal: `"stuck"` (Page Studio's stuck
     watch has a page open: a loop or no progress; `healthDetail` is its line),
     `"rateLimited"` (`resetsAt`, ISO 8601), or `"longRunning"` (the current
     step has run over 3 minutes; `stepSince`, ISO 8601). A missing `health`
@@ -404,7 +404,7 @@ optional and come only from a Mac that advertises `hold-v1` / `retract-v1` /
 - `attached` (`images-v1`, answers to `inputImages` only): how many photos
   Claude received as images, read back from the session's transcript; `0`
   when they went as file locations or Claude took the pasted paths as text.
-  Absent when Page couldn't read it back. `missing`: the ids of photos whose
+  Absent when Page Studio couldn't read it back. `missing`: the ids of photos whose
   pieces never arrived (`attachment_missing`).
 
 ## 5. Phone → Mac: `sessions.command` plaintext ops
@@ -427,7 +427,7 @@ phone clock) and `viewer` (a random id per app install, persisted).
 | `diff` | `sessionId` | Replies with a `diff` (§4), or a `result` `refused/not_found` for a session that isn't running. |
 | `folders` | — | Replies with a `folders` (§4). |
 | `interruptAll` | — | Siri / Shortcuts "Stop my agents": presses Esc in every session that is `active` (skipping hosts where Esc can't be sent), each through the same gate as `interrupt`. Replies with one `result`: "Stopped 2 agents", "Stopped 1 of 2 agents" or "No agents were working". |
-| `start` | `folder`, `text` (the prompt, 0–4000 characters; may be empty) | Starts a new Claude session: a cmux workspace in `folder` running `claude -- '<text>'`. Off unless "Let my phone start sessions" is on (`phoneStartSessionsEnabled`, default false): `refused/disabled`. `folder` must be one the `folders` list would contain, compared after standardising (`refused/not_found`). The prompt is folded to one line, control characters stripped, and passed as one shell-quoted argument after `--`, so it can never be read as a flag; a one-word prompt gets a full stop added so it can never match a `claude` subcommand (`purge` → `purge.`). Needs cmux in a mode that lets Page in (`refused/not_typable` with cmux's reason). Always replies with a `result`. |
+| `start` | `folder`, `text` (the prompt, 0–4000 characters; may be empty) | Starts a new Claude session: a cmux workspace in `folder` running `claude -- '<text>'`. Off unless "Let my phone start sessions" is on (`phoneStartSessionsEnabled`, default false): `refused/disabled`. `folder` must be one the `folders` list would contain, compared after standardising (`refused/not_found`). The prompt is folded to one line, control characters stripped, and passed as one shell-quoted argument after `--`, so it can never be read as a flag; a one-word prompt gets a full stop added so it can never match a `claude` subcommand (`purge` → `purge.`). Needs cmux in a mode that lets Page Studio in (`refused/not_typable` with cmux's reason). Always replies with a `result`. |
 
 ### Acceptance (before any op)
 
@@ -474,7 +474,7 @@ phone's copy is never trusted for cwd, pid or host). Then:
      with `requireEmptyComposer: true`.
    - `inTurn`: allowed only in a cmux pane whose composer reads empty, using
      the battery `PauseStrategy.queue` path (`queued`). Anywhere else, refuse
-     with `codex_mid_turn` ("Codex is mid-turn — Page can type once the turn
+     with `codex_mid_turn` ("Codex is mid-turn — Page Studio can type once the turn
      ends").
    - Any `pendingRequest` gives `waiting`. Never `exec resume`.
 3. Any other backend gives `refused/not_typable`.
@@ -493,9 +493,9 @@ replies `refused/interrupt_unsupported`. Claude and Codex both treat Esc as
 
 ### Clearing a draft
 
-A refused `input` has `reason: "draft"` only when Page read real text in the
-input box. `input_unverified` is for a box Page could not see or confirm
-(nothing was typed). When Page could read the text exactly, the `result` also
+A refused `input` has `reason: "draft"` only when Page Studio read real text in the
+input box. `input_unverified` is for a box Page Studio could not see or confirm
+(nothing was typed). When Page Studio could read the text exactly, the `result` also
 carries `draft`: the text, trimmed, one line, at most 200 characters, with no
 paste placeholder or image chip; otherwise the field is omitted.
 
@@ -504,12 +504,12 @@ paste placeholder or image chip; otherwise the field is omitted.
 `reply.injected` `reason: "draft"` ([PROTOCOL.md §8](PROTOCOL.md#8-replies-and-delivery-confirmation)),
 which travels in plaintext and so never carries the text. It reads the box the
 way `clearDraft` does (same target checks, same host rules) and replies:
-`refused/draft` with `draft` when Page could read the text exactly; `refused/draft`
-without `draft` when something is typed that Page can't read exactly;
+`refused/draft` with `draft` when Page Studio could read the text exactly; `refused/draft`
+without `draft` when something is typed that Page Studio can't read exactly;
 `delivered` ("Already clear") for an empty box; `refused/input_unverified` (box
 unreadable); `refused/waiting` (a prompt or menu is open, or the session is
 waiting); `refused/not_typable` (Codex: "Clear it at the Mac"; Terminal.app /
-iTerm2; tmux copy mode). The text is only ever in the sealed `result`; Page
+iTerm2; tmux copy mode). The text is only ever in the sealed `result`; Page Studio
 logs the op and the outcome code, never the text.
 
 `clearDraft` reads the box again and presses Backspace once per character only
@@ -518,7 +518,7 @@ if it still holds exactly `text`. Outcomes: `delivered` ("Cleared", or
 any way); `refused/waiting` (a prompt or menu is open); `refused/input_unverified`
 (box unreadable); `refused/not_typable` (Codex, Terminal.app / iTerm2, tmux copy
 mode, text that could never have been reported); `failed` (box not empty after
-the keys). Page presses nothing but Backspace and never logs the text.
+the keys). Page Studio presses nothing but Backspace and never logs the text.
 
 ### Holding a message until the turn ends (`hold-v1`)
 
@@ -550,7 +550,7 @@ message at once, as before.
   mid-turn rule is applied) is refused with its `typeBlocker`: holding would
   only fail later.
 - More than 10 messages waiting for the session, or 50 in all, is refused
-  (`error`, "Page is already holding 10 messages for this session — delete
+  (`error`, "Page Studio is already holding 10 messages for this session — delete
   one first").
 - If the turn is already over (Claude's sessions file reads `idle` or
   `shell`; a Codex thread that is `idle`, `interrupted` or `failed`), the Mac
@@ -605,12 +605,12 @@ also settles a "Held" receipt from the row's `held` list. A held entry that
 vanishes from the list without a settled state (its session left the list)
 reads as "No longer held — check the session".
 
-**Persistence.** Held messages survive a Page restart: they are kept in
-`held_outbox.json` in Page's Application Support folder (0600, written
+**Persistence.** Held messages survive a Page Studio restart: they are kept in
+`held_outbox.json` in Page Studio's Application Support folder (0600, written
 atomically on every change, at most 50 waiting messages and the settled
 entries of the last 15 minutes). The text is stored because it must be typed
 later; nothing else of the session is. A message whose typing had started
-when Page quit is never retyped after the restart: it settles as
+when Page Studio quit is never retyped after the restart: it settles as
 `unconfirmed`. If the pairing's session key changes (Regenerate pairing),
 every held message is dropped untyped, since the phone that sent it is no
 longer trusted.
@@ -642,8 +642,8 @@ Results (always one, for the retract's own `clientId`):
 | `retract` | `code` / `reason` | `detail` |
 |---|---|---|
 | `deleted` | `delivered` (`ok: true`) | "Deleted — not sent" (or "Already deleted — not sent" for a second delete) |
-| `too_late` | `refused` / `too_late` | "Too late — it was already typed" (or "Too late — Page had started typing it; check the session" when that try failed part way) |
-| `not_found` | `refused` / `not_found` | "Page isn't holding that message" |
+| `too_late` | `refused` / `too_late` | "Too late — it was already typed" (or "Too late — Page Studio had started typing it; check the session" when that try failed part way) |
+| `not_found` | `refused` / `not_found` | "Page Studio isn't holding that message" |
 
 **`heldId`: a held `input`.** Deleted while it waits. The race with typing
 is decided by a one-way switch that the delivery flips right before its first
@@ -662,17 +662,17 @@ the original `input`'s `clientId` gets its final `cancelled` result.
 - A written reply to a rate-limit page, held until the limit resets. Its
   `reply.injected` now carries `method: "held_until_reset"` (older phones keep
   showing it as delivered, with the same "Will send it when the limit resets
-  at 3:00 PM" detail). Deleted: `detail` "Deleted — not sent. Page will type
+  at 3:00 PM" detail). Deleted: `detail` "Deleted — not sent. Page Studio will type
   your carry-on prompt when the limit resets" when auto-resume is on, else
-  "Deleted — not sent. Nothing will be typed at reset". Too late, once Page
-  has taken it to type: "Too late — Page was already typing it after the
+  "Deleted — not sent. Nothing will be typed at reset". Too late, once Page Studio
+  has taken it to type: "Too late — Page Studio was already typing it after the
   limit reset". When it is finally typed, or can't be, the Mac sends one more
   `reply.injected` for the page (`success: true` with the delivery's method
   and "Typed when the limit reset — Typed into tmux pane %3", or
   `success: false`, method `none`, and one of "Not sent — the session ended",
   "Not sent — the session was busy when the limit reset", "Not sent — the
   session got going again before the limit reset", "Not sent — the limit
-  reset over 2 hours ago and Page didn't type it", or "Not sent — " + the
+  reset over 2 hours ago and Page Studio didn't type it", or "Not sent — " + the
   delivery's own reason).
 - A reply to an ended Claude session waiting behind another background
   `claude --resume --print`, or a Codex reply waiting for `exec resume`.
@@ -734,7 +734,7 @@ is off ("Answer the prompt first").
   under the Worker's 64 KiB with about 6 KB to spare. Bigger pieces don't fit.
 - Upload: at most 3 piece POSTs in flight, each retried piece with a new
   `clientId`; on 429 back off and retry (the bucket refills at 2 per second); on
-  503 `mac_offline` stop ("Your Mac went offline"). Send `inputImages` only
+  503 `mac_offline` stop ("Your computer went offline"). Send `inputImages` only
   after every piece got its 202. The phone's timeout starts with `inputImages`
   and is 30 s for it (a delivery that waits for the chips can take 12–15 s).
 
@@ -780,7 +780,7 @@ so an older Mac can never type the caption and drop the photo.
   long edge and 40 megapixels, at most 8 frames, and **no GPS block** in any
   frame or in the file's own properties (ImageIO folds XMP location tags into
   the same block): a photo that still carries location data is refused ("Your
-  phone sent location data with the photo, so Page didn't use it").
+  phone sent location data with the photo, so Page Studio didn't use it").
 - Logs carry the session id prefix, the photo id prefix, piece numbers and
   sizes only: never image data, captions or paths.
 
@@ -794,7 +794,7 @@ typed; the phone never chooses any part of one. Files go after 24 hours, a
 session's folder an hour after the session ends (checked hourly), and
 everything when the pairing's session key changes. A photo refused before
 the paste (or the typed message, on the path route) is deleted at once. Claude Code keeps its own base64 copy in the session
-transcript, so deleting Page's copy never breaks the conversation.
+transcript, so deleting Page Studio's copy never breaks the conversation.
 
 **Delivery** (`ImageDelivery`, on the Claude backend's injection queue, so it
 never interleaves with a reply, a held message or a battery pause). First, for
@@ -825,7 +825,7 @@ Paste route (`attach: "image"`):
    wrapping doesn't matter; a long caption may show as one `[Pasted text #n +k
    lines]` placeholder). More chips than photos, other text, or an unreadable
    screen: no Enter, `failed` "Your photo and message are in Claude's input box
-   at your Mac, not sent" (unless the transcript shows the message already went
+   at your computer, not sent" (unless the transcript shows the message already went
    in, when someone at the Mac pressed Return first). No chip but exactly the
    pasted text: Claude took the paths as text; Enter sends it as a plain
    message and the result says so (`attached: 0`).
@@ -847,7 +847,7 @@ Code's default permission mode that asks "Yes, allow reading from
 …/page-images/<session> during this session", which reaches the phone as an
 ordinary page.
 
-Codex rows have no `attach` yet (`attachBlocker`: "Page can't send photos to
+Codex rows have no `attach` yet (`attachBlocker`: "Page Studio can't send photos to
 Codex yet"); its paste rules differ (one path per paste) and are unmeasured.
 
 | Outcome | `code` / `reason` | `detail` (examples) | `attached` |
@@ -857,12 +857,12 @@ Codex yet"); its paste rules differ (one path per paste) and are unmeasured.
 | Fewer images in the transcript | `delivered` | "Sent, but Claude received 1 of 2 photos" | 1 |
 | Paths taken as text | `delivered` | "Sent, but Claude took the photo as a file location, not an image" | 0 |
 | Path route | `delivered` | "Sent as a file location — Claude opens the photo itself (not attached)" | 0 |
-| Pieces missing after 3 s | `refused` / `attachment_missing` | "Part of a photo didn't reach your Mac — send it again" (+ `missing`) | — |
+| Pieces missing after 3 s | `refused` / `attachment_missing` | "Part of a photo didn't reach your computer — send it again" (+ `missing`) | — |
 | Hash, size, type, decode or GPS check failed | `refused` / `attachment_invalid` | the check's sentence | — |
 | Terminal without a photo route | `refused` / `attach_unsupported` | why | — |
 | Claude busy | `refused` / `attach_busy` | "Claude is working — send the photo when it finishes" | — |
 | Prompt open / draft / ended / not in front | `waiting` / `draft` / `ended` / `not_typable` | as for `input` | — |
-| Chip never shown, Enter swallowed, prompt before Enter | `failed` / `error` | "Your photo and message are in Claude's input box at your Mac, not sent" | — |
+| Chip never shown, Enter swallowed, prompt before Enter | `failed` / `error` | "Your photo and message are in Claude's input box at your computer, not sent" | — |
 
 Phones show `detail` for any reason they don't know.
 
@@ -909,7 +909,7 @@ No real session and no window was touched.
 - An Enter sent straight after the paste (as `paste --submit` or `do script`
   would) was **not** dropped, for the 2.4 KB and for the 915 KB JPEG: the
   message went in with its image. The dropped Return the bundle reading
-  predicted didn't reproduce here; Page still waits for the chip before Enter.
+  predicted didn't reproduce here; Page Studio still waits for the chip before Enter.
 - Path route in tmux (auto mode): Claude read the file with Read and answered.
   In manual mode, a path that went in as text (the CR case above) made Claude
   call Read, which raised the permission prompt above.
@@ -956,12 +956,12 @@ then the text and Enter. In a multi-select a digit toggles that option and Tab
 moves on; the Other row is reached with Down × N (its digit would tick an empty
 box), then the text, Tab (to Next) and Enter. On Review, `1` submits and `2`
 cancels. Esc cancels everything and "Chat about this" (`N+2`) rejects the tool:
-Page never sends either, and never `2` on Review.
+Page Studio never sends either, and never `2` on Review.
 
 The Mac drives it one key at a time, never from a precomputed script:
 
 1. The session must still be `waiting`, exactly one tool call pending, that
-   call the AskUserQuestion named by `promptKey`, and no Page hook holding the
+   call the AskUserQuestion named by `promptKey`, and no Page Studio hook holding the
    prompt; otherwise `refused/question_changed` (or `answer_unsupported`).
 2. It reads the terminal's screen before every key and parses the dialog (the
    `N. label` rows, the question text with wrapping collapsed, the cursor row,
@@ -979,7 +979,7 @@ The Mac drives it one key at a time, never from a precomputed script:
    different answers, or that the dialog was dismissed first.
 
 Anything unexpected stops the run with a reason and leaves the dialog open
-for the Mac (`failed` with "part-filled at your Mac" when keys were already
+for the Mac (`failed` with "part-filled at your computer" when keys were already
 sent). Refused without pressing anything: previews (`hasPreview`), more than 7
 options, a screen the parser can't read (a narrow or short pane can scroll the
 question off the top: it fails closed) and Terminal.app (below). Results use
@@ -1012,13 +1012,13 @@ Host-specific measurements that shaped the code:
 
 - **cmux** refuses every key into an open dialog unless `--force` is passed, and
   its `surface.input_state` reads `dialog` on every question screen but reports
-  `unknown` on the final "Review your answers" screen. Page accepts `unknown`
+  `unknown` on the final "Review your answers" screen. Page Studio accepts `unknown`
   only when the screen read shows "Review your answers", "Ready to submit your
   answers?" and "1. Submit answers"; any other wording fails closed. cmux's own
   Feed hold on a question was not exercised.
 - **iTerm2, WezTerm and kitty** need the session's real environment: a terminal
   started with another Claude session's variables (`CLAUDE_CODE_*`) in its environment makes
-  the inner `claude` skip `~/.claude/sessions/<pid>.json`, and Page then refuses
+  the inner `claude` skip `~/.claude/sessions/<pid>.json`, and Page Studio then refuses
   the session as `unknown_state`. A normally started terminal is unaffected.
 - **kitty** starts each window's shell under `login -f -l -p user …/kitten
   run-shell`; the host app is the kitty process above that row.
@@ -1029,8 +1029,8 @@ Host-specific measurements that shaped the code:
   appends lands on the next question of a multi-question set, and dismisses
   ("User declined to answer questions") a single-select with Other. A
   one-question single-select without Other behaved, but is unproven in the real
-  transport, so Page refuses every Terminal.app answer with "Terminal.app adds a
-  Return to every key Page types, which would skip or dismiss questions".
+  transport, so Page Studio refuses every Terminal.app answer with "Terminal.app adds a
+  Return to every key Page Studio types, which would skip or dismiss questions".
 
 ## 6. Phone UX contract
 
@@ -1051,11 +1051,11 @@ Host-specific measurements that shaped the code:
     `interventionId`, a banner opens that page.
   - Each sent message shows its delivery state (Sending → Queued / Typed /
     Refused + reason), keyed by `clientId`. The phone gives up after 20 s
-    without a `result` ("No answer from your Mac").
+    without a `result` ("No answer from your computer").
 - **States the screen handles:** relay without `sessions-v1` ("Update your
   relay"), no `sk` ("Re-pair"), Mac offline (503 or `mac.status`), Mac
-  online but no `list` within 5 s of connecting (older Mac: "Update Page on
-  your Mac"), and an empty list.
+  online but no `list` within 5 s of connecting (older Mac: "Update Page Studio on
+  your computer"), and an empty list.
 - Session state lives in its own `ObservableObject` (`SessionStore`), not in
   `APIClient`, and is cleared on `reset()`.
 

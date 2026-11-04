@@ -11,7 +11,7 @@
 #                             "Apple Development", else first "Developer ID
 #                             Application", else ad-hoc
 #
-# The bundle also carries Page's macOS widgets, as a WidgetKit extension at
+# The bundle also carries Page Studio's macOS widgets, as a WidgetKit extension at
 # Contents/PlugIns/PageWidgets.appex (built by the PageWidgets SwiftPM target).
 # It is sandboxed and shares one team-prefixed app group with the app, so it
 # is only built when the signing identity has a team (not ad-hoc). The
@@ -23,10 +23,16 @@ CONFIG="${CONFIG:-release}"
 APP="Page.app"
 BUNDLE_NAME="Page"
 BUNDLE_ID="local.Page"
-DISPLAY_NAME="Page"
+# The product is Page Studio. The bundle folder (Page.app), the executable
+# (Contents/MacOS/Page) and the bundle id stay as they are: install.sh, the
+# LaunchAgent, the agent hooks (…/Page.app/Contents/Resources/hooks) and TCC
+# grants all point at them. Only the names macOS shows change: the menu-bar
+# app's name, Activity Monitor, System Settings ▸ Automation and the widget
+# gallery read CFBundleName / CFBundleDisplayName.
+DISPLAY_NAME="Page Studio"
 # Internal Swift target name stays `ClaudePowerMode` so we don't have to
 # rename the source tree. The executable inside the .app bundle is renamed
-# to match the bundle so Activity Monitor / `ps` show the user-visible name.
+# to `Page Studio` so `ps` never shows the internal target name.
 SWIFT_TARGET="ClaudePowerMode"
 ICONSET="Resources/AppIcon.iconset"
 ICNS="Resources/AppIcon.icns"
@@ -123,7 +129,7 @@ if [[ -n "$TEAM_ID" ]]; then
     APP_GROUP="$TEAM_ID.$GROUP_SUFFIX"
     echo "==> Widgets: app group $APP_GROUP"
 else
-    echo "==> Widgets: no signing team — building Page without its widgets"
+    echo "==> Widgets: no signing team — building Page Studio without its widgets"
 fi
 
 # Guarded delete: $APP is a fixed relative bundle name, never empty.
@@ -162,7 +168,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundleIdentifier</key>
     <string>$BUNDLE_ID</string>
     <key>CFBundleName</key>
-    <string>$BUNDLE_NAME</string>
+    <string>$DISPLAY_NAME</string>
     <key>CFBundleDisplayName</key>
     <string>$DISPLAY_NAME</string>
     <key>CFBundleIconFile</key>
@@ -184,7 +190,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSAppleEventsUsageDescription</key>
-    <string>Page needs to control your Terminal to deliver replies from your phone into the active session.</string>
+    <string>Page Studio needs to control your Terminal to deliver replies from your phone into the active session.</string>
     <key>CFBundleURLTypes</key>
     <array>
         <dict>
@@ -227,7 +233,7 @@ if [[ -n "$APP_GROUP" ]]; then
     <key>CFBundleIdentifier</key>
     <string>$WIDGET_ID</string>
     <key>CFBundleName</key>
-    <string>$BUNDLE_NAME</string>
+    <string>$DISPLAY_NAME</string>
     <key>CFBundleDisplayName</key>
     <string>$DISPLAY_NAME</string>
     <key>CFBundlePackageType</key>

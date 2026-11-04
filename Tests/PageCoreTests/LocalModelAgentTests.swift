@@ -154,8 +154,8 @@ final class LocalModelAgentTests: XCTestCase {
 
     func testRefusalMessageNamesProviderAndModel() {
         let msg = ResumeProviderGate.refusal(.init(stored: .ollama, lastAssistantModel: "qwen3:8b"))
-        XCTAssertEqual(msg, "This session ran on a non-Anthropic model (Ollama / qwen3:8b). Page can't restart it in the "
-                       + "background — that would run on your Anthropic account. Reply at the Mac.")
+        XCTAssertEqual(msg, "This session ran on a non-Anthropic model (Ollama / qwen3:8b). Page Studio can't restart it in the "
+                       + "background — that would run on your Anthropic account. Reply at your computer.")
         XCTAssertTrue(ResumeProviderGate.message(.init(stored: nil, lastAssistantModel: nil)).contains("(model unknown)"))
         XCTAssertTrue(ResumeProviderGate.message(.init(stored: .lmStudio, lastAssistantModel: nil)).contains("(LM Studio)"))
         XCTAssertFalse(ResumeProviderGate.message(.init(stored: nil, lastAssistantModel: "a\u{1B}[2Jb")).contains("\u{1B}"))

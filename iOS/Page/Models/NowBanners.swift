@@ -47,7 +47,7 @@ struct NowBanner: Equatable, Identifiable {
         var out: [NowBanner] = []
         if i.authRejected {
             out.append(NowBanner(id: "auth", tone: .error, symbol: "key.slash", title: "This pairing no longer works",
-                                 message: "Your relay rejected this iPhone's pairing token. The Mac probably generated a new one. Unpair and scan the new code.",
+                                 message: "Your relay rejected this iPhone's pairing token. The computer probably generated a new one. Unpair and scan the new code.",
                                  actionTitle: "Re-pair…", action: .repair))
         } else if let failure = i.inboxFailure, !i.connected {
             out.append(NowBanner(id: "relay", tone: .error, symbol: "wifi.exclamationmark", title: "Can't reach your relay",
@@ -55,18 +55,18 @@ struct NowBanner: Equatable, Identifiable {
         } else {
             switch i.presence {
             case .neverConnected:
-                out.append(NowBanner(id: "never", tone: .error, symbol: "key.slash", title: "Your Mac hasn't connected with this pairing",
-                                     message: "The relay has never seen Page on your Mac use this pairing code, so no pages can reach this iPhone. If you regenerated the token on your Mac, re-pair with the new code.",
+                out.append(NowBanner(id: "never", tone: .error, symbol: "key.slash", title: "Your computer hasn't connected with this pairing",
+                                     message: "The relay has never seen Page Studio on your computer use this pairing code, so no pages can reach this iPhone. If you regenerated the token on your computer, re-pair with the new code.",
                                      actionTitle: "Re-pair…", action: .repair))
             case .offline(let seen):
                 let repair = i.presence.suggestsRepair(now: i.now)
                 let last = seen.map { "Last seen \(RelativeTime.ago(since: $0, now: i.now)). " } ?? ""
-                out.append(NowBanner(id: "offline", tone: .warning, symbol: "desktopcomputer.trianglebadge.exclamationmark", title: "Your Mac is offline",
-                                     message: last + "New pages can't reach you until Page on your Mac reconnects to the relay."
-                                        + (repair ? " If you regenerated the token on your Mac, re-pair this iPhone." : ""),
+                out.append(NowBanner(id: "offline", tone: .warning, symbol: "desktopcomputer.trianglebadge.exclamationmark", title: "Your computer is offline",
+                                     message: last + "New pages can't reach you until Page Studio on your computer reconnects to the relay."
+                                        + (repair ? " If you regenerated the token on your computer, re-pair this iPhone." : ""),
                                      actionTitle: repair ? "Re-pair…" : nil, action: repair ? .repair : nil))
             case .stale(let seen):
-                out.append(NowBanner(id: "stale", tone: .warning, symbol: "desktopcomputer.trianglebadge.exclamationmark", title: "Your Mac stopped checking in",
+                out.append(NowBanner(id: "stale", tone: .warning, symbol: "desktopcomputer.trianglebadge.exclamationmark", title: "Your computer stopped checking in",
                                      message: "Last heartbeat \(RelativeTime.ago(since: seen, now: i.now)). It may be asleep or busy; pages may be delayed.",
                                      actionTitle: nil, action: nil))
             default: break
@@ -74,7 +74,7 @@ struct NowBanner: Equatable, Identifiable {
         }
         if i.notifications == .off {
             out.append(NowBanner(id: "notifications", tone: .warning, symbol: "bell.slash", title: "Notifications are off",
-                                 message: "You won't be paged while Page is closed.", actionTitle: "Open Settings", action: .openNotificationSettings))
+                                 message: "You won't be paged while Page Relay is closed.", actionTitle: "Open Settings", action: .openNotificationSettings))
         } else if case .problem(let why) = i.push {
             out.append(NowBanner(id: "push", tone: .warning, symbol: "bell.badge.slash", title: "Push notifications unavailable",
                                  message: why, actionTitle: "Retry", action: .retryPush))
@@ -110,36 +110,36 @@ struct SessionAvailabilityCopy: Equatable {
         switch availability {
         case .relayTooOld:
             self.init("arrow.triangle.2.circlepath", .warning, "Update your relay",
-                      "Your relay (the Cloudflare Worker) doesn't support live sessions yet. Redeploy it from the latest Page release, then pull down to refresh. Pages keep working meanwhile.",
+                      "Your relay (the Cloudflare Worker) doesn't support live sessions yet. Redeploy it from the latest Page Studio release, then pull down to refresh. Pages keep working meanwhile.",
                       "Check again", .retry, "Relay needs an update")
         case .needsRepair(let mismatch):
             if mismatch {
-                self.init("key.slash", .error, "Re-pair with your Mac",
-                          "Live updates from your Mac can't be unlocked with this iPhone's key, so the pairing was probably regenerated on the Mac. Unpair, then on your Mac open Page → Pair phone… and scan the code.",
+                self.init("key.slash", .error, "Re-pair with your computer",
+                          "Live updates from your computer can't be unlocked with this iPhone's key, so the pairing was probably regenerated on your computer. Unpair, then on your computer open Page Studio → Pair phone… and scan the code.",
                           "Re-pair…", .repair, "Pairing key changed")
             } else {
-                self.init("key", .warning, "Re-pair with your Mac to see live sessions",
-                          "This pairing has no session key: it came from an older Page on your Mac, or was made before live sessions existed. Update Page on your Mac, unpair here, then open Page → Pair phone… on the Mac and scan the new code. Pages keep working meanwhile.",
+                self.init("key", .warning, "Re-pair with your computer to see live sessions",
+                          "This pairing has no session key: it came from an older Page Studio on your computer, or was made before live sessions existed. Update Page Studio on your computer, unpair here, then open Page Studio → Pair phone… on your computer and scan the new code. Pages keep working meanwhile.",
                           "Re-pair…", .repair, "Re-pair needed")
             }
         case .macOffline:
-            self.init("desktopcomputer.trianglebadge.exclamationmark", .warning, "Your Mac is offline",
-                      "Live sessions show up while Page on your Mac is connected to the relay. Wake the Mac, or check that Page is running there.",
-                      "Try again", .retry, "Mac offline")
+            self.init("desktopcomputer.trianglebadge.exclamationmark", .warning, "Your computer is offline",
+                      "Live sessions show up while Page Studio on your computer is connected to the relay. Wake the computer, or check that Page Studio is running there.",
+                      "Try again", .retry, "Computer offline")
         case .clockSkew:
             self.init("clock.badge.exclamationmark", .warning, "Your clocks disagree",
-                      "Updates from your Mac arrive more than 10 minutes old by this iPhone's clock, so they're ignored. Turn on Set Automatically in Date & Time on both your iPhone and your Mac.",
+                      "Updates from your computer arrive more than 10 minutes old by this iPhone's clock, so they're ignored. Turn on Set Automatically in Date & Time on both your iPhone and your computer.",
                       "Try again", .retry, "Clock mismatch")
         case .macTooOld:
-            self.init("arrow.down.app", .warning, "Update Page on your Mac",
-                      "Your Mac is online but isn't sending live sessions. Update Page on your Mac to the latest version, and check that remote sessions are turned on in its Preferences.",
-                      "Check again", .retry, "Mac needs an update")
+            self.init("arrow.down.app", .warning, "Update Page Studio on your computer",
+                      "Your computer is online but isn't sending live sessions. Update Page Studio on your computer to the latest version, and check that remote sessions are turned on in its Preferences.",
+                      "Check again", .retry, "Computer needs an update")
         case .macDisabled:
-            self.init("eye.slash", .warning, "Live sessions are off on your Mac",
-                      "Page on your Mac isn't sharing its sessions. Turn them back on in Page → Preferences → Phone on the Mac.",
-                      "Check again", .retry, "Off on your Mac")
+            self.init("eye.slash", .warning, "Live sessions are off on your computer",
+                      "Page Studio on your computer isn't sharing its sessions. Turn them back on in Page Studio → Preferences → Phone on your computer.",
+                      "Check again", .retry, "Off on your computer")
         case .waiting:
-            self.init("hourglass", .info, "Connecting to your Mac…", "", nil, nil, "Connecting…")
+            self.init("hourglass", .info, "Connecting to your computer…", "", nil, nil, "Connecting…")
         case .ready:
             self.init("checkmark.circle", .info, "Live", "", nil, nil, "Live")
         }

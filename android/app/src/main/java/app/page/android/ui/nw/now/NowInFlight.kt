@@ -421,7 +421,7 @@ private fun PreviousStep(step: String, i: Int, modifier: Modifier) {
 @Composable
 private fun EntryButton(entry: RoomEntry, enabled: Boolean, kind: NWButtonKind, modifier: Modifier, onClick: () -> Unit) {
     val hint = if (enabled) (if (entry == RoomEntry.TYPE) "Opens the session with the keyboard up" else "Shows its terminal")
-    else (if (entry == RoomEntry.TYPE) "Page can't type into this terminal; opens the session to say why" else "Page can't mirror this terminal; opens the session")
+    else (if (entry == RoomEntry.TYPE) "Page Studio can't type into this terminal; opens the session to say why" else "Page Studio can't mirror this terminal; opens the session")
     Box(modifier.semantics { stateDescription = hint }) {
         NWButton(entry.buttonTitle, onClick, Modifier.fillMaxWidth().then(if (enabled) Modifier else Modifier.padding(0.dp)), kind = if (enabled) kind else NWButtonKind.QUIET, alpha = if (enabled) 1f else 0.55f)
     }

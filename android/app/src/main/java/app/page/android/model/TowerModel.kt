@@ -75,7 +75,7 @@ object TowerHosts {
     }
 
     val hosts: List<Host> = listOf(
-        Host("Terminal", "macwindow", "reply and approve; the Mac asks macOS for permission once", Answer.NotYet("Terminal adds a Return to every key Page types; use tmux or iTerm2")),
+        Host("Terminal", "macwindow", "reply and approve; the Mac asks macOS for permission once", Answer.NotYet("Terminal adds a Return to every key Page Studio types; use tmux or iTerm2")),
         Host("iTerm2", "terminal", "reply, approve and stop; the Mac asks macOS for permission once", Answer.Yes),
         Host("tmux", "rectangle.split.3x1", "reply, approve, stop and see the screen, in any terminal app", Answer.Yes),
         Host("cmux", "square.grid.2x2", "everything, and start new sessions from here", Answer.Yes),
@@ -86,10 +86,10 @@ object TowerHosts {
     )
 
     /** Where to set them up. */
-    const val setUpLine = "Set them up on your Mac in Page ▸ Tower ▸ Terminals. Each one shows there whether it is installed, in use or needs a step."
+    const val setUpLine = "Set them up on your Mac in Page Studio ▸ Tower ▸ Terminals. Each one shows there whether it is installed, in use or needs a step. On Linux, Page Studio types into tmux (and Claude Squad), WezTerm, kitty and Herdr."
 
     /** For anything else. */
-    const val othersLine = "Ghostty, Warp and VS Code’s terminal can’t be typed into yet: run Claude inside tmux, or use Page’s hooks for approvals."
+    const val othersLine = "Ghostty, Warp and VS Code’s terminal can’t be typed into yet: run Claude inside tmux, or use Page Studio’s hooks for approvals."
 }
 
 // MARK: - The Mac chip
@@ -141,7 +141,7 @@ data class TowerPower(
     companion object {
         fun build(status: MacStatusSnapshot?): TowerPower {
             if (status == null) {
-                return TowerPower("No reading from your Mac", "unknown", "Power is read from Page on your Mac.", null, null, false)
+                return TowerPower("No reading from your computer", "unknown", "Power is read from Page Studio on your computer.", null, null, false)
             }
             val pct = status.batteryPercent
             val cutoff = status.forecast?.cutoff
@@ -155,7 +155,7 @@ data class TowerPower(
             } else if (status.onAC == false) {
                 headline += " · on battery"
             }
-            val note = cutoff?.let { "Pause agents at $it% · set in Page on your Mac" } ?: "Cutoff and keep-awake are set in Page on your Mac."
+            val note = cutoff?.let { "Pause agents at $it% · set in Page Studio on your computer" } ?: "Cutoff and keep-awake are set in Page Studio on your computer."
             return TowerPower(
                 headline, if (onAC) "on power" else (if (status.onAC == false) "on battery" else "unknown"),
                 note, pct?.let { it / 100.0 }, cutoff?.let { it / 100.0 },
@@ -204,7 +204,7 @@ data class TowerBudget(
 ) {
     companion object {
         fun build(usage: ClaudeUsage?, now: Instant): TowerBudget =
-            TowerBudget(UsageCardModel.from(usage, now), "Turn on usage tracking in Page on your Mac to see your 5-hour and 7-day limits here.")
+            TowerBudget(UsageCardModel.from(usage, now), "Turn on usage tracking in Page Studio on your computer to see your 5-hour and 7-day limits here.")
     }
 }
 

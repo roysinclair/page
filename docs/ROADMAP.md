@@ -1,11 +1,11 @@
 # Roadmap
 
-Where Page is heading, and why. This is a plan, not a promise: phases
+Where Page Studio is heading, and why. This is a plan, not a promise: phases
 after 0 are estimates and may change. Status is as of October 2026.
 
 ## The product split (decided)
 
-Page stays **one monorepo** and becomes two apps that share one Swift library:
+Page Studio stays **one monorepo** and becomes two apps that share one Swift library:
 
 ```
                     ┌──────────────────────── PageCore (Swift package) ─────────────────────────┐
@@ -27,11 +27,11 @@ Page stays **one monorepo** and becomes two apps that share one Swift library:
   closed), context redaction, config, and the local socket protocol. Today
   this code lives in the single `ClaudePowerMode` target. Extracting it is
   part of Phase 1.
-- **Page AI Power Control** is the current menu-bar app. It stays the hub. It
+- **Page Studio AI Power Control** is the current menu-bar app. It stays the hub. It
   owns the relay connection, presence, dedupe and power policy, and it keeps
   delivering to terminals it doesn't own (tmux, Terminal.app, iTerm2, cmux)
   and to agent apps through hooks.
-- **Page Terminal** is a terminal of our own, built on
+- **Page Studio Terminal** is a terminal of our own, built on
   [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm) behind a
   `TerminalEngine` protocol, so the engine can be swapped later.
   [libghostty](https://ghostty.org) becomes an option once it ships a stable,
@@ -40,7 +40,7 @@ Page stays **one monorepo** and becomes two apps that share one Swift library:
   written straight to that pane's PTY. That removes the AppleScript and
   screen-reading workarounds, and the "which terminal owns this session"
   guesswork, for sessions started there.
-- **Naming.** "Page Terminal" is our own product. It is not a fork of, or
+- **Naming.** "Page Studio Terminal" is our own product. It is not a fork of, or
   named after, cmux, which is a separate project with its own license (see
   [Licensing](#licensing)).
 
@@ -80,7 +80,7 @@ rather than infers.
   relay, presence and dedupe for every channel. Talking to the Worker directly
   remains a fallback for when the app isn't running.
 - **Reply inbox via `asyncRewake`.** An async `Stop`/`SessionStart` hook waits
-  on Page's inbox and wakes an idle Claude session with the phone's text,
+  on Page Studio's inbox and wakes an idle Claude session with the phone's text,
   without typing into the prompt box. Open question: how Claude weighs a
   rewake message compared with a real user turn.
 - **`page run claude|codex`.** A thin PTY wrapper (forkpty, transparent
@@ -88,17 +88,17 @@ rather than infers.
   through untouched). Sessions started this way register with Power Control
   and get direct PTY delivery in any terminal. It has to compose with other
   wrappers on `PATH`.
-- **Launcher-tier channels**, only for sessions Page starts:
+- **Launcher-tier channels**, only for sessions Page Studio starts:
   - **Claude:** the channels/permission-relay mechanism (a research preview
     today).
   - **Codex:** a shared `codex app-server` on a local socket, with the TUI
-    attached via `codex --remote`. Approvals then arrive at Page as protocol
+    attached via `codex --remote`. Approvals then arrive at Page Studio as protocol
     requests, and replies become `turn/start` / `turn/steer` instead of
     keystrokes. The routing for this already exists in `AppServerClient` and
     `CodexBackend.handleServerRequest`.
 - **Extract PageCore** as a Swift package that both apps depend on.
 
-### Phase 2: Page Terminal MVP (estimated 6–10 weeks)
+### Phase 2: Page Studio Terminal MVP (estimated 6–10 weeks)
 
 This starts only once Phase 1 has shipped and there's a list of concrete gaps
 it doesn't close.
@@ -125,7 +125,7 @@ it doesn't close.
 - SwiftTerm throughput under heavy output;
 - the ongoing cost of competing as someone's daily-driver terminal.
 
-Page's advantage is working across *every* surface (agent apps, IDEs and any
+Page Studio's advantage is working across *every* surface (agent apps, IDEs and any
 terminal), not the terminal itself.
 
 ## Integration matrix
@@ -137,7 +137,7 @@ Legend:
 - **L**: fragile.
 - **—**: not possible.
 
-| Surface | Detect "needs a human" | Approve / deny from the phone | Send a text reply | Page today |
+| Surface | Detect "needs a human" | Approve / deny from the phone | Send a text reply | Page Studio today |
 |---|---|---|---|---|
 | Terminal.app | sessions file + hooks **H** | hook **H**; typed `1` / menu digit **M** | AppleScript **M** | Detection; replies typed by tty (no lone Esc) |
 | iTerm2 | sessions file + hooks **H** | hook **H**; `1` / Esc **M** | AppleScript `write text` **M** | Claude replies by tty; Codex not yet |
@@ -150,22 +150,22 @@ Legend:
 | Codex CLI | rollouts **H**; hooks **H** (after `/hooks` trust) | `PermissionRequest` hook **M–H**; shared app-server **M** (Phase 1) | `Stop` hook continuation **M–H**; keystrokes after the turn ends **M** | Idle pages, rate limits, replies after the turn; approvals via hook |
 | Codex desktop app / IDE extension | rollouts **H**; hooks unverified | hook (unverified) | `Stop` hook (unverified); `codex exec resume` **L** (not visible live) | Idle pages; replies via `exec resume` |
 | Ollama, LM Studio, llama.cpp, MLX (servers and apps) | Not applicable: no prompts. Busy from `/slots` **M** (documented, not verified live) or GPU time **H** (measured) | — | — | Keep-awake while generating (power-only, nothing on the wire) |
-| opencode, aider, goose, crush, qwen-code and other terminal agents on open-weight models | Terminal output recency **M** (keep-awake only) | Deferred: opencode plugin / qwen-code hooks, or Page Terminal | Deferred to Page Terminal | Keep-awake while they work |
+| opencode, aider, goose, crush, qwen-code and other terminal agents on open-weight models | Terminal output recency **M** (keep-awake only) | Deferred: opencode plugin / qwen-code hooks, or Page Studio Terminal | Deferred to Page Studio Terminal | Keep-awake while they work |
 
 ## What we borrow from cmux: ideas only
 
 cmux is a well-made agent terminal, and several of its *ideas* are worth
 adopting. No code is borrowed.
 
-| Idea | Why it fits Page |
+| Idea | Why it fits Page Studio |
 |---|---|
 | A blocking `PermissionRequest` hook with a soft timeout that falls back to the agent's dialog | It approves without typing, and it fails safe (done in Phase 0) |
 | Checking draft and dialog state before typing (empty / draft / dialog) | Never type over a half-written prompt, and never pick a menu option when you meant to send text (done for tmux and cmux) |
-| Binding a hook to its pane by a stable id (environment, then tty, then process tree), never by title or file time | Same discipline as Page's exact targeting; needed for Page Terminal |
-| Per-launch `--settings` instead of editing user settings | Nothing global to break for sessions Page launches. Desktop and IDE sessions still need user settings |
+| Binding a hook to its pane by a stable id (environment, then tty, then process tree), never by title or file time | Same discipline as Page Studio's exact targeting; needed for Page Studio Terminal |
+| Per-launch `--settings` instead of editing user settings | Nothing global to break for sessions Page Studio launches. Desktop and IDE sessions still need user settings |
 | One forwarder connection carrying all hook events in order | Lower per-hook latency (relevant to the Phase 1 local socket) |
 | An event stream with sequence numbers, resume and a gap flag | Robust phone and Mac sync |
-| Attention rings, "jump to latest unread", sidebar metadata | Page Terminal UI |
+| Attention rings, "jump to latest unread", sidebar metadata | Page Studio Terminal UI |
 
 **What we avoid:**
 
@@ -180,14 +180,14 @@ adopting. No code is borrowed.
 
 ## Licensing
 
-- Page uses the **Page Studio License** (the same license as Page Aura).
+- Page Studio uses the **Page Studio License** (the same license as Page Aura).
 - cmux's apps and CLI are **GPL-3.0-or-later**, and parts of its server code
   are under the Business Source License.
-- Copying cmux code into Page would bring GPL obligations into Page's
+- Copying cmux code into Page Studio would bring GPL obligations into Page Studio's
   codebase, so **we never copy, port or paraphrase cmux code**. Contributors
   must not paste it in.
-- Page drives cmux only as a separate program, through its documented CLI and
-  socket. We understand that this doesn't make Page a derivative work, but
+- Page Studio drives cmux only as a separate program, through its documented CLI and
+  socket. We understand that this doesn't make Page Studio a derivative work, but
   this is not legal advice.
 - SwiftTerm, libghostty and Sparkle are MIT-licensed and fine to depend on
   with attribution in [NOTICE](../NOTICE).
@@ -196,13 +196,13 @@ adopting. No code is borrowed.
 
 | Question | Current default |
 |---|---|
-| Should Page install hooks into the user's agent settings? | Yes, opt-in from the app, with a diff preview and backup; away-only; falls back to the dialog |
+| Should Page Studio install hooks into the user's agent settings? | Yes, opt-in from the app, with a diff preview and backup; away-only; falls back to the dialog |
 | On a phone timeout: fall back to the dialog, or deny? | Always fall back. Never auto-deny or auto-allow |
-| Which cmux socket mode should Page ask for? | Password mode, with the password in the Keychain. Automation mode lets in any process running as the user |
-| cmux's own iPhone forwarding or Page: who pages? | Page; we suggest turning off cmux's forwarding to avoid two alerts per event |
+| Which cmux socket mode should Page Studio ask for? | Password mode, with the password in the Keychain. Automation mode lets in any process running as the user |
+| cmux's own iPhone forwarding or Page Studio: who pages? | Page Studio; we suggest turning off cmux's forwarding to avoid two alerts per event |
 | Is the agent's dialog still usable while a `PermissionRequest` hook is waiting? | Unverified; mitigated by away-only gating and handing back on any input |
-| How do Page's and cmux's `PermissionRequest` hooks interact in one session? | Unverified; deny wins between hooks, and Page never denies without an explicit answer |
+| How do Page Studio's and cmux's `PermissionRequest` hooks interact in one session? | Unverified; deny wins between hooks, and Page Studio never denies without an explicit answer |
 | Do the Codex desktop app and IDE extension run `~/.codex/hooks.json`? | Undocumented; test before claiming support |
-| Does the Codex hook's `session_id` equal the thread id Page uses? | Unverified; affects duplicate suppression |
-| When to start Page Terminal? | After Phase 1, against a written list of gaps it closes |
+| Does the Codex hook's `session_id` equal the thread id Page Studio uses? | Unverified; affects duplicate suppression |
+| When to start Page Studio Terminal? | After Phase 1, against a written list of gaps it closes |
 | Engine: SwiftTerm now, libghostty later? | Yes, behind `TerminalEngine`; revisit libghostty when its C API is stable and includes a renderer |

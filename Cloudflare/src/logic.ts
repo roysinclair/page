@@ -418,7 +418,7 @@ export function decideReply(ctx: ReplyContext): ReplyDecision {
         ok: false, status: 422,
         body: {
           error: "approve_or_deny_only",
-          why: "This page comes from an older Page hook that can only apply Approve or Deny. Update it in Page ▸ Integrations ▸ Install agent hooks…"
+          why: "This page comes from an older Page Studio hook that can only apply Approve or Deny. Update it in Page Studio ▸ Integrations ▸ Install agent hooks…"
         }
       };
     }
@@ -549,7 +549,7 @@ export function parseReplyInjected(raw: unknown): ParsedInjected | null {
     ? truncate(raw.method, MAX_METHOD_LENGTH) : "unknown";
   const detail = typeof raw.detail === "string" && raw.detail.trim()
     ? truncate(raw.detail.trim(), MAX_DETAIL_LENGTH, true)
-    : success ? "Delivered to your Mac" : "Your Mac couldn't deliver the reply";
+    : success ? "Delivered to your computer" : "Your computer couldn't deliver the reply";
   const reason = !success ? INJECTED_REASONS.find((r) => r === raw.reason) : undefined;
   return { interventionId: raw.interventionId, method, success, detail, ...(reason ? { reason } : {}) };
 }
@@ -913,9 +913,9 @@ export function buildAlertPush(
 /// which the relay doesn't have). Unknown or missing reason → the Mac's detail.
 export function replyFailureBody(reason: string | undefined, detail: string): string {
   switch (reason) {
-    case "draft": return "There's unsent text in the session's input box on your Mac.";
+    case "draft": return "There's unsent text in the session's input box on your computer.";
     case "input_unverified":
-      return "Page couldn't see the session's input box on your Mac, so it didn't type anything. Try again in a moment.";
+      return "Page Studio couldn't see the session's input box on your computer, so it didn't type anything. Try again in a moment.";
     default: return detail;
   }
 }

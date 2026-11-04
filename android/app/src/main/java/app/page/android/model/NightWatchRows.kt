@@ -57,7 +57,7 @@ object PhoneReversibility {
             return Reversibility.Verdict(Reversibility.CONSIDERED, emptyList(), DeliveryPreview.unreadableNote)
         }
         if ((iv.backend ?: InterventionBackend.CLAUDE) != InterventionBackend.CLAUDE) {
-            return Reversibility.Verdict(Reversibility.CONSIDERED, emptyList(), "${iv.agentName}'s prompt isn't one Page can read")
+            return Reversibility.Verdict(Reversibility.CONSIDERED, emptyList(), "${iv.agentName}'s prompt isn't one Page Studio can read")
         }
         if (iv.subtype == "plan") {
             return Reversibility.Verdict(Reversibility.CONSIDERED, emptyList(), "plan approval")
@@ -126,7 +126,7 @@ object DeliveryPreview {
     /** "your Mac" when the name is blank, so a preview never omits the Mac. */
     fun macLabel(name: String): String {
         val t = Sw.trimWsNl(name)
-        return if (t.isEmpty()) "your Mac" else t
+        return if (t.isEmpty()) "your computer" else t
     }
 
     /** "cmux › page": the terminal and the project. null when neither is known. */
@@ -171,7 +171,7 @@ object DeliveryPreview {
     const val openInTerminal = "Open in terminal to choose this"
 
     /** An agent Page has no adapter for: nothing is typed, and the sheet says so. */
-    const val unreadableNote = "Couldn't tell what's on screen · Open on Mac"
+    const val unreadableNote = "Couldn't tell what's on screen · Open on your computer"
 
     /** The same, as an action preview, which always names the Mac. */
     fun unreadable(mac: String): String = line("Couldn't tell what's on screen", null, mac)
@@ -293,7 +293,7 @@ object NowRowBuilder {
                 val approveLabel = if (planned) "Approve plan" else "Approve"
                 val denyLabel = if (planned) "Keep planning" else "Deny"
                 if (unknownAgent && !hook) {
-                    actions = listOf(act(RowAction.Kind.OPEN_ON_MAC, "Open on Mac", DeliveryPreview.unreadable(mac)))
+                    actions = listOf(act(RowAction.Kind.OPEN_ON_MAC, "Open on your computer", DeliveryPreview.unreadable(mac)))
                     commit = null
                 } else if (hook) {
                     val l = arrayListOf(
@@ -308,7 +308,7 @@ object NowRowBuilder {
                         act(RowAction.Kind.DENY, denyLabel, DeliveryPreview.codexDecline(mac)),
                     )
                 } else if (blocker != null) {
-                    actions = listOf(act(RowAction.Kind.OPEN_ON_MAC, "Open on Mac", DeliveryPreview.cannotType(blocker, mac)))
+                    actions = listOf(act(RowAction.Kind.OPEN_ON_MAC, "Open on your computer", DeliveryPreview.cannotType(blocker, mac)))
                     commit = null
                 } else {
                     actions = listOf(
@@ -321,12 +321,12 @@ object NowRowBuilder {
             InterventionKind.USER_INPUT -> {
                 chip = ChipKind.QUESTION
                 actions = if (unknownAgent && !hook) {
-                    listOf(act(RowAction.Kind.OPEN_ON_MAC, "Open on Mac", DeliveryPreview.unreadable(mac)))
+                    listOf(act(RowAction.Kind.OPEN_ON_MAC, "Open on your computer", DeliveryPreview.unreadable(mac)))
                 } else if (backend == InterventionBackend.CLAUDE && (blocker == null || hook)) {
                     // A written answer to a Claude prompt is Esc, then the text, then Return.
                     listOf(act(RowAction.Kind.TELL_INSTEAD, "Answer", if (hook) DeliveryPreview.hookTell(mac) else DeliveryPreview.tellInstead(route, mac)))
                 } else if (blocker != null) {
-                    listOf(act(RowAction.Kind.OPEN_ON_MAC, "Open on Mac", DeliveryPreview.cannotType(blocker, mac)))
+                    listOf(act(RowAction.Kind.OPEN_ON_MAC, "Open on your computer", DeliveryPreview.cannotType(blocker, mac)))
                 } else {
                     listOf(act(RowAction.Kind.TELL_INSTEAD, "Answer", DeliveryPreview.line("Your answer, as Codex takes it", route, mac)))
                 }
@@ -335,9 +335,9 @@ object NowRowBuilder {
                 if (PageSubtype.isStuck(iv.subtype)) {
                     chip = ChipKind.LOOKS_STUCK
                     if (unknownAgent) {
-                        actions = listOf(act(RowAction.Kind.OPEN_ON_MAC, "Open on Mac", DeliveryPreview.unreadable(mac)))
+                        actions = listOf(act(RowAction.Kind.OPEN_ON_MAC, "Open on your computer", DeliveryPreview.unreadable(mac)))
                     } else if (blocker != null) {
-                        actions = listOf(act(RowAction.Kind.OPEN_ON_MAC, "Open on Mac", DeliveryPreview.cannotType(blocker, mac)))
+                        actions = listOf(act(RowAction.Kind.OPEN_ON_MAC, "Open on your computer", DeliveryPreview.cannotType(blocker, mac)))
                     } else {
                         val l = ArrayList<RowAction>()
                         if (PageSubtype.canStop(iv.subtype)) l.add(act(RowAction.Kind.STOP, "Stop it", DeliveryPreview.pressEsc(route, mac)))
@@ -350,9 +350,9 @@ object NowRowBuilder {
                 } else {
                     chip = ChipKind.REVIEW
                     actions = if (unknownAgent) {
-                        listOf(act(RowAction.Kind.OPEN_ON_MAC, "Open on Mac", DeliveryPreview.unreadable(mac)))
+                        listOf(act(RowAction.Kind.OPEN_ON_MAC, "Open on your computer", DeliveryPreview.unreadable(mac)))
                     } else if (blocker != null) {
-                        listOf(act(RowAction.Kind.OPEN_ON_MAC, "Open on Mac", DeliveryPreview.cannotType(blocker, mac)))
+                        listOf(act(RowAction.Kind.OPEN_ON_MAC, "Open on your computer", DeliveryPreview.cannotType(blocker, mac)))
                     } else {
                         listOf(
                             act(RowAction.Kind.CARRY_ON, "Carry on", DeliveryPreview.carryOn(route, mac)),

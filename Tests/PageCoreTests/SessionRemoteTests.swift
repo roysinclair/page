@@ -208,7 +208,7 @@ final class SessionRemoteTests: XCTestCase {
         backends.hosts = [
             "s1": SessionHostInfo(host: "tmux", canType: true, canInterrupt: true, provider: .anthropic),
             "s2": SessionHostInfo(host: "tmux", canType: true, canInterrupt: true, provider: .ollama),
-            "s3": .blocked("Ghostty", "Page can't type into Ghostty yet"),
+            "s3": .blocked("Ghostty", "Page Studio can't type into Ghostty yet"),
             "c1": SessionHostInfo(host: "tmux", canType: true, canInterrupt: true, provider: .unknown),
         ]
         remote.update(sessions: [
@@ -231,7 +231,7 @@ final class SessionRemoteTests: XCTestCase {
         let s3 = rows[0]
         XCTAssertEqual(s3["interventionId"] as? String, "s3-permission-1")
         XCTAssertEqual(s3["canType"] as? Bool, false)
-        XCTAssertEqual(s3["typeBlocker"] as? String, "Page can't type into Ghostty yet")
+        XCTAssertEqual(s3["typeBlocker"] as? String, "Page Studio can't type into Ghostty yet")
         XCTAssertEqual(s3["state"] as? String, "waitingOnApproval")
         XCTAssertEqual(s3["cwd"] as? String, "~/projects/s3", "home-abbreviated")
 
@@ -976,7 +976,7 @@ final class SessionHostMappingTests: XCTestCase {
         let ghostty = L.claudeHostInfo(.unsupported("Ghostty"), provider: .unknown)
         XCTAssertEqual(ghostty.host, "Ghostty")
         XCTAssertFalse(ghostty.canType)
-        XCTAssertEqual(ghostty.typeBlocker, "Page can't type into Ghostty yet")
+        XCTAssertEqual(ghostty.typeBlocker, "Page Studio can't type into Ghostty yet")
         XCTAssertEqual(L.claudeHostInfo(.unsupported("Warp"), provider: .unknown).host, "unknown")
         XCTAssertEqual(L.claudeHostInfo(.unsupported("VS Code"), provider: .unknown).host, "VS Code")
         XCTAssertEqual(L.claudeHostInfo(.unreachable(CmuxBridge.paneNotFoundDetail), provider: .unknown).typeBlocker,

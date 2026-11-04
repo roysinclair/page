@@ -24,7 +24,7 @@ final class WidgetTowerTests: XCTestCase {
     func testDesktopStepsAreThreeAndEndWithDragging() {
         let steps = WidgetGuide.steps(osMajor: 14)
         XCTAssertEqual(steps.map(\.number), [1, 2, 3])
-        XCTAssertEqual(steps.map(\.title), ["Right-click the desktop", "Search for Page", "Drag one out"])
+        XCTAssertEqual(steps.map(\.title), ["Right-click the desktop", "Search for Page Studio", "Drag one out"])
         XCTAssertTrue(steps.allSatisfy { !$0.detail.isEmpty })
     }
 
@@ -49,7 +49,7 @@ final class WidgetTowerTests: XCTestCase {
     // MARK: the catalogue
 
     func testTheCatalogueOffersTwoWidgetsInTheirSizes() {
-        XCTAssertEqual(WidgetCatalog.all.map(\.name), ["Page", "Claude usage"])
+        XCTAssertEqual(WidgetCatalog.all.map(\.name), ["Page Studio", "Claude usage"])
         XCTAssertEqual(WidgetCatalog.status.sizes, [.small, .medium, .large])
         XCTAssertEqual(WidgetCatalog.usage.sizes, [.small, .medium])
         XCTAssertEqual(Set(WidgetCatalog.all.map(\.kind)).count, 2)

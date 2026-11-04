@@ -66,7 +66,7 @@ struct NWWidgetStatusFace: View {
         } else {
             VStack(alignment: .leading, spacing: 6) {
                 NWPulseOrb(style: .hollowSlate).frame(width: 44, height: 44).offset(x: -8)
-                Text("Page").font(NightWatch.Typo.title).foregroundColor(NightWatch.Palette.textPrimary.color)
+                Text("Page Relay").font(NightWatch.Typo.title).foregroundColor(NightWatch.Palette.textPrimary.color)
                 Text(problem ?? "—").font(NightWatch.Typo.caption).foregroundColor(NightWatch.Palette.textSecondary.color)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
@@ -86,7 +86,7 @@ struct NWWidgetStatusFace: View {
 
     private func small(_ s: WidgetStatus) -> some View {
         VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 6) { dot(s); Text("Page").font(.system(.caption, weight: .semibold)).foregroundColor(NightWatch.Palette.textTertiary.color); Spacer(minLength: 0) }
+            HStack(spacing: 6) { dot(s); Text("Page Relay").font(.system(.caption, weight: .semibold)).foregroundColor(NightWatch.Palette.textTertiary.color); Spacer(minLength: 0) }
             Spacer(minLength: 0)
             Text(s.faceHeadline).font(.system(.title2, weight: .bold)).kerning(-0.4)
                 .foregroundColor(s.faceTone.color).lineLimit(2).minimumScaleFactor(0.7)
@@ -116,7 +116,7 @@ struct NWWidgetStatusFace: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Page").font(.system(.subheadline, weight: .semibold)).foregroundColor(NightWatch.Palette.textSecondary.color)
+                    Text("Page Relay").font(.system(.subheadline, weight: .semibold)).foregroundColor(NightWatch.Palette.textSecondary.color)
                     Text(s.faceHeadline).font(.system(size: 34, weight: .bold)).kerning(-0.8)
                         .foregroundColor(s.faceTone.color).lineLimit(2).minimumScaleFactor(0.6)
                     if let d = s.detail { Text(d).font(.system(.subheadline, weight: .medium)).foregroundColor(NightWatch.Palette.textSecondary.color) }
@@ -193,7 +193,7 @@ struct NWWidgetUsageFace: View {
         } else {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Claude usage").font(NightWatch.Typo.title).foregroundColor(NightWatch.Palette.textPrimary.color)
-                Text(problem ?? "Turn on usage tracking in Page on your Mac").font(NightWatch.Typo.caption)
+                Text(problem ?? "Turn on usage tracking in Page Studio on your computer").font(NightWatch.Typo.caption)
                     .foregroundColor(NightWatch.Palette.textSecondary.color).fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
             }

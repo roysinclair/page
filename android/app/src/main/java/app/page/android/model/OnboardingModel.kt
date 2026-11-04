@@ -12,11 +12,11 @@ import java.time.Instant
 object OnboardingCopy {
     const val eyebrow = "PAGE"
     const val welcomeTitle = "Keep watch over your agents."
-    const val welcomeBody = "Your Mac stays awake while they work, and pages you here the moment one needs you. Everything is end-to-end encrypted."
-    const val pairButton = "Pair with your Mac"
+    const val welcomeBody = "Your computer stays awake while they work, and pages you here the moment one needs you. Everything is end-to-end encrypted."
+    const val pairButton = "Pair with your computer"
 
-    const val scanTitle = "Scan the code on your Mac"
-    const val scanHint = "Page menu → Pair phone…"
+    const val scanTitle = "Scan the code on your computer"
+    const val scanHint = "Page Studio → Pair phone…"
     data class Fact(val symbol: String, val text: String)
     val scanFacts: List<Fact> = listOf(
         Fact("lock", "The code holds your relay address and an encryption key"),
@@ -25,7 +25,7 @@ object OnboardingCopy {
     const val pasteInstead = "Paste a pairing link instead"
 
     /** The warning that stays on the confirm step: whoever runs the relay sees pages and replies. */
-    const val confirmWarning = "Only pair with a code from your own Mac: whoever runs this relay sees your pages and replies."
+    const val confirmWarning = "Only pair with a code from your own computer: whoever runs this relay sees your pages and replies."
 }
 
 // MARK: - Paired
@@ -64,8 +64,8 @@ data class PairedWelcome(
         fun subtitle(liveSessions: Int?, isFirstMac: Boolean): String {
             val lead = if (isFirstMac) "Your first star. " else ""
             return when (liveSessions) {
-                null -> lead + "Sessions appear as soon as your Mac reports them."
-                0 -> lead + "Start an agent on your Mac and it appears here."
+                null -> lead + "Sessions appear as soon as your computer reports them."
+                0 -> lead + "Start an agent on your computer and it appears here."
                 1 -> lead + "1 session is live right now."
                 else -> lead + "$liveSessions sessions are live right now."
             }
@@ -154,17 +154,17 @@ data class ProblemState(
          */
         fun build(i: Inputs): ProblemState? {
             val mac = DeliveryPreview.macLabel(i.macName)
-            val macTitle = if (mac == "your Mac") "Your Mac" else mac
+            val macTitle = if (mac == "your computer") "Your computer" else mac
 
             if (i.authRejected || i.retired || i.presence == MacPresence.NeverConnected) {
                 val replaced = i.authRejected || i.retired
                 return ProblemState(
                     kind = Kind.PAIRING_REPLACED, tone = Tone.AMBER,
-                    title = if (replaced) "This pairing was replaced" else "Your Mac hasn't used this pairing",
-                    subtitle = if (replaced) "Your Mac made a new pairing code" else "The relay has never seen it connect",
+                    title = if (replaced) "This pairing was replaced" else "Your computer hasn't used this pairing",
+                    subtitle = if (replaced) "Your computer made a new pairing code" else "The relay has never seen it connect",
                     details = listOf(
                         Detail("key.slash", if (replaced) "The old code can't be used again" else "A code from an old screenshot, or a regenerated token, looks like this"),
-                        Detail("qrcode", "On your Mac, open Page menu → Pair phone…"),
+                        Detail("qrcode", "On your computer, open Page Studio → Pair phone…"),
                     ),
                     actionTitle = "Scan the new code", action = Action.REPAIR, replacesBanners = setOf("auth", "never"),
                 )
@@ -190,7 +190,7 @@ data class ProblemState(
             val details = arrayListOf(
                 Detail(
                     "moon.zzz",
-                    if (stale) "Pages may be late until it checks in again" else "Pages can't reach you until it wakes or Page reconnects",
+                    if (stale) "Pages may be late until it checks in again" else "Pages can't reach you until it wakes or Page Studio reconnects",
                 ),
             )
             val b = i.battery
@@ -203,7 +203,7 @@ data class ProblemState(
             // Gone a long time: a regenerated token answers exactly like an offline Mac, so offer the re-pair.
             val repair = i.presence.suggestsRepair(i.now)
             if (repair) {
-                details.add(Detail("key", "If you regenerated the token on your Mac, re-pair this phone"))
+                details.add(Detail("key", "If you regenerated the token on your computer, re-pair this phone"))
             }
             val whenText = seen?.let { "Last heartbeat ${RelativeTime.compact(maxOf(0.0, i.now.secondsSince(it)).toLong())} ago" }
             return ProblemState(

@@ -1,6 +1,6 @@
-# Contributing to Page
+# Contributing to Page Studio
 
-Thanks for considering a contribution. The bar is simple: does this make Page
+Thanks for considering a contribution. The bar is simple: does this make Page Studio
 clearly better for someone running their own agents, without making it less
 safe?
 
@@ -17,7 +17,7 @@ safe?
 
 Background reading:
 
-- [README.md](README.md): what Page does, its configuration and its safety
+- [README.md](README.md): what Page Studio does, its configuration and its safety
   model.
 - [docs/PROTOCOL.md](docs/PROTOCOL.md): the wire protocol between the Mac,
   the hook, the Worker and the phone.
@@ -27,7 +27,7 @@ Background reading:
 
 ## Safety rules for contributors
 
-Page types into terminals that can run arbitrary commands. These rules are
+Page Studio types into terminals that can run arbitrary commands. These rules are
 not optional.
 
 1. **Never test reply delivery against real agent sessions.** Don't point a
@@ -72,7 +72,7 @@ not optional.
    token, reply text or terminal output. `reply.injected.detail` is shown on
    the phone, so keep it short, human and free of command output. Context
    leaving the Mac goes through `ContextRedactor`.
-6. **No cmux code.** cmux is GPL-3.0. Page uses the Page Studio License. Don't copy, port or
+6. **No cmux code.** cmux is GPL-3.0. Page Studio uses the Page Studio License. Don't copy, port or
    paraphrase cmux source. Drive it through its CLI only (see
    [ROADMAP.md](docs/ROADMAP.md#licensing)).
 
@@ -97,7 +97,7 @@ swift test --filter InjectionSafety   # all InjectionSafety* suites
 - Follow the app's log with `tail -f ~/Library/Logs/ClaudePowerMode.log`.
 
 The Mac side is a single SwiftPM executable target named `ClaudePowerMode`
-(the name predates the rename to Page), plus one test target. Backends
+(the name predates the rename to Page Studio), plus one test target. Backends
 (`ClaudeBackend`, `CodexBackend`) implement `AgentBackend`, and battery pause
 support is `BatteryPausable`. The `Coordinator` owns the one shared
 `RelayClient`.
@@ -195,7 +195,7 @@ build.sh, install.sh       build/sign; install/power helpers/hooks/uninstall
   comments that explain *why*, and prefer pure functions for decisions. Stay
   AppKit and Foundation only, with no third-party dependencies.
 - **TypeScript:** `tsc` strict, Web APIs only, no runtime dependencies.
-- **Logging:** Page is a long-running daemon. A line per tick is about 5,800
+- **Logging:** Page Studio is a long-running daemon. A line per tick is about 5,800
   lines a day. Log state changes, not state queries, and never secrets.
 - **Wire changes:** add optional fields only, update
   [docs/PROTOCOL.md](docs/PROTOCOL.md), and keep old peers working.
@@ -219,7 +219,7 @@ The body should explain the why. The diff already shows the what.
 
 ## What we won't take
 
-- **Other transports** (Slack, Discord, email). Page is a phone-app product.
+- **Other transports** (Slack, Discord, email). Page Studio is a phone-app product.
   A downstream service can subscribe to the Worker's WebSocket.
 - **Telemetry or analytics SDKs.** Your prompts go only to your own Worker
   and Apple's push service.

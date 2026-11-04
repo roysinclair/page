@@ -135,7 +135,7 @@ final class TowerPairingModel: ObservableObject {
         guard let store else { return }
         let spec = NWDialogSpec.confirm(
             "Regenerate the pairing token?",
-            "Phones paired with the current token stop receiving pages until they scan the new QR code. Page asks the relay to retire the old token, so (on an up-to-date relay) those phones are told to re-pair. This Mac reconnects with the new token right away.",
+            "Phones paired with the current token stop receiving pages until they scan the new QR code. Page Studio asks the relay to retire the old token, so (on an up-to-date relay) those phones are told to re-pair. This Mac reconnects with the new token right away.",
             ok: "Regenerate", tone: .warning, destructive: true)
         store.ask(spec) { [weak self, weak store] answer in
             guard answer == 0, let self, let store else { return }
@@ -171,7 +171,7 @@ final class TowerPairingModel: ObservableObject {
         if let http = response as? HTTPURLResponse, http.statusCode == 200 {
             let json = data.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
             if json?["ok"] as? Bool == true { return ("✓ Relay is reachable", true) }
-            return ("⚠ Reached \(base.host ?? "the server"), but it doesn’t look like a Page relay", false)
+            return ("⚠ Reached \(base.host ?? "the server"), but it doesn’t look like a Page Relay", false)
         }
         let code = (response as? HTTPURLResponse)?.statusCode ?? 0
         return ("✗ The relay answered HTTP \(code)", false)
@@ -252,7 +252,7 @@ struct NWPairingPage: View {
             NWQRTile(image: model.qr)
             VStack(alignment: .leading, spacing: 14) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("Scan this QR with Page on your iPhone")
+                    Text("Scan this QR with Page Relay on your iPhone")
                         .font(Font.system(size: 15, weight: .semibold))
                         .foregroundColor(P.textPrimary.color)
                     Text("Relay: \(host)")
@@ -301,7 +301,7 @@ struct NWPairingPage: View {
                         .font(Font.system(size: 12.5))
                         .foregroundColor(P.textSecondary.color)
                         .fixedSize(horizontal: false, vertical: true)
-                    NWNote(text: "The relay is a small Cloudflare Worker you deploy once (see Cloudflare/README.md in the Page repository). Pairing needs it so your phone and this Mac can reach each other.")
+                    NWNote(text: "The relay is a small Cloudflare Worker you deploy once (see Cloudflare/README.md in the Page Studio repository). Pairing needs it so your phone and this Mac can reach each other.")
                 }
             }
             NWButton(title: "Go to Macs & phones", kind: .primary, shortcut: .defaultAction) { store.selection = .macsPhones }

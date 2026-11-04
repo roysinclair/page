@@ -142,7 +142,7 @@ struct MoonModel: Equatable {
         let pct = status?.batteryPercent
         let onAC = status?.onAC == true
         var detail: String
-        if status == nil { detail = "no reading from your Mac" }
+        if status == nil { detail = "no reading from your computer" }
         else if onAC { detail = "on power" }
         else if let f = status?.forecast, f.minutes > 0 { detail = "on battery · cutoff in about \(MacBatteryForecast.duration(f.minutes))" }
         else if status?.onAC == false { detail = "on battery" }
@@ -259,7 +259,7 @@ struct LanesModel: Equatable {
         let axis = (0..<hours).map { "-\(hours - $0)h" } + ["now"]
         let observed = log.observedSpan(now: now, hours: hours)
         let note: String? = observed >= Double(hours) * 3600 * 0.95 ? nil
-            : "Drawn from what this iPhone has seen while Page was open. Earlier time is left blank."
+            : "Drawn from what this iPhone has seen while Page Relay was open. Earlier time is left blank."
         return LanesModel(groups: groups, axis: axis, coverageNote: note)
     }
 

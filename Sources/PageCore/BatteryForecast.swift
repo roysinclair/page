@@ -104,9 +104,9 @@ struct BatteryForecast: Equatable {
         switch action {
         case .pause, .afterTurn:
             let when = earlyPause ? "about \(earlyPauseWithin) min before the cutoff" : "then"
-            s += " \(n) mid-task; Page will ask \(busy == 1 ? "it" : "them") to pause \(when)."
+            s += " \(n) mid-task; Page Studio will ask \(busy == 1 ? "it" : "them") to pause \(when)."
         case .off:
-            s += " \(n) mid-task; Page will stop keeping the Mac awake then."
+            s += " \(n) mid-task; Page Power will stop keeping your computer awake then."
         }
         return s + " Plug in to keep them going."
     }

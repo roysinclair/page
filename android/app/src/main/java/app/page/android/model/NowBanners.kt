@@ -70,7 +70,7 @@ data class NowBanner(
                 out.add(
                     NowBanner(
                         "auth", Tone.ERROR, "key.slash", "This pairing no longer works",
-                        "Your relay rejected this phone's pairing token. The Mac probably generated a new one. Unpair and scan the new code.",
+                        "Your relay rejected this phone's pairing token. The computer probably generated a new one. Unpair and scan the new code.",
                         "Re-pair…", Action.REPAIR,
                     ),
                 )
@@ -85,8 +85,8 @@ data class NowBanner(
                 when (val p = i.presence) {
                     MacPresence.NeverConnected -> out.add(
                         NowBanner(
-                            "never", Tone.ERROR, "key.slash", "Your Mac hasn't connected with this pairing",
-                            "The relay has never seen Page on your Mac use this pairing code, so no pages can reach this phone. If you regenerated the token on your Mac, re-pair with the new code.",
+                            "never", Tone.ERROR, "key.slash", "Your computer hasn't connected with this pairing",
+                            "The relay has never seen Page Studio on your computer use this pairing code, so no pages can reach this phone. If you regenerated the token on your computer, re-pair with the new code.",
                             "Re-pair…", Action.REPAIR,
                         ),
                     )
@@ -95,16 +95,16 @@ data class NowBanner(
                         val last = p.lastSeen?.let { "Last seen ${RelativeTime.ago(it, i.now)}. " } ?: ""
                         out.add(
                             NowBanner(
-                                "offline", Tone.WARNING, "desktopcomputer.trianglebadge.exclamationmark", "Your Mac is offline",
-                                last + "New pages can't reach you until Page on your Mac reconnects to the relay." +
-                                    (if (repair) " If you regenerated the token on your Mac, re-pair this phone." else ""),
+                                "offline", Tone.WARNING, "desktopcomputer.trianglebadge.exclamationmark", "Your computer is offline",
+                                last + "New pages can't reach you until Page Studio on your computer reconnects to the relay." +
+                                    (if (repair) " If you regenerated the token on your computer, re-pair this phone." else ""),
                                 if (repair) "Re-pair…" else null, if (repair) Action.REPAIR else null,
                             ),
                         )
                     }
                     is MacPresence.Stale -> out.add(
                         NowBanner(
-                            "stale", Tone.WARNING, "desktopcomputer.trianglebadge.exclamationmark", "Your Mac stopped checking in",
+                            "stale", Tone.WARNING, "desktopcomputer.trianglebadge.exclamationmark", "Your computer stopped checking in",
                             "Last heartbeat ${RelativeTime.ago(p.lastSeen, i.now)}. It may be asleep or busy; pages may be delayed.",
                             null, null,
                         ),
@@ -116,7 +116,7 @@ data class NowBanner(
                 out.add(
                     NowBanner(
                         "notifications", Tone.WARNING, "bell.slash", "Notifications are off",
-                        "You won't be paged while Page is closed.", "Open Settings", Action.OPEN_NOTIFICATION_SETTINGS,
+                        "You won't be paged while Page Relay is closed.", "Open Settings", Action.OPEN_NOTIFICATION_SETTINGS,
                     ),
                 )
             }
@@ -143,40 +143,40 @@ data class SessionAvailabilityCopy(
         fun of(availability: SessionAvailability): SessionAvailabilityCopy = when (availability) {
             SessionAvailability.RelayTooOld -> SessionAvailabilityCopy(
                 "arrow.triangle.2.circlepath", Tone.WARNING, "Update your relay",
-                "Your relay (the Cloudflare Worker) doesn't support live sessions yet. Redeploy it from the latest Page release, then pull down to refresh. Pages keep working meanwhile.",
+                "Your relay (the Cloudflare Worker) doesn't support live sessions yet. Redeploy it from the latest Page Studio release, then pull down to refresh. Pages keep working meanwhile.",
                 "Check again", Action.RETRY, "Relay needs an update",
             )
             is SessionAvailability.NeedsRepair ->
                 if (availability.keyMismatch) SessionAvailabilityCopy(
-                    "key.slash", Tone.ERROR, "Re-pair with your Mac",
-                    "Live updates from your Mac can't be unlocked with this phone's key, so the pairing was probably regenerated on the Mac. Unpair, then on your Mac open Page → Pair phone… and scan the code.",
+                    "key.slash", Tone.ERROR, "Re-pair with your computer",
+                    "Live updates from your computer can't be unlocked with this phone's key, so the pairing was probably regenerated on your computer. Unpair, then on your computer open Page Studio → Pair phone… and scan the code.",
                     "Re-pair…", Action.REPAIR, "Pairing key changed",
                 ) else SessionAvailabilityCopy(
-                    "key", Tone.WARNING, "Re-pair with your Mac to see live sessions",
-                    "This pairing has no session key: it came from an older Page on your Mac, or was made before live sessions existed. Update Page on your Mac, unpair here, then open Page → Pair phone… on the Mac and scan the new code. Pages keep working meanwhile.",
+                    "key", Tone.WARNING, "Re-pair with your computer to see live sessions",
+                    "This pairing has no session key: it came from an older Page Studio on your computer, or was made before live sessions existed. Update Page Studio on your computer, unpair here, then open Page Studio → Pair phone… on your computer and scan the new code. Pages keep working meanwhile.",
                     "Re-pair…", Action.REPAIR, "Re-pair needed",
                 )
             SessionAvailability.MacOffline -> SessionAvailabilityCopy(
-                "desktopcomputer.trianglebadge.exclamationmark", Tone.WARNING, "Your Mac is offline",
-                "Live sessions show up while Page on your Mac is connected to the relay. Wake the Mac, or check that Page is running there.",
-                "Try again", Action.RETRY, "Mac offline",
+                "desktopcomputer.trianglebadge.exclamationmark", Tone.WARNING, "Your computer is offline",
+                "Live sessions show up while Page Studio on your computer is connected to the relay. Wake the computer, or check that Page Studio is running there.",
+                "Try again", Action.RETRY, "Computer offline",
             )
             SessionAvailability.ClockSkew -> SessionAvailabilityCopy(
                 "clock.badge.exclamationmark", Tone.WARNING, "Your clocks disagree",
-                "Updates from your Mac arrive more than 10 minutes old by this phone's clock, so they're ignored. Turn on automatic date and time on both your phone and your Mac.",
+                "Updates from your computer arrive more than 10 minutes old by this phone's clock, so they're ignored. Turn on automatic date and time on both your phone and your computer.",
                 "Try again", Action.RETRY, "Clock mismatch",
             )
             SessionAvailability.MacTooOld -> SessionAvailabilityCopy(
-                "arrow.down.app", Tone.WARNING, "Update Page on your Mac",
-                "Your Mac is online but isn't sending live sessions. Update Page on your Mac to the latest version, and check that remote sessions are turned on in its Preferences.",
-                "Check again", Action.RETRY, "Mac needs an update",
+                "arrow.down.app", Tone.WARNING, "Update Page Studio on your computer",
+                "Your computer is online but isn't sending live sessions. Update Page Studio on your computer to the latest version, and check that remote sessions are turned on in its Preferences.",
+                "Check again", Action.RETRY, "Computer needs an update",
             )
             SessionAvailability.MacDisabled -> SessionAvailabilityCopy(
-                "eye.slash", Tone.WARNING, "Live sessions are off on your Mac",
-                "Page on your Mac isn't sharing its sessions. Turn them back on in Page → Preferences → Phone on the Mac.",
-                "Check again", Action.RETRY, "Off on your Mac",
+                "eye.slash", Tone.WARNING, "Live sessions are off on your computer",
+                "Page Studio on your computer isn't sharing its sessions. Turn them back on in Page Studio → Preferences → Phone on your computer.",
+                "Check again", Action.RETRY, "Off on your computer",
             )
-            SessionAvailability.Waiting -> SessionAvailabilityCopy("hourglass", Tone.INFO, "Connecting to your Mac…", "", null, null, "Connecting…")
+            SessionAvailability.Waiting -> SessionAvailabilityCopy("hourglass", Tone.INFO, "Connecting to your computer…", "", null, null, "Connecting…")
             SessionAvailability.Ready -> SessionAvailabilityCopy("checkmark.circle", Tone.INFO, "Live", "", null, null, "Live")
         }
     }

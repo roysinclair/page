@@ -392,7 +392,7 @@ final class APIClient: NSObject, ObservableObject {
             authRejected = true
             state = .failed("The relay no longer accepts this pairing.")
         case 404:
-            state = .failed("The relay doesn't recognise this request (HTTP 404). Is the relay URL on your Mac right?")
+            state = .failed("The relay doesn't recognise this request (HTTP 404). Is the relay URL on your computer right?")
         default:
             state = .failed("The relay returned an error (HTTP \(status)).")
         }
@@ -409,8 +409,8 @@ final class APIClient: NSObject, ObservableObject {
         if isDevMode { return await simulateDevReply(interventionId) }
         #endif
         guard let creds = credentials(), let url = creds.url("reply", interventionId) else {
-            let outcome = ReplyOutcome.failed("Page isn't paired with a Mac.")
-            setDelivery(interventionId, .failed("Page isn't paired with a Mac."))
+            let outcome = ReplyOutcome.failed("Page Relay isn't paired with a computer.")
+            setDelivery(interventionId, .failed("Page Relay isn't paired with a computer."))
             return outcome
         }
         setDelivery(interventionId, .sending)
@@ -444,7 +444,7 @@ final class APIClient: NSObject, ObservableObject {
             applyClose(id: interventionId, reason: recentCloseReasons[interventionId])
         case .unauthorized:
             authRejected = true
-            setDelivery(interventionId, .failed("The relay no longer accepts this pairing. Re-pair with your Mac."))
+            setDelivery(interventionId, .failed("The relay no longer accepts this pairing. Re-pair with your computer."))
         case .retired(let why):
             markRetired(why)
         case .failed(let message):
@@ -469,7 +469,7 @@ final class APIClient: NSObject, ObservableObject {
         }
         #endif
         guard let creds = credentials(), let url = creds.url("reply", id) else {
-            store.noteRelayRetract(id: id, .failed("Page isn't paired with a Mac."))
+            store.noteRelayRetract(id: id, .failed("Page Relay isn't paired with a computer."))
             return
         }
         store.noteRelayRetract(id: id, .deleting)
@@ -524,7 +524,7 @@ final class APIClient: NSObject, ObservableObject {
     /// are handled like every other call.
     func postSessionCommand(body: Data) async -> SessionCommandOutcome {
         guard let creds = credentials(), let url = creds.url("sessions", "command") else {
-            return .failed("Page isn't paired with a Mac.")
+            return .failed("Page Relay isn't paired with a computer.")
         }
         var req = request(url, method: "POST", token: creds.token)
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -946,7 +946,7 @@ final class APIClient: NSObject, ObservableObject {
             } else {
                 // `reason` says what the Mac found (text in the input box): the words are Page's, never the Mac's raw text.
                 let reason = payload["reason"] as? String
-                setDelivery(id, .failed(ReplyRecoveryCopy.failure(reason: reason) ?? detail ?? "Your Mac couldn't deliver the reply."))
+                setDelivery(id, .failed(ReplyRecoveryCopy.failure(reason: reason) ?? detail ?? "Your computer couldn't deliver the reply."))
                 deliveryReasons[id] = reason
             }
 
@@ -976,7 +976,7 @@ final class APIClient: NSObject, ObservableObject {
             }
         }
         if error is DecodingError {
-            return "The relay sent data this version of Page doesn't understand."
+            return "The relay sent data this version of Page Relay doesn't understand."
         }
         return error.localizedDescription
     }

@@ -1,0 +1,22 @@
+---
+// One responsive <img> for any registered image: width/height from images.ts (no layout shift), a srcset of its
+// smaller copies, lazy unless `eager`.
+import { imageDims, imageSrc, imageSrcset } from '../data/images';
+interface Props { name: string; alt: string; sizes?: string; eager?: boolean; class?: string; style?: string }
+const { name, alt, sizes = '100vw', eager = false, class: cls, style } = Astro.props;
+const [w, h] = imageDims(name);
+const srcset = imageSrcset(name);
+---
+<img
+  src={imageSrc(name)}
+  srcset={srcset}
+  sizes={srcset ? sizes : undefined}
+  alt={alt}
+  width={w}
+  height={h}
+  loading={eager ? 'eager' : 'lazy'}
+  fetchpriority={eager ? 'high' : undefined}
+  decoding="async"
+  class={cls}
+  style={style}
+/>

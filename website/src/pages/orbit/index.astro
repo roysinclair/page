@@ -1,80 +1,276 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import PageHero from '../../components/PageHero.astro';
-import Shot from '../../components/Shot.astro';
-import { u, AURA_GITHUB, ORBIT_GUIDE, ORBIT_DEMO, BLOB } from '../../data/site';
+import Field from '../../components/Field.astro';
+import Window from '../../components/Window.astro';
+import Pic from '../../components/Pic.astro';
+import ProductIcon from '../../components/ProductIcon.astro';
+import Icon from '../../components/Icon.astro';
+import TrustBand from '../../components/TrustBand.astro';
+import Device from '../../components/Device.astro';
+import { u, AURA_GITHUB, ORBIT_GUIDE, ORBIT_DEMO, STUDIO_RELEASES, BLOB } from '../../data/site';
 ---
-<Layout current="orbit/" title="Page Orbit" description="Page Orbit builds, runs and fixes Anthropic Managed Agents with your own API key. Linked to Page Power, your phone is paged when an agent wants your approval or has finished.">
-  <PageHero label="Page Orbit" title="A control room for your AI agents." lede="Page Orbit is a free desktop app for Anthropic’s Managed Agents: agents that work in their own cloud sandbox, on their own or on a schedule. Build them, talk to them, see every step and every cent, and let a model diagnose what went wrong. Linked to Page Power, your phone is paged when an agent needs you.">
-    <Fragment slot="actions">
-      <a href={ORBIT_DEMO} rel="noopener" class="btn-primary">Explore the demo</a>
-      <a href={ORBIT_GUIDE} rel="noopener" class="btn-ghost">Page Orbit guide</a>
-    </Fragment>
-    <Shot eager name="orbit-session" alt="A Page Orbit session: the agent’s conversation with tool approvals on the left, and a timeline of every event with timing and cost on the right." />
-  </PageHero>
-
-  <section id="app" class="block-section">
-    <div class="wrap">
-      <p class="label">The app</p>
-      <h2 class="h2 mt-3 max-w-3xl">Build, run and fix agents, with the key you already have.</h2>
-      <p class="lede mt-5 max-w-3xl">Page Orbit talks straight to Anthropic with your own API key. No server, no account and no telemetry in between. It’s a desktop app for Windows, macOS and Linux; the demo runs in your browser with sample data.</p>
-      <div class="mt-12 grid gap-5 md:grid-cols-3">
-        <div class="card">
-          <h3 class="h3">Agents with versions</h3>
-          <ul class="list-dots mt-4 text-[15px]">
-            <li>Model, effort, instructions, tools and what needs your approval</li>
-            <li>MCP servers, custom tools, skills and teams of helper agents</li>
-            <li>Every save is a version: compare any two, roll back with one click</li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3 class="h3">Talk to them live</h3>
-          <ul class="list-dots mt-4 text-[15px]">
-            <li>Watch messages, tool calls and results as they happen</li>
-            <li>Allow or deny what an agent asks to do; stop it at any time</li>
-            <li>A timeline of every step, with timing, tokens and cost</li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3 class="h3">Find out why</h3>
-          <ul class="list-dots mt-4 text-[15px]">
-            <li>Diagnose: a model reads the session and explains what went wrong</li>
-            <li>Fixes come as a diff you apply as a new version</li>
-            <li>Schedules, credentials, memory and skills, all in one place</li>
-          </ul>
-        </div>
+<Layout current="orbit/" world="orbit" title="Page Orbit" og={{ image: 'img/og/orbit.webp', alt: 'Page Orbit: mission control for your AI agents. A live agent session with its timeline of events, timing and cost.' }} description="Page Orbit is a free desktop app for Anthropic’s Managed Agents: build agents with versions, talk to them live, see every step and every cent, and let a model diagnose what went wrong. Your key stays in your keychain. Linked to Page Power, your phone is paged when an agent wants your approval or has finished.">
+  <!-- ================================================================ HERO -->
+  <section class="relative isolate overflow-hidden pb-20 pt-14 sm:pb-28 sm:pt-20">
+    <Field layout="hero" />
+    <div class="wrap-wide text-center">
+      <div class="flex justify-center"><ProductIcon product="orbit" size={84} glow label="Page Orbit" /></div>
+      <p class="label mt-7">Page Orbit · free · Windows, macOS and Linux</p>
+      <h1 class="display mx-auto mt-5 max-w-5xl">Mission control for <span class="text-world">your AI agents.</span></h1>
+      <p class="lede mx-auto mt-6 max-w-2xl">A desktop app for Anthropic’s Managed Agents: agents that work in their own cloud sandbox, on their own or on a schedule. Build them, talk to them, see every step and every cent, and let a model diagnose what went wrong.</p>
+      <div class="mt-9 flex flex-wrap justify-center gap-3">
+        <a href={ORBIT_DEMO} rel="noopener" class="btn-primary btn-lg"><Icon name="play" size={16} /> Try the demo</a>
+        <a href={STUDIO_RELEASES} rel="noopener" class="btn-ghost btn-lg"><Icon name="download" size={18} /> Download</a>
       </div>
-      <div class="mt-12 grid items-start gap-6 md:grid-cols-2">
-        <Shot name="orbit-diagnose" alt="Diagnose in Page Orbit: a model explains what happened in a session and proposes a change to the agent as a diff, with an Apply button." caption="Diagnose explains a session and proposes a fix." />
-        <Shot name="orbit-agent" alt="The Page Orbit agent editor: instructions, and a table of sandbox tools with Allow, Ask or Auto for each." caption="Each tool can run freely, ask you first, or let a safety check decide." />
+      <p class="fine mt-5"><a class="link" href={ORBIT_GUIDE} rel="noopener">Read the guide</a> · the demo runs in your browser with a sample workspace; nothing is sent anywhere</p>
+    </div>
+
+    <div class="wrap-wide stage mt-14 sm:mt-20">
+      <div class="orbit-stage stage-glow tilt">
+        <Window name="orbit/session" title="Page Orbit" eager sizes="(min-width: 1320px) 1180px, 94vw" alt="A Page Orbit session called Release notes for v4.2: an agent's release notes, grouped into New, Improved and Fixed with a table of changes, after a notice that the model was overloaded and is retrying; on the right, a timeline of every event with model request durations, tokens and cost." />
+        <div class="float-ui floaty o-versions" style="--dl:-2.5s">
+          <Pic name="orbit/versions" sizes="(min-width: 1024px) 300px, 44vw" alt="An agent's versions: v3 changed model (current), v2 changed system, v1 first version." />
+        </div>
+        <div class="float-ui floaty o-restore" style="--dl:-5s">
+          <Pic name="orbit/restore" sizes="(min-width: 1024px) 340px, 50vw" alt="Restore this version, Talk to v2 and Full JSON buttons." />
+        </div>
       </div>
     </div>
   </section>
 
-  <section id="link" class="block-section border-t border-white/[0.06]">
-    <div class="wrap">
-      <p class="label">The Page Power link</p>
-      <h2 class="h2 mt-3 max-w-3xl">Your agents work in the cloud. Page Power tells your phone when they need you.</h2>
-      <p class="lede mt-5 max-w-3xl">On a Mac, Page Orbit can hand its sessions to Page Power. An agent that stops to ask for approval, or one that finishes while you’re away, pages your phone like Claude Code and Codex do.</p>
-      <div class="mt-12 grid gap-5 md:grid-cols-3">
-        <div class="card card-tone tone-amber"><h3 class="h3">Approvals on your phone</h3><p class="body mt-3">When an agent wants to run a command or use a tool that asks first, you see what and why, and Allow once or Deny from the lock screen.</p></div>
-        <div class="card card-tone tone-teal"><h3 class="h3">Finished, wherever you are</h3><p class="body mt-3">A session that finishes while you’re away from the Mac pages you with the end of the agent’s last message. Reply to give it its next task.</p></div>
-        <div class="card card-tone tone-sky"><h3 class="h3">Scheduled runs don’t stall</h3><p class="body mt-3">A scheduled agent that stops for approval would wait forever with nobody watching. Now it waits for you, wherever you are.</p></div>
+  <!-- ================================================================ TRUST -->
+  <section class="pb-14 sm:pb-20">
+    <div class="wrap-wide" data-reveal>
+      <TrustBand items={[
+        { icon: 'key', title: 'Your key, your keychain', body: 'It never enters the page. Page Aura and Page Orbit share one entry.' },
+        { icon: 'shield', title: 'Only api.anthropic.com', body: 'A strict content security policy with the hash of every script.' },
+        { icon: 'server', title: 'No server, no sign-up', body: 'Your agents live in your own Anthropic workspace.' },
+        { icon: 'lock', title: 'Asks before it acts', body: 'Careful defaults: commands and file changes wait for you.' },
+        { icon: 'eye', title: 'Secrets are write-only', body: 'Vault secrets are sent once, never stored or shown.' },
+      ]} />
+    </div>
+  </section>
+
+  <!-- ================================================================ BUILD / RUN / SEE / FIX -->
+  <section id="app" class="py-20 sm:py-28">
+    <div class="wrap-wide">
+      <div class="sec-head center" data-reveal>
+        <p class="label">The app</p>
+        <h2 class="h2">Build. Run. See. <span class="text-world">Fix.</span></h2>
+        <p class="lede mx-auto">The Console lets you do some of this. Page Orbit puts all of it in one place, with a focus on seeing what an agent did and making it better.</p>
       </div>
 
-      <div class="mt-14 grid items-start gap-10 lg:grid-cols-2">
-        <div>
+      <!-- 01 BUILD -->
+      <div class="chapter mt-20 lg:mt-28">
+        <div class="chapter-copy" data-reveal>
+          <span class="chapter-n">01</span>
+          <p class="label mt-6">Build</p>
+          <h3 class="h2 mt-3 !text-[32px] sm:!text-[42px]">Agents with versions.</h3>
+          <p class="lede mt-5">Model, effort, instructions, tools and what needs your approval. MCP servers, custom tools, skills and teams of helper agents.</p>
+          <ul class="list-dots mt-6">
+            <li><strong>Every save is a version.</strong> Compare any two, roll back with one click.</li>
+            <li><strong>Allow, Ask or Auto</strong> for each tool: run freely, ask you first, or let a safety check decide.</li>
+            <li>If someone else saved in the meantime, you’re told instead of overwriting them.</li>
+          </ul>
+        </div>
+        <div class="chapter-vis halo" data-reveal="scale" style="--d:100ms">
+          <div class="relative">
+            <Window name="orbit/agent" title="Page Orbit · Agents" sizes="(min-width: 1024px) 700px, 92vw" alt="The Page Orbit agent editor for a Release manager agent at version 3: its instructions, and a table of sandbox tools where bash is set to Ask, read to Allow and write to Auto." />
+            <div class="float-ui floaty -bottom-10 -left-3 w-[62%] sm:-left-10" style="--dl:-2s">
+              <Pic name="orbit/tools" sizes="(min-width: 1024px) 440px, 62vw" alt="Sandbox tools: bash on Ask, read on Allow, write on Auto." />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 02 RUN -->
+      <div class="chapter flip mt-28 lg:mt-36">
+        <div class="chapter-copy" data-reveal>
+          <span class="chapter-n">02</span>
+          <p class="label mt-6">Run</p>
+          <h3 class="h2 mt-3 !text-[32px] sm:!text-[42px]">Talk to them live.</h3>
+          <p class="lede mt-5">Talk to it starts a session. Watch the agent think, call tools and reply as it happens, and allow or deny what it asks to do.</p>
+          <ul class="list-dots mt-6">
+            <li>Add an instruction mid-session, change its tools for that session, add or remove files, or stop it.</li>
+            <li><strong>Outcome:</strong> give it a goal and a rubric, and a separate grader sends the work back until it passes.</li>
+            <li>A <strong>spending cap</strong> pauses a session at the limit you set.</li>
+          </ul>
+        </div>
+        <div class="chapter-vis halo" data-reveal="scale" style="--d:100ms">
+          <Window name="orbit/overview" title="Page Orbit · Mission control" light sizes="(min-width: 1024px) 700px, 92vw" alt="Mission control in the light theme: recent sessions with their status (running or idle) and cost, and agents with their model and version, including one with a team." />
+        </div>
+      </div>
+
+      <!-- 03 SEE -->
+      <div class="chapter mt-28 lg:mt-36">
+        <div class="chapter-copy" data-reveal>
+          <span class="chapter-n">03</span>
+          <p class="label mt-6">See</p>
+          <h3 class="h2 mt-3 !text-[32px] sm:!text-[42px]">Every step. <span class="text-world">Every cent.</span></h3>
+          <p class="lede mt-5">The timeline lists every event: messages, tool calls and results, model requests with duration, tokens and estimated cost, errors and retries. Click any event for the raw JSON.</p>
+          <ul class="list-dots mt-6">
+            <li><strong>Usage</strong> shows Anthropic’s own list cost, tokens, cache use, active time, tool calls and errors.</li>
+            <li>Helpers each have a live thread, and background workflows show their phases.</li>
+          </ul>
+        </div>
+        <div class="chapter-vis halo" data-reveal="scale" style="--d:100ms">
+          <div class="see-vis">
+            <div class="see-tl gb">
+              <Pic name="orbit/timeline" sizes="(min-width: 1024px) 340px, 60vw" alt="The session timeline: agent tool use, status changes, tool confirmations, model requests with their duration, tokens and cost, and a retried overloaded error, each with its time in seconds." />
+            </div>
+            <div class="see-stats" aria-label="What the timeline shows for each model request">
+              <div class="stat"><Icon name="clock" /><strong>Timing</strong><span>when each event happened, and how long each request took</span></div>
+              <div class="stat"><Icon name="layers" /><strong>Tokens</strong><span>in, out and cached, per request</span></div>
+              <div class="stat"><Icon name="coin" /><strong>Cost</strong><span>per request, and the session’s list cost</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 04 FIX -->
+      <div class="chapter flip mt-28 lg:mt-36">
+        <div class="chapter-copy" data-reveal>
+          <span class="chapter-n">04</span>
+          <p class="label mt-6">Fix</p>
+          <h3 class="h2 mt-3 !text-[32px] sm:!text-[42px]">Diagnose: <span class="text-world">find out why.</span></h3>
+          <p class="lede mt-5">Diagnose sends the session and the agent’s setup to a model you choose. It explains what happened, points to the exact events, and proposes fixes as a diff you can apply as a new version.</p>
+          <ul class="list-dots mt-6">
+            <li>Ask follow-up questions; its cost is shown in the corner.</li>
+            <li>Nothing changes unless you click Apply, and only for new sessions.</li>
+            <li>It never sees your vault secrets: the API never returns them.</li>
+          </ul>
+        </div>
+        <div class="chapter-vis halo" data-reveal="scale" style="--d:100ms">
+          <figure class="win gb m-0">
+            <Pic name="orbit/diagnose" sizes="(min-width: 1024px) 640px, 92vw" alt="Diagnose: a suggestion titled Let it read GitHub without asking, explaining that both approvals in the session were for read-only calls, a diff to the agent's instructions adding 'Only use bash for read-only git commands', and Apply as version 4." />
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ EVERYTHING ELSE (BENTO) -->
+  <section class="relative isolate overflow-hidden py-20 sm:py-28">
+    <Field layout="center" full />
+    <div class="wrap-wide">
+      <div class="sec-head" data-reveal>
+        <p class="label">All in one place</p>
+        <h2 class="h2">Schedules, vaults, memory, <span class="text-world">environments and skills.</span></h2>
+      </div>
+      <div class="mt-14 grid gap-4 md:grid-cols-6">
+        <article class="tile md:col-span-6 lg:col-span-4" data-reveal>
+          <p class="kicker">Schedules</p>
+          <h3>Agents that run on a timetable.</h3>
+          <p class="max-w-lg">A cron schedule in your time zone, or Run now. See every run, open its session, pause and resume.</p>
+          <div class="tile-media bleed bleed-r ml-auto w-[97%]">
+            <Pic name="orbit/schedule" sizes="(min-width: 1024px) 760px, 92vw" alt="A schedule called Weekly release notes draft, active on Mondays at 9:00 Pacific/Auckland, with Run now and Pause, and two scheduled runs: one started on version 3, one failed on version 2 with a rate-limit error." />
+          </div>
+        </article>
+        <article class="tile md:col-span-3 lg:col-span-2" data-reveal style="--d:80ms">
+          <span class="ico"><Icon name="note" /></span>
+          <h3 class="mt-6">Skills</h3>
+          <p>Upload a folder with a <code class="code-inline">SKILL.md</code>, keep versions, and switch it on in any agent.</p>
+          <span class="ico mt-8"><Icon name="agent" /></span>
+          <h3 class="mt-6">Teams</h3>
+          <p>An agent with a team can hand work to helper agents, start background workflows and consult an advisor model.</p>
+        </article>
+        <article class="tile md:col-span-3 lg:col-span-3" data-reveal>
+          <p class="kicker">Vaults</p>
+          <h3>Logins your agents can use, never read.</h3>
+          <p>MCP tokens, including OAuth with automatic refresh, and secret variables. Secrets are write-only.</p>
+          <div class="tile-media bleed bleed-r">
+            <Pic name="orbit/vault" sizes="(min-width: 1024px) 560px, 92vw" alt="A vault called Team GitHub with two credentials marked secret set, a GitHub MCP connection and a Sentry API token, each with Replace secret, and a note that secrets are write-only." />
+          </div>
+        </article>
+        <article class="tile md:col-span-3 lg:col-span-3" data-reveal style="--d:80ms">
+          <p class="kicker">Environments</p>
+          <h3>Decide what the sandbox can reach.</h3>
+          <p>Limit internet access to the sites you list, allow package managers, and pre-install packages.</p>
+          <div class="tile-media bleed bleed-r">
+            <Pic name="orbit/environment" sizes="(min-width: 1024px) 560px, 92vw" alt="An environment called python-data with limited network access to api.github.com and pypi.org, package managers and the agent's MCP servers allowed, and pandas and matplotlib pre-installed." />
+          </div>
+        </article>
+        <article class="tile md:col-span-6" data-reveal>
+          <div class="grid items-center gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+            <div>
+              <p class="kicker">Memory</p>
+              <h3>A memory that learns, with full history.</h3>
+              <p>Folders of notes agents read and update across sessions. Edit them, see who changed what, restore or redact old versions, and see which sessions used them.</p>
+            </div>
+            <div class="tile-media !mt-0">
+              <Pic name="orbit/memory" sizes="(min-width: 1024px) 700px, 92vw" alt="A memory store called Release playbook in the light theme: three memory files, the voice guide open in an editor, and its history: modified by a session, created by a person." />
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ DESKTOP ONLY -->
+  <section class="py-20 sm:py-24">
+    <div class="wrap-wide grid items-center gap-10 lg:grid-cols-2">
+      <div data-reveal>
+        <p class="label">Why desktop only?</p>
+        <h2 class="h2 mt-4">Try it in your browser. <span class="text-world">Run it on your desktop.</span></h2>
+        <p class="lede mt-5">Anthropic lets web pages call its chat API directly, but not its Managed Agents API. The desktop app sends its requests from the app itself, so it isn’t affected.</p>
+        <p class="body mt-4">Opened in a browser, Page Orbit offers a demo: a sample workspace that runs entirely in the page, with sessions that reply live, approvals, Diagnose, schedules and memory. Nothing is sent anywhere.</p>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a href={ORBIT_DEMO} rel="noopener" class="btn-primary">Explore the demo</a>
+          <a href={STUDIO_RELEASES} rel="noopener" class="btn-ghost">Download Page Orbit</a>
+        </div>
+      </div>
+      <div class="card !p-7 sm:!p-9" data-reveal style="--d:100ms">
+        <h3 class="h3">Getting started</h3>
+        <ol class="steps mt-6">
+          <li>You need an Anthropic API key with Managed Agents available for your workspace.</li>
+          <li>Install the desktop app, and add your key. If the Page Aura desktop app already has it, Page Orbit picks it up.</li>
+          <li><strong>Agents ▸ New agent.</strong> The defaults are careful: it reads and searches files freely, but asks before running commands or changing files.</li>
+          <li><strong>Talk to it.</strong> The first time, Page Orbit offers to create an environment for it.</li>
+        </ol>
+        <p class="fine mt-6">The installers aren’t code-signed; build it yourself or check the release’s SHA256 checksums.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ PAGE POWER LINK -->
+  <section id="link" class="relative isolate overflow-hidden py-20 sm:py-28">
+    <Field layout="left" full />
+    <div class="wrap-wide">
+      <div class="grid items-center gap-14 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+        <div data-reveal>
+          <div class="flex items-center gap-3">
+            <ProductIcon product="orbit" size={40} />
+            <span class="h-px w-8 bg-gradient-to-r from-orbit-magenta to-pulse-teal" aria-hidden="true"></span>
+            <ProductIcon product="power" size={40} />
+          </div>
+          <p class="label mt-6">The Page Power link</p>
+          <h2 class="h2 mt-4">Your agents work in the cloud. <span class="text-world">Your phone tells you when they need you.</span></h2>
+          <p class="lede mt-5">On a Mac, Page Orbit can hand its sessions to Page Power. An agent that stops to ask for approval, or one that finishes while you’re away, pages your phone like Claude Code and Codex do.</p>
+          <div class="mt-10 grid gap-4 sm:grid-cols-3">
+            <div class="card !p-5"><span class="ico !h-10 !w-10"><Icon name="bell" size={20} /></span><h3 class="mt-4 text-[17px] font-bold">Approvals</h3><p class="body mt-1.5 text-[14.5px]">See what and why, and Allow once or Deny from the lock screen.</p></div>
+            <div class="card !p-5"><span class="ico !h-10 !w-10"><Icon name="check" size={20} /></span><h3 class="mt-4 text-[17px] font-bold">Finished</h3><p class="body mt-1.5 text-[14.5px]">The end of the agent’s last message. Reply to give it its next task.</p></div>
+            <div class="card !p-5"><span class="ico !h-10 !w-10"><Icon name="clock" size={20} /></span><h3 class="mt-4 text-[17px] font-bold">Scheduled runs</h3><p class="body mt-1.5 text-[14.5px]">An agent that stops for approval no longer waits forever with nobody watching.</p></div>
+          </div>
+        </div>
+        <div class="world-power relative mx-auto w-full max-w-[320px]" data-reveal="scale" style="--d:120ms">
+          <div class="rings" aria-hidden="true"><i style="--r:175%;--dl:0s"></i><i style="--r:175%;--dl:-2s"></i><i style="--r:175%;--dl:-4s"></i></div>
+          <Device name="power/now" island class="relative" sizes="(min-width: 1024px) 320px, 70vw" alt="Page Power's Now screen on iPhone: 2 need you, 5 working, with the runway, and a decision card to delete every Dev build that needs a hold to approve." />
+        </div>
+      </div>
+
+      <div class="mt-16 grid items-start gap-5 lg:grid-cols-2">
+        <div class="card !p-7 sm:!p-9">
           <h3 class="h3">Turn it on</h3>
-          <ol class="mt-4 list-decimal space-y-3 pl-6 text-ink-2 marker:font-mono marker:text-pulse-teal">
+          <ol class="steps mt-6">
             <li>Run Page Power on the same Mac.</li>
             <li>In Page Orbit, open Settings ▸ <strong>Page Power on this Mac</strong> and switch on <strong>Link Page Orbit to Page Power</strong>.</li>
             <li>The line under the switch reads <em>Connected to Page Power</em>, or <em>Waiting for Page Power</em> while it retries.</li>
           </ol>
-          <p class="fine mt-4">In Page Power, Preferences ▸ Agents ▸ <strong>Page Orbit</strong> must be on. It is on by default, because it only opens a local socket. The opt-in lives in Page Orbit, where the link is off by default. It exists only in the macOS desktop app. Page Power never keeps the Mac awake for Page Orbit: its agents run in Anthropic’s cloud.</p>
+          <p class="fine mt-6">In Page Power, Preferences ▸ Agents ▸ <strong>Page Orbit</strong> must be on. It is on by default, because it only opens a local socket. The opt-in lives in Page Orbit, where the link is off by default. It exists only in the macOS desktop app. Page Power never keeps the Mac awake for Page Orbit: its agents run in Anthropic’s cloud.</p>
         </div>
-        <div>
+        <div class="card !p-7 sm:!p-9">
           <h3 class="h3">What leaves the Mac</h3>
-          <p class="body mt-4">Page Orbit never talks to the relay. It talks to Page Power over a Unix socket on the same Mac, readable only by you. Page Power then sends, through <strong>your own</strong> Page Relay to <strong>your</strong> phone:</p>
+          <p class="body mt-4">Page Orbit never talks to the relay. It talks to Page Power over a Unix socket on the same Mac, readable only by you. Page Power then sends, through <strong class="text-ink">your own</strong> Page Relay to <strong class="text-ink">your</strong> phone:</p>
           <ul class="list-dots mt-4">
             <li>the titles of sessions that are working or waiting on you, and their agent’s name;</li>
             <li>the tool an agent wants to use, with its input clipped and redacted by Page Power;</li>
@@ -83,12 +279,68 @@ import { u, AURA_GITHUB, ORBIT_GUIDE, ORBIT_DEMO, BLOB } from '../../data/site';
           <p class="fine mt-4">Never sent: your API key, transcripts or files. The protocol is documented in <a class="link" href={BLOB + 'docs/ORBIT-LINK.md'} rel="noopener">docs/ORBIT-LINK.md</a>.</p>
         </div>
       </div>
+    </div>
+  </section>
 
-      <div class="mt-10 flex flex-wrap gap-3">
-        <a href={ORBIT_DEMO} rel="noopener" class="btn-primary">Explore the demo</a>
-        <a href={AURA_GITHUB + '/releases/latest'} rel="noopener" class="btn-ghost">Download Page Orbit</a>
-        <a href={u('mac/')} class="btn-ghost">Page Power for Mac</a>
+  <!-- ================================================================ CTA -->
+  <section class="pb-24 pt-6 sm:pb-32">
+    <div class="wrap-wide">
+      <div class="cta-panel text-center" data-reveal="scale">
+        <div class="flex justify-center"><ProductIcon product="orbit" size={64} glow /></div>
+        <h2 class="h2 mx-auto mt-7 max-w-3xl">Take the controls. <span class="text-world">Start with the demo.</span></h2>
+        <p class="lede mx-auto mt-5 max-w-xl">A sample workspace in your browser, then the desktop app for Windows, macOS or Linux.</p>
+        <div class="mt-9 flex flex-wrap justify-center gap-3">
+          <a href={ORBIT_DEMO} rel="noopener" class="btn-primary btn-lg">Explore the demo</a>
+          <a href={STUDIO_RELEASES} rel="noopener" class="btn-ghost btn-lg">Download</a>
+          <a href={ORBIT_GUIDE} rel="noopener" class="btn-ghost btn-lg">Read the guide</a>
+        </div>
+        <p class="fine mt-7"><a class="link" href={AURA_GITHUB} rel="noopener">Page Orbit on GitHub</a> · <a class="link" href={u('aura/')}>Page Aura</a> · <a class="link" href={u('mac/')}>Page Power for Mac</a></p>
       </div>
     </div>
   </section>
 </Layout>
+
+<style>
+  .orbit-stage { position: relative; max-width: 1180px; margin: 0 auto; }
+  .o-versions { left: -3%; bottom: 8%; width: 25%; }
+  .o-restore { right: 5%; bottom: -5%; width: 30%; }
+  @media (max-width: 639px) {
+    .o-versions { left: -2%; bottom: -16%; width: 50%; }
+    .o-restore { right: -2%; bottom: -12%; width: 46%; }
+  }
+
+  .chapter { display: grid; gap: 48px; align-items: center; }
+  @media (min-width: 1024px) {
+    .chapter { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 72px; }
+    .chapter.flip { grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); }
+    .chapter.flip .chapter-copy { order: 2; }
+    .chapter:not(.flip) .chapter-vis { margin-right: -48px; }
+    .chapter.flip .chapter-vis { margin-left: -48px; }
+  }
+  .chapter-n {
+    display: inline-grid; place-items: center; width: 52px; height: 52px; border-radius: 16px;
+    font: 700 16px/1 theme('fontFamily.mono'); color: #fff; background-image: var(--wbtn);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 14px 30px -12px color-mix(in srgb, var(--w2) 90%, transparent);
+  }
+
+  .see-vis { display: grid; gap: 20px; align-items: center; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 640px) { .see-vis { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr); } }
+  .see-tl { position: relative; overflow: hidden; border-radius: 22px; max-height: 560px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 50px 100px -40px rgba(0,0,0,0.95), 0 30px 100px -50px color-mix(in srgb, var(--w2) 80%, transparent);
+    -webkit-mask-image: linear-gradient(#000 78%, transparent); mask-image: linear-gradient(#000 78%, transparent); }
+  .see-tl :global(img) { display: block; width: 100%; height: auto; }
+  .see-stats { display: grid; gap: 12px; }
+  .stat { display: grid; grid-template-columns: auto 1fr; column-gap: 14px; align-items: center; padding: 18px 20px; border-radius: 20px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015)); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
+  .stat :global(svg) { grid-row: span 2; color: #e78ae6; }
+  .stat strong { font-size: 17px; font-weight: 650; }
+  .stat span { font-size: 14px; color: rgba(255,255,255,0.62); }
+
+  .steps { counter-reset: s; display: grid; gap: 16px; }
+  .steps li { counter-increment: s; position: relative; padding-left: 44px; color: rgba(255,255,255,0.72); line-height: 1.55; }
+  .steps li::before {
+    content: counter(s); position: absolute; left: 0; top: -2px; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px;
+    font: 700 13px/1 theme('fontFamily.mono'); color: var(--wink); background-image: var(--wbtn);
+  }
+  .steps strong { color: #fff; font-weight: 600; }
+</style>

@@ -1,0 +1,21 @@
+---
+// The trust band: what is true of the product, in short, each with an icon. Facts only.
+import Icon from './Icon.astro';
+type Item = { icon: string; title: string; body: string };
+interface Props { items: Item[]; class?: string; label?: string }
+const { items, class: cls = '', label = 'What you can count on' } = Astro.props;
+const cols = items.length >= 5 ? 'five sm:grid-cols-2 lg:grid-cols-5' : items.length === 4 ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3';
+---
+<section aria-label={label} class={cls}>
+  <div class={`trust grid-cols-1 ${cols}`}>
+    {items.map((it) => (
+      <div>
+        <span class="ico !h-10 !w-10 !rounded-xl"><Icon name={it.icon as any} size={20} /></span>
+        <div class="min-w-0">
+          <h3>{it.title}</h3>
+          <p>{it.body}</p>
+        </div>
+      </div>
+    ))}
+  </div>
+</section>

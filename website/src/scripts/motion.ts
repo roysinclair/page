@@ -302,12 +302,76 @@ function initDuskDawn() {
   }, 0.5);
 }
 
+// ---- 6. Studio motion: scroll reveals and the tilting stage ------------------------------------------------
+// Anything marked [data-reveal] rises in once as it enters the viewport. Cards, tiles and section heads further
+// down the page join in automatically, staggered with their siblings; anything already on screen is left alone,
+// so nothing visible ever blinks out.
+function initReveal() {
+  const auto = [...document.querySelectorAll<HTMLElement>('main .card, main .tile, main .sec-head, main .glass-shot')]
+    .filter((el) => !el.closest('[data-reveal], [data-motion], .fa-item') && el.getBoundingClientRect().top > innerHeight * 0.9);
+  auto.forEach((el) => {
+    el.dataset.reveal = '';
+    const sibs = el.parentElement ? [...el.parentElement.children].filter((c) => (c as HTMLElement).dataset.reveal !== undefined) : [];
+    const i = sibs.indexOf(el);
+    if (i > 0 && !el.style.getPropertyValue('--d')) el.style.setProperty('--d', `${Math.min(i, 5) * 80}ms`);
+  });
+  const els = document.querySelectorAll<HTMLElement>('[data-reveal]');
+  if (!('IntersectionObserver' in window)) { els.forEach((e) => e.classList.add('is-in')); return; }
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) if (e.isIntersecting) { io.unobserve(e.target); e.target.classList.add('is-in'); }
+  }, { threshold: 0.08, rootMargin: '0px 0px -6% 0px' });
+  els.forEach((el) => {
+    if (el.getBoundingClientRect().top < innerHeight) el.classList.add('is-in'); else io.observe(el);
+  });
+}
+
+// A hero screenshot leans back and settles flat as it scrolls up into view. Eased towards the scroll position
+// every frame, so it also glides in on load.
+function initTilt() {
+  const els = [...document.querySelectorAll<HTMLElement>('.tilt')];
+  if (!els.length) return;
+  const cur = els.map(() => 1);
+  let raf = 0;
+  const target = (el: HTMLElement) => {
+    const top = el.getBoundingClientRect().top;
+    return clamp01((top - innerHeight * 0.1) / (innerHeight * 0.6));
+  };
+  const step = () => {
+    raf = 0;
+    let moving = false;
+    els.forEach((el, i) => {
+      const t = target(el);
+      const next = cur[i] + (t - cur[i]) * 0.09;
+      cur[i] = Math.abs(next - t) < 0.002 ? t : next;
+      if (cur[i] !== t) moving = true;
+      el.style.setProperty('--tilt', cur[i].toFixed(4));
+    });
+    if (moving) raf = requestAnimationFrame(step);
+  };
+  const kick = () => { if (!raf) raf = requestAnimationFrame(step); };
+  addEventListener('scroll', kick, { passive: true });
+  addEventListener('resize', kick);
+  kick();
+}
+
+// Ambient loops (aurora fields, rings, floating crops, the flow's comets) pause while they are off screen.
+function initPauseOffscreen() {
+  if (!('IntersectionObserver' in window)) return;
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) e.target.classList.toggle('paused', !e.isIntersecting);
+  }, { rootMargin: '120px 0px' });
+  document.querySelectorAll('.field, .rings, .flow, .floaty, .text-spectrum').forEach((el) => io.observe(el));
+}
+
 // ---- go ----------------------------------------------------------------------------------------------------
 if (ENABLED) {
   root.classList.add('motion-live');
   initApproach();
   initThread();
   initDuskDawn();
+  initReveal();
+  initTilt();
+  initPauseOffscreen();
   // Printing mid-animation: jump every one-shot to its end.
   addEventListener('beforeprint', () => document.getAnimations().forEach((a) => {
     if (a.effect?.getComputedTiming().iterations !== Infinity) a.finish();

@@ -1,0 +1,33 @@
+---
+// The aurora behind a hero or a product world: soft blobs in the world's colours (--w1..--w4) that drift slowly
+// when motion is allowed (styles/motion.css, .field). `stars` adds a thin star field. Purely decorative.
+interface Props { class?: string; stars?: boolean; full?: boolean; layout?: 'hero' | 'left' | 'right' | 'center' }
+const { class: cls = '', stars = true, full = false, layout = 'hero' } = Astro.props;
+const blobs = {
+  hero: [
+    ['var(--w1)', '-12%', '-30%', '70vw', '30%', '26s', '0s'],
+    ['var(--w2)', '38%', '-38%', '64vw', '30%', '30s', '-6s'],
+    ['var(--w3)', '62%', '-6%', '56vw', '28%', '24s', '-12s'],
+    ['var(--w4)', '8%', '24%', '46vw', '18%', '34s', '-3s'],
+  ],
+  left: [
+    ['var(--w1)', '-22%', '-10%', '62vw', '38%', '26s', '0s'],
+    ['var(--w3)', '-4%', '30%', '52vw', '30%', '32s', '-8s'],
+    ['var(--w2)', '30%', '0%', '40vw', '20%', '28s', '-4s'],
+  ],
+  right: [
+    ['var(--w2)', '46%', '-14%', '62vw', '36%', '28s', '0s'],
+    ['var(--w3)', '62%', '30%', '52vw', '32%', '32s', '-9s'],
+    ['var(--w1)', '30%', '10%', '40vw', '18%', '24s', '-4s'],
+  ],
+  center: [
+    ['var(--w1)', '0%', '-10%', '58vw', '26%', '28s', '0s'],
+    ['var(--w2)', '30%', '10%', '58vw', '26%', '30s', '-7s'],
+    ['var(--w3)', '52%', '-14%', '56vw', '26%', '26s', '-12s'],
+  ],
+}[layout];
+---
+<div class={`field ${full ? 'full' : ''} ${cls}`} aria-hidden="true">
+  {blobs.map(([c, x, y, s, a, t, dl]) => <i style={`--c:${c};--x:${x};--y:${y};--s:${s};--a:${a};--t:${t};--dl:${dl}`}></i>)}
+  {stars && <b></b>}
+</div>

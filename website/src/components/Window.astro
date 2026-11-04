@@ -1,0 +1,12 @@
+---
+// A real app screenshot in a neutral desktop window (the apps run on Windows, macOS and Linux, so no vendor
+// chrome), with a gradient hairline and a glow in the page's world colours.
+import Pic from './Pic.astro';
+interface Props { name: string; alt: string; title?: string; sizes?: string; eager?: boolean; class?: string; light?: boolean; style?: string }
+const { name, alt, title, sizes, eager, class: cls = '', light = false, style } = Astro.props;
+---
+<figure class={`win gb m-0 ${light ? 'light' : ''} ${cls}`} style={style}>
+  <div class="win-bar" aria-hidden="true"><i></i><i></i><i></i>{title && <span>{title}</span>}</div>
+  <Pic name={name} alt={alt} sizes={sizes} eager={eager} />
+  <slot />
+</figure>

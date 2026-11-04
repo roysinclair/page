@@ -8,7 +8,7 @@ const [w, h] = imageDims(name);
 const ratio = (h * crop) / w;
 ---
 <figure class={`phone ${cls}`} style={width ? `max-width:${width}px` : undefined}>
-  <div class="overflow-hidden rounded-[28px] ring-1 ring-white/10 shadow-[0_30px_60px_-30px_rgba(0,0,0,.9)]" style={`aspect-ratio:${1 / ratio};`}>
+  <div class="phone-screen overflow-hidden rounded-[30px]" style={`aspect-ratio:${1 / ratio};`}>
     <img
       src={imageSrc(name)}
       alt={alt}
@@ -21,3 +21,10 @@ const ratio = (h * crop) / w;
     />
   </div>
 </figure>
+
+<style>
+  .phone-screen {
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.12), 0 0 0 6px #0d0f14, 0 0 0 7px rgba(255,255,255,0.08),
+      0 50px 90px -40px rgba(0,0,0,0.95), 0 30px 90px -50px color-mix(in srgb, var(--w2) 80%, transparent);
+  }
+</style>

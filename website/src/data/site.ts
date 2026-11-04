@@ -13,6 +13,11 @@ export const AURA_GITHUB = 'https://github.com/roysinclair/page-studio-apps';
 export const ORBIT_GUIDE = 'https://github.com/roysinclair/page-studio-apps/blob/main/docs/orbit/README.md';
 export const ORBIT_DEMO = 'https://roysinclair.github.io/page-studio-apps/page-orbit.html?demo';
 export const AURA_SITE = 'https://roysinclair.github.io/page-studio-apps/';
+/** Page Aura as one HTML file, opened straight in the browser. */
+export const AURA_APP = 'https://roysinclair.github.io/page-studio-apps/page-aura.html';
+export const AURA_GUIDE = 'https://github.com/roysinclair/page-studio-apps/blob/main/docs/aura/README.md';
+/** Page Aura and Page Orbit installers (Windows, macOS, Linux), with SHA256 checksums. */
+export const STUDIO_RELEASES = 'https://github.com/roysinclair/page-studio-apps/releases/latest';
 export const GUIDE = 'https://github.com/roysinclair/page/blob/main/docs/SELF-HOSTING.md';
 export const GUIDE_AI = GUIDE + '#set-it-up-with-an-ai-agent';
 export const BLOB = GITHUB + '/blob/main/';
@@ -27,6 +32,14 @@ export const nav = [
   { label: 'Aura', href: 'aura/' },
   { label: 'Orbit', href: 'orbit/' },
   { label: 'Brochure', href: 'brochure/' },
+];
+
+/** Page Power's own pages, shown together in the nav (a menu on wide screens, a sub-bar on its pages). */
+export const powerPages = [
+  { label: 'Mac', href: 'mac/', note: 'The menu-bar app that keeps watch' },
+  { label: 'iPhone', href: 'iphone/', note: 'Pages on your lock screen' },
+  { label: 'Android', href: 'android/', note: 'No Google account needed' },
+  { label: 'Relay', href: 'relay/', note: 'Your own Cloudflare Worker' },
 ];
 
 export const pieces = [
@@ -59,7 +72,7 @@ export const pieces = [
     name: 'Page Aura',
     kicker: 'Bring-your-own-key chat',
     href: 'aura/',
-    body: 'A Claude chat app that links to Page over a local socket, so the Mac stays awake while a reply streams and your phone is paged when a reply finishes or a chat asks to use a tool.',
+    body: 'A bring-your-own-key chat app for Anthropic’s models that links to Page Power over a local socket, so the Mac stays awake while a reply streams and your phone is paged when a reply finishes or a chat asks to use a tool.',
     tone: 'violet',
   },
   {

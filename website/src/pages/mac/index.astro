@@ -7,9 +7,9 @@ import Showcase from '../../components/Showcase.astro';
 import { u, GUIDE, BLOB, GITHUB } from '../../data/site';
 ---
 <Layout current="mac/" title="Page Power for Mac" description="Page Power for Mac is a menu-bar app that keeps your Mac awake while AI coding agents work, pauses them gracefully at your battery cutoff, and delivers your phone replies into the exact terminal that asked.">
-  <PageHero label="Page Power for Mac" title="The menu-bar app that keeps watch." lede="Page watches your Claude Code and Codex sessions, keeps the Mac awake while they work, pauses them gracefully at your battery cutoff, and types your replies into the exact terminal that asked.">
+  <PageHero label="Page Power for Mac" title="The menu-bar app" accent="that keeps watch." lede="Page watches your Claude Code and Codex sessions, keeps the Mac awake while they work, pauses them gracefully at your battery cutoff, and types your replies into the exact terminal that asked.">
     <Fragment slot="actions">
-      <a href="#install" class="btn-primary">Install it</a>
+      <a href="#install" class="btn-primary btn-arrow">Install it</a>
       <a href="#terminals" class="btn-ghost">Supported terminals</a>
     </Fragment>
     <Showcase name="showcase/feature-battery-visual" eager motion="final-approach" sizes="(min-width: 1024px) 560px, 100vw" alt="Stays awake, pauses gracefully: the Tower's Power page at 41 percent on battery, cutoff in about 1 hour 50 minutes, with lid-closed toggles for AC and battery; over it, the menu-bar popover with one item that needs you, five working, the runway to the cutoff, and an irreversible git push --force waiting behind Hold to approve." />
@@ -119,7 +119,7 @@ import { u, GUIDE, BLOB, GITHUB } from '../../data/site';
       <p class="label">Agents</p>
       <h2 class="h2 mt-3 max-w-3xl">Claude Code, Codex and local models.</h2>
       <div class="mt-12 grid gap-5 lg:grid-cols-2">
-        <div class="card card-tone" style="--tone:#E89E64">
+        <div class="card card-tone tone-teal">
           <h3 class="h3">Claude Code</h3>
           <p class="body mt-3">The deepest support: session state, approvals, questions, plans, idle and stuck detection, rate limits, usage forecast, and replies typed into the live session.</p>
         </div>

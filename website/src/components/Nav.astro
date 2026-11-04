@@ -1,39 +1,110 @@
 ---
-import { nav, u, GITHUB, PDF } from '../data/site';
+import { powerPages, u, GITHUB } from '../data/site';
 import { imageSrc } from '../data/images';
+import ProductIcon from './ProductIcon.astro';
 interface Props { current?: string }
 const { current = '' } = Astro.props;
 const isCur = (href: string) => (href || '') === current;
+const inPower = powerPages.some((p) => p.href === current);
+const top = [
+  { label: 'Studio', href: '' },
+  { label: 'Aura', href: 'aura/', product: 'aura' as const },
+  { label: 'Orbit', href: 'orbit/', product: 'orbit' as const },
+  { label: 'Brochure', href: 'brochure/' },
+];
 ---
-<header class="no-print sticky top-0 z-50 border-b border-white/[0.07] bg-night-900/80 backdrop-blur-xl">
-  <div class="wrap flex h-16 items-center justify-between gap-4">
+<header class="site-nav no-print sticky top-0 z-50">
+  <div class="wrap-wide flex h-16 items-center justify-between gap-4">
     <a href={u()} class="flex items-center gap-2.5 font-extrabold tracking-tight" aria-label="Page Studio home">
       <span class="brand-mark" data-motion="pulse" data-tone="teal"><img src={imageSrc('app-icon')} width="30" height="30" alt="" class="relative rounded-[8px]" /></span>
-      <span class="text-[17px]">Page <span class="text-ink-3 font-semibold">Studio</span></span>
+      <span class="text-[17px]">Page <span class="font-semibold text-ink-3">Studio</span></span>
     </a>
 
     <nav aria-label="Primary" class="hidden items-center gap-1 lg:flex">
-      {nav.map((n) => (
-        <a href={u(n.href)} aria-current={isCur(n.href) ? 'page' : undefined}
-           class={`nav-link rounded-lg px-3 py-2 text-[14px] font-medium ${isCur(n.href) ? 'bg-white/[0.08] text-ink' : 'text-ink-2 hover:text-ink'}`}>{n.label}</a>
+      <a href={u(top[0].href)} aria-current={isCur('') ? 'page' : undefined} class={`nav-link ${isCur('') ? 'is-cur' : ''}`}>Studio</a>
+      <div class="nav-group">
+        <a href={u('mac/')} class={`nav-link ${inPower ? 'is-cur' : ''}`} aria-current={inPower && current === 'mac/' ? 'page' : undefined}>
+          <ProductIcon product="power" size={18} /> Power
+          <svg width="10" height="10" viewBox="0 0 14 14" aria-hidden="true" class="opacity-60"><path d="M2 5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <div class="nav-menu" role="group" aria-label="Page Power">
+          {powerPages.map((p) => (
+            <a href={u(p.href)} aria-current={isCur(p.href) ? 'page' : undefined} class={isCur(p.href) ? 'is-cur' : ''}>
+              <strong>{p.label === 'Relay' ? 'Page Relay' : `Page Power for ${p.label}`}</strong>
+              <small>{p.note}</small>
+            </a>
+          ))}
+        </div>
+      </div>
+      {top.slice(1).map((n) => (
+        <a href={u(n.href)} aria-current={isCur(n.href) ? 'page' : undefined} class={`nav-link ${isCur(n.href) ? 'is-cur' : ''}`}>
+          {n.product && <ProductIcon product={n.product} size={18} />}{n.label}
+        </a>
       ))}
-      <a href={GITHUB} rel="noopener" class="nav-link rounded-lg px-3 py-2 text-[14px] font-medium text-ink-2 hover:text-ink">GitHub</a>
-      <a href={u(PDF)} class="btn-ghost ml-2 !min-h-[36px] !px-3.5 !py-1.5 !text-[13px]" download>Download PDF</a>
+      <a href={GITHUB} rel="noopener" class="nav-link">GitHub</a>
+      <a href={u('#get-started')} class="btn-primary ml-2 !min-h-[38px] !px-4 !py-1.5 !text-[13.5px]">Get the apps</a>
     </nav>
 
     <details class="group relative lg:hidden">
-      <summary class="flex min-h-[44px] cursor-pointer list-none items-center gap-2 rounded-xl bg-white/[0.06] px-4 text-[14px] font-semibold ring-1 ring-white/10 [&::-webkit-details-marker]:hidden">
+      <summary class="flex min-h-[44px] cursor-pointer list-none items-center gap-2 rounded-full bg-white/[0.07] px-4 text-[14px] font-semibold ring-1 ring-white/10 [&::-webkit-details-marker]:hidden">
         Menu
         <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" class="transition-transform group-open:rotate-180"><path d="M2 5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </summary>
-      <div class="absolute right-0 top-14 w-[min(86vw,320px)] rounded-2xl bg-night-800 p-2 ring-1 ring-white/10 shadow-2xl">
-        {nav.map((n) => (
-          <a href={u(n.href)} aria-current={isCur(n.href) ? 'page' : undefined}
-             class={`block rounded-xl px-4 py-3 text-[15px] font-medium ${isCur(n.href) ? 'bg-white/[0.08] text-ink' : 'text-ink-2'}`}>{n.label}</a>
+      <div class="mobile-menu absolute right-0 top-14 w-[min(88vw,340px)] rounded-3xl p-2 shadow-2xl">
+        <a href={u()} aria-current={isCur('') ? 'page' : undefined} class={isCur('') ? 'is-cur' : ''}>Page Studio</a>
+        <p class="mm-label"><ProductIcon product="power" size={16} /> Page Power</p>
+        {powerPages.map((p) => (
+          <a href={u(p.href)} aria-current={isCur(p.href) ? 'page' : undefined} class={`sub ${isCur(p.href) ? 'is-cur' : ''}`}>{p.label}</a>
         ))}
-        <a href={GITHUB} rel="noopener" class="block rounded-xl px-4 py-3 text-[15px] font-medium text-ink-2">GitHub</a>
-        <a href={u(PDF)} download class="mt-1 block rounded-xl bg-white/[0.06] px-4 py-3 text-[15px] font-semibold">Download PDF</a>
+        <a href={u('aura/')} aria-current={isCur('aura/') ? 'page' : undefined} class={isCur('aura/') ? 'is-cur' : ''}><ProductIcon product="aura" size={18} /> Page Aura</a>
+        <a href={u('orbit/')} aria-current={isCur('orbit/') ? 'page' : undefined} class={isCur('orbit/') ? 'is-cur' : ''}><ProductIcon product="orbit" size={18} /> Page Orbit</a>
+        <a href={u('brochure/')} aria-current={isCur('brochure/') ? 'page' : undefined} class={isCur('brochure/') ? 'is-cur' : ''}>Brochure</a>
+        <a href={GITHUB} rel="noopener">GitHub</a>
+        <a href={u('#get-started')} class="mm-cta">Get the apps</a>
       </div>
     </details>
   </div>
+
+  {inPower && (
+    <nav aria-label="Page Power" class="subnav">
+      <div class="wrap-wide flex items-center gap-1 overflow-x-auto py-2">
+        <span class="mr-2 hidden items-center gap-2 text-[13px] font-semibold text-ink sm:flex"><ProductIcon product="power" size={18} /> Page Power</span>
+        {powerPages.map((p) => (
+          <a href={u(p.href)} aria-current={isCur(p.href) ? 'page' : undefined} class={isCur(p.href) ? 'is-cur' : ''}>{p.label}</a>
+        ))}
+      </div>
+    </nav>
+  )}
 </header>
+
+<style>
+  .site-nav { background: rgba(5, 7, 13, 0.72); backdrop-filter: saturate(1.4) blur(18px); -webkit-backdrop-filter: saturate(1.4) blur(18px); box-shadow: 0 1px 0 rgba(255,255,255,0.07); }
+  .site-nav::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; pointer-events: none; opacity: 0.55;
+    background: linear-gradient(90deg, transparent, var(--w1) 25%, var(--w2) 50%, var(--w3) 75%, transparent); }
+  .nav-link { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; padding: 8px 13px; font-size: 14px; font-weight: 550; color: rgba(255,255,255,0.72); }
+  .nav-link:hover { color: #fff; background: rgba(255,255,255,0.05); }
+  .nav-link.is-cur { color: #fff; background: rgba(255,255,255,0.09); }
+  .nav-group { position: relative; }
+  .nav-menu {
+    position: absolute; left: -8px; top: calc(100% + 8px); width: 300px; padding: 8px; border-radius: 20px;
+    background: rgba(16, 19, 26, 0.96); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1), 0 30px 60px -20px rgba(0,0,0,0.8);
+    opacity: 0; visibility: hidden; transform: translateY(-4px);
+  }
+  .nav-menu::before { content: ''; position: absolute; left: 0; right: 0; top: -10px; height: 10px; }
+  .nav-group:hover .nav-menu, .nav-group:focus-within .nav-menu { opacity: 1; visibility: visible; transform: none; }
+  @media (prefers-reduced-motion: no-preference) { .nav-menu { transition: opacity 160ms ease, transform 160ms ease, visibility 160ms; } }
+  .nav-menu a { display: block; border-radius: 14px; padding: 10px 12px; }
+  .nav-menu a:hover, .nav-menu a.is-cur { background: rgba(255,255,255,0.06); }
+  .nav-menu strong { display: block; font-size: 14px; font-weight: 600; color: #fff; }
+  .nav-menu small { display: block; margin-top: 2px; font-size: 12.5px; color: rgba(255,255,255,0.6); }
+  .mobile-menu { background: rgba(16, 19, 26, 0.98); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1), 0 30px 60px -20px rgba(0,0,0,0.85); }
+  .mobile-menu a { display: flex; align-items: center; gap: 10px; border-radius: 16px; padding: 11px 14px; font-size: 15px; font-weight: 550; color: rgba(255,255,255,0.78); }
+  .mobile-menu a.is-cur { background: rgba(255,255,255,0.08); color: #fff; }
+  .mobile-menu a.sub { padding-left: 40px; }
+  .mobile-menu .mm-label { display: flex; align-items: center; gap: 10px; padding: 12px 14px 4px; font-size: 15px; font-weight: 650; color: #fff; }
+  .mobile-menu .mm-cta { margin-top: 6px; justify-content: center; font-weight: 650; color: #06141A; background: linear-gradient(180deg, #5EEAD4, #38BDF8); }
+  .subnav { box-shadow: 0 1px 0 rgba(255,255,255,0.06); background: rgba(5, 7, 13, 0.5); }
+  .subnav a { flex: none; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; font-weight: 550; color: rgba(255,255,255,0.7); }
+  .subnav a:hover { color: #fff; }
+  .subnav a.is-cur { color: #06141A; background: linear-gradient(180deg, #5EEAD4, #38BDF8); }
+</style>

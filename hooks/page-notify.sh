@@ -134,7 +134,9 @@ umask 077
 PATH="${PATH:+$PATH:}/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/usr/local/bin"
 export PATH
 
-PAGE_OS=$(uname -s 2>/dev/null)
+# The layout and presence rules follow the OS; PAGE_HOOK_OS pins it (the
+# Worker's hook tests run the macOS rules on a Linux CI runner).
+PAGE_OS="${PAGE_HOOK_OS:-$(uname -s 2>/dev/null)}"
 # An XDG base directory only counts when absolute (the spec says to ignore others).
 xdg_dir() {
     case "$1" in

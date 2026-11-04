@@ -461,3 +461,15 @@ final class PagedFilesTests: XCTestCase {
         XCTAssertFalse(NotifySendNotifier(tool: "/usr/bin/notify-send", environment: [:]).available, "no desktop session")
     }
 }
+
+final class LocaleTests: XCTestCase {
+    /// tmux 3.4 prints a tab as "_" without a UTF-8 locale, which broke the
+    /// pane lookup when paged ran with none.
+    func testDaemonGetsAUTF8CharacterType() {
+        XCTAssertEqual(PageLinuxBootstrap.needsUTF8Locale([:]), "C.UTF-8")
+        XCTAssertEqual(PageLinuxBootstrap.needsUTF8Locale(["LANG": "C"]), "C.UTF-8")
+        XCTAssertNil(PageLinuxBootstrap.needsUTF8Locale(["LANG": "en_GB.UTF-8"]))
+        XCTAssertNil(PageLinuxBootstrap.needsUTF8Locale(["LANG": "C", "LC_CTYPE": "de_DE.utf8"]))
+        XCTAssertNil(PageLinuxBootstrap.needsUTF8Locale(["LC_ALL": "C"]), "LC_ALL wins; left as set")
+    }
+}

@@ -37,6 +37,8 @@ try {
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.evaluate(() => document.fonts.ready);
   await page.evaluate(async () => {
+    // Lazy images outside the printed sheets (the site chrome) would never load: make every image eager first.
+    for (const i of document.images) i.loading = 'eager';
     await Promise.all([...document.images].map((i) => (i.complete ? 0 : new Promise((r) => { i.onload = i.onerror = r; }))));
   });
   await page.pdf({ path: out, preferCSSPageSize: true, printBackground: true });

@@ -12,10 +12,13 @@
     background: radial-gradient(70% 60% at 70% 110%, rgba(56,189,248,.26), transparent 70%),
       radial-gradient(50% 50% at 15% 105%, rgba(167,139,250,.24), transparent 70%),
       linear-gradient(180deg, #070b16 0%, #0a1422 60%, #0b1a26 100%); }
-  .aura { position: absolute; left: 16px; top: 36px; width: 420px; border-radius: 9px; overflow: hidden; background: #0b0f17;
+  .orbit { position: absolute; left: 14px; top: 30px; width: 330px; border-radius: 9px; overflow: hidden; background: #0b0f17;
+    box-shadow: 0 16px 40px rgba(0,0,0,.6), 0 0 0 .5px rgba(255,255,255,.14); }
+  .orbit img { display: block; width: 100%; }
+  .aura { position: absolute; left: 70px; top: 128px; width: 330px; z-index: 2; border-radius: 9px; overflow: hidden; background: #0b0f17;
     box-shadow: 0 16px 40px rgba(0,0,0,.6), 0 0 0 .5px rgba(255,255,255,.14); }
   .aura img { display: block; width: 100%; }
-  .pop { left: 362px; top: 21px; width: 206px; height: 326px; border-radius: 10.8px; box-shadow: 0 22px 50px rgba(0,0,0,.65), 0 0 0 .5px rgba(255,255,255,.08); }
+  .pop { z-index: 3; left: 362px; top: 21px; width: 206px; height: 326px; border-radius: 10.8px; box-shadow: 0 22px 50px rgba(0,0,0,.65), 0 0 0 .5px rgba(255,255,255,.08); }
 
   .android { left: 772px; top: 300px; --w: 174px; z-index: 6; }
   .iphone { left: 928px; top: 276px; --w: 186px; z-index: 7; }
@@ -35,7 +38,7 @@
   <div class="head">
     <span class="eyebrow"><span class="pulse" style="--s:20px"><b></b></span>Page Studio</span>
     <h1 class="headline">The night shift for <em>your AI agents.</em></h1>
-    <p class="caption">A Mac app that keeps agents running, iPhone and Android apps that answer for them, a relay on your own Cloudflare account, and a chat app that joins in.</p>
+    <p class="caption">Page Power keeps your agents running and pages your phone through your own relay. Page Aura chats on your own key. Page Orbit runs cloud agents. All three page you when they need you.</p>
   </div>
 
   <div class="laptop">
@@ -51,6 +54,7 @@
         <div class="item"><svg width="19" height="9" viewBox="0 0 38 18"><rect x="1" y="1" width="31" height="16" rx="4.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.6"/><rect x="3.6" y="3.6" width="10.8" height="10.8" rx="2.4" fill="#fff"/><rect x="34" y="6" width="2.6" height="6" rx="1.3" fill="#fff" fill-opacity=".55"/></svg></div>
         <div class="item">Mon 26 Oct&nbsp; 1:12</div>
       </div>
+      <div class="orbit"><img src="assets/orbit-window.webp" alt=""></div>
       <div class="aura"><img src="assets/aura-window.webp" alt=""></div>
       <div class="render pop fade-bottom"><img src="assets/mac-popover-needs.webp" alt=""></div>
     </div></div>
@@ -68,8 +72,9 @@
   <div class="phone android"><div class="cam"></div><div class="screen"><img src="assets/android-now.webp" alt=""></div></div>
   <div class="phone iphone"><div class="island"></div><div class="screen"><img src="assets/ios-room-codex.webp" alt=""></div></div>
 
-  <div class="tag" style="left:116px; top:690px; --c:#5EEAD4"><b><i></i>Page for Mac</b><span>keep-awake · battery pause · replies</span></div>
-  <div class="tag" style="left:420px; top:690px; --c:#A78BFA"><b><i></i>Page Aura</b><span>bring-your-own-key Claude chat</span></div>
+  <div class="tag" style="left:116px; top:690px; --c:#5EEAD4"><b><i></i>Page Power for Mac</b><span>keep-awake · battery pause · replies</span></div>
+  <div class="tag" style="left:392px; top:690px; --c:#9b7bff"><b><i></i>Page Aura</b><span>chat on your own key</span></div>
+  <div class="tag" style="left:560px; top:690px; --c:#da2978"><b><i></i>Page Orbit</b><span>cloud agents, on your key</span></div>
   <div class="tag" style="left:794px; top:238px; --c:#38BDF8"><b><i></i>Your relay</b><span>your Cloudflare account</span></div>
-  <div class="tag" style="left:800px; top:690px; --c:#F5B14C"><b><i></i>Page for iPhone &amp; Android</b><span>pages · approvals · live sessions</span></div>
+  <div class="tag" style="left:800px; top:690px; --c:#F5B14C"><b><i></i>Page Power for iPhone &amp; Android</b><span>pages · approvals · live sessions</span></div>
 </div><script src="sky.js"></script></body></html>

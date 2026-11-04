@@ -382,7 +382,7 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
     private func event(chatId: String, title: String, kind: InterventionKind, id: String, context: String) -> InterventionEvent {
         InterventionEvent(id: id, sessionId: "\(flavor.prefix)\(chatId)", cwd: "",
                           projectName: title.isEmpty ? displayName : title, kind: kind, openedAt: now(),
-                          context: context, transcriptPath: "", backend: id, source: .desktop)
+                          context: context, transcriptPath: "", backend: self.id, source: .desktop)
     }
 
     /// Pure. "Use <server> · <tool> on this Mac" plus the redacted, clipped args.
@@ -630,11 +630,13 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         var outgoing: (line: Data, commandId: String)?
         run { fx in
             guard connected, speaksSessionsLocked else {
-                fx.append { completion(.refused(.notTypable, flavor.say(AuraLink.notConnectedDetail))) }
+                let why = flavor.say(AuraLink.notConnectedDetail)
+                fx.append { completion(.refused(.notTypable, why)) }
                 return
             }
             guard let chatId = AuraLink.chatId(sessionId: sessionId), let chat = remoteChatStatesLocked().first(where: { $0.id == chatId }) else {
-                fx.append { completion(.refused(.notFound, flavor.say(AuraLink.chatGoneDetail))) }
+                let why = flavor.say(AuraLink.chatGoneDetail)
+                fx.append { completion(.refused(.notFound, why)) }
                 return
             }
             let commandId = AuraLink.newCommandId()
@@ -732,10 +734,11 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
         let relay = _relay
         let finished = _onReplyFinished
         let viaMac = macOriginReplies.remove(pid) != nil
+        let method = flavor.method
         fx.append {
-            finished?(ReplyFinished(interventionId: pid, success: success, method: flavor.method, detail: detail))
+            finished?(ReplyFinished(interventionId: pid, success: success, method: method, detail: detail))
             if !viaMac {
-                relay?.sendReplyInjected(interventionId: pid, method: flavor.method, success: success, detail: detail, output: nil)
+                relay?.sendReplyInjected(interventionId: pid, method: method, success: success, detail: detail, output: nil)
             }
         }
         guard success else { return }

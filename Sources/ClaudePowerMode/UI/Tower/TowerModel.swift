@@ -537,6 +537,7 @@ enum TowerControlMap {
         .init(old: "codexBackendEnabled", oldTab: "Agents", section: .agents, newControl: "Watch Codex sessions toggle"),
         .init(old: "codexPath", oldTab: "Agents", section: .agents, newControl: "codex path field + status line"),
         .init(old: "auraBackendEnabled", oldTab: "Agents", section: .agents, newControl: "Page Aura toggle"),
+        .init(old: "orbitBackendEnabled", oldTab: "Agents", section: .agents, newControl: "Page Orbit toggle"),
         .init(old: "localModelsEnabled", oldTab: "Agents", section: .agents, newControl: "Local models toggle + status"),
         // Rate limits
         .init(old: "rateLimitWatcherEnabled", oldTab: "Rate limits", section: .budget, newControl: "Watch for rate-limit events toggle"),

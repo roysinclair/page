@@ -259,9 +259,9 @@ final class CardGlowTests: XCTestCase {
         XCTAssertEqual(TowerControlMap.fieldNames.filter { $0 == "cardGlow" }.count, 1)
     }
 
-    func testPreferencesFormHasThirtySixFieldsWithOneCardGlow() {
+    func testPreferencesFormHasThirtySevenFieldsWithOneCardGlow() {
         let fields = Mirror(reflecting: PreferencesForm(Config())).children.compactMap { $0.label }
-        XCTAssertEqual(fields.count, 36)
+        XCTAssertEqual(fields.count, 37)
         XCTAssertEqual(fields.filter { $0 == "cardGlow" }.count, 1)
     }
 }

@@ -6,9 +6,12 @@
 
 **Your agents keep working. You get paged only when it matters.**
 
-Page keeps your Mac awake while Claude Code, Codex and local models work,
-pauses them gracefully at your battery cutoff, and pages your phone when a
-decision is yours. Your reply lands back in the live session.
+Page Studio is three free apps for people who work with AI agents:
+**Page Power** keeps your Mac awake while Claude Code, Codex and local models
+work, pauses them gracefully at your battery cutoff, and pages your phone
+through **Page Relay** when a decision is yours. Your reply lands back in the
+live session. **Page Aura** is a bring-your-own-key chat app and **Page Orbit**
+builds, runs and fixes Anthropic Managed Agents; both link to Page Power.
 
 [![Platforms: macOS, iOS, Android](https://img.shields.io/badge/platforms-macOS%20%C2%B7%20iOS%20%C2%B7%20Android-2ea3c4?style=flat-square)](#the-page-studio-family)
 [![License: Page Studio](https://img.shields.io/badge/license-Page%20Studio-e0a030?style=flat-square)](LICENSE)
@@ -17,7 +20,7 @@ decision is yours. Your reply lands back in the live session.
 [Website](https://roysinclair.github.io/page/) &nbsp;·&nbsp;
 [Brochure (PDF)](https://roysinclair.github.io/page/page-studio-brochure.pdf) &nbsp;·&nbsp;
 [Set it up](docs/SELF-HOSTING.md) &nbsp;·&nbsp;
-[Page Aura](https://github.com/roysinclair/page-studio-apps)
+[Page Aura & Page Orbit](https://github.com/roysinclair/page-studio-apps)
 
 </div>
 
@@ -46,19 +49,24 @@ decision is yours. Your reply lands back in the live session.
   goes to the authors.
 - **Page Aura joins in.** The bring-your-own-key Claude chat app keeps the Mac
   awake while it streams a reply, and pages your phone too.
+- **So does Page Orbit.** When a Managed Agent is waiting for your approval or
+  has finished, your phone is paged; Allow, Deny, reply or stop from there.
 
 ## The Page Studio family
 
+Page Studio products: **Page Power** (the Mac menu-bar app and its iPhone and Android apps, with **Page Relay** inside), **Page Aura** and **Page Orbit**. Each works on its own; together, your phone hears from all of them.
+
 <p align="center">
-  <img src="docs/images/family.png" alt="Page Studio: Page for Mac and Page Aura on a laptop, Page for iPhone and Android on two phones, linked through your own Cloudflare relay" width="100%">
+  <img src="docs/images/family.png" alt="Page Studio: Page Power for Mac and Page Aura on a laptop, Page Power for iPhone and Android on two phones, linked through your own Cloudflare relay" width="100%">
 </p>
 
 | Piece | What it does |
 |---|---|
-| **Page for Mac** | The menu-bar app. Detects agent state, keeps the Mac awake, applies your battery policy and delivers your replies. [Getting started](#getting-started) |
-| **Page for iPhone and Android** | Pages, lock-screen approvals, live sessions and widgets. [`iOS/`](iOS/README.md) · [`android/`](android/README.md) |
-| **Your relay** | A Cloudflare Worker with Durable Objects that you deploy to your own account. Setup in [`Cloudflare/`](Cloudflare/README.md) and the [self-hosting guide](docs/SELF-HOSTING.md) |
-| **Page Aura** | A separate bring-your-own-key Claude chat app that links into Page as a third agent backend. [github.com/roysinclair/page-studio-apps](https://github.com/roysinclair/page-studio-apps) · [link protocol](docs/AURA-LINK.md) |
+| **Page Power for Mac** | The menu-bar app. Detects agent state, keeps the Mac awake, applies your battery policy and delivers your replies. [Getting started](#getting-started) |
+| **Page Power for iPhone and Android** | Pages, lock-screen approvals, live sessions and widgets. [`iOS/`](iOS/README.md) · [`android/`](android/README.md) |
+| **Page Relay** | Your own relay: a Cloudflare Worker with Durable Objects that you deploy to your own account. Setup in [`Cloudflare/`](Cloudflare/README.md) and the [self-hosting guide](docs/SELF-HOSTING.md) |
+| **Page Aura** | A separate bring-your-own-key Claude chat app that links into Page Power as an agent backend. [github.com/roysinclair/page-studio-apps](https://github.com/roysinclair/page-studio-apps) · [link protocol](docs/AURA-LINK.md) |
+| **Page Orbit** | A desktop control room for Anthropic Managed Agents: agents with versions, live sessions, Diagnose, schedules. Links into Page Power so approvals and finished runs page your phone. [Guide](https://github.com/roysinclair/page-studio-apps/blob/main/docs/orbit/README.md) · [link protocol](docs/ORBIT-LINK.md) |
 
 ## A closer look
 
@@ -72,11 +80,11 @@ decision is yours. Your reply lands back in the live session.
     <td valign="top"><img src="docs/images/feature-terminals.png" alt="Supported terminals and agents" width="100%"><br><b>The terminals you already use.</b> Terminal.app, iTerm2, tmux, cmux, WezTerm, kitty, Herdr and Claude Squad.</td>
   </tr>
   <tr>
-    <td valign="top"><img src="docs/images/feature-android.png" alt="Page for Android" width="100%"><br><b>Android, too.</b> The same pages and live sessions, built natively with Jetpack Compose.</td>
+    <td valign="top"><img src="docs/images/feature-android.png" alt="Page Power for Android" width="100%"><br><b>Android, too.</b> The same pages and live sessions, built natively with Jetpack Compose.</td>
     <td valign="top"><img src="docs/images/feature-widgets.png" alt="Widgets" width="100%"><br><b>Know before you unlock.</b> Widgets on iPhone, Android and the Mac: what needs you, what's working, how long the battery lasts.</td>
   </tr>
   <tr>
-    <td valign="top"><img src="docs/images/feature-relay.png" alt="Your own relay" width="100%"><br><b>Your relay, your keys.</b> A small Worker on your own Cloudflare account carries pages and replies. Nothing goes to the authors.</td>
+    <td valign="top"><img src="docs/images/feature-relay.png" alt="Page Relay, your own relay" width="100%"><br><b>Page Relay: your relay, your keys.</b> A small Worker on your own Cloudflare account carries pages and replies. Nothing goes to the authors.</td>
     <td valign="top"><img src="docs/images/feature-aura.png" alt="Page Aura linked to Page" width="100%"><br><b>Page Aura, paged too.</b> The bring-your-own-key Claude chat app keeps the Mac awake while it streams and pages your phone.</td>
   </tr>
 </table>

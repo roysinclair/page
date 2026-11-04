@@ -494,6 +494,30 @@ test("aura replies queue with backend aura", async () => {
   assert.equal((await state.storage.get(qkey)).backend, "aura");
 });
 
+test("orbit interventions keep backend orbit; the orbit- id prefix falls back to orbit", async () => {
+  await open(relay, iv("orbit-sesn_01-perm-sevt_01", { backend: "orbit", sessionId: "orbit-sesn_01" }));
+  await open(relay, iv("orbit-sesn_02-idle-5", { sessionId: "orbit-sesn_02" }));
+  const list = (await call(relay, "GET", "/interventions")).body;
+  const by = id => list.find(i => i.id === id).backend;
+  assert.equal(by("orbit-sesn_01-perm-sevt_01"), "orbit");
+  assert.equal(by("orbit-sesn_02-idle-5"), "orbit");
+});
+
+test("sync with backend orbit closes only orbit pages, and orbit replies queue as orbit", async () => {
+  const phone = connect({ mac: false });
+  const mac = connect({ mac: true });
+  await open(relay, iv("orbit-keep", { sessionId: "o1", backend: "orbit" }));
+  await open(relay, iv("orbit-stale", { sessionId: "o2", backend: "orbit" }));
+  await open(relay, iv("aura-1", { sessionId: "c1", backend: "aura" }));
+  clock.advance(3 * 60 * 1000);
+  await macFrame(relay, mac, "sync", { backend: "orbit", openIds: ["orbit-keep"] });
+  assert.deepEqual((await pendingIds()).sort(), ["aura-1", "orbit-keep"]);
+  assert.deepEqual(phone.frames("intervention.closed").map(f => f.payload), [{ id: "orbit-stale", reason: "stale" }]);
+  const r = await call(relay, "POST", "/reply/orbit-keep", { text: "carry on" });
+  assert.equal(r.body.ok, true);
+  assert.equal(mac.frames("reply").at(-1).payload.backend, "orbit");
+});
+
 test("invalid sync payloads are ignored", async () => {
   await open(relay, iv("a"));
   clock.advance(60 * 1000);

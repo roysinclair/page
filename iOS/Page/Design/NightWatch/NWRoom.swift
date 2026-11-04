@@ -10,12 +10,13 @@ import PhotosUI
 // MARK: - Agent colours
 
 extension AgentCharacter {
-    /// Claude copper, Codex slate, Page Aura soft violet, a local model's lime, anything else neutral.
+    /// Claude copper, Codex slate, Page Aura soft violet, Page Orbit orchid, a local model's lime, anything else neutral.
     var tint: NightWatch.RGBA {
         switch kind {
         case .claude: return NightWatch.RGBA(hex: 0xE89E64)
         case .codex: return NightWatch.RGBA(hex: 0xC9CEDB)
         case .aura: return NightWatch.RGBA(hex: 0xB7A4F5)
+        case .orbit: return NightWatch.RGBA(hex: 0xE78AE6)
         case .local: return NightWatch.RGBA(hex: 0xC6E86A)
         case .other: return NightWatch.RGBA(hex: 0xA3ADC2)
         }

@@ -38,6 +38,10 @@ struct Config: Codable, Equatable {
     /// its chats. On by default: it only opens a socket on this Mac, and the
     /// opt-in lives in Page Aura's own settings.
     var auraBackendEnabled: Bool = true
+    /// Page Orbit link (docs/ORBIT-LINK.md): the same, on its own socket, for
+    /// the Managed Agents app. Its agents run in Anthropic's cloud, so it only
+    /// pages; it never keeps the Mac awake. On by default for the same reason.
+    var orbitBackendEnabled: Bool = true
 
     /// Keep the Mac awake while local models generate (Ollama, LM Studio,
     /// llama.cpp, MLX) and while terminal tools on them produce output.
@@ -134,6 +138,7 @@ struct Config: Codable, Equatable {
         case interventionDetectionEnabled, relayEnabled, relayURL
         case codexBackendEnabled, codexPath
         case auraBackendEnabled
+        case orbitBackendEnabled
         case localModelsEnabled
         case idlePageOnlyWhenAwaySeconds, idlePageDelaySeconds
         case holdAwakeForPendingPageMinutes, headlessResumeFallbackEnabled
@@ -191,6 +196,7 @@ struct Config: Codable, Equatable {
         codexBackendEnabled = field(.codexBackendEnabled, d.codexBackendEnabled)
         codexPath = field(.codexPath, d.codexPath)
         auraBackendEnabled = field(.auraBackendEnabled, d.auraBackendEnabled)
+        orbitBackendEnabled = field(.orbitBackendEnabled, d.orbitBackendEnabled)
         localModelsEnabled = field(.localModelsEnabled, d.localModelsEnabled)
         idlePageOnlyWhenAwaySeconds = field(.idlePageOnlyWhenAwaySeconds, d.idlePageOnlyWhenAwaySeconds)
         idlePageDelaySeconds = field(.idlePageDelaySeconds, d.idlePageDelaySeconds)

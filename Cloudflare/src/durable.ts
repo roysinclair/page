@@ -1609,5 +1609,5 @@ export function retiredResponse(): Response {
 
 /// Human name of the agent behind an intervention, for delivery details.
 function agentName(backend: InterventionBackend | undefined): string {
-  return backend === "codex" ? "Codex" : backend === "aura" ? "Page Aura" : "Claude Code";
+  return backend === "codex" ? "Codex" : backend === "aura" ? "Page Aura" : backend === "orbit" ? "Page Orbit" : "Claude Code";
 }

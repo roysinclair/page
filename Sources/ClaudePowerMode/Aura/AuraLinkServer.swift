@@ -25,10 +25,13 @@ protocol AuraLinkTransport: AnyObject {
 /// same user: `getpeereid` must say our own uid. All socket work happens on
 /// one private serial queue; sockets are non-blocking.
 final class AuraLinkServer: AuraLinkTransport, @unchecked Sendable {
-    static var defaultPath: String {
+    static var defaultPath: String { path(socketName: "aura.sock") }
+
+    /// `~/Library/Application Support/ClaudePowerMode/<name>`: `aura.sock` for Page Aura, `orbit.sock` for Page Orbit.
+    static func path(socketName: String) -> String {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSHomeDirectory() + "/Library/Application Support")
-        return base.appendingPathComponent("ClaudePowerMode", isDirectory: true).appendingPathComponent("aura.sock").path
+        return base.appendingPathComponent("ClaudePowerMode", isDirectory: true).appendingPathComponent(socketName).path
     }
 
     /// `sun_path` is 104 bytes on macOS, with the terminating NUL.
@@ -185,7 +188,7 @@ final class AuraLinkServer: AuraLinkTransport, @unchecked Sendable {
             c.readSource = source
             client = c
             source.resume()
-            Logger.shared.log("AuraLink: Page Aura connected")
+            Logger.shared.log("AuraLink: client connected on \((path as NSString).lastPathComponent)")
             onConnect?()
         }
     }

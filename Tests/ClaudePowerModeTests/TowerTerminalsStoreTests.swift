@@ -300,7 +300,7 @@ final class TowerTerminalsControlMapTests: XCTestCase {
     }
 
     func testTheTerminalsPageAddsNoFormField() {
-        XCTAssertEqual(TowerControlMap.fieldNames.count, 36)
+        XCTAssertEqual(TowerControlMap.fieldNames.count, 37)
         XCTAssertFalse(TowerControlMap.fieldNames.contains { $0.lowercased().contains("terminal") })
     }
 }

@@ -6,8 +6,8 @@ import Showcase from '../../components/Showcase.astro';
 import HoldRing from '../../components/HoldRing.astro';
 import { u, GUIDE, BLOB } from '../../data/site';
 ---
-<Layout current="iphone/" title="Page for iPhone" description="Page for iPhone: approve, deny or reply from the lock screen, watch live sessions with a transcript, start new work and see what changed. Built with your own Apple developer account and paired with a QR code.">
-  <PageHero label="Page for iPhone" title="The pages, on your lock screen." lede="When an agent on your Mac needs you, your iPhone is paged. Approve, deny or type a reply without opening the app, and Page delivers it into the exact session that asked, or tells you why it couldn’t.">
+<Layout current="iphone/" title="Page Power for iPhone" description="Page Power for iPhone: approve, deny or reply from the lock screen, watch live sessions with a transcript, start new work and see what changed. Built with your own Apple developer account and paired with a QR code.">
+  <PageHero label="Page Power for iPhone" title="The pages, on your lock screen." lede="When an agent on your Mac needs you, your iPhone is paged. Approve, deny or type a reply without opening the app, and Page delivers it into the exact session that asked, or tells you why it couldn’t.">
     <Fragment slot="actions">
       <a href="#setup" class="btn-primary">Set it up</a>
       <a href="#limits" class="btn-ghost">Honest limits</a>
@@ -130,10 +130,10 @@ import { u, GUIDE, BLOB } from '../../data/site';
     <div class="wrap">
       <p class="label">Set it up</p>
       <h2 class="h2 mt-3 max-w-3xl">Build it with your own developer account.</h2>
-      <p class="lede mt-5 max-w-3xl">Page for iPhone isn’t in the App Store. You build it in Xcode with your own Apple ID or developer team, then pair it with a QR code from your Mac.</p>
+      <p class="lede mt-5 max-w-3xl">Page Power for iPhone isn’t in the App Store. You build it in Xcode with your own Apple ID or developer team, then pair it with a QR code from your Mac.</p>
       <div class="mt-12 grid gap-10 lg:grid-cols-[1fr_1fr]">
         <ol class="list-decimal space-y-4 pl-6 text-ink-2 marker:font-mono marker:text-pulse-teal">
-          <li>Deploy <a class="link" href={u('relay/')}>your relay</a> and set up <a class="link" href={u('mac/#install')}>Page for Mac</a>.</li>
+          <li>Deploy <a class="link" href={u('relay/')}>your relay</a> and set up <a class="link" href={u('mac/#install')}>Page Power for Mac</a>.</li>
           <li>Install full Xcode, <a class="link" href="https://github.com/yonaskolb/XcodeGen" rel="noopener">XcodeGen</a>, and Xcode’s Metal Toolchain (the app compiles shaders). You need an iPhone on iOS 17 or later.</li>
           <li>Copy <code class="code-inline">Config/Local.xcconfig.example</code> to <code class="code-inline">Config/Local.xcconfig</code> and set your team id and a bundle id of your own. Use the same bundle id in the relay’s <code class="code-inline">wrangler.toml</code>.</li>
           <li>Run <code class="code-inline">xcodegen generate</code>, open the project, and run it on your iPhone.</li>
@@ -171,7 +171,7 @@ import { u, GUIDE, BLOB } from '../../data/site';
       </ul>
       <div class="mt-10 flex flex-wrap gap-3">
         <a class="btn-ghost" href={BLOB + 'iOS/README.md'} rel="noopener">iOS README</a>
-        <a class="btn-ghost" href={u('android/')}>Page for Android</a>
+        <a class="btn-ghost" href={u('android/')}>Page Power for Android</a>
       </div>
     </div>
   </section>

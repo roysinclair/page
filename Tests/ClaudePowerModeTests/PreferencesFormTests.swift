@@ -31,6 +31,7 @@ final class PreferencesFormTests: XCTestCase {
         ("codexBackendEnabled", { $0.codexBackendEnabled.toggle() }),
         ("codexPath", { $0.codexPath = "/x/codex" }),
         ("auraBackendEnabled", { $0.auraBackendEnabled.toggle() }),
+        ("orbitBackendEnabled", { $0.orbitBackendEnabled.toggle() }),
         ("localModelsEnabled", { $0.localModelsEnabled.toggle() }),
         ("rateLimitWatcherEnabled", { $0.rateLimitWatcherEnabled.toggle() }),
         ("autoResumeEnabled", { $0.autoResumeEnabled.toggle() }),
@@ -52,9 +53,9 @@ final class PreferencesFormTests: XCTestCase {
             .map { pair in pair.0.label ?? "" }
     }
 
-    func testThereAreThirtySixControlsAndEachIsTested() {
+    func testThereAreThirtySevenControlsAndEachIsTested() {
         let formFields = Mirror(reflecting: PreferencesForm(Config())).children.compactMap { $0.label }
-        XCTAssertEqual(formFields.count, 36)
+        XCTAssertEqual(formFields.count, 37)
         XCTAssertEqual(changes.map(\.field).sorted(), formFields.sorted())
     }
 

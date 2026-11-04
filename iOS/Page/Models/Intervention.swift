@@ -57,13 +57,14 @@ enum InterventionKind: String, CaseIterable {
 }
 
 enum InterventionBackend: String {
-    case claude, codex, aura
+    case claude, codex, aura, orbit
 
     var badge: String {
         switch self {
         case .claude: return "CLAUDE"
         case .codex:  return "CODEX"
         case .aura:   return "AURA"
+        case .orbit:  return "ORBIT"
         }
     }
 
@@ -72,6 +73,7 @@ enum InterventionBackend: String {
         case .claude: return "Claude"
         case .codex:  return "Codex"
         case .aura:   return "Page Aura"
+        case .orbit:  return "Page Orbit"
         }
     }
 }

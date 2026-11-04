@@ -10,6 +10,9 @@ export const u = (path = ''): string => {
 
 export const GITHUB = 'https://github.com/roysinclair/page';
 export const AURA_GITHUB = 'https://github.com/roysinclair/page-studio-apps';
+export const ORBIT_GUIDE = 'https://github.com/roysinclair/page-studio-apps/blob/main/docs/orbit/README.md';
+export const ORBIT_DEMO = 'https://roysinclair.github.io/page-studio-apps/page-orbit.html?demo';
+export const AURA_SITE = 'https://roysinclair.github.io/page-studio-apps/';
 export const GUIDE = 'https://github.com/roysinclair/page/blob/main/docs/SELF-HOSTING.md';
 export const GUIDE_AI = GUIDE + '#set-it-up-with-an-ai-agent';
 export const BLOB = GITHUB + '/blob/main/';
@@ -22,13 +25,14 @@ export const nav = [
   { label: 'Android', href: 'android/' },
   { label: 'Relay', href: 'relay/' },
   { label: 'Aura', href: 'aura/' },
+  { label: 'Orbit', href: 'orbit/' },
   { label: 'Brochure', href: 'brochure/' },
 ];
 
 export const pieces = [
   {
     key: 'mac',
-    name: 'Page for Mac',
+    name: 'Page Power for Mac',
     kicker: 'Menu-bar app',
     href: 'mac/',
     body: 'Watches your Claude Code and Codex sessions, keeps the Mac awake while they work, pauses them gracefully at your battery cutoff, and types your replies into the exact terminal that asked.',
@@ -36,7 +40,7 @@ export const pieces = [
   },
   {
     key: 'phone',
-    name: 'Page for iPhone and Android',
+    name: 'Page Power for iPhone and Android',
     kicker: 'The pages',
     href: 'iphone/',
     body: 'Approve, deny or reply from the lock screen. See live sessions with a transcript, start new work, and check what changed. Build it with your own developer account and pair by QR.',
@@ -44,7 +48,7 @@ export const pieces = [
   },
   {
     key: 'relay',
-    name: 'Your relay',
+    name: 'Page Relay',
     kicker: 'Cloudflare Worker',
     href: 'relay/',
     body: 'A small Worker on your own Cloudflare account carries pages and replies between the Mac and the phone. Live session content is end-to-end encrypted. Nothing goes to the authors.',
@@ -56,6 +60,14 @@ export const pieces = [
     kicker: 'Bring-your-own-key chat',
     href: 'aura/',
     body: 'A Claude chat app that links to Page over a local socket, so the Mac stays awake while a reply streams and your phone is paged when a reply finishes or a chat asks to use a tool.',
+    tone: 'violet',
+  },
+  {
+    key: 'orbit',
+    name: 'Page Orbit',
+    kicker: 'Managed Agents control room',
+    href: 'orbit/',
+    body: 'Build, run and fix Anthropic Managed Agents. Linked to Page Power, your phone is paged when an agent wants your approval or has finished, and you answer from the lock screen.',
     tone: 'violet',
   },
 ] as const;

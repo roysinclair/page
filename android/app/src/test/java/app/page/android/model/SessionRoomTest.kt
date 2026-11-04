@@ -46,6 +46,16 @@ class SessionRoomTest {
         assertEquals("Claude", claude.subtitle(AgentBackend.Known(InterventionBackend.CLAUDE), null, "unknown"))
     }
 
+    @Test fun `a Page Orbit session is its own character with only the story lens`() {
+        assertEquals(InterventionBackend.ORBIT, InterventionBackend.fromWire("orbit"))
+        assertEquals("Page Orbit", InterventionBackend.ORBIT.displayName)
+        val orbit = AgentCharacter.from(AgentBackend.Known(InterventionBackend.ORBIT), "anthropic")
+        assertEquals(AgentCharacter.Kind.ORBIT, orbit.kind)
+        assertEquals("Page Orbit", orbit.name)
+        assertEquals("atom", orbit.symbol)
+        assertEquals(listOf(RoomLens.STORY), RoomLens.available(RoomLens.Inputs(orbit, hasScreen = true, workflowCount = 0, canAskForChanges = true)))
+    }
+
     @Test fun `a Page Aura chat is its own character, says its name once, stops the reply and offers no photo button`() {
         val aura = AgentCharacter.from(AgentBackend.Known(InterventionBackend.AURA), "anthropic")
         assertEquals(AgentCharacter.Kind.AURA, aura.kind)

@@ -8,7 +8,7 @@ export type InterventionKind =
 
 /// Which agent fired the intervention. Optional on the wire; missing →
 /// "claude" for back-compat with pre-Phase-4 Macs and the hook.
-export type InterventionBackend = "claude" | "codex" | "aura";
+export type InterventionBackend = "claude" | "codex" | "aura" | "orbit";
 
 /// Where the agent is running. Optional on the wire; missing → "terminal".
 export type InterventionSource =

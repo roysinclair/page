@@ -55,6 +55,7 @@ data class PageColors(
     val backendClaude: Color,
     val backendCodex: Color,
     val backendAura: Color,
+    val backendOrbit: Color,
     /** Any other backend (local models, future agents): neutral slate. */
     val backendOther: Color,
     /** The signature gradient. Cyan→teal in dark, amber→chartreuse in light. */
@@ -80,6 +81,7 @@ data class PageColors(
         InterventionBackend.CLAUDE -> backendClaude
         InterventionBackend.CODEX -> backendCodex
         InterventionBackend.AURA -> backendAura
+        InterventionBackend.ORBIT -> backendOrbit
     }
 
     /** Brand tint for Claude and Codex, neutral for anything else. */
@@ -110,7 +112,7 @@ data class PageColors(
             warning = Color(0xFFB45309), success = Color(0xFF047857),
             kindApproval = Color(0xFF0F766E), kindUserInput = Color(0xFF0369A1),
             kindIdle = Color(0xFFB45309), kindRateLimit = Color(0xFFB42318),
-            backendClaude = Color(0xFF9A3412), backendCodex = Color(0xFF047857), backendAura = Color(0xFF6D28D9), backendOther = Color(0xFF475467),
+            backendClaude = Color(0xFF9A3412), backendCodex = Color(0xFF047857), backendAura = Color(0xFF6D28D9), backendOrbit = Color(0xFF9C2A9E), backendOther = Color(0xFF475467),
             pulseStart = Color(0xFFF2C94C), pulseEnd = Color(0xFFC9E265),
             isDark = false,
         )
@@ -121,7 +123,7 @@ data class PageColors(
             warning = Color(0xFFFBBF24), success = Color(0xFF34D399),
             kindApproval = Color(0xFF5EEAD4), kindUserInput = Color(0xFF38BDF8),
             kindIdle = Color(0xFFFBBF24), kindRateLimit = Color(0xFFE06464),
-            backendClaude = Color(0xFFE89E64), backendCodex = Color(0xFF10A37F), backendAura = Color(0xFFB7A4F5), backendOther = Color(0xFFA3ADC2),
+            backendClaude = Color(0xFFE89E64), backendCodex = Color(0xFF10A37F), backendAura = Color(0xFFB7A4F5), backendOrbit = Color(0xFFE78AE6), backendOther = Color(0xFFA3ADC2),
             pulseStart = Color(0xFF5EEAD4), pulseEnd = Color(0xFF38BDF8),
             isDark = true,
         )

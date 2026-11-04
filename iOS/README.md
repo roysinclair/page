@@ -82,7 +82,8 @@ home-screen name (`CFBundleDisplayName`) stays **Page Relay**.
 
 There are no accounts. The phone and the Mac share one relay token.
 
-1. On the Mac, click the Page Studio menu-bar icon → **Pair phone…**.
+1. On the Mac, click the Page Studio menu-bar icon → **Pair phone…**. On
+   Linux, run `paged pair`.
 2. In the app, tap **Scan pairing code**, or **Enter pairing code manually**
    and paste the JSON from **Copy pairing JSON**. The Simulator has no camera,
    so use the manual option there.

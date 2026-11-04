@@ -149,11 +149,11 @@ data class SessionAvailabilityCopy(
             is SessionAvailability.NeedsRepair ->
                 if (availability.keyMismatch) SessionAvailabilityCopy(
                     "key.slash", Tone.ERROR, "Re-pair with your computer",
-                    "Live updates from your computer can't be unlocked with this phone's key, so the pairing was probably regenerated on your computer. Unpair, then on your computer open Page Studio → Pair phone… and scan the code.",
+                    "Live updates from your computer can't be unlocked with this phone's key, so the pairing was probably regenerated on your computer. Unpair, then on your computer open Page Studio → Pair phone… (on Linux, run paged pair) and scan the code.",
                     "Re-pair…", Action.REPAIR, "Pairing key changed",
                 ) else SessionAvailabilityCopy(
                     "key", Tone.WARNING, "Re-pair with your computer to see live sessions",
-                    "This pairing has no session key: it came from an older Page Studio on your computer, or was made before live sessions existed. Update Page Studio on your computer, unpair here, then open Page Studio → Pair phone… on your computer and scan the new code. Pages keep working meanwhile.",
+                    "This pairing has no session key: it came from an older Page Studio on your computer, or was made before live sessions existed. Update Page Studio on your computer, unpair here, then open Page Studio → Pair phone… on your computer (on Linux, run paged pair) and scan the new code. Pages keep working meanwhile.",
                     "Re-pair…", Action.REPAIR, "Re-pair needed",
                 )
             SessionAvailability.MacOffline -> SessionAvailabilityCopy(

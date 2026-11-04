@@ -79,7 +79,7 @@ import { u, GUIDE, BLOB } from '../../data/site';
         <ol class="mt-6 list-decimal space-y-3 pl-6 text-ink-2 marker:font-mono marker:text-pulse-teal">
           <li>Set up <a class="link" href={u('relay/')}>your relay</a> and <a class="link" href={u('mac/#install')}>Page Studio for Mac</a> (or the Linux preview).</li>
           <li>Build the debug APK and install it with <code class="code-inline">adb</code> (USB debugging on), or copy the APK across and allow “Install unknown apps”.</li>
-          <li>On the computer choose <strong>Pair phone…</strong>. In the app, <strong>Pair with your computer</strong> scans the QR, or paste the pairing link instead.</li>
+          <li>On the computer choose <strong>Pair phone…</strong> (on Linux, run <code class="code-inline">paged pair</code>). In the app, <strong>Pair with your computer</strong> scans the QR, or paste the pairing link instead.</li>
           <li>Android 13 and later asks for notification permission once, after pairing. Turn on <strong>Stay connected</strong> for steady pages.</li>
         </ol>
         <p class="fine mt-5">A release APK is signed with the debug key unless you give it your own. Updating keeps your pairing only if the new APK uses the same key, so make one key and keep it outside the repo.</p>

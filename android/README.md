@@ -60,7 +60,7 @@ Play Console. The launcher name stays **Page Relay**.
 
 ## Pair
 
-1. On the Mac: Page Studio menu-bar icon → **Pair phone…**.
+1. On the Mac: Page Studio menu-bar icon → **Pair phone…**. On Linux: run `paged pair`.
 2. In the app: **Pair with your Mac** opens the scanner (CameraX with the on-device ZXing decoder), or
    **Paste a pairing link instead** with the JSON from **Copy pairing JSON**. Pasting is the way to pair an
    emulator.

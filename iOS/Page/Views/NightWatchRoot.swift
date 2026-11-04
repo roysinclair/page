@@ -126,5 +126,5 @@ private struct SheetHost: View {
 /// presents the same dialog itself); both read this copy.
 enum UnpairCopy {
     static func title(mac: String?) -> String { "Unpair \(mac ?? "this Mac")?" }
-    static let message = "This iPhone will stop receiving pages until you scan a pairing code again. On your computer, open Page Studio → Pair phone… and scan the new code."
+    static let message = "This iPhone will stop receiving pages until you scan a pairing code again. On your computer, open Page Studio → Pair phone… (on Linux, run paged pair) and scan the new code."
 }

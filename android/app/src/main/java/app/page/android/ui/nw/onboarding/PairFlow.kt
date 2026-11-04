@@ -111,7 +111,7 @@ fun PairFlow() {
                 )
                 RelayClient.ProbeResult.Unauthorized -> Stage.Problem("The relay rejected this code", "Show the pairing code on your computer again and scan the new one.", null, false)
                 is RelayClient.ProbeResult.Retired -> Stage.Problem(
-                    "This code was replaced", "${TokenRetirement.sentence(result.why)} On your computer, open Page Studio → Pair phone… and scan the code shown there now.", null, false,
+                    "This code was replaced", "${TokenRetirement.sentence(result.why)} On your computer, open Page Studio → Pair phone… (on Linux, run paged pair) and scan the code shown there now.", null, false,
                 )
             }
         }

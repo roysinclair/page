@@ -28,11 +28,11 @@ enum PairingValidationError: Error, Equatable {
         case .empty:
             return "Paste the pairing code from your computer first."
         case .notPageCode:
-            return "That isn't a Page Relay pairing code. On your computer, open Page Studio → Pair phone… and scan the code shown there."
+            return "That isn't a Page Relay pairing code. On your computer, open Page Studio → Pair phone… (on Linux, run paged pair) and scan the code shown there."
         case .unsupportedVersion(let v):
             return "This pairing code uses a newer format (v\(v)) than this app understands. Update Page Relay on your iPhone."
         case .missingToken:
-            return "The pairing code has no relay token. Open Pair phone… on your computer again and use the new code."
+            return "The pairing code has no relay token. Open Pair phone… on your computer again (on Linux, run paged pair) and use the new code."
         case .invalidRelay:
             return "The relay address in the pairing code isn't a valid URL. Check relayURL in Page Studio's settings on your computer."
         case .insecureRelay:

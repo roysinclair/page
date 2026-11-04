@@ -1,4 +1,5 @@
 import SwiftUI
+@testable import PageCore
 
 // The In-flight group: sessions working right now, as cards as big as the
 // review rows, so the whole state of the work reads at a glance: what each

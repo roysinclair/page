@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The regression guard for the frozen dialog. Dialogs used to block in a
 /// nested modal loop (`runModal`) started from inside a SwiftUI button action,
@@ -16,8 +17,10 @@ final class NWDialogRegressionTests: XCTestCase {
         .deletingLastPathComponent()
         .deletingLastPathComponent()
 
+    /// Every target's sources: the app (Sources/ClaudePowerMode) and the
+    /// core it was split from (Sources/PageCore), among others.
     private static var sourceRoot: URL {
-        packageRoot.appendingPathComponent("Sources/ClaudePowerMode", isDirectory: true)
+        packageRoot.appendingPathComponent("Sources", isDirectory: true)
     }
 
     /// Pure. The text with comments and the contents of string literals
@@ -114,7 +117,7 @@ final class NWDialogRegressionTests: XCTestCase {
     }
 
     func testTheRealDialogFileIsCleanEvenThoughItsCommentsMentionTheRule() throws {
-        let file = Self.sourceRoot.appendingPathComponent("UI/NWDialog.swift")
+        let file = Self.sourceRoot.appendingPathComponent("ClaudePowerMode/UI/NWDialog.swift")
         let text = try String(contentsOf: file, encoding: .utf8)
         XCTAssertTrue(text.contains("runModal"), "the comment that explains the rule is still there")
         XCTAssertEqual(Self.runModalLines(in: text), [])

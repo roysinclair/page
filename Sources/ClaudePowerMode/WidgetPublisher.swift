@@ -1,6 +1,7 @@
 import Foundation
 import WidgetKit
 import PageWidgetSupport
+@testable import PageCore
 
 /// Keeps the widgets' snapshot file current and asks WidgetKit to reload them.
 /// The decisions about when are `WidgetPublishGate`'s (pure); this class holds

@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 import PageWidgetSupport
 
 /// The Tower's Widgets page and the widgets' look: the steps for each macOS,

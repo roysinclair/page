@@ -1,6 +1,7 @@
 import Combine
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The Mac "Card glow" setting, end to end: the enum and its tokens, the
 /// config key (default, old files, bad values, round trip), the Preferences

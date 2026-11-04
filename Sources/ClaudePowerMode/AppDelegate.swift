@@ -3,6 +3,7 @@ import PageWidgetSupport
 import LocalAuthentication
 import SystemConfiguration
 import UserNotifications
+@testable import PageCore
 
 /// Round-trips a RateLimitEvent through a notification's userInfo, so the
 /// "Auto-resume" action still works after Page restarts (the old in-memory
@@ -321,14 +322,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
     }
 
-    static func agentName(_ backend: AgentBackendID) -> String {
-        switch backend {
-        case .claude: return "Claude"
-        case .codex: return "Codex"
-        case .aura: return "Page Aura"
-        case .orbit: return "Page Orbit"
-        }
-    }
+    static func agentName(_ backend: AgentBackendID) -> String { AgentDisplay.agentName(backend) }
 
     static func kindLabel(_ event: InterventionEvent) -> String {
         if event.subtype == "plan" { return "Plan approval" }

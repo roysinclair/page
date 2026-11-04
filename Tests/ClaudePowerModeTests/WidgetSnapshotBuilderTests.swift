@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 import PageWidgetSupport
 
 /// What Page tells its widgets: the counts and words come from the popover's

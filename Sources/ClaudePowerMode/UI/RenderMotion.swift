@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+@testable import PageCore
 
 // The signature motions at fixed timestamps, as contact sheets laid out like
 // board 07 (`--render-ui <dir> --motion`). Every frame is the shipped view

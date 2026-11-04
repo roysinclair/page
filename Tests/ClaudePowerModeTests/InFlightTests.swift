@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The popover's In-flight rows: building them, what each can do per host,
 /// the live preview, the receipts, the keys, and the discoverability pieces

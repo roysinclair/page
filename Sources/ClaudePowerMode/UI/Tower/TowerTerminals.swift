@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+@testable import PageCore
 
 private typealias P = NightWatch.Palette
 

@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 import Carbon.HIToolbox
 import Combine
+@testable import PageCore
 
 // The AppKit side of the Night Watch surfaces: borderless glass panels that
 // take keys without activating Page (the terminal you were in stays the active

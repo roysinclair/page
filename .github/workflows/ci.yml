@@ -2,7 +2,8 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # `linux`: the Linux port's branch, until it is merged.
+    branches: [main, linux]
   pull_request:
 
 concurrency:
@@ -24,6 +25,24 @@ jobs:
       - name: Unit tests
         # Pure logic + fakes only. The live injection test skips itself
         # unless PAGE_LIVE_SESSION_ID is set.
+        run: swift test
+
+  linux-build:
+    name: Linux (PageCore + paged)
+    runs-on: ubuntu-24.04
+    # The official Swift image: toolchain and its apt dependencies.
+    container: swift:6.2-noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tools the tests drive (tmux, python3)
+        run: apt-get update -q && apt-get install -y -q tmux python3
+      - name: Show Swift version
+        run: swift --version
+      - name: Build (debug)
+        run: swift build -c debug
+      - name: Build paged (release)
+        run: swift build -c release --product paged
+      - name: Unit tests (PageCore, PageLinux)
         run: swift test
 
   ios-build:

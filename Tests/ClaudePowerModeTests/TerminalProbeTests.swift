@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The probe's pure parts (macOS Automation answers, setup states, bundle
 /// ids) and `gather` with fakes only: no Automation prompt, no process table,

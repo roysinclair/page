@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 import PageWidgetSupport
 
 /// Telling macOS about the widgets: which bundle is asked about, which

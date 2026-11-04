@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+@testable import PageCore
 
 /// Side-effect-free renderer for the new UI: `ClaudePowerMode --render-ui <dir>`
 /// draws every surface with fixture data to PNGs (dark, 2x) and exits. It runs

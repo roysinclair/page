@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The Tower's store: what Apply writes and when, the coupled sliders, the
 /// relay test, the power helper and usage capture. Everything outside the

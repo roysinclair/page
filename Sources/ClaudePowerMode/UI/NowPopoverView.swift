@@ -1,4 +1,5 @@
 import SwiftUI
+@testable import PageCore
 
 extension NowModel.Mood {
     var palette: NightWatch.AuroraPalette {

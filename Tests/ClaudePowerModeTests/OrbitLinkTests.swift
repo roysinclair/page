@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// Page Orbit's link (docs/ORBIT-LINK.md): the Page Aura line protocol on its
 /// own socket, served by `AuraBackend` with the `.orbit` flavour. Its agents

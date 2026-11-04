@@ -1,5 +1,6 @@
 import SwiftUI
 import Metal
+@testable import PageCore
 
 // The clocks every Night Watch motion runs on, and the switches that stop
 // them. Page's first promise is battery life, so: ambient motion (aurora,

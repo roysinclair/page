@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+@testable import PageCore
 
 // The Tower window's chrome (sidebar, page scaffold, footer) and the small
 // controls its pages are made of. Pages themselves are in TowerPages.swift.

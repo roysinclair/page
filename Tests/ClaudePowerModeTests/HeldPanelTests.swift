@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The Mac panel's side of held messages: a working session's card lists
 /// what a phone asked to type once the turn ends, each with a Delete, and a

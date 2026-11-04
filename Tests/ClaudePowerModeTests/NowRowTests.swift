@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The rows of the Now popover: which keys each page offers (by trust class
 /// and backend), where a page sits, how rows rank and how a row is named.

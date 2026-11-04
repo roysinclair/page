@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+@testable import PageCore
 
 /// Every component on one sheet, for the harness. Not shipped UI.
 struct NWComponentSheet: View {

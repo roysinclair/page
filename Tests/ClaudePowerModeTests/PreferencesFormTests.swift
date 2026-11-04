@@ -1,5 +1,6 @@
 import XCTest
 @testable import ClaudePowerMode
+@testable import PageCore
 
 /// The form behind the Tower: every control reads and writes its own
 /// `Config` field and nothing else, and the save rules (trimming, the

@@ -15,6 +15,7 @@ export const jobs = [
   { name: 'hero', html: 'hero.html', w: 1200, h: 600, dpr: 2 },            // 2400x1200 README banner
   { name: 'hero@web', html: 'hero.html', w: 1200, h: 600, dpr: 2.4 },      // 2880x1440 website
   { name: 'og', html: 'og.html', w: 1200, h: 630, dpr: 1 },                // 1200x630 social card
+  { name: 'og-studio', html: 'og-studio.html', w: 1200, h: 630, dpr: 1 },  // the website home page's social card
   { name: 'feature-battery', html: 'feature-battery.html', w: 800, h: 500, dpr: 2 },
   { name: 'feature-lock-screen', html: 'feature-lock-screen.html', w: 800, h: 500, dpr: 2 },
   { name: 'feature-sessions', html: 'feature-sessions.html', w: 800, h: 500, dpr: 2 },
@@ -24,6 +25,7 @@ export const jobs = [
   { name: 'feature-relay', html: 'feature-relay.html', w: 800, h: 500, dpr: 2 },
   { name: 'feature-aura', html: 'feature-aura.html', w: 800, h: 500, dpr: 2 },
   { name: 'family', html: 'family.html', w: 1200, h: 750, dpr: 2 },        // 2400x1500
+  { name: 'screen-lock', html: 'screen-lock.html', w: 782, h: 1690, dpr: 1 }, // the website's power/lock (website/scripts/product-shots.py)
 ];
 
 const only = process.argv.slice(2);

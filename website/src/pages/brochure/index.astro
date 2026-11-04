@@ -6,7 +6,7 @@ import { u, kinds, PDF, GITHUB, AURA_GITHUB, GUIDE } from '../../data/site';
 // JPEG/PNG copies in img/print: Chromium embeds JPEG as-is in the PDF, which keeps the PDF small.
 // The showcase ones are made by scripts/showcase-crops.mjs (npm run crops) (the *-visual ones are the device side of a slide).
 const sizes: Record<string, [number, number, string]> = {
-  'family': [1800, 846, 'jpg'], 'feature-battery': [1400, 875, 'jpg'], 'feature-lock-screen': [1400, 875, 'jpg'],
+  'family': [1800, 834, 'jpg'], 'feature-battery': [1400, 875, 'jpg'], 'feature-lock-screen': [1400, 875, 'jpg'],
   'feature-terminals-visual': [900, 776, 'jpg'], 'feature-android-visual': [900, 836, 'jpg'],
   'feature-relay-visual': [900, 930, 'jpg'], 'feature-aura-visual': [900, 646, 'jpg'],
   'app-icon': [200, 200, 'png'], 'iphone-scan': [520, 1198, 'jpg'], 'iphone-tower': [520, 1432, 'jpg'],
@@ -304,10 +304,13 @@ const pTower = img('iphone-tower');
   /* four products */
   .four { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 2); flex: 1; min-height: 0; }
   .four .card { display: flex; flex-direction: column; gap: calc(var(--u) * .6); padding: calc(var(--u) * 1.6); min-height: 0; }
-  .four .card p:last-child { font-size: calc(var(--u) * 1.75); line-height: 1.45; }
+  .four .card p:last-child { font-size: calc(var(--u) * 1.66); line-height: 1.43; }
   .thumb { border-radius: calc(var(--u) * 1.4); overflow: hidden; height: calc(var(--u) * 33); background: #0A0C11; border: 1px solid rgba(255,255,255,.08); margin-bottom: calc(var(--u) * 1); position: relative; flex: none; }
   .thumb img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
   .thumb-top img { object-position: center top; }
+  /* The second row's art is wider (Page Aura's visual is 1.39:1), so its thumbs are shorter and show all of it. */
+  .four .thumb { height: calc(var(--u) * 31); }
+  .four .card:nth-child(n+3) .thumb { height: calc(var(--u) * 27); }
 
   /* moments */
   .kinds { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 1.4); }

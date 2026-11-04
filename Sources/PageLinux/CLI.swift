@@ -35,7 +35,8 @@ public enum PagedCLI {
         let command = args.isEmpty ? "help" : args.removeFirst()
         switch command {
         case "run":
-            PagedDaemon(files: files).run()
+            let daemon = PagedDaemon(files: files)
+            daemon.run()
         case "start": return start(files)
         case "stop": return stop(files)
         case "status": return status(files)

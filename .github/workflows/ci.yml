@@ -40,10 +40,12 @@ jobs:
         run: swift --version
       - name: Build (debug)
         run: swift build -c debug
-      - name: Build paged (release)
-        run: swift build -c release --product paged
+      - name: Build paged (release, as install-linux.sh does)
+        run: swift build -c release --product paged --static-swift-stdlib
       - name: Unit tests (PageCore, PageLinux)
         run: swift test
+      - name: Script syntax
+        run: bash -n install-linux.sh && bash -n hooks/page-notify.sh
 
   ios-build:
     name: iOS build (simulator)

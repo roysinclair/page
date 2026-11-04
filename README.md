@@ -116,6 +116,7 @@ Everything below is the detailed reference.
 - [Overview](#overview)
 - [Features](#features): keep-awake, alerts, battery pause, phone pages,
   approvals everywhere, reply delivery, live sessions, Codex, local models, rate limits
+- [Linux](#linux): `paged`, the headless daemon
 - [Getting started](#getting-started): the short version of the setup guide
 - [Configuration](#configuration)
 - [How it works](#how-it-works)
@@ -126,7 +127,7 @@ Everything below is the detailed reference.
 - [Development](#development)
 - [Contributing, security, license](#contributing-security-license)
 
-More: [self-hosting guide](docs/SELF-HOSTING.md) · [wire protocol](docs/PROTOCOL.md)
+More: [Linux (`paged`)](docs/LINUX.md) · [self-hosting guide](docs/SELF-HOSTING.md) · [wire protocol](docs/PROTOCOL.md)
 · [sessions protocol](docs/SESSIONS-PROTOCOL.md) · [Page Aura link](docs/AURA-LINK.md)
 · [roadmap](docs/ROADMAP.md)
 
@@ -142,8 +143,10 @@ into the exact session that asked, or tells you why it couldn't.
 
 There are four pieces, all of which you run yourself:
 
-- **The Mac menu-bar app** (Swift/AppKit, `Sources/ClaudePowerMode`). It does
-  the detection, keep-awake, battery policy and reply delivery.
+- **The Mac menu-bar app** (Swift/AppKit, `Sources/ClaudePowerMode`) on the
+  shared core (`Sources/PageCore`), which does the detection, keep-awake,
+  battery policy and reply delivery. On Linux the same core runs as a
+  headless daemon, `paged` (see [Linux](#linux)).
 - **A relay Worker on your own Cloudflare account** (TypeScript, Durable
   Objects, `Cloudflare/`).
 - **The iOS app** (SwiftUI, `iOS/`) and **the Android app** (Kotlin and
@@ -446,6 +449,26 @@ With `autoResumeEnabled` on:
 `wakeViaPmsetEnabled` adds a `pmset schedule wake` one minute before the job
 fires. This needs the power helper (Preferences ▸ Power ▸ Install…, or
 `--enable-power-helpers`).
+
+## Linux
+
+`paged` is Page Power for Linux: a headless daemon and CLI on the same core
+as the Mac app. It runs as a systemd user service and pairs with the same
+phone apps and relay. It provides pages, approvals through the hook, typed
+replies and live sessions in tmux, WezTerm, kitty, Herdr and Claude Squad,
+logind keep-awake (lid included), the battery pause, rate-limit resume with
+systemd timers, and the Page Aura and Orbit link. It has no tray yet.
+
+```sh
+./install-linux.sh                                  # builds, installs to ~/.local/bin, enables paged.service; no sudo
+paged config set relayURL https://<your-worker>.workers.dev
+paged config set relayEnabled true
+paged pair && paged install-hooks && paged status
+```
+
+[docs/LINUX.md](docs/LINUX.md) covers what works, where the files live, and
+the limits. On GNOME Terminal or Konsole, run agents inside tmux for typed
+replies.
 
 ## Getting started
 
@@ -854,7 +877,10 @@ Logs:
 
 ```
 .
-├── Sources/ClaudePowerMode/     Mac menu-bar app (single SwiftPM executable target)
+├── Sources/PageCore/            the portable core (everything below unless marked Mac)
+│   └── Platform/                the OS seams: power, lid, wake, presence, processes, paths, sockets, …
+├── Sources/ClaudePowerMode/     Mac menu-bar app: AppKit/SwiftUI UI and widgets on PageCore
+├── Sources/PageLinux/, paged/   Linux implementations and the `paged` daemon/CLI (docs/LINUX.md)
 │   ├── Backends/                AgentBackend protocol, ClaudeBackend, CodexBackend
 │   ├── Codex/                   codex app-server JSON-RPC client, CodexInjector
 │   ├── Coordinator.swift        tick loop, shared relay, sync, battery effects
@@ -866,7 +892,8 @@ Logs:
 │   ├── PowerManager.swift, PowerBatteryPolicy.swift, SleepGuard.swift
 │   ├── RateLimitWatcher.swift, TranscriptParser.swift, ResumeScheduler.swift
 │   └── RelayClient.swift, PairingTokenManager.swift, ProcessRunner.swift, …
-├── Tests/ClaudePowerModeTests/  XCTest suites for the Mac app (`swift test`)
+├── Tests/PageCoreTests/        portable XCTest suites (run on macOS and Linux)
+├── Tests/ClaudePowerModeTests/  Mac UI suites; Tests/PageLinuxTests/ Linux suites with fixtures
 ├── Cloudflare/                  relay Worker + Durable Object (see its README)
 │   ├── src/                     index.ts, durable.ts, logic.ts (pure), apns.ts, types.ts
 │   └── test/                    node:test suites, incl. an end-to-end hook test
@@ -891,8 +918,8 @@ Logs:
 ## Development
 
 ```sh
-swift build                         # Mac app, debug
-swift test                          # Mac unit tests (XCTest)
+swift build                         # Mac app, debug (on Linux: PageCore + paged)
+swift test                          # unit tests (XCTest; PageCoreTests run on both)
 (cd Cloudflare && npm test)         # Worker tests (node:test, Node ≥ 22.18), incl. the hook end to end
 (cd Cloudflare && npm run typecheck)
 ./iOS/Tests/run-logic-tests.sh      # iOS model/logic tests, no simulator needed

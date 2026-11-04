@@ -256,7 +256,7 @@ public struct PageStatusWidgetView: View {
         func face(battery: Bool, top: Bool) -> some View {
             HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(s.macName.isEmpty ? "PAGE" : "PAGE · " + s.macName.uppercased()).nwLabelStyle(vibrant: vibrant)
+                    Text(s.macName.isEmpty ? "PAGE STUDIO" : "PAGE STUDIO · " + s.macName.uppercased()).nwLabelStyle(vibrant: vibrant)
                         .lineLimit(1).minimumScaleFactor(0.8)
                     Text(WidgetDisplay.headline(s)).font(Font.system(size: 29, weight: .bold)).kerning(-0.7)
                         .foregroundColor(color).lineLimit(1).minimumScaleFactor(0.6).pageAccent()

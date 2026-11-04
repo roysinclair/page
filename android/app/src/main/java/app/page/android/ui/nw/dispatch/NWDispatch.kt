@@ -103,9 +103,9 @@ fun NWDispatchScreen(data: DispatchScreenData, actions: DispatchScreenActions, d
                 CircularProgressIndicator(Modifier.size(18.dp), color = NW.Palette.textSecondary.color, strokeWidth = 2.dp)
                 Text("Asking ${DeliveryPreview.macLabel(data.macName)}…", style = NW.Typo.body, color = NW.Palette.textSecondary.color)
             }
-            DispatchAvailability.DisabledOnMac -> Problem("lock", "Starting sessions from your phone is off", "On your Mac, open Page → Settings → Phone and turn on “Let my phone start new Claude sessions”.")
-            DispatchAvailability.NoFolders -> Problem("tray", "No folders yet", "Page hasn't seen Claude work in any folder in the last 30 days. Run claude in a project on your Mac once, and it appears here.")
-            is DispatchAvailability.Failed -> Problem("wifi.exclamationmark", "Couldn't ask your Mac", a.why, "Try again" to actions.retry)
+            DispatchAvailability.DisabledOnMac -> Problem("lock", "Starting sessions from your phone is off", "On your computer, open Page Studio → Settings → Phone and turn on “Let my phone start new Claude sessions”.")
+            DispatchAvailability.NoFolders -> Problem("tray", "No folders yet", "Page Studio hasn't seen Claude work in any folder in the last 30 days. Run claude in a project on your computer once, and it appears here.")
+            is DispatchAvailability.Failed -> Problem("wifi.exclamationmark", "Couldn't ask your computer", a.why, "Try again" to actions.retry)
         }
     }
 }

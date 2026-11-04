@@ -244,11 +244,11 @@ object DemoFixtures {
         SessionTranscript(
             "w1",
             listOf(
-                e("1", TranscriptRole.USER, "Make the relay stop dropping replies when the Mac is offline.", 3_600),
+                e("1", TranscriptRole.USER, "Make the relay stop dropping replies when the computer is offline.", 3_600),
                 e("2", TranscriptRole.ASSISTANT, "I'll read the router first, then queue replies and test it.", 3_560),
                 e("3", TranscriptRole.TOOL, "Read: Sources/Relay/Router.swift", 3_540, "Read"),
                 e("4", TranscriptRole.TOOL, "Edit: Sources/Relay/Router.swift", 3_000, "Edit"),
-                e("5", TranscriptRole.ASSISTANT, "Replies now wait in a queue until the Mac reconnects. Running the tests.", 600),
+                e("5", TranscriptRole.ASSISTANT, "Replies now wait in a queue until the computer reconnects. Running the tests.", 600),
                 e("6", TranscriptRole.TOOL, "Bash: vitest", 9, "Bash"),
             ),
             truncated = false,

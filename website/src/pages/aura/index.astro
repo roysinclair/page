@@ -9,7 +9,7 @@ import TrustBand from '../../components/TrustBand.astro';
 import Showcase from '../../components/Showcase.astro';
 import { u, AURA_GITHUB, AURA_APP, AURA_GUIDE, STUDIO_RELEASES, BLOB } from '../../data/site';
 ---
-<Layout current="aura/" world="aura" title="Page Aura" og={{ image: 'img/og/aura.webp', alt: 'Page Aura: a beautiful chat for Anthropic’s models, on your own key. Three chats side by side in the Page Aura window.' }} description="Page Aura is a free, bring-your-own-key chat app for Anthropic’s models: one HTML file or a desktop app for Windows, macOS and Linux. Your key stays in your keychain, with no server and no telemetry. Linked to Page Power, your phone is paged when a reply finishes or a chat asks to use a tool.">
+<Layout current="aura/" world="aura" title="Page Aura" og={{ image: 'img/og/aura.webp', alt: 'Page Aura: a beautiful chat for Anthropic’s models, on your own key. Three chats side by side in the Page Aura window.' }} description="Page Aura is a free, bring-your-own-key chat app for Anthropic’s models: one HTML file or a desktop app for Windows, macOS and Linux. Your key stays in your keychain, with no server and no telemetry. Linked to Page Relay, your phone is paged when a reply finishes or a chat asks to use a tool.">
   <!-- ================================================================ HERO -->
   <section class="relative isolate overflow-hidden pb-20 pt-14 sm:pb-28 sm:pt-20">
     <Field layout="hero" />
@@ -154,7 +154,7 @@ import { u, AURA_GITHUB, AURA_APP, AURA_GUIDE, STUDIO_RELEASES, BLOB } from '../
           <li>The page may only connect to <code class="code-inline">api.anthropic.com</code>, under a strict content security policy.</li>
           <li>No third-party code at runtime: every library is embedded and checked against its published fingerprint.</li>
           <li>The installers aren’t code-signed, so building the desktop app yourself is the recommended route; ready-made builds come with checksums.</li>
-          <li>One optional exception, off by default: the <a class="link" href="#link">Page Power link</a> below.</li>
+          <li>One optional exception, off by default: the <a class="link" href="#link">Page Relay link</a> below.</li>
         </ul>
       </div>
       <div class="relative" data-reveal="scale" style="--d:120ms">
@@ -178,18 +178,18 @@ import { u, AURA_GITHUB, AURA_APP, AURA_GUIDE, STUDIO_RELEASES, BLOB } from '../
             <span class="h-px w-8 bg-gradient-to-r from-aura-blue to-pulse-teal" aria-hidden="true"></span>
             <ProductIcon product="power" size={40} />
           </div>
-          <p class="label mt-6">The Page Power link</p>
+          <p class="label mt-6">The Page Relay link</p>
           <h2 class="h2 mt-4">Your chats, <span class="text-world">paged to your phone.</span></h2>
-          <p class="lede mt-5">On a Mac, Page Aura can hand its chats to Page Power. Page Power then does for them what it does for Claude Code and Codex.</p>
+          <p class="lede mt-5">On a Mac or a Linux machine running Page Studio, Page Aura can hand its chats to Page Relay, which then does for them what it does for Claude Code and Codex.</p>
         </div>
         <div data-reveal="scale" style="--d:100ms">
-          <Showcase name="showcase/feature-aura-visual" sizes="(min-width: 1024px) 560px, 100vw" alt="Your chats, paged too: a Page Aura chat where the model asks to read config/modem.yaml, with Deny, Always allow in this chat and Allow once; a thread runs to aura.sock, which stays on this Mac, and on to Page Power's Preferences, where the Page Aura agent is switched on." />
+          <Showcase name="showcase/feature-aura-visual" sizes="(min-width: 1024px) 560px, 100vw" alt="Your chats, paged too: a Page Aura chat where the model asks to read config/modem.yaml, with Deny, Always allow in this chat and Allow once; a thread runs to aura.sock, which stays on this computer, and on to Page Studio's Preferences, where the Page Aura agent is switched on." />
         </div>
       </div>
 
       <div class="mt-14 grid gap-4 md:grid-cols-3">
-        <div class="card card-tone tone-teal"><span class="ico"><Icon name="bolt" /></span><h3 class="h3 mt-5">Stays awake</h3><p class="body mt-2">The Mac stays awake while Page Aura is writing a reply, because an API stream dies if the Mac sleeps.</p></div>
-        <div class="card card-tone tone-aura"><span class="ico"><Icon name="bell" /></span><h3 class="h3 mt-5">Pages your phone</h3><p class="body mt-2">When a reply finishes while you’re away from the Mac, or when a chat asks to use an app on the Mac (a local MCP tool).</p></div>
+        <div class="card card-tone tone-teal"><span class="ico"><Icon name="bolt" /></span><h3 class="h3 mt-5">Stays awake</h3><p class="body mt-2">Page Power keeps the computer awake while Page Aura is writing a reply, because an API stream dies if the computer sleeps.</p></div>
+        <div class="card card-tone tone-aura"><span class="ico"><Icon name="bell" /></span><h3 class="h3 mt-5">Pages your phone</h3><p class="body mt-2">Page Relay pages you when a reply finishes while you’re away from your computer, or when a chat asks to use an app on it (a local MCP tool).</p></div>
         <div class="card card-tone tone-violet"><span class="ico"><Icon name="phone" /></span><h3 class="h3 mt-5">Answer from the phone</h3><p class="body mt-2">Allow once or Deny a tool request, or type a message that is sent into that chat. Never “always allow”.</p></div>
       </div>
 
@@ -197,19 +197,19 @@ import { u, AURA_GITHUB, AURA_APP, AURA_GUIDE, STUDIO_RELEASES, BLOB } from '../
         <div class="card !p-7 sm:!p-9">
           <h3 class="h3">Turn it on</h3>
           <ol class="steps mt-6">
-            <li>Run Page Power on the same Mac.</li>
-            <li>In Page Aura, open Settings ▸ <strong>Page Power on this Mac</strong> and switch on <strong>Link Page Aura to Page Power</strong>.</li>
-            <li>The line under the switch reads <em>Connected to Page Power</em>, or <em>Waiting for Page Power</em> while it retries every 5 seconds.</li>
+            <li>Run Page Studio on the same computer (Page Studio for Mac, or <code class="code-inline">paged</code> on Linux).</li>
+            <li>In Page Aura, open Settings ▸ <strong>Page Relay on this computer</strong> and switch on <strong>Link Page Aura to Page Relay</strong>.</li>
+            <li>The line under the switch reads <em>Connected to Page Relay</em>, or <em>Waiting for Page Relay</em> while it retries every 5 seconds.</li>
           </ol>
-          <p class="fine mt-6">In Page Power, Preferences ▸ Agents ▸ <strong>Page Aura</strong> must be on. It is on by default, because it only opens a local socket. The opt-in lives in Page Aura, where the link is off by default. It exists only in the macOS desktop app.</p>
+          <p class="fine mt-6">In Page Studio, Preferences ▸ Agents ▸ <strong>Page Aura</strong> must be on. It is on by default, because it only opens a local socket. The opt-in lives in Page Aura, where the link is off by default. It exists in the desktop app on macOS and Linux.</p>
         </div>
         <div class="card !p-7 sm:!p-9">
-          <h3 class="h3">What leaves the Mac</h3>
-          <p class="body mt-4">Page Aura never talks to the relay and never sees your pairing. It talks to Page Power over a Unix socket on the same Mac, readable only by you. Page Power then sends, through <strong class="text-ink">your own</strong> relay to <strong class="text-ink">your</strong> phone:</p>
+          <h3 class="h3">What leaves your computer</h3>
+          <p class="body mt-4">Page Aura never talks to the relay and never sees your pairing. It talks to Page Studio over a Unix socket on the same computer, readable only by you. Page Relay then sends, through <strong class="text-ink">your own</strong> relay to <strong class="text-ink">your</strong> phone:</p>
           <ul class="list-dots mt-4">
             <li>the titles of chats that are working or waiting;</li>
             <li>the end of a finished reply (the last 600 characters), or its error;</li>
-            <li>tool requests: the app name, the tool name and the input, clipped to 1500 characters and redacted by Page Power.</li>
+            <li>tool requests: the app name, the tool name and the input, clipped to 1500 characters and redacted by Page Studio.</li>
           </ul>
           <p class="fine mt-4">The first 180 characters can appear in a push notification. Never sent: your API key, your history or attachments.</p>
         </div>
@@ -240,7 +240,7 @@ import { u, AURA_GITHUB, AURA_APP, AURA_GUIDE, STUDIO_RELEASES, BLOB } from '../
           <a href={STUDIO_RELEASES} rel="noopener" class="btn-ghost btn-lg">Download</a>
           <a href={AURA_GUIDE} rel="noopener" class="btn-ghost btn-lg">Read the guide</a>
         </div>
-        <p class="fine mt-7"><a class="link" href={AURA_GITHUB} rel="noopener">Page Aura on GitHub</a> · <a class="link" href={u('mac/')}>Page Power for Mac</a></p>
+        <p class="fine mt-7"><a class="link" href={AURA_GITHUB} rel="noopener">Page Aura on GitHub</a> · <a class="link" href={u('mac/')}>Page Studio for Mac</a></p>
       </div>
     </div>
   </section>

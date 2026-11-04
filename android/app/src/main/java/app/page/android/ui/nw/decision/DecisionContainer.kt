@@ -311,7 +311,7 @@ private fun Placeholder(phase: DecisionPhase, failure: String?, modifier: Modifi
                 }
                 phase == DecisionPhase.Missing -> {
                     Text("This page is no longer available", style = NW.Typo.headline, color = NW.Palette.textPrimary.color, textAlign = TextAlign.Center)
-                    Text("It was probably answered or resolved on your Mac.", style = NW.Typo.body, color = NW.Palette.textSecondary.color, textAlign = TextAlign.Center)
+                    Text("It was probably answered or resolved on your computer.", style = NW.Typo.body, color = NW.Palette.textSecondary.color, textAlign = TextAlign.Center)
                     NWButton("Close", onClose)
                 }
                 else -> {

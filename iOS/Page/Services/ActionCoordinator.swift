@@ -173,7 +173,7 @@ final class ActionCoordinator: ObservableObject {
         guard api.inbox.contains(where: { $0.id == rowId }) else {
             pending[rowId] = nil
             tasks[rowId] = nil
-            localProblems[rowId] = "Already answered at the Mac"
+            localProblems[rowId] = "Already answered at your computer"
             // A message that waited 10 s for nothing isn't lost: it is back in the box.
             if wasCountdown, request.action == .custom {
                 SessionStore.shared.restoreDraft(scope: OutboxRestore.scope(pageId: rowId), text: request.text)

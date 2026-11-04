@@ -108,19 +108,19 @@ enum DecisionPhase: Equatable {
         case .open, .loading, .missing: return nil
         case .sending: return ("Sending…", .neutral)
         case .sent(let queued, let slow):
-            if queued { return ("Queued · your Mac is offline. It'll be typed in when the Mac reconnects (within an hour).", .warn) }
+            if queued { return ("Queued · your computer is offline. It'll be typed in when the computer reconnects (within an hour).", .warn) }
             if slow {
-                return (legacyRelay ? "Sent · waiting for your Mac to confirm…"
-                        : "Sent · waiting for your Mac. It hasn't confirmed this yet; if it reports a failure, or hasn't confirmed within 20 minutes, you can answer again.", .neutral)
+                return (legacyRelay ? "Sent · waiting for your computer to confirm…"
+                        : "Sent · waiting for your computer. It hasn't confirmed this yet; if it reports a failure, or hasn't confirmed within 20 minutes, you can answer again.", .neutral)
             }
-            return ("Sent · waiting for your Mac to confirm…", .neutral)
+            return ("Sent · waiting for your computer to confirm…", .neutral)
         case .checkingClose: return ("This page closed · checking whether your reply landed…", .neutral)
-        case .delivered(let detail): return ("Delivered · \(detail ?? "typed into the session on your Mac").", .good)
+        case .delivered(let detail): return ("Delivered · \(detail ?? "typed into the session on your computer").", .good)
         case .failed(let message): return (message, .problem)
-        case .unconfirmed: return ("Your Mac never confirmed this. If the session is still waiting, you can answer again.", .warn)
-        case .alreadyReplied: return ("Already answered at the Mac", .neutral)
+        case .unconfirmed: return ("Your computer never confirmed this. If the session is still waiting, you can answer again.", .warn)
+        case .alreadyReplied: return ("Already answered at your computer", .neutral)
         case .resolved(let why): return ("Resolved · \(why)", .neutral)
-        case .heldOnMac: return ("Held on your Mac until the rate limit resets. Page types it then.", .warn)
+        case .heldOnMac: return ("Held on your computer until the rate limit resets. Page Studio types it then.", .warn)
         case .retracted(let why): return (why, .neutral)
         }
     }

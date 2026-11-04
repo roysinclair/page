@@ -6,13 +6,13 @@ import Showcase from '../../components/Showcase.astro';
 import HoldRing from '../../components/HoldRing.astro';
 import { u, GUIDE, BLOB } from '../../data/site';
 ---
-<Layout current="iphone/" title="Page Power for iPhone" description="Page Power for iPhone: approve, deny or reply from the lock screen, watch live sessions with a transcript, start new work and see what changed. Built with your own Apple developer account and paired with a QR code.">
-  <PageHero label="Page Power for iPhone" title="The pages," accent="on your lock screen." lede="When an agent on your Mac needs you, your iPhone is paged. Approve, deny or type a reply without opening the app, and Page delivers it into the exact session that asked, or tells you why it couldn’t.">
+<Layout current="iphone/" title="Page Relay for iPhone" description="Page Relay for iPhone: approve, deny or reply from the lock screen, watch live sessions with a transcript, start new work and see what changed. Built with your own Apple developer account and paired with a QR code.">
+  <PageHero label="Page Relay for iPhone" title="The pages," accent="on your lock screen." lede="When an agent on your computer needs you, your iPhone is paged. Approve, deny or type a reply without opening the app, and Page Studio delivers it into the exact session that asked, or tells you why it couldn’t.">
     <Fragment slot="actions">
       <a href="#setup" class="btn-primary btn-arrow">Set it up</a>
       <a href="#limits" class="btn-ghost">Honest limits</a>
     </Fragment>
-    <Showcase name="showcase/feature-lock-screen-visual" eager motion="final-approach" sizes="(min-width: 1024px) 560px, 100vw" alt="Answer from the lock screen: an iPhone lock screen at 1:12 with two Page notifications asking to approve a Bash command, and the decision sheet for an undoable command. It shows the command, that Page will type 1 into a cmux pane on Studio MBP, and Approve, Deny and Tell it instead." />
+    <Showcase name="showcase/feature-lock-screen-visual" eager motion="final-approach" sizes="(min-width: 1024px) 560px, 100vw" alt="Answer from the lock screen: an iPhone lock screen at 1:12 with two Page Relay notifications asking to approve a Bash command, and the decision sheet for an undoable command. It shows the command, that Page Studio will type 1 into a cmux pane on Studio MBP, and Approve, Deny and Tell it instead." />
   </PageHero>
 
   <!-- NOW -->
@@ -23,7 +23,7 @@ import { u, GUIDE, BLOB } from '../../data/site';
         <h2 class="h2 mt-3">One ranked stream of what needs you.</h2>
         <p class="body mt-5">At the top, one sentence and the Pulse answer “do I need to do anything, and will my agents keep running?” Under it, the runway shows the next six hours: battery cutoff, usage limit and scheduled resumes.</p>
         <ul class="list-dots mt-6">
-          <li><strong>Decide.</strong> Approvals, questions and plans, with what Page will type and where.</li>
+          <li><strong>Decide.</strong> Approvals, questions and plans, with what Page Studio will type and where.</li>
           <li><strong>Look.</strong> Things going wrong or about to: a stuck session, a rate limit, a forecast that needs a choice.</li>
           <li><strong>Review.</strong> Finished turns with a headline such as “3 files · +120 −14 · tests passed”.</li>
           <li><strong>In flight.</strong> One strand per working session or workflow.</li>
@@ -54,16 +54,16 @@ import { u, GUIDE, BLOB } from '../../data/site';
           <HoldRing class="mt-5" />
         </div>
       </div>
-      <p class="fine mt-5 max-w-3xl">Approve, Deny and Carry on are sent with empty text, so a half-typed note can never override the button you tapped. Page never offers “don’t ask again” from the phone.</p>
+      <p class="fine mt-5 max-w-3xl">Approve, Deny and Carry on are sent with empty text, so a half-typed note can never override the button you tapped. Page Relay never offers “don’t ask again” from the phone.</p>
 
       <div class="mt-12 grid gap-5 md:grid-cols-2">
         <div class="card">
           <h3 class="h3">Answer from the lock screen</h3>
-          <p class="body mt-3">Approvals offer Approve, Deny and Deny with instructions; questions, Reply; idle sessions, Reply and Carry on. They run without opening the app, and anything that types into your Mac needs Face ID or your passcode first. Tapping the notification only opens the page; it never sends anything.</p>
+          <p class="body mt-3">Approvals offer Approve, Deny and Deny with instructions; questions, Reply; idle sessions, Reply and Carry on. They run without opening the app, and anything that types into your computer needs Face ID or your passcode first. Tapping the notification only opens the page; it never sends anything.</p>
         </div>
         <div class="card">
           <h3 class="h3">You see what happened</h3>
-          <p class="body mt-3">The reply screen shows delivery progress: sending, sent or queued (the Mac is offline), delivered with the Mac’s detail (“Approved in tmux pane %3”), or failed with a reason and a Retry. If the page was answered at the Mac while you were looking, the screen says so.</p>
+          <p class="body mt-3">The reply screen shows delivery progress: sending, sent or queued (the computer is offline), delivered with the computer’s detail (“Approved in tmux pane %3”), or failed with a reason and a Retry. If the page was answered at your computer while you were looking, the screen says so.</p>
         </div>
       </div>
     </div>
@@ -79,11 +79,11 @@ import { u, GUIDE, BLOB } from '../../data/site';
           <h2 class="h2 mt-3">Every session, <span class="text-grad">in your pocket.</span></h2>
           <p class="lede mt-5">Tap a card, a star or a strand to open the session as a room. Type into it or stop it at any time, not only when it pages you. Live session content is end-to-end encrypted.</p>
           <ul class="list-dots mt-6">
-            <li><strong>Story.</strong> A live transcript, never including tool output, redacted before it leaves the Mac.</li>
-            <li><strong>Screen.</strong> The terminal as it looks on the Mac, footer of workflows and sub-agents included (tmux, cmux, WezTerm, kitty and Herdr).</li>
+            <li><strong>Story.</strong> A live transcript, never including tool output, redacted before it leaves your computer.</li>
+            <li><strong>Screen.</strong> The terminal as it looks on your computer, footer of workflows and sub-agents included (tmux, cmux, WezTerm, kitty and Herdr).</li>
             <li><strong>Changes.</strong> The files changed this turn and a redacted diff.</li>
             <li><strong>Workflows.</strong> Each run’s progress, phase and agents. Read-only.</li>
-            <li><strong>Typing.</strong> Delivered as Typed, Queued behind the current step, or Refused with the reason: Page refuses over an open prompt, a half-typed draft, or when it can’t tell what the session is doing.</li>
+            <li><strong>Typing.</strong> Delivered as Typed, Queued behind the current step, or Refused with the reason: Page Studio refuses over an open prompt, a half-typed draft, or when it can’t tell what the session is doing.</li>
             <li><strong>Stop.</strong> Presses Esc in a working session, after a confirmation (terminals that support it).</li>
             <li><strong>Photos.</strong> Attached as an image in tmux and Claude Squad; elsewhere Claude gets the file’s location.</li>
             <li><strong>Several agents.</strong> Claude Code, Codex and local-model agents each keep their own character.</li>
@@ -97,29 +97,29 @@ import { u, GUIDE, BLOB } from '../../data/site';
   <section id="more" class="block-section border-t border-white/[0.06]">
     <div class="wrap">
       <p class="label">And</p>
-      <h2 class="h2 mt-3 max-w-3xl">Start work, widgets, and more than one Mac.</h2>
+      <h2 class="h2 mt-3 max-w-3xl">Start work, widgets, and more than one computer.</h2>
       <div class="mt-12 grid items-start gap-10 lg:grid-cols-[1fr_1.1fr]">
         <div class="grid gap-5">
           <div class="card">
             <h3 class="h3">Dispatch: start a new session</h3>
-            <p class="body mt-3">The + button starts a Claude session on the Mac: pick a folder Claude has worked in during the last 30 days, say what to do, and Page opens a cmux workspace running <code class="code-inline">claude</code> there. Off until you turn on <em>Let my phone start new Claude sessions</em> on the Mac.</p>
+            <p class="body mt-3">The + button starts a Claude session on your computer: pick a folder Claude has worked in during the last 30 days, say what to do, and Page Studio opens a cmux workspace running <code class="code-inline">claude</code> there. Off until you turn on <em>Let my phone start new Claude sessions</em> on your computer.</p>
           </div>
           <div class="card">
             <h3 class="h3">Widgets, Siri and Shortcuts</h3>
             <p class="body mt-3">Home Screen and Lock Screen widgets show how many sessions need you, how many agents are working and the battery forecast. Siri and Shortcuts can answer “What are my agents doing?” and “Stop my agents”, which asks first and needs an unlocked phone.</p>
           </div>
           <div class="card">
-            <h3 class="h3">Several Macs</h3>
-            <p class="body mt-3">Add another Mac in Settings without forgetting the first. One Mac is live at a time; the others are checked in the background and a banner tells you when one has pages waiting. Only the live Mac sends push notifications.</p>
+            <h3 class="h3">Several computers</h3>
+            <p class="body mt-3">Add another computer in Settings without forgetting the first. One computer is live at a time; the others are checked in the background and a banner tells you when one has pages waiting. Only the live Mac sends push notifications.</p>
           </div>
           <div class="card">
             <h3 class="h3">The Tower</h3>
-            <p class="body mt-3">Drops from the Mac chip: power, budget, Macs, attention, standing replies, agent hooks, and pairing and encryption.</p>
+            <p class="body mt-3">Drops from the computer chip: power, budget, computers, attention, standing replies, agent hooks, and pairing and encryption.</p>
           </div>
         </div>
         <div class="flex justify-center gap-4">
-          <Phone name="iphone-tower" crop={0.62} width={260} class="w-[48%]" alt="The Tower on iPhone: power with a battery gauge and cutoff, usage budget, the Macs you have paired with an Add another Mac row, and attention settings such as quiet hours and looks-stuck alerts." />
-          <Phone name="iphone-scan" crop={0.62} width={260} class="mt-12 w-[48%]" alt="The pairing screen: scan the code on your Mac from the Page menu, Pair phone, or paste a pairing link instead." />
+          <Phone name="iphone-tower" crop={0.62} width={260} class="w-[48%]" alt="The Tower on iPhone: power with a battery gauge and cutoff, usage budget, the computers you have paired with an Add another Mac row, and attention settings such as quiet hours and looks-stuck alerts." />
+          <Phone name="iphone-scan" crop={0.62} width={260} class="mt-12 w-[48%]" alt="The pairing screen: scan the code on your computer from the Page Studio menu, Pair phone, or paste a pairing link instead." />
         </div>
       </div>
     </div>
@@ -130,14 +130,14 @@ import { u, GUIDE, BLOB } from '../../data/site';
     <div class="wrap">
       <p class="label">Set it up</p>
       <h2 class="h2 mt-3 max-w-3xl">Build it with your own developer account.</h2>
-      <p class="lede mt-5 max-w-3xl">Page Power for iPhone isn’t in the App Store. You build it in Xcode with your own Apple ID or developer team, then pair it with a QR code from your Mac.</p>
+      <p class="lede mt-5 max-w-3xl">Page Relay for iPhone isn’t in the App Store. You build it in Xcode with your own Apple ID or developer team, then pair it with a QR code from your computer.</p>
       <div class="mt-12 grid gap-10 lg:grid-cols-[1fr_1fr]">
         <ol class="list-decimal space-y-4 pl-6 text-ink-2 marker:font-mono marker:text-pulse-teal">
-          <li>Deploy <a class="link" href={u('relay/')}>your relay</a> and set up <a class="link" href={u('mac/#install')}>Page Power for Mac</a>.</li>
+          <li>Deploy <a class="link" href={u('relay/')}>your relay</a> and set up <a class="link" href={u('mac/#install')}>Page Studio for Mac</a> (or the Linux preview).</li>
           <li>Install full Xcode, <a class="link" href="https://github.com/yonaskolb/XcodeGen" rel="noopener">XcodeGen</a>, and Xcode’s Metal Toolchain (the app compiles shaders). You need an iPhone on iOS 17 or later.</li>
           <li>Copy <code class="code-inline">Config/Local.xcconfig.example</code> to <code class="code-inline">Config/Local.xcconfig</code> and set your team id and a bundle id of your own. Use the same bundle id in the relay’s <code class="code-inline">wrangler.toml</code>.</li>
           <li>Run <code class="code-inline">xcodegen generate</code>, open the project, and run it on your iPhone.</li>
-          <li>On the Mac choose <strong>Pair phone…</strong>, and in the app tap <strong>Scan pairing code</strong>. The phone checks your relay before saving anything.</li>
+          <li>On the computer choose <strong>Pair phone…</strong>, and in the app tap <strong>Scan pairing code</strong>. The phone checks your relay before saving anything.</li>
         </ol>
         <div class="codeblock self-start">
           <div class="c"># from the repo root</div>
@@ -150,7 +150,7 @@ import { u, GUIDE, BLOB } from '../../data/site';
       </div>
       <div class="card mt-8 !p-6">
         <h3 class="h3">Push notifications need a paid Apple Developer Program team.</h3>
-        <p class="body mt-2">Free Apple IDs can’t get the push entitlement. With one you can still use Page, but pages only arrive while the app is open, and free provisioning expires after 7 days, so you rebuild weekly. With a paid team you add an APNs key to your relay and get lock-screen pages and actions.</p>
+        <p class="body mt-2">Free Apple IDs can’t get the push entitlement. With one you can still use Page Relay, but pages only arrive while the app is open, and free provisioning expires after 7 days, so you rebuild weekly. With a paid team you add an APNs key to your relay and get lock-screen pages and actions.</p>
       </div>
       <p class="mt-8"><a class="link text-[15px] font-semibold" href={GUIDE} rel="noopener">Step-by-step in the self-hosting guide →</a></p>
     </div>
@@ -166,12 +166,12 @@ import { u, GUIDE, BLOB } from '../../data/site';
         <li><strong>No push without a paid Apple team.</strong> Without one, pages show while the app is open.</li>
         <li><strong>Page contents aren’t end-to-end encrypted.</strong> Pages pass through your own relay and, for push, Apple’s servers. Live-session content is end-to-end encrypted.</li>
         <li><strong>Codex is narrower than Claude Code.</strong> Phone approvals go through Codex hooks; typing waits for the end of a turn.</li>
-        <li><strong>The Mac decides what is safe to type.</strong> It will refuse over a draft, an open prompt, or in a terminal it can’t type into.</li>
-        <li><strong>Treat the QR code as a password.</strong> Anyone with the token can read your pages and send replies. Regenerate it on the Mac if it leaks.</li>
+        <li><strong>The computer decides what is safe to type.</strong> It will refuse over a draft, an open prompt, or in a terminal it can’t type into.</li>
+        <li><strong>Treat the QR code as a password.</strong> Anyone with the token can read your pages and send replies. Regenerate it on your computer if it leaks.</li>
       </ul>
       <div class="mt-10 flex flex-wrap gap-3">
         <a class="btn-ghost" href={BLOB + 'iOS/README.md'} rel="noopener">iOS README</a>
-        <a class="btn-ghost" href={u('android/')}>Page Power for Android</a>
+        <a class="btn-ghost" href={u('android/')}>Page Relay for Android</a>
       </div>
     </div>
   </section>

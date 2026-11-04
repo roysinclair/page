@@ -134,7 +134,7 @@ class InFlightWireTest {
     @Test fun `the health word, a stuck page, and a silence are read in the iOS order`() {
         val rich = row(""""health":"longRunning","busySince":"${at(nowT0 - 720).toString()}"""")
         assertEquals(FlightHealth.STUCK, FlightHealth.classify(LiveSessionState.ACTIVE, null, true, nwNow, nwNow))
-        assertEquals("the Mac's health word beats a guess", FlightHealth.LONG_RUNNING, FlightHealth.classify(LiveSessionState.ACTIVE, rich.flight, true, nwNow, nwNow))
+        assertEquals("the computer's health word beats a guess", FlightHealth.LONG_RUNNING, FlightHealth.classify(LiveSessionState.ACTIVE, rich.flight, true, nwNow, nwNow))
         assertEquals(FlightHealth.STUCK, FlightHealth.classify(LiveSessionState.ACTIVE, row(""""health":"normal"""").flight, true, nwNow, nwNow))
         assertEquals(FlightHealth.LONG_RUNNING, FlightHealth.classify(LiveSessionState.ACTIVE, null, false, nwNow.minusSeconds(6L * 60), nwNow))
         assertEquals(FlightHealth.NORMAL, FlightHealth.classify(LiveSessionState.ACTIVE, null, false, nwNow.minusSeconds(60), nwNow))
@@ -309,7 +309,7 @@ class InFlightWireTest {
         assertEquals("session 2h 10m", card.session)
         assertEquals("Opus 4.7", card.model)
         assertNotNull(card.healthLine)
-        assertTrue("the Mac's healthDetail reaches the line", card.healthLine!!.contains("no progress for 15 min"))
+        assertTrue("the computer's healthDetail reaches the line", card.healthLine!!.contains("no progress for 15 min"))
     }
 
     @Test fun `the golden rate-limited and long-running rows read their health words, and a rate limit names its reset`() {

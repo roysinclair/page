@@ -350,7 +350,7 @@ struct DecisionContainer: View {
             } else if phase == .missing {
                 Image(systemName: "checkmark.circle").font(.system(.largeTitle)).foregroundColor(NightWatch.Palette.textTertiary.color)
                 Text("This page is no longer available").font(NightWatch.Typo.headline).foregroundColor(NightWatch.Palette.textPrimary.color)
-                Text("It was probably answered or resolved on your Mac.").font(NightWatch.Typo.body)
+                Text("It was probably answered or resolved on your computer.").font(NightWatch.Typo.body)
                     .foregroundColor(NightWatch.Palette.textSecondary.color).multilineTextAlignment(.center)
                 Button("Close") { dismiss() }.buttonStyle(NWButtonStyle(kind: .quiet)).frame(maxWidth: 200)
             } else {

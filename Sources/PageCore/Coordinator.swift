@@ -369,7 +369,7 @@ final class Coordinator {
         tickQueue.async { [weak self] in
             guard let self else { return }
             let cfg = self.tickConfig
-            Logger.shared.log("Page starting (cutoff=\(cfg.lowBatteryCutoff)% recovery=\(cfg.recoveryThreshold)% recoveryRequiresAC=\(cfg.recoveryRequiresAC) interval=\(cfg.checkIntervalSeconds)s relay=\(cfg.relayEnabled ? (cfg.relayBaseURL?.host ?? "misconfigured") : "off") codex=\(cfg.codexBackendEnabled) aura=\(cfg.auraBackendEnabled))")
+            Logger.shared.log("Page Studio starting (cutoff=\(cfg.lowBatteryCutoff)% recovery=\(cfg.recoveryThreshold)% recoveryRequiresAC=\(cfg.recoveryRequiresAC) interval=\(cfg.checkIntervalSeconds)s relay=\(cfg.relayEnabled ? (cfg.relayBaseURL?.host ?? "misconfigured") : "off") codex=\(cfg.codexBackendEnabled) aura=\(cfg.auraBackendEnabled))")
             for backend in self.backends {
                 backend.onNewIntervention = { [weak self] event in
                     self?.onNewIntervention?(event)
@@ -489,7 +489,7 @@ final class Coordinator {
         tokenObserver = nil
         // Clear and seal the sleep flag first, without waiting behind an
         // in-flight tick (SleepGuard and PowerManager have their own locks).
-        releaseSleepOverrides(reason: "Page quitting")
+        releaseSleepOverrides(reason: "Page Studio quitting")
         // Synchronous so the assertion is released and the app-server child
         // is gone before the process exits. Nothing on the tick queue ever
         // waits on main, so this can't deadlock.
@@ -509,7 +509,7 @@ final class Coordinator {
             // Second pass: the sealed guard can't have re-enabled, but a
             // clear that failed above gets one more try.
             power.releaseAll()
-            sleepGuard.forceDisable(reason: "Page quitting")
+            sleepGuard.forceDisable(reason: "Page Studio quitting")
             persistBattery()
         }
     }
@@ -1173,15 +1173,15 @@ final class Coordinator {
                 }
 
             case let .trippedWithoutPause(percent):
-                Logger.shared.log("Battery at \(percent)% on battery — low-battery action is off; no longer keeping the Mac awake")
+                Logger.shared.log("Battery at \(percent)% on battery — low-battery action is off; no longer keeping the computer awake")
                 if agentsWereKeptAwake {
                     onBatteryNotice?(BatteryNotice(
-                        title: "Battery \(percent)% — letting the Mac sleep",
-                        body: "Page stopped keeping the Mac awake. Plug in to keep your agents running."))
+                        title: "Battery \(percent)% — letting the computer sleep",
+                        body: "Page Power stopped keeping your computer awake. Plug in to keep your agents running."))
                 }
 
             case let .graceEnded(count):
-                Logger.shared.log("Low-battery grace period over (\(count) paused) — releasing keep-awake so the Mac can sleep")
+                Logger.shared.log("Low-battery grace period over (\(count) paused) — releasing keep-awake so the computer can sleep")
 
             case let .pageSessions(entries, percent):
                 sendLowBatteryPages(entries, percent: percent)
@@ -1189,7 +1189,7 @@ final class Coordinator {
                 let grace = Int(tickConfig.lowBatteryPauseGraceSeconds)
                 onBatteryNotice?(BatteryNotice(
                     title: "Battery \(percent)% — paused \(entries.count) session\(entries.count == 1 ? "" : "s")",
-                    body: "Asked \(names) to pause (with a short summary, except sessions on local models). The Mac can sleep in about \(grace) s — plug in to keep going."))
+                    body: "Asked \(names) to pause (with a short summary, except sessions on local models). The computer can sleep in about \(grace) s — plug in to keep going."))
 
             case let .recovered(sessions, resume, _, closePageIds):
                 Logger.shared.log("Power back (battery \(p.percent)%, onAC=\(p.onAC)) — \(sessions.count) paused session(s), resume=\(resume)")
@@ -1202,7 +1202,7 @@ final class Coordinator {
                     let n = sessions.count
                     onBatteryNotice?(BatteryNotice(
                         title: "Power restored — \(n) session\(n == 1 ? " is" : "s are") paused",
-                        body: "Choose “Resume paused sessions now” in Page’s menu, or reply “carry on” from your phone."))
+                        body: "Choose “Resume paused sessions now” in Page Studio’s menu, or reply “carry on” from your phone."))
                 }
             }
         }
@@ -1253,10 +1253,10 @@ final class Coordinator {
         case .hold:
             guard justRecovered else { return }
             let n = battery.pausedSessions.count
-            Logger.shared.log("Power back — holding the automatic resume of \(n) session(s) while you're at the Mac")
+            Logger.shared.log("Power back — holding the automatic resume of \(n) session(s) while you're at your computer")
             onBatteryNotice?(BatteryNotice(
                 title: "Power is back — \(n) session\(n == 1 ? "" : "s") will resume when you step away",
-                body: "Page doesn’t type into sessions while you’re using the Mac. Choose “Resume paused sessions now” to resume them now."))
+                body: "Page Studio doesn’t type into sessions while you’re using the computer. Choose “Resume paused sessions now” to resume them now."))
         case .run:
             battery.autoResumeStarted()
             resumeSessions(battery.pausedSessions, message: BatteryPolicy.recoveryMessage, automatic: true)
@@ -1386,7 +1386,7 @@ final class Coordinator {
         let session = entry.session
         guard let target = batteryTargets().first(where: { $0.0 == session.backend })?.1 else {
             relay?.sendReplyInjected(interventionId: id, method: "battery", success: false,
-                                     detail: "Page can’t resume this agent", output: nil)
+                                     detail: "Page Studio can’t resume this agent", output: nil)
             return
         }
         let stillLow = battery.isTripped && !lastPower.onAC
@@ -1397,12 +1397,12 @@ final class Coordinator {
                 if ok {
                     self.battery.removeSessions(keys: [BatteryPolicy.key(session)])
                     self.persistBattery()
-                    let detail = stillLow ? "Sent — the battery is still low, plug in or the Mac will sleep" : "Sent to the session"
+                    let detail = stillLow ? "Sent — the battery is still low, plug in or the computer will sleep" : "Sent to the session"
                     self.relay?.sendReplyInjected(interventionId: id, method: "battery", success: true, detail: detail, output: nil)
                     self.relay?.sendInterventionClosed(id: id, reason: "replied")
                 } else {
                     self.relay?.sendReplyInjected(interventionId: id, method: "battery", success: false,
-                                                  detail: "The session isn’t idle — check the Mac", output: nil)
+                                                  detail: "The session isn’t idle — check your computer", output: nil)
                 }
                 self.publishSnapshot()
             }

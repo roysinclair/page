@@ -42,13 +42,13 @@ sealed interface PairingValidationError {
 
     val message: String
         get() = when (this) {
-            Empty -> "Paste the pairing code from your Mac first."
-            NotPageCode -> "That isn't a Page pairing code. On your Mac, click the Page menu-bar icon → Pair phone… and scan the code shown there."
-            is UnsupportedVersion -> "This pairing code uses a newer format (v$version) than this app understands. Update Page on your phone."
-            MissingToken -> "The pairing code has no relay token. Open Pair phone… on your Mac again and use the new code."
-            InvalidRelay -> "The relay address in the pairing code isn't a valid URL. Check relayURL in your Mac's Page settings."
-            InsecureRelay -> "The relay address must start with https:// (or wss://). Update relayURL in your Mac's Page settings."
-            PlaceholderRelay -> "Your Mac is still using the example relay address. Deploy your Cloudflare Worker, set relayURL in your Mac's Page settings, then show the pairing code again."
+            Empty -> "Paste the pairing code from your computer first."
+            NotPageCode -> "That isn't a Page Relay pairing code. On your computer, open Page Studio → Pair phone… and scan the code shown there."
+            is UnsupportedVersion -> "This pairing code uses a newer format (v$version) than this app understands. Update Page Relay on your phone."
+            MissingToken -> "The pairing code has no relay token. Open Pair phone… on your computer again and use the new code."
+            InvalidRelay -> "The relay address in the pairing code isn't a valid URL. Check relayURL in Page Studio's settings on your computer."
+            InsecureRelay -> "The relay address must start with https:// (or wss://). Update relayURL in Page Studio's settings on your computer."
+            PlaceholderRelay -> "Your computer is still using the example relay address. Deploy your Cloudflare Worker, set relayURL in Page Studio's settings on your computer, then show the pairing code again."
         }
 }
 
@@ -98,7 +98,7 @@ object PairingValidator {
         }
 
         val host = (dict.str("host") ?: "").trim()
-        val name = if (host.isEmpty()) "Your Mac" else host.capped(60)
+        val name = if (host.isEmpty()) "Your computer" else host.capped(60)
         return PairingResult.Success(ValidatedPairing(token, relay, name, sessionKey(dict)))
     }
 

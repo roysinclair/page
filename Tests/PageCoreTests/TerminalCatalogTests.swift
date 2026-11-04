@@ -58,8 +58,8 @@ final class TerminalCatalogTests: XCTestCase {
     func testKittyWithItsLinesInPlaceButBlockedSessionsSaysRestartNotAddTheLines() {
         let f: [C.ID: C.Facts] = [.kitty: facts(blocked: 1, blocker: KittyBridge.remoteControlHint, setup: .done)]
         let added = row(.kitty, C.rows(f, pageAddedKittyLines: true))
-        XCTAssertEqual(added.status, .needsSetup("Restart kitty to turn on the lines Page added"))
-        XCTAssertEqual(added.note, "Restart kitty to turn on the lines Page added")
+        XCTAssertEqual(added.status, .needsSetup("Restart kitty to turn on the lines Page Studio added"))
+        XCTAssertEqual(added.note, "Restart kitty to turn on the lines Page Studio added")
         XCTAssertEqual(added.action, .undo)
         let byUser = row(.kitty, C.rows(f, pageAddedKittyLines: false))
         XCTAssertEqual(byUser.status, .needsSetup("Restart kitty to turn on the remote control lines in kitty.conf"))
@@ -76,7 +76,7 @@ final class TerminalCatalogTests: XCTestCase {
     func testARunningKittyThatNeverReadTheLinesIsNeedsSetupEvenWithNoSession() {
         let f: [C.ID: C.Facts] = [.kitty: facts(setup: .needsRestart)]
         let r = row(.kitty, C.rows(f, pageAddedKittyLines: true))
-        XCTAssertEqual(r.status, .needsSetup("Restart kitty to turn on the lines Page added"))
+        XCTAssertEqual(r.status, .needsSetup("Restart kitty to turn on the lines Page Studio added"))
         XCTAssertEqual(r.action, .undo)
         XCTAssertTrue(r.noteIsWarning)
     }
@@ -84,7 +84,7 @@ final class TerminalCatalogTests: XCTestCase {
     func testBlockedAndWorkingKittySessionsAlongsideRestartNote() {
         let f: [C.ID: C.Facts] = [.kitty: facts(typable: 1, blocked: 1, blocker: KittyBridge.remoteControlHint, setup: .done)]
         let r = row(.kitty, C.rows(f, pageAddedKittyLines: true))
-        XCTAssertEqual(r.note, "1 session can't be typed into: Restart kitty to turn on the lines Page added")
+        XCTAssertEqual(r.note, "1 session can't be typed into: Restart kitty to turn on the lines Page Studio added")
         XCTAssertEqual(r.action, .undo)
     }
 
@@ -93,7 +93,7 @@ final class TerminalCatalogTests: XCTestCase {
     }
 
     func testBlockedWithNoReasonGetsAFallback() {
-        XCTAssertEqual(C.status(C.entry(.wezterm), facts(blocked: 1)), .needsSetup("Page can't type into it yet"))
+        XCTAssertEqual(C.status(C.entry(.wezterm), facts(blocked: 1)), .needsSetup("Page Studio can't type into it yet"))
     }
 
     func testTerminalAndITermStillNeedingAutomationAreNeedsSetupEvenWhenTypable() {
@@ -361,7 +361,7 @@ final class TerminalCatalogTests: XCTestCase {
 
     func testKittyDoneSaysSoWhenNothingWasAdded() {
         let outcome = KittyConfigFile.Outcome(url: URL(fileURLWithPath: "/k/kitty.conf"), backup: nil, added: [])
-        XCTAssertEqual(C.kittyDoneText(outcome), TowerStatusLine(text: "kitty already lets Page in.", tone: .good))
+        XCTAssertEqual(C.kittyDoneText(outcome), TowerStatusLine(text: "kitty already lets Page Studio in.", tone: .good))
     }
 
     func testKittyDoneNamesTheFileAndTheBackup() {

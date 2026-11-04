@@ -27,7 +27,7 @@ class PairingTest {
         val curly = "{\u201Cv\u201D:1,\u201Ctoken\u201D:\u201Cabcdefghijklmnopqrstuvwxyz\u201D,\u201Crelay\u201D:\u201Chttps://r.example.com/\u201D}"
         val p = ok(curly)
         assertEquals("https://r.example.com", p.relayBaseUrl)
-        assertEquals("Your Mac", p.macName)
+        assertEquals("Your computer", p.macName)
     }
 
     @Test

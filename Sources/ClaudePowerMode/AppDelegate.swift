@@ -170,7 +170,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
     func application(_ application: NSApplication, open urls: [URL]) {
         for url in urls {
             guard let route = WidgetRoute.parse(url) else {
-                Logger.shared.log("Ignored a URL Page doesn’t handle: \(url.scheme ?? "?")://")
+                Logger.shared.log("Ignored a URL Page Studio doesn’t handle: \(url.scheme ?? "?")://")
                 continue
             }
             open(route)
@@ -282,7 +282,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         content.title = "\(Self.agentName(event.backend)) rate limit reached"
         content.subtitle = event.projectName
         if let scheduled = notice.scheduledResume {
-            content.body = "Resets at \(resetStr). Page will resume the session at \(Self.timeFormatter.string(from: scheduled.resetTime))."
+            content.body = "Resets at \(resetStr). Page Studio will resume the session at \(Self.timeFormatter.string(from: scheduled.resetTime))."
             content.categoryIdentifier = NotificationCategory.rateLimitInfo
         } else if notice.canResume {
             content.body = "Resets at \(resetStr). Choose Auto-resume to continue the session then."
@@ -441,8 +441,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
             // The glyph's arc and the count say what matters at a glance; on AC the
             // charge is in the tooltip rather than beside the glyph.
             button.toolTip = model.glyph.mode == .paused
-                ? "Page — Paused for battery · resumes on power"   // the glyph's low glow, in words
-                : "Page — \(snap.statusLine)" + (p.hasBattery && p.onAC ? " · battery \(p.percent)%" : "")
+                ? "Page Studio — Paused for battery · resumes on power"   // the glyph's low glow, in words
+                : "Page Studio — \(snap.statusLine)" + (p.hasBattery && p.onAC ? " · battery \(p.percent)%" : "")
             button.setAccessibilityLabel(model.accessibilityLabel)
         }
     }
@@ -489,7 +489,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
             button.target = self
             button.action = #selector(statusItemClicked(_:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-            button.setAccessibilityLabel("Page — starting")
+            button.setAccessibilityLabel("Page Studio — starting")
         }
         glyph.start()
 
@@ -975,7 +975,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         addAction(menu, "Open Log", #selector(openLog), key: "l")
         addAction(menu, "Reload Config", #selector(reloadConfig), key: "r")
         menu.addItem(.separator())
-        addAction(menu, "Quit Page", #selector(quit), key: "q")
+        addAction(menu, "Quit Page Studio", #selector(quit), key: "q")
     }
 
     /// "   page — cmux › page · 4m" with "Open terminal" and "Type…" under it.
@@ -1159,7 +1159,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         }
         let confirm = NWDialogSpec.confirm(
             "Keep agents running with the lid closed on battery?",
-            "While an agent is mid-turn, Page will stop the Mac sleeping when you close the lid on battery. "
+            "While an agent is mid-turn, Page Power will stop the Mac sleeping when you close the lid on battery. "
                 + "At your low-battery level it asks the agents to pause, then lets the Mac sleep. "
                 + "A closed MacBook in a bag will stay awake and warm while agents work."
                 + (coordinator.sleepGuardHelperMissing ? "\n\nmacOS will ask for your password once to allow this." : ""),

@@ -68,7 +68,7 @@ test("/status advertises reply-retract-v1", async () => {
   assert.ok((await call(relay, "GET", "/status")).body.features.includes(REPLY_RETRACT_FEATURE));
 });
 
-test("retract before the flush: the entry is gone, nothing reaches the Mac, the page is free again", async () => {
+test("retract before the flush: the entry is gone, nothing reaches the computer, the page is free again", async () => {
   const phone = connect(false);
   await open(relay, iv("a"));
   assert.deepEqual((await call(relay, "POST", "/reply/a", { text: "use the other branch", action: "custom" })).body, { ok: true, queued: true });
@@ -96,7 +96,7 @@ test("retract before the flush: the entry is gone, nothing reaches the Mac, the 
   assert.equal(mac.frames("reply").length, 0, "nothing to flush");
 });
 
-test("retract after the flush: 409 too_late / forwarded, then delivered; the Mac keeps its one reply", async () => {
+test("retract after the flush: 409 too_late / forwarded, then delivered; the computer keeps its one reply", async () => {
   await open(relay, iv("a"));
   await call(relay, "POST", "/reply/a", { text: "hi" });
   const mac = connect(true);
@@ -290,7 +290,7 @@ test("a retract sends no push, even with no phone socket open", async () => {
   assert.equal(pushes.filter(p => p.body.aps?.alert).length, 1);
 });
 
-test("a Mac-side delete (reply.injected method retracted) frees the page without an alert", async () => {
+test("a computer-side delete (reply.injected method retracted) frees the page without an alert", async () => {
   const r = new UserRelay(new FakeState(), apnsEnv());
   await call(r, "POST", "/device/register", { apnsToken: "a".repeat(64), apnsEnv: "development" });
   const mac = connect(true, r);
@@ -312,7 +312,7 @@ test("a Mac-side delete (reply.injected method retracted) frees the page without
   assert.equal(pushes.filter(p => p.body.aps?.alert).length, 1);
 });
 
-test("a Mac-side delete broadcasts reply.result with cancelled", async () => {
+test("a computer-side delete broadcasts reply.result with cancelled", async () => {
   const mac = connect(true);
   const phone = connect(false);
   await open(relay, iv("a"));

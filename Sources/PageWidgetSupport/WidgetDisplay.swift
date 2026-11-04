@@ -27,7 +27,7 @@ public struct WidgetCatalogEntry: Equatable, Identifiable {
 
 public enum WidgetCatalog {
     public static let status = WidgetCatalogEntry(
-        kind: PageWidgetConstants.statusKind, name: "Page",
+        kind: PageWidgetConstants.statusKind, name: "Page Studio",
         detail: "Who needs you, who is working, and how long the runway is clear.",
         sizes: [.small, .medium, .large])
     public static let usage = WidgetCatalogEntry(
@@ -99,13 +99,13 @@ public enum WidgetDisplay {
     public static func note(_ s: WidgetSnapshot, now: Date, timeZone: TimeZone = .current) -> String? {
         switch s.freshness(now: now) {
         case .fresh: return nil
-        case .notRunning: return "Page isn’t running · open it to update"
-        case .stale(let since): return "Last update \(clock(since, timeZone: timeZone)) · Page may be asleep"
+        case .notRunning: return "Page Studio isn’t running · open it to update"
+        case .stale(let since): return "Last update \(clock(since, timeZone: timeZone)) · Page Studio may be asleep"
         }
     }
 
     /// Pure. "Open Page to start": no snapshot at all.
-    public static let missing = "Open Page to start"
+    public static let missing = "Open Page Studio to start"
 
     // MARK: - Chips
 

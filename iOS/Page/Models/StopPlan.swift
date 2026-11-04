@@ -64,7 +64,7 @@ enum StopOutcome: Equatable {
 
     var message: String {
         switch self {
-        case .asked: return "Asked your Mac to stop your working agents."
+        case .asked: return "Asked your computer to stop your working agents."
         case .nothingBusy: return "Nothing was working, so nothing was sent."
         case .cancelled: return "Cancelled. Nothing was sent."
         case .unavailable(let why): return why

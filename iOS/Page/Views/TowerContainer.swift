@@ -59,7 +59,7 @@ struct TowerContainer: View {
             Button("Remove", role: .destructive) { if let m = removingMac { pairing.remove(m.id) } }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This iPhone forgets that Mac. Scan its pairing code again to add it back.")
+            Text("This iPhone forgets that computer. Scan its pairing code again to add it back.")
         }
     }
 
@@ -104,7 +104,7 @@ struct TowerContainer: View {
         let live: String
         switch availability {
         case .ready: let n = sessions.sessions.count; live = "\(n) live session\(n == 1 ? "" : "s") · end-to-end encrypted"
-        case .needsRepair: live = "Re-pair with your Mac to turn on live sessions"
+        case .needsRepair: live = "Re-pair with your computer to turn on live sessions"
         default: live = SessionAvailabilityCopy(availability).shortStatus
         }
         return TowerScreenData(

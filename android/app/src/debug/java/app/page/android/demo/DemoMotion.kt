@@ -120,7 +120,7 @@ object DemoMotion {
             // three rings the pulse draws for them.
             "motion-pulse-waiting3" -> listOf(o[0], o[1], DemoFixtures.iv("p5", "sensor-hub", InterventionKind.APPROVAL, "[Bash] pio run -t upload\nFlash the board", 90, session = "w2"))
             // Paused for battery: the Mac's low-battery page is what pauses the fleet.
-            "motion-dusk" -> o + DemoFixtures.iv("pz", "bottle-flip", InterventionKind.IDLE, "Page paused your agents at 10% battery.", 30, sub = "low_battery")
+            "motion-dusk" -> o + DemoFixtures.iv("pz", "bottle-flip", InterventionKind.IDLE, "Page Power paused your agents at 10% battery.", 30, sub = "low_battery")
             "motion-dawn" -> o
             else -> null
         }

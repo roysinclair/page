@@ -68,16 +68,16 @@ object GestureGuide {
         ),
         GestureEntry(
             "will-type", "keyboard", "Will type …", "on a decision",
-            "Says exactly what lands on your Mac, in which terminal.",
-            NWTip.WILL_TYPE, "Will type … shows exactly what lands on your Mac",
+            "Says exactly what lands on your computer, in which terminal.",
+            NWTip.WILL_TYPE, "Will type … shows exactly what lands on your computer",
         ),
         GestureEntry("cancel", "xmark.circle", "Tap Cancel", "while the ring runs", "Takes an approval back before anything leaves the phone."),
         GestureEntry("stop", "stop.circle", "Hold Stop", "in a session", "Presses Esc in that session after a 0.6 second hold."),
-        GestureEntry("plus", "plus.circle", "Tap +", "on the bottom bar", "Starts new work on your Mac."),
+        GestureEntry("plus", "plus.circle", "Tap +", "on the bottom bar", "Starts new work on your computer."),
         GestureEntry("stop-all", "stop.circle.fill", "Hold +", "on the bottom bar", "Stops every working agent, once your phone confirms it."),
         GestureEntry("sides", "arrow.left.arrow.right", "Swipe sideways", "on the top or the bottom bar", "Goes between Now and Lanes."),
-        GestureEntry("pull", "arrow.down", "Pull down", "on Now", "Checks in with your Mac again."),
-        GestureEntry("chip", "bolt.horizontal", "Tap the Mac chip or the Runway", "on Now", "Opens this Tower, at Budget for the Runway."),
+        GestureEntry("pull", "arrow.down", "Pull down", "on Now", "Checks in with your computer again."),
+        GestureEntry("chip", "bolt.horizontal", "Tap the computer chip or the Runway", "on Now", "Opens this Tower, at Budget for the Runway."),
     )
 
     /** Quick Settings, widgets and the like (the screens stage fills this in as they ship). */

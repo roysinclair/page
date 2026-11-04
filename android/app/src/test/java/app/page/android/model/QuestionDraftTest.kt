@@ -109,7 +109,7 @@ class QuestionDraftTest {
             "Will choose Green; Ham, Corn; Small · cmux › page · Studio MBP",
             sheet.previewLine("cmux › page", "Studio MBP"),
         )
-        assertTrue(sheet.previewLine(null, "").endsWith("· your Mac"))
+        assertTrue(sheet.previewLine(null, "").endsWith("· your computer"))
         sheet.back()
         assertEquals(AnswerSheet.Step.Question(2), sheet.step)
     }
@@ -266,7 +266,7 @@ class QuestionDraftTest {
         val blocked = session("waitingOnUser", canType = false, ask = ask, blocker = "Checking where this session runs…")
         assertNull("no keys can be pressed there: no picker, Tell it instead", AnswerPicker.ask(blocked, pageIsQuestion = true))
         val noAsk = session("waitingOnUser", canType = true, ask = null)
-        assertNull("not from a Mac that sent no ask", AnswerPicker.ask(noAsk, pageIsQuestion = true))
+        assertNull("not from a computer that sent no ask", AnswerPicker.ask(noAsk, pageIsQuestion = true))
     }
 
     @Test fun `submit sends keys without a hook, numbers as text through a hook page, and refuses with a reason otherwise`() {

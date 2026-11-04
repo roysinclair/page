@@ -229,9 +229,9 @@ class PhotoUploader(
         /** The same numbers as iOS `PhotoUploadMachine` (backoffStart 0.5 s, backoffCap 4 s, maxRateLimits 12, maxAttempts 3). */
         const val MAX_RATE_LIMITED_RETRIES = 12
         const val MAX_FAILURES = 3
-        const val OFFLINE = "Your Mac went offline"
+        const val OFFLINE = "Your computer went offline"
 
         /** What a bubble says when `inputImages` got no answer in 30 s. */
-        const val NO_ANSWER = "No answer from your Mac. It may still arrive; check the story before sending again."
+        const val NO_ANSWER = "No answer from your computer. It may still arrive; check the story before sending again."
     }
 }

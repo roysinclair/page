@@ -586,7 +586,7 @@ enum LowBatteryAction: String, Codable, CaseIterable, Equatable {
         switch self {
         case .pause: return "Ask agents to pause now"
         case .afterTurn: return "Ask agents to stop after the current step"
-        case .off: return "Don’t message agents — just let the Mac sleep"
+        case .off: return "Don’t message agents — just let the computer sleep"
         }
     }
 }

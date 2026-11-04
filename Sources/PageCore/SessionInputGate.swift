@@ -121,12 +121,12 @@ enum SessionInputGate {
     static let digitWhileBusyMessage = "Starts with a number: wait for Claude to finish, or add a word first"
     static let queuedMessage = "Queued — Claude reads it after the current step"
     static let codexQueuedMessage = "Queued — Codex reads it after the current step"
-    static let codexMidTurnMessage = "Codex is mid-turn — Page can type once the turn ends"
+    static let codexMidTurnMessage = "Codex is mid-turn — Page Studio can type once the turn ends"
     static let waitingMessage = "A prompt is waiting — answer it first"
-    static let unknownStateMessage = "Page can't tell what this session is doing — type at the Mac"
+    static let unknownStateMessage = "Page Studio can't tell what this session is doing — type at your computer"
     static let endedMessage = "The session has ended"
     static let notIdleMessage = "It isn't working right now"
-    static let backgroundShellMessage = "Only a background command is running — Stop can't end that; stop it at the Mac"
+    static let backgroundShellMessage = "Only a background command is running — Stop can't end that; stop it at your computer"
 
     /// Trimmed text of 1–8000 characters, or why not.
     static func validateText(_ raw: String) -> Result<String, SessionCommandResult> {
@@ -179,7 +179,7 @@ enum SessionInputGate {
         case .tmux?, .terminalApp?, .iTerm?, .cmux?, .wezterm?, .kitty?, .herdr?:
             break
         case .unsupported(let app)?:
-            return .refuse(.refused(.notTypable, "Page can't type into \(app) yet"))
+            return .refuse(.refused(.notTypable, "Page Studio can't type into \(app) yet"))
         case .unreachable(let why)?:
             return .refuse(.refused(.notTypable, why))
         case .unknown?, nil:
@@ -345,7 +345,7 @@ enum SessionInputGate {
         let host = io.resolveHost(session, table)
         if io.squadPaused(session, host) { return .refused(.interruptUnsupported, ClaudeSquad.pausedMessage) }
         guard host.canSendLoneEscape else {
-            return .refused(.interruptUnsupported, "Page can't press Esc in \(host.label)")
+            return .refused(.interruptUnsupported, "Page Studio can't press Esc in \(host.label)")
         }
         // Re-read right before the key: a menu that opened since would be
         // denied by it, and a job brought to the front since would get it.
@@ -387,7 +387,7 @@ enum SessionInputGate {
         }
         switch phase {
         case .unknown:
-            return .refuse(.refused(.unknownState, "Couldn't confirm Codex is waiting for input — type at the Mac"))
+            return .refuse(.refused(.unknownState, "Couldn't confirm Codex is waiting for input — type at your computer"))
         case .inTurn:
             guard case .cmux? = terminal else { return .refuse(.refused(.codexMidTurn, codexMidTurnMessage)) }
             return .queueMidTurn
@@ -404,8 +404,8 @@ enum SessionInputGate {
         }
     }
 
-    static let codexWaitingMessage = "Codex is waiting on a prompt — answer it on the Mac"
-    static let codexChangedMessage = "Codex's state changed while Page was checking — try again"
+    static let codexWaitingMessage = "Codex is waiting on a prompt — answer it on your computer"
+    static let codexChangedMessage = "Codex's state changed while Page Studio was checking — try again"
 
     /// Pure. The rollout read again right before the keys: the plan's read
     /// came before ps, lsof and the terminal lookups, and an approval
@@ -431,16 +431,16 @@ enum SessionInputGate {
         }
     }
 
-    static let codexTerminalAppBlocker = "Page can't check Codex's input box in Terminal.app — use tmux or cmux"
+    static let codexTerminalAppBlocker = "Page Studio can't check Codex's input box in Terminal.app — use tmux or cmux"
 
     /// Pure. Why a resolved target can't be typed into, as a result.
     static func codexTargetProblem(_ target: CodexInjector.Target, project: String) -> SessionCommandResult? {
         switch target {
         case .tty: return nil
         case .none: return .refused(.ended, "Codex isn't open in \(project) any more")
-        case .ambiguous(let n): return .refused(.notTypable, "\(n) Codex sessions are open in \(project) — type at the Mac")
-        case .noTerminal: return .refused(.notTypable, "Codex is running in \(project) without a terminal Page can type into")
-        case .unconfirmed: return .refused(.notTypable, "Codex is open in \(project), but Page can't tell if it's this session")
+        case .ambiguous(let n): return .refused(.notTypable, "\(n) Codex sessions are open in \(project) — type at your computer")
+        case .noTerminal: return .refused(.notTypable, "Codex is running in \(project) without a terminal Page Studio can type into")
+        case .unconfirmed: return .refused(.notTypable, "Codex is open in \(project), but Page Studio can't tell if it's this session")
         }
     }
 

@@ -75,13 +75,13 @@ extension RenderSurfaces {
                 HStack(alignment: .top, spacing: 18) {
                     VStack(alignment: .leading, spacing: 14) {
                         HStack(alignment: .top, spacing: 18) {
-                            face(.small, usage: false, caption: "Page · Small")
+                            face(.small, usage: false, caption: "Page Studio · Small")
                             face(.small, usage: true, caption: "Claude usage · Small")
                         }
-                        face(.medium, usage: false, caption: "Page · Medium")
+                        face(.medium, usage: false, caption: "Page Studio · Medium")
                         face(.medium, usage: true, caption: "Claude usage · Medium")
                     }
-                    face(.large, usage: false, caption: "Page · Large")
+                    face(.large, usage: false, caption: "Page Studio · Large")
                 }
             }
             .padding(24)
@@ -139,7 +139,7 @@ extension RenderSurfaces {
                     let mode: WidgetFaceMode = vibrant ? .vibrant : .fullColor
                     func page(_ size: WidgetFaceSize, _ w: CGFloat, _ h: CGFloat) -> some View {
                         widget(w, h, margin: margin, tone: tone, glow: glow, vibrant: vibrant,
-                               caption: "Page \(size.title) \(Int(w))x\(Int(h))") {
+                               caption: "Page Studio \(size.title) \(Int(w))x\(Int(h))") {
                             PageStatusWidgetView(snapshot: snapshot, size: size, now: now, timeZone: tz, interactive: false, mode: mode)
                         }
                     }

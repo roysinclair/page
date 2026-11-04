@@ -427,11 +427,11 @@ enum CodexInjector {
 
         switch target {
         case .ambiguous(let count):
-            return .finished(.failure("\(count) Codex sessions are open in \(project) — reply on the Mac"))
+            return .finished(.failure("\(count) Codex sessions are open in \(project) — reply on your computer"))
         case .noTerminal:
-            return .finished(.failure("Codex is running in \(project) without a terminal Page can type into"))
+            return .finished(.failure("Codex is running in \(project) without a terminal Page Studio can type into"))
         case .unconfirmed:
-            return .finished(.failure("Codex is open in \(project), but Page can't tell if it's this session — reply on the Mac"))
+            return .finished(.failure("Codex is open in \(project), but Page Studio can't tell if it's this session — reply on your computer"))
         case .none:
             guard allowExecResume else {
                 return .finished(.failure("Codex isn't open in \(project) any more (background resume is off)"))
@@ -480,15 +480,15 @@ enum CodexInjector {
     /// second writer would fork the conversation under it.
     static func execResumeBlocker(table: [ProcessRunner.ProcessInfoRow], processes: [CodexProcess], project: String,
                                   holders: RolloutHolders = .none) -> String? {
-        if table.isEmpty { return "Couldn't check whether Codex is still open in \(project) — reply on the Mac" }
+        if table.isEmpty { return "Couldn't check whether Codex is still open in \(project) — reply on your computer" }
         if processes.contains(where: { $0.cwd == nil }) {
-            return "Couldn't confirm Codex isn't still open in \(project) — reply on the Mac"
+            return "Couldn't confirm Codex isn't still open in \(project) — reply on your computer"
         }
         switch holders {
         case .none:
             return nil
         case .unknown:
-            return "Couldn't check whether another Codex app has this session open — reply on the Mac"
+            return "Couldn't check whether another Codex app has this session open — reply on your computer"
         case .held(let list):
             return heldDetail(list, table: table)
         }
@@ -578,7 +578,7 @@ enum CodexInjector {
         if let first = names.first, names.allSatisfy({ $0 == first }), first != otherCodexName {
             return "This Codex session is open in \(first) — reply there"
         }
-        return "Another Codex process has this session open — reply there or on the Mac"
+        return "Another Codex process has this session open — reply there or on your computer"
     }
 
     static let otherCodexName = "another Codex process"
@@ -635,8 +635,8 @@ enum CodexInjector {
     // MARK: Composer check (user at the Mac)
 
     static let terminalComposerUnverifiedDetail =
-        "You're at the Mac and Page can't check Codex's input box in Terminal.app — carry on there yourself"
-    static let composerUnverifiedDetail = "Couldn't confirm Codex's input box is empty — carry on at the Mac"
+        "You're at the Mac and Page Studio can't check Codex's input box in Terminal.app — carry on there yourself"
+    static let composerUnverifiedDetail = "Couldn't confirm Codex's input box is empty — carry on at your computer"
 
     /// Why Page must not type into `terminal` while the user is at the Mac,
     /// or nil when its composer is verifiably empty. tmux is read with
@@ -793,7 +793,7 @@ enum CodexInjector {
         return out
     }
 
-    static let notForegroundDetail = "Codex is suspended or in the background in its terminal — reply on the Mac"
+    static let notForegroundDetail = "Codex is suspended or in the background in its terminal — reply on your computer"
 
     /// tmux pane by tty first (Codex in tmux inside cmux types into the
     /// pane, not the cmux surface), then the nearest app ancestor. Only
@@ -811,7 +811,7 @@ enum CodexInjector {
         case .terminalApp:
             return .terminalApp(tty: tty)
         case .tmux:
-            return .unavailable("Codex is in a tmux session Page couldn't reach")
+            return .unavailable("Codex is in a tmux session Page Studio couldn't reach")
         case .app(let name):
             if let command = appAncestorCommand(ofPid: pid, table: table),
                let bundle = CmuxBridge.bundlePath(fromAppCommand: command) {
@@ -822,7 +822,7 @@ enum CodexInjector {
                     return .unavailable(f.detail)
                 }
             }
-            return .unavailable("Page can't type into \(name) yet — use tmux or Terminal.app")
+            return .unavailable("Page Studio can't type into \(name) yet — use tmux or Terminal.app")
         case .unknown:
             return .unavailable("Couldn't find the Codex session's terminal")
         }
@@ -886,7 +886,7 @@ enum CodexInjector {
             }
             return CodexDeliveryOutcome(method: Method.cmux, success: true, detail: "Pressed Esc in cmux pane", output: nil)
         case .terminalApp, .unavailable:
-            return .failure("Page can't press Esc in \(terminal.label)")
+            return .failure("Page Studio can't press Esc in \(terminal.label)")
         }
     }
 
@@ -969,7 +969,7 @@ enum CodexInjector {
         Thread.sleep(forTimeInterval: 0.4)
         let enter = tmux(["send-keys", "-t", pane, "Enter"])
         guard enter.succeeded else {
-            return .failure("Typed into tmux pane \(pane) but couldn't press Enter — press it on the Mac",
+            return .failure("Typed into tmux pane \(pane) but couldn't press Enter — press it on your computer",
                             method: Method.tmux, output: enter.stderr)
         }
         return CodexDeliveryOutcome(method: Method.tmux, success: true, detail: "Typed into tmux pane \(pane)", output: nil)
@@ -1105,25 +1105,25 @@ enum CodexInjector {
             return CodexDeliveryOutcome(method: Method.terminal, success: true,
                                         detail: "Typed into Terminal tab \(shortTTY)", output: nil)
         case "not_frontmost", "tab_not_selected":
-            return .failure("Typed into Terminal tab \(shortTTY), but another window took focus before Return — press Return on the Mac",
+            return .failure("Typed into Terminal tab \(shortTTY), but another window took focus before Return — press Return on your computer",
                             method: Method.terminal, output: result)
         case "" where error.hasPrefix(appleEventTimeoutError):
-            return .failure("Typed into Terminal tab \(shortTTY), but Terminal didn't respond before Return — check it on the Mac",
+            return .failure("Typed into Terminal tab \(shortTTY), but Terminal didn't respond before Return — check it on your computer",
                             method: Method.terminal, output: error)
         default:
             // "ok_no_enter …" is a failure: the text sits in the composer
             // unsent. Most often Accessibility permission is missing.
-            return .failure("Typed into Terminal tab \(shortTTY), but Page needs Accessibility permission to press Return — press it on the Mac",
+            return .failure("Typed into Terminal tab \(shortTTY), but Page Studio needs Accessibility permission to press Return — press it on your computer",
                             method: Method.terminal, output: result.isEmpty ? error : result)
         }
     }
 
     static func appleScriptFailureDetail(_ error: String) -> String {
         if error.hasPrefix("-1743") {
-            return "Page isn't allowed to control Terminal — allow it in System Settings › Privacy & Security › Automation"
+            return "Page Studio isn't allowed to control Terminal — allow it in System Settings › Privacy & Security › Automation"
         }
         if error.hasPrefix(appleEventTimeoutError) {
-            return "Terminal didn't respond — check it on the Mac before replying again"
+            return "Terminal didn't respond — check it on your computer before replying again"
         }
         return "Couldn't type into Terminal"
     }

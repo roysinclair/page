@@ -198,11 +198,11 @@ final class NowStore: ObservableObject {
               let id = before.selectedId, let row = flightRows.first(where: { $0.id == id }) else { return }
         switch raw.lowercased() {
         case PanelKeys.type.lowercased():
-            if row.kind == .localModel { notice = Notice(text: "Local model · Page can't steer it", failed: true) }
+            if row.kind == .localModel { notice = Notice(text: "Local model · Page Studio can't steer it", failed: true) }
             else { openFlightComposer(row) }
         case PanelKeys.open.lowercased():
-            if row.kind == .localModel { notice = Notice(text: "Local model · Page can't open it", failed: true) }
-            else if !row.actions.canOpen { notice = Notice(text: row.actions.openBlocker ?? "Page can't open this one", failed: true) }
+            if row.kind == .localModel { notice = Notice(text: "Local model · Page Studio can't open it", failed: true) }
+            else if !row.actions.canOpen { notice = Notice(text: row.actions.openBlocker ?? "Page Studio can't open this one", failed: true) }
         default: break
         }
     }
@@ -296,7 +296,7 @@ final class NowStore: ObservableObject {
         case .open:
             let effect = NowKeys.effect(forFlightClick: .open, row: row)
             if effect == .none {
-                notice = Notice(text: row.actions.openBlocker ?? "Page can't open this one", failed: true)
+                notice = Notice(text: row.actions.openBlocker ?? "Page Studio can't open this one", failed: true)
             } else {
                 apply(state, effect: effect)
             }

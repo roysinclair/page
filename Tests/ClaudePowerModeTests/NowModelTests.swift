@@ -37,7 +37,7 @@ final class NowModelTests: XCTestCase {
         XCTAssertEqual(m.lookCount, 1)
         XCTAssertEqual(m.workingCount, 5)
         XCTAssertEqual(m.attentionCount, 3)
-        XCTAssertEqual(m.accessibilityLabel, "Page — 2 need you · 5 working")
+        XCTAssertEqual(m.accessibilityLabel, "Page Studio — 2 need you · 5 working")
         XCTAssertEqual(m.macName, "Studio MBP")
     }
 

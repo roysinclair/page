@@ -131,7 +131,7 @@ final class NWDialogInteractionTests: XCTestCase {
                          isARepeat: false, keyCode: code)!
     }
 
-    private let confirm = NWDialogSpec.confirm("Install Page's Codex hooks?", "diff", ok: "Install",
+    private let confirm = NWDialogSpec.confirm("Install Page Studio's Codex hooks?", "diff", ok: "Install",
                                                detail: .diff("--- a\n+++ b\n@@ -1 +1 @@\n-old\n+new"))
 
     // MARK: sheet over the window
@@ -307,7 +307,7 @@ final class NWDialogInteractionTests: XCTestCase {
 
         spin(until: { tower.sheets.first?.isVisible == true })
         let confirmPanel = try XCTUnwrap(tower.sheets.first as? NWDialogPanel, "the confirm dialog is up")
-        XCTAssertEqual(confirmPanel.title, "Install Page's Codex hooks?")
+        XCTAssertEqual(confirmPanel.title, "Install Page Studio's Codex hooks?")
         XCTAssertFalse(FileManager.default.fileExists(atPath: home.appendingPathComponent(".codex/hooks.json").path),
                        "nothing is written before Install is pressed")
         clickFirstButton(confirmPanel)

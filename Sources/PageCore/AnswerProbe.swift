@@ -387,7 +387,7 @@ enum AnswerProbe {
             say("probe: --keep: left \(written.count) copy/copies for Claude to open")
         } else if !written.isEmpty {
             store.remove(written)
-            say("probe: deleted Page's \(written.count) copy/copies (Claude keeps its own in the transcript)")
+            say("probe: deleted Page Studio's \(written.count) copy/copies (Claude keeps its own in the transcript)")
         }
         return result.code == .delivered ? 0 : 1
     }
@@ -427,8 +427,8 @@ enum AnswerProbe {
         }
 
         if opts.screenOnly {
-            guard let read = live.screenReader(host) else { say("probe: screen reader for \(host.label): nil (Page cannot read this host)"); return 1 }
-            say("probe: screen as Page's reader returns it:")
+            guard let read = live.screenReader(host) else { say("probe: screen reader for \(host.label): nil (Page Studio cannot read this host)"); return 1 }
+            say("probe: screen as Page Studio's reader returns it:")
             say(indent(read()))
             return 0
         }
@@ -464,7 +464,7 @@ enum AnswerProbe {
         io.capabilities = { h in
             let c = caps(for: mode, host: h)
             if case .success(let k) = c { say("probe: capabilities for \(h.label): arrows=\(k.arrows) (\(mode.map { "--caps \($0.rawValue)" } ?? "Page's own gate"))") }
-            if case .failure(let e) = c { say("probe: capabilities for \(h.label): REFUSED by Page: \(e.message)") }
+            if case .failure(let e) = c { say("probe: capabilities for \(h.label): REFUSED by Page Studio: \(e.message)") }
             return c
         }
         io.screenReader = { h in

@@ -85,7 +85,7 @@ object HeldMessages {
 
     /** A held message this phone never saw listed counts as gone once a list without it arrives this long after it was sent. */
     const val MISSING_AFTER: Double = 30.0
-    const val UNCONFIRMED_COPY = "Page restarted while typing this and won't retype it. Check the session."
+    const val UNCONFIRMED_COPY = "Page Studio restarted while typing this and won't retype it. Check the session."
     const val DELETED_COPY = "Deleted — not sent"
 
     /**
@@ -124,7 +124,7 @@ object HeldMessages {
             HeldMessage.State.EXPIRED ->
                 SessionDeliveryState.Refused("expired", entry.detail ?: "Not sent — the turn didn't finish within 6 hours")
             HeldMessage.State.FAILED ->
-                SessionDeliveryState.Failed(entry.detail ?: "Not sent — Page couldn't type it")
+                SessionDeliveryState.Failed(entry.detail ?: "Not sent — Page Studio couldn't type it")
             HeldMessage.State.UNCONFIRMED -> SessionDeliveryState.CheckSession(entry.detail ?: UNCONFIRMED_COPY)
             HeldMessage.State.UNKNOWN -> state
         }
@@ -160,7 +160,7 @@ object MacRetract {
     /** A retract's own answer is waited for this long (the same as every command's). */
     const val TIMEOUT: Double = SessionDeliveryState.RESULT_TIMEOUT
     const val UNCONFIRMED = "Couldn't confirm the delete — it may still be sent"
-    const val OFFLINE = "Your Mac is offline — try again when it's back"
+    const val OFFLINE = "Your computer is offline — try again when it's back"
 
     sealed interface Outcome {
         val text: String
@@ -177,7 +177,7 @@ object MacRetract {
 
         /** The Mac isn't holding a message by that id. */
         data class NotFound(val detail: String?) : Outcome {
-            override val text: String get() = detail ?: "Page isn't holding that message"
+            override val text: String get() = detail ?: "Page Studio isn't holding that message"
         }
 
         /** The Mac refused for another reason (stale clock, turned off, an error): its words. */
@@ -282,7 +282,7 @@ object QueuedDelete {
         delivery is ReplyDelivery.Sent && delivery.queued && relayFeatures != null && SessionCaps.RELAY_RETRACT !in relayFeatures ->
             "Update your relay to delete queued replies."
         delivery is ReplyDelivery.HeldOnMac && hasList && !SessionCaps.canRetract(macCaps) ->
-            "Update Page on your Mac to delete a held reply."
+            "Update Page Studio on your computer to delete a held reply."
         else -> null
     }
 

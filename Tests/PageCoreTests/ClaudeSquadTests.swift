@@ -262,7 +262,7 @@ final class ClaudeSquadTests: XCTestCase {
                                           cwdExists: { _ in true }, worktreesRoot: "/wt"))
         XCTAssertNil(s.instance)
         XCTAssertFalse(s.paused)
-        XCTAssertFalse(s.autoApproves, "unknown instance: Page pages")
+        XCTAssertFalse(s.autoApproves, "unknown instance: Page Studio pages")
     }
 
     func testStandingFindsTheInstanceByNameThenByCwd() throws {

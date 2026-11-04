@@ -6,14 +6,18 @@
 
 **Your agents keep working. You get paged only when it matters.**
 
-Page Studio is three free apps for people who work with AI agents:
-**Page Power** keeps your Mac awake while Claude Code, Codex and local models
-work, pauses them gracefully at your battery cutoff, and pages your phone
-through **Page Relay** when a decision is yours. Your reply lands back in the
-live session. **Page Aura** is a bring-your-own-key chat app and **Page Orbit**
-builds, runs and fixes Anthropic Managed Agents; both link to Page Power.
+Page Studio is a free set of apps for people who work with AI agents. **Page
+Studio for Mac** (and, in preview, **Page Studio for Linux**) watches Claude
+Code, Codex and local models on your computer and has two halves:
+**Page Power** keeps the machine awake while agents work, lid closed too, and
+pauses them gracefully at your battery cutoff; **Page Relay** pages your
+phone through your own relay when a decision is yours, and types your reply
+back into the live session. **Page Relay for iPhone** and **Page Relay for
+Android** are where those pages land. **Page Aura** (chat over the API on
+your own credits) and **Page Orbit** (a control room for Managed Agents) are
+separate apps that work with Page Relay too.
 
-[![Platforms: macOS, iOS, Android](https://img.shields.io/badge/platforms-macOS%20%C2%B7%20iOS%20%C2%B7%20Android-2ea3c4?style=flat-square)](#the-page-studio-family)
+[![Platforms: macOS, Linux (preview), iOS, Android](https://img.shields.io/badge/platforms-macOS%20%C2%B7%20Linux%20%C2%B7%20iOS%20%C2%B7%20Android-2ea3c4?style=flat-square)](#the-page-studio-family)
 [![License: Page Studio](https://img.shields.io/badge/license-Page%20Studio-e0a030?style=flat-square)](LICENSE)
 [![Relay: self-hosted on your Cloudflare account](https://img.shields.io/badge/relay-self--hosted-3ecf9a?style=flat-square)](docs/SELF-HOSTING.md)
 
@@ -25,80 +29,100 @@ builds, runs and fixes Anthropic Managed Agents; both link to Page Power.
 </div>
 
 <p align="center">
-  <img src="docs/images/hero.png" alt="Page Studio: the Mac menu-bar app with its menu open, an iPhone lock screen with two pages, and the Android app, linked through your own relay" width="100%">
+  <img src="docs/images/hero.png" alt="Page Studio: Page Studio for Mac with its menu open, an iPhone lock screen with two pages from Page Relay, and Page Relay for Android, linked through your own relay" width="100%">
 </p>
 
 ## What you get
 
-- **A Mac that stays awake while agents work.** Page reads real session
-  state, not CPU guesses, and holds the Mac awake only while an agent is
-  mid-turn. The lid can be closed on AC, and on battery if you opt in.
-- **A graceful pause at your battery cutoff.** Page asks busy agents to stop
-  and summarise before the Mac sleeps, and tells them to carry on when power is
-  back.
+**Page Power**, the power side of Page Studio:
+
+- **A computer that stays awake while agents work.** Page Studio reads real
+  session state, not CPU guesses, and holds the machine awake only while an
+  agent is mid-turn. On a Mac the lid can be closed on AC, and on battery if
+  you opt in.
+- **A graceful pause at your battery cutoff.** Page Power asks busy agents to
+  stop and summarise before the machine sleeps, and tells them to carry on
+  when power is back. Scheduled resumes pick up after a rate limit resets.
+
+**Page Relay**, the remote-control side:
+
 - **Pages only when it matters.** Approvals, questions, stuck sessions and idle
   agents page your phone. Approve, deny or reply from the lock screen, and Page
-  delivers it into the exact session that asked, or tells you why it couldn't.
+  Relay delivers it into the exact session that asked, or tells you why it
+  couldn't.
 - **Live sessions on your phone.** Watch the story, the screen and the changes
   of a running session, and type into it or stop it.
+- **Your own relay.** A small Worker on your own Cloudflare account carries
+  pages and replies. Nothing goes to the authors.
+
+**Page Studio** itself:
+
 - **Works with what you already run.** Claude Code, Codex, local and
   open-weight models, in Terminal.app, iTerm2, tmux, cmux, WezTerm, kitty,
-  Herdr and Claude Squad.
-- **Your own relay.** A small Worker on your own Cloudflare account carries
-  pages and replies. Live-session content is end-to-end encrypted, and nothing
-  goes to the authors.
-- **Page Aura joins in.** The bring-your-own-key chat app keeps the Mac
-  awake while it streams a reply, and pages your phone too.
+  Herdr and Claude Squad (on Linux: tmux, WezTerm, kitty, Herdr and Claude
+  Squad).
+- **Pairing and end-to-end encryption.** Pair a phone with a QR code;
+  live-session content is end-to-end encrypted between your computer and your
+  phone.
+- **Attention, agents, widgets and shortcuts.** Decide what is worth
+  interrupting you for, see every agent at a glance, and keep widgets on the
+  Mac, iPhone and Android.
+- **Page Aura joins in.** The chat app (over the API, on your own credits)
+  keeps the computer awake while it streams a reply, and pages your phone
+  through Page Relay.
 - **So does Page Orbit.** When a Managed Agent is waiting for your approval or
   has finished, your phone is paged; Allow, Deny, reply or stop from there.
 
 ## The Page Studio family
 
-Page Studio products: **Page Power** (the Mac menu-bar app and its iPhone and Android apps, with **Page Relay** inside), **Page Aura** and **Page Orbit**. Each works on its own; together, your phone hears from all of them.
+Page Studio is one app on your computer with two halves, **Page Power** and
+**Page Relay**, the Page Relay phone apps, and two separate apps that work
+with Page Relay, **Page Aura** and **Page Orbit**. Each works on its own;
+together, your phone hears from all of them.
 
 <p align="center">
-  <img src="docs/images/family.png" alt="Page Studio: Page Orbit, Page Aura and the Page Power menu on a laptop, Page Power for iPhone and Android on two phones, linked through your own Cloudflare relay" width="100%">
+  <img src="docs/images/family.png" alt="Page Studio: Page Orbit, Page Aura and the Page Studio menu on a laptop, Page Relay for iPhone and Android on two phones, linked through your own Cloudflare relay" width="100%">
 </p>
 
 | Piece | What it does |
 |---|---|
-| **Page Power for Mac** | The macOS menu-bar app. Detects agent state, keeps the Mac awake, applies your battery policy and delivers your replies. [Getting started](#getting-started) |
-| **Page Power for Linux** (preview) | `paged`, a background service with a command line: keeps the machine awake while agents work, applies your battery policy, pages your phone and types your replies into tmux, WezTerm, kitty and more. No tray icon yet; build from source. [docs/LINUX.md](docs/LINUX.md) |
-| **Page Power for iPhone and Android** | Pages, lock-screen approvals, live sessions and widgets. [`iOS/`](iOS/README.md) · [`android/`](android/README.md) |
-| **Page Relay** | Your own relay: a Cloudflare Worker with Durable Objects that you deploy to your own account. Setup in [`Cloudflare/`](Cloudflare/README.md) and the [self-hosting guide](docs/SELF-HOSTING.md) |
-| **Page Aura** | A bring-your-own-key chat app for Anthropic’s models (Windows, macOS, Linux, browser) that links into Page Power (macOS or Linux) as an agent backend. [github.com/roysinclair/page-studio-apps](https://github.com/roysinclair/page-studio-apps) · [link protocol](docs/AURA-LINK.md) |
-| **Page Orbit** | A desktop control room for Anthropic Managed Agents (Windows, macOS, Linux): agents with versions, live sessions, Diagnose, schedules. Links into Page Power so approvals and finished runs page your phone. [Guide](https://github.com/roysinclair/page-studio-apps/blob/main/docs/orbit/README.md) · [link protocol](docs/ORBIT-LINK.md) |
+| **Page Studio for Mac** | The macOS menu-bar app. Detects agent state; **Page Power** keeps the Mac awake and applies your battery policy; **Page Relay** pages your phone and delivers your replies. Also pairing and encryption, attention, agents, widgets and shortcuts. [Getting started](#getting-started) |
+| **Page Studio for Linux** (preview) | `paged`, a background service with a command line: keeps the machine awake while agents work, applies your battery policy, pages your phone and types your replies into tmux, WezTerm, kitty and more. No tray icon yet; build from source. [docs/LINUX.md](docs/LINUX.md) |
+| **Page Relay for iPhone and Android** | Pages, lock-screen approvals, live sessions and widgets. The home-screen name is Page Relay. [`iOS/`](iOS/README.md) · [`android/`](android/README.md) |
+| **Page Relay Worker** | Your own relay: a Cloudflare Worker with Durable Objects that you deploy to your own account. Setup in [`Cloudflare/`](Cloudflare/README.md) and the [self-hosting guide](docs/SELF-HOSTING.md) |
+| **Page Aura** | Chat over the API on your own credits, with context, web search and tools (Windows, macOS, Linux, browser). Works with Page Relay through Page Studio on the same computer (macOS or Linux). [github.com/roysinclair/page-studio-apps](https://github.com/roysinclair/page-studio-apps) · [link protocol](docs/AURA-LINK.md) |
+| **Page Orbit** | Manage and control Anthropic Managed Agents over the API (Windows, macOS, Linux): agents with versions, live sessions, Diagnose, schedules. Works with Page Relay so approvals and finished runs page your phone. [Guide](https://github.com/roysinclair/page-studio-apps/blob/main/docs/orbit/README.md) · [link protocol](docs/ORBIT-LINK.md) |
 
 ## A closer look
 
 <table>
   <tr>
-    <td width="50%" valign="top"><img src="docs/images/feature-battery.png" alt="Keep-awake and battery pause" width="100%"><br><b>Stays awake, pauses gracefully.</b> Keeps the Mac awake while agents work, lid closed too, and asks them to stop and summarise at your battery cutoff.</td>
-    <td width="50%" valign="top"><img src="docs/images/feature-lock-screen.png" alt="Answer from the lock screen" width="100%"><br><b>Answer from the lock screen.</b> Approve, deny or reply from the notification. Anything riskier than an undoable command opens the decision sheet.</td>
+    <td width="50%" valign="top"><img src="docs/images/feature-battery.png" alt="Keep-awake and battery pause" width="100%"><br><b>Page Power: stays awake, pauses gracefully.</b> Keeps the computer awake while agents work, lid closed too, and asks them to stop and summarise at your battery cutoff.</td>
+    <td width="50%" valign="top"><img src="docs/images/feature-lock-screen.png" alt="Answer from the lock screen" width="100%"><br><b>Page Relay: answer from the lock screen.</b> Approve, deny or reply from the notification. Anything riskier than an undoable command opens the decision sheet.</td>
   </tr>
   <tr>
     <td valign="top"><img src="docs/images/feature-sessions.png" alt="Live sessions on your phone" width="100%"><br><b>Live sessions in your pocket.</b> Story, screen and changes for Claude Code, Codex and local models, end-to-end encrypted.</td>
     <td valign="top"><img src="docs/images/feature-terminals.png" alt="Supported terminals and agents" width="100%"><br><b>The terminals you already use.</b> Terminal.app, iTerm2, tmux, cmux, WezTerm, kitty, Herdr and Claude Squad.</td>
   </tr>
   <tr>
-    <td valign="top"><img src="docs/images/feature-android.png" alt="Page Power for Android" width="100%"><br><b>Android, too.</b> The same pages and live sessions, built natively with Jetpack Compose.</td>
+    <td valign="top"><img src="docs/images/feature-android.png" alt="Page Relay for Android" width="100%"><br><b>Page Relay for Android, too.</b> The same pages and live sessions, built natively with Jetpack Compose.</td>
     <td valign="top"><img src="docs/images/feature-widgets.png" alt="Widgets" width="100%"><br><b>Know before you unlock.</b> Widgets on iPhone, Android and the Mac: what needs you, what's working, how long the battery lasts.</td>
   </tr>
   <tr>
     <td valign="top"><img src="docs/images/feature-relay.png" alt="Page Relay, your own relay" width="100%"><br><b>Page Relay: your relay, your keys.</b> A small Worker on your own Cloudflare account carries pages and replies. Nothing goes to the authors.</td>
-    <td valign="top"><img src="docs/images/feature-aura.png" alt="Page Aura linked to Page" width="100%"><br><b>Page Aura, paged too.</b> The bring-your-own-key chat app keeps the Mac awake while it streams and pages your phone.</td>
+    <td valign="top"><img src="docs/images/feature-aura.png" alt="Page Aura working with Page Relay" width="100%"><br><b>Page Aura, paged too.</b> The chat app keeps the computer awake while it streams and pages your phone through Page Relay.</td>
   </tr>
 </table>
 
 ## Get started in four steps
 
 1. **Deploy your relay** to your own Cloudflare account (free plan is enough for one person).
-2. **Install the Mac app** with `./install.sh`.
-3. **Install the phone app**: iPhone from Xcode, or Android with `adb install`.
-4. **Pair**: choose **Pair phone…** on the Mac and scan the QR code.
+2. **Install Page Studio**: on a Mac with `./install.sh`; on Linux (preview) with `./install-linux.sh`.
+3. **Install Page Relay on your phone**: iPhone from Xcode, or Android with `adb install`.
+4. **Pair**: choose **Pair phone…** in Page Studio for Mac (or run `paged pair` on Linux) and scan the QR code.
 
 > ### [Read the full setup guide: docs/SELF-HOSTING.md](docs/SELF-HOSTING.md)
-> From nothing to a phone that gets pages from your Mac, on your own accounts.
+> From nothing to a phone that gets pages from your computer, on your own accounts.
 > Plan on 30 to 60 minutes the first time.
 
 **Prefer to have Claude Code do it with you?** The guide ends with a
@@ -134,29 +158,31 @@ More: [Linux (`paged`)](docs/LINUX.md) · [self-hosting guide](docs/SELF-HOSTING
 
 ### Overview
 
-Page watches Claude Code and Codex sessions on your Mac. While an agent is
-mid-turn, the Mac stays awake (lid closed too, on AC). When the battery runs
-low, Page asks busy agents to stop and summarise before the Mac sleeps, and
+Page Studio watches Claude Code and Codex sessions on your Mac (or, in
+preview, on Linux). While an agent is mid-turn, Page Power keeps the machine
+awake (lid closed too, on AC). When the battery runs low, it asks busy agents to stop and summarise before the Mac sleeps, and
 tells them to carry on when power is back. When an agent is blocked on an
 approval, asks a question, or sits idle while you're away, your phone gets a
-page. Approve, deny or type a reply from the lock screen, and Page delivers it
-into the exact session that asked, or tells you why it couldn't.
+page through Page Relay. Approve, deny or type a reply from the lock screen,
+and Page Relay delivers it into the exact session that asked, or tells you why it couldn't.
 
 There are four pieces, all of which you run yourself:
 
-- **The Mac menu-bar app** (Swift/AppKit, `Sources/ClaudePowerMode`) on the
+- **Page Studio for Mac**, the menu-bar app (Swift/AppKit, `Sources/ClaudePowerMode`) on the
   shared core (`Sources/PageCore`), which does the detection, keep-awake,
   battery policy and reply delivery. On Linux the same core runs as a
   headless daemon, `paged` (see [Linux](#linux)).
-- **A relay Worker on your own Cloudflare account** (TypeScript, Durable
+- **The Page Relay Worker on your own Cloudflare account** (TypeScript, Durable
   Objects, `Cloudflare/`).
-- **The iOS app** (SwiftUI, `iOS/`) and **the Android app** (Kotlin and
-  Compose, `android/`).
+- **Page Relay for iPhone** (SwiftUI, `iOS/`) and **Page Relay for Android**
+  (Kotlin and Compose, `android/`).
 - **Page Aura**, optional, in its [own repository](https://github.com/roysinclair/page-studio-apps).
 
 > The Swift target is still called `ClaudePowerMode`, and so are the config
-> and log paths, from before the project was renamed. The app bundle, menu and
-> LaunchAgent are named Page.
+> and log paths, from before the project was renamed. The app is named Page
+> Studio wherever macOS shows a name; the bundle folder (`Page.app`), its
+> executable, bundle id and LaunchAgent keep the name Page so existing installs,
+> hooks and permissions carry on working.
 
 ## Features
 
@@ -164,30 +190,30 @@ There are four pieces, all of which you run yourself:
 
 - **Real session status, not CPU guesses.** Claude Code writes
   `~/.claude/sessions/<pid>.json` for each live interactive session, with a
-  `status` of `busy`, `waiting` or `idle`. Page reads those files, checks that
+  `status` of `busy`, `waiting` or `idle`. Page Studio reads those files, checks that
   each pid is alive and really is `claude`, and holds a no-idle-sleep
   assertion only while some session is `busy`. Older Claude Code builds
   without a sessions file fall back to recent transcript writes
   (`transcriptActivityWindowSeconds`). Codex state comes from its rollout
   JSONL files.
-- **Lid closed on AC, by default.** While agents work on AC power, Page also
+- **Lid closed on AC, by default.** While agents work on AC power, Page Studio also
   holds a `PreventSystemSleep` assertion so the Mac keeps running with the lid
   shut (`keepAwakeLidClosedOnAC`). macOS honours that assertion on AC only.
 - **Lid closed on battery: opt-in, with a watchdog.** Turn on "Keep awake with
   the lid closed on battery" in the menu (or Preferences ▸ Power). The first
-  time, macOS asks for your password once so Page can install its power helper
-  (the same rule `./install.sh --enable-power-helpers` installs). Page then runs
+  time, macOS asks for your password once so Page Studio can install its power helper
+  (the same rule `./install.sh --enable-power-helpers` installs). Page Studio then runs
   `sudo -n pmset -a disablesleep 1`, and only while all of these hold: agents
   are mid-turn, you're on battery, the charge is more than 5 points above your
   cutoff when it turns on (it stays on down to the cutoff, never at or below
-  5%), the Mac isn't running hot, and the watchdog is loaded. Page clears the
+  5%), the Mac isn't running hot, and the watchdog is loaded. Page Studio clears the
   flag the moment any condition fails, and also on quit, on SIGTERM and at
   launch. The `local.Page.sleepguard` LaunchAgent clears it within a minute if
-  Page dies or stops refreshing its marker for 3 minutes.
+  Page Studio dies or stops refreshing its marker for 3 minutes.
 - **Holds for pending pages.** A page waiting for your reply keeps the Mac
   awake for up to `holdAwakeForPendingPageMinutes` (60 by default), so the
   reply can still be delivered. This only applies when the relay is on.
-- **Rate limits.** When a Claude session hits a usage limit, Page shows the
+- **Rate limits.** When a Claude session hits a usage limit, Page Studio shows the
   reset time and can keep the Mac awake until it passes. Optionally it can
   schedule a system wake a minute before the reset and continue the
   conversation afterwards; see [Rate limits](#rate-limits).
@@ -196,7 +222,7 @@ There are four pieces, all of which you run yourself:
 
 Settings live in **Preferences ▸ Attention**.
 
-- **Looks stuck.** Page pages you when a working session is getting
+- **Looks stuck.** Page Studio pages you when a working session is getting
   nowhere: the same command fails 3 times in a row (or 5 times in its last
   12 steps), nothing has been written for 15 minutes (adjustable), or one of
   its background workflows stopped making progress. Reply to steer it, or
@@ -214,17 +240,17 @@ Settings live in **Preferences ▸ Attention**.
   cutoff, so agents have time to write their summary.
 - **Claude usage and limit forecast.** Turn on **Show my Claude usage**
   (Preferences ▸ Budget). Claude Code only gives the 5-hour and 7-day
-  usage numbers to your status line, so Page wraps it: a small script saves
+  usage numbers to your status line, so Page Studio wraps it: a small script saves
   the numbers, then runs your own status line command unchanged. Turning it
   off restores `~/.claude/settings.json` exactly. The menu and phone then
   show your usage, and you get a page about 30 minutes before you'd hit the
   5-hour limit at the current pace.
-- **Send at reset.** Reply to a rate-limit page with a message, and Page
+- **Send at reset.** Reply to a rate-limit page with a message, and Page Studio
   types it into the session when the limit resets.
 
 ### Low-battery pause and resume
 
-When the battery reaches `lowBatteryCutoff` on battery power, Page does what
+When the battery reaches `lowBatteryCutoff` on battery power, Page Studio does what
 you chose in Preferences ▸ Power:
 
 - **`pause`** (the default) asks busy agents to stop now and reply with a
@@ -233,12 +259,12 @@ you chose in Preferences ▸ Power:
   queued behind the turn, never an interrupt.
 - **`off`** only stops keeping the Mac awake.
 
-Page keeps the Mac awake for `lowBatteryPauseGraceSeconds` (90 by default) so
+Page Studio keeps the Mac awake for `lowBatteryPauseGraceSeconds` (90 by default) so
 the agents can write their summary, then lets it sleep. Each paused session
 gets one phone page. Carry on resumes it, and a typed reply resumes it with
 your text as the instruction. To leave it paused, don't answer (or resume
 later from the menu). When power is back (`recoveryThreshold`, and AC if
-`recoveryRequiresAC`), Page tells the sessions it paused to carry on. It only
+`recoveryRequiresAC`), Page Studio tells the sessions it paused to carry on. It only
 does this for sessions you haven't touched since, and never while you're using
 the Mac. Turn `resumeAfterBatteryRecovery` off to resume them yourself from
 the menu instead.
@@ -261,7 +287,7 @@ How a pause is delivered depends on the terminal:
 | Question | `AskUserQuestion` or another prompt that needs an answer | Typed reply |
 | Idle | The turn finished and nothing has been typed for `idlePageDelaySeconds`, while you've been away for `idlePageOnlyWhenAwaySeconds` | Carry on, typed reply |
 | Rate limit | A usage limit was hit | Information only |
-| Low battery (`idle` + subtype `low_battery`) | Page paused the session at the cutoff | Carry on (resume), Deny (stay paused), typed instructions |
+| Low battery (`idle` + subtype `low_battery`) | Page Studio paused the session at the cutoff | Carry on (resume), Deny (stay paused), typed instructions |
 
 Approvals and questions page at once. Idle and rate-limit pages wait until
 you've stepped away.
@@ -274,8 +300,8 @@ whether each reply was **delivered**, **queued** (the Mac is offline) or
 
 ### Phone approvals in every surface (opt-in hooks)
 
-Terminal detection only sees sessions Page can type into. For everything
-else, Page installs hooks into the agents' own settings. Use
+Terminal detection only sees sessions Page Studio can type into. For everything
+else, Page Studio installs hooks into the agents' own settings. Use
 **menu ▸ Integrations ▸ Install agent hooks…**, which opens the "Phone
 Approvals in Every App" window. It shows each agent's status and the exact
 diff to `~/.claude/settings.json` and/or `~/.codex/hooks.json`, and asks for
@@ -297,7 +323,7 @@ Because hooks run wherever the agent runs, this covers:
 - the Codex CLI.
 
 Anthropic documents hook support for the desktop app and IDE extensions, but
-Page hasn't been tested on every one of those surfaces. Whether the Codex
+Page Studio hasn't been tested on every one of those surfaces. Whether the Codex
 desktop app and IDE extension run `~/.codex/hooks.json` is undocumented.
 Codex also asks you to trust new hooks once: open Codex and run `/hooks`, and
 again after moving Page.app.
@@ -316,7 +342,7 @@ environment variable.
 
 ### Where replies can be delivered
 
-Page delivers a reply only into the exact terminal that owns the session (see
+Page Studio delivers a reply only into the exact terminal that owns the session (see
 [Safety model](#safety-model)).
 
 | Host | Claude Code | Codex | Limits |
@@ -324,12 +350,12 @@ Page delivers a reply only into the exact terminal that owns the session (see
 | **tmux** (in any terminal app) | ✓ Approve "1", Deny Esc, text with bracketed paste | ✓ Text after the turn ends | Refuses if the pane shows a half-typed draft |
 | **Terminal.app** | ✓ via AppleScript, matched by tty | ✓ Text after the turn ends; Return goes through System Events | Claude: Terminal can't send a lone Esc, so Deny types the menu's own "N. No" digit (read from the screen) and questions can't be cancelled. Approve is refused when several tool calls are pending. Codex needs Accessibility permission |
 | **iTerm2** | ✓ via AppleScript `write text`, matched by tty | ✗ | Multi-line text is joined into one line |
-| **cmux** | ✓ via cmux's own CLI: approvals through cmux's Feed while its hook holds the request, keys only into an open dialog, text only into an empty prompt | ✓ Text into an empty composer | Needs cmux in **Automation mode** (one click in Page's cmux setup) or Password mode; see [cmux setup](#5-cmux-setup-optional) |
+| **cmux** | ✓ via cmux's own CLI: approvals through cmux's Feed while its hook holds the request, keys only into an open dialog, text only into an empty prompt | ✓ Text into an empty composer | Needs cmux in **Automation mode** (one click in Page Studio's cmux setup) or Password mode; see [cmux setup](#5-cmux-setup-optional) |
 | **WezTerm** | ✓ via `wezterm cli send-text`, by pane id (the session's `WEZTERM_PANE`, checked against its tty) | ✗ | Screen read with colours (`get-text --escapes`) to tell a draft from placeholder text |
 | **kitty** | ✓ via remote control (`kitten @ send-text` / `send-key`), by window id (the session's `KITTY_WINDOW_ID`, checked against the window's processes) | ✗ | Needs `allow_remote_control socket-only` and `listen_on unix:/tmp/kitty-{kitty_pid}` in kitty.conf. Local sockets only |
-| **Herdr** | ✓ via Herdr's socket API, by pane id (the session's `HERDR_PANE_ID` on its own `HERDR_SOCKET_PATH`; Herdr must list the session in front in that pane, and is asked again before every key) | ✗ | Only the socket the session names is used, and only if you own it and it isn't writable by others. Screen read with colours to tell a draft from placeholder text. zellij and GNU screen are refused ("Page can't type into zellij yet") |
-| **Claude Squad** (`cs`) | ✓ it runs each agent in a tmux session, so Page types into the exact pane like tmux; the phone shows the host as "Claude Squad" | ✗ | A paused instance (its worktree is gone) isn't counted as working, isn't paged, and refuses typing with "Paused in Claude Squad". No approval page while Claude Squad auto-approves the prompt itself (`cs --daemon` running, or the `cs` UI open with auto-yes on), and only when the instance runs plain `claude`; `claude --model …` isn't auto-approved, so it still pages. Reads `~/.claude-squad/state.json` |
-| Anything else (Ghostty, VS Code's terminal, Warp, …) | ✗ "Page can't type into <App> yet — use tmux or Terminal.app" | ✗ | Run the agent inside tmux, or use the hooks (approvals then work in any terminal) |
+| **Herdr** | ✓ via Herdr's socket API, by pane id (the session's `HERDR_PANE_ID` on its own `HERDR_SOCKET_PATH`; Herdr must list the session in front in that pane, and is asked again before every key) | ✗ | Only the socket the session names is used, and only if you own it and it isn't writable by others. Screen read with colours to tell a draft from placeholder text. zellij and GNU screen are refused ("Page Studio can't type into zellij yet") |
+| **Claude Squad** (`cs`) | ✓ it runs each agent in a tmux session, so Page Studio types into the exact pane like tmux; the phone shows the host as "Claude Squad" | ✗ | A paused instance (its worktree is gone) isn't counted as working, isn't paged, and refuses typing with "Paused in Claude Squad". No approval page while Claude Squad auto-approves the prompt itself (`cs --daemon` running, or the `cs` UI open with auto-yes on), and only when the instance runs plain `claude`; `claude --model …` isn't auto-approved, so it still pages. Reads `~/.claude-squad/state.json` |
+| Anything else (Ghostty, VS Code's terminal, Warp, …) | ✗ "Page Studio can't type into <App> yet — use tmux or Terminal.app" | ✗ | Run the agent inside tmux, or use the hooks (approvals then work in any terminal) |
 | **Session has exited** | Text replies run `claude --resume <id> --print` in the background (`headlessResumeFallbackEnabled`) | `codex exec resume` (the Codex Desktop / VS Code path) | Only when no live process owns the session. Output goes to a log, not a terminal. Approve/Deny are refused |
 
 ### Active sessions on your phone
@@ -357,7 +383,7 @@ at any time, not only when a page is open.
   the files Claude Code keeps; read-only.
 - **Typing goes through the same gate as replies.** Claude Code gets your
   text as a message (Enter), queued behind the current step when it's
-  busy, never Esc and never a background resume. Page refuses while a
+  busy, never Esc and never a background resume. Page Studio refuses while a
   prompt is on screen, when the input box isn't empty, when it can't tell
   what the session is doing, and when a busy session's message starts with
   a digit (it could pick a menu option). Codex is typed into once its turn
@@ -365,14 +391,14 @@ at any time, not only when a page is open.
   presses Esc in a working session (tmux, iTerm2, cmux).
 - **New session.** The **+** on the Sessions tab starts a new Claude
   session on the Mac: pick one of the folders Claude has worked in during
-  the last 30 days, type what it should do, and Page opens a cmux workspace
+  the last 30 days, type what it should do, and Page Studio opens a cmux workspace
   running `claude` there. Off until you turn on **Preferences ▸ Macs & phones ▸ Let
   my phone start new Claude sessions** (`phoneStartSessionsEnabled`).
 - **Widgets and Siri.** A Home Screen and Lock Screen widget shows how many
   sessions need you, how many agents are working, and the battery forecast.
   Siri and Shortcuts can answer "What are my agents doing?" and "Stop my
   agents" (which asks first and needs an unlocked phone).
-- **Several Macs.** **Settings ▸ Add another Mac** pairs a second Mac
+- **Several Macs.** **Settings ▸ Add another computer** pairs a second Mac
   without forgetting the first. One Mac is live at a time: switch from the
   Sessions header or Settings. The others are checked in the background, and
   a banner tells you when one of them has pages waiting. Only the live Mac
@@ -390,7 +416,7 @@ Codex support is real but narrower than Claude's:
 | Works | Doesn't |
 |---|---|
 | Keep-awake while a turn runs (from the rollout files every Codex surface writes) | **Approval prompts aren't detected** by the Mac app, because Codex doesn't write them to the rollout. Use the Codex `PermissionRequest` hook instead |
-| Idle pages once a turn ends | Phone Approve/Deny into a live Codex TUI (refused: "Answer Codex approval prompts on your Mac") |
+| Idle pages once a turn ends | Phone Approve/Deny into a live Codex TUI (refused: "Answer Codex approval prompts on your computer") |
 | Replies typed after the turn ends: tmux, Terminal.app, cmux, or `codex exec resume` for Desktop and VS Code | Typing while a turn is running |
 | Rate-limit display (from `token_count` snapshots) | Auto-resume after a Codex rate limit |
 | Approvals and opt-in Stop continuation through Codex hooks | Proof that the Codex desktop app and IDE extension run hooks (undocumented) |
@@ -401,12 +427,12 @@ reply rule 5 predates cmux support for Codex.
 
 ### Local and open-weight models
 
-Page keeps the Mac awake while a local model is **generating**, and never just
+Page Studio keeps the Mac awake while a local model is **generating**, and never just
 because one is loaded. It only looks: it never starts, stops or unloads a model.
 Turn it off in Preferences ▸ Agents ▸ Local models. Menu ▸ Integrations ▸ Copy
 local-model diagnostics shows what it sees.
 
-| What you run | How Page knows it's working |
+| What you run | How Page Studio knows it's working |
 |---|---|
 | Ollama (CLI or app, including `ollama run`) | The model runner's own `/slots` busy flag (exact); GPU time as a fallback |
 | llama.cpp `llama-server` (also inside Jan, Msty) | `/slots` (exact) on the port it listens on; GPU time when slots are off or an API key is set |
@@ -425,7 +451,7 @@ Notes:
   Mac sleep (sleep freezes local generation, and it carries on after wake).
 - Claude Code sessions on a non-Anthropic model are never restarted in the
   background (headless or scheduled resume), because that would run them on
-  your Anthropic account. Page needs positive evidence the session ran on
+  your Anthropic account. Page Studio needs positive evidence the session ran on
   Anthropic. At the battery cutoff, sessions on local models get Esc only,
   with no summary request, to save the battery.
 - GPU time needs Apple silicon. Ollama in Docker and servers on other
@@ -434,7 +460,7 @@ Notes:
 
 ### Rate limits
 
-Page reads Claude Code's rate-limit records, including the structured reset
+Page Studio reads Claude Code's rate-limit records, including the structured reset
 time when the transcript has it. It shows the limit in the menu and on the
 phone, and can hold the Mac awake until the reset (`holdAssertionUntilReset`).
 
@@ -453,7 +479,7 @@ fires. This needs the power helper (Preferences ▸ Power ▸ Install…, or
 
 ## Linux
 
-`paged` is Page Power for Linux: a headless daemon and CLI on the same core
+`paged` is Page Studio for Linux: a headless daemon and CLI on the same core
 as the Mac app. It runs as a systemd user service and pairs with the same
 phone apps and relay. It provides pages, approvals through the hook, typed
 replies and live sessions in tmux, WezTerm, kitty, Herdr and Claude Squad,
@@ -490,7 +516,7 @@ Plan on 20–30 minutes the first time.
   [XcodeGen](https://github.com/yonaskolb/XcodeGen)
 - **For push notifications: a paid Apple Developer Program team.** Free Apple
   IDs (Personal Teams) can't get the `aps-environment` entitlement. Without
-  push, pages only reach the phone while the Page app is open.
+  push, pages only reach the phone while Page Relay is open.
 - `jq` and `curl` for the hooks (both ship with recent macOS)
 
 ### 1. Deploy your relay Worker
@@ -532,7 +558,7 @@ routes, costs and APNs troubleshooting.
 ```
 
 This builds `Page.app`, copies it to `/Applications`, and registers the
-`local.Page` LaunchAgent so Page starts at login. It never uses sudo. Signing
+`local.Page` LaunchAgent so Page Studio starts at login. It never uses sudo. Signing
 uses `CODESIGN_IDENTITY` if set, else the first "Apple Development" identity,
 else the first "Developer ID Application" identity, else ad-hoc. A stable
 identity keeps macOS permission grants across rebuilds.
@@ -541,12 +567,12 @@ identity keeps macOS permission grants across rebuilds.
 |---|---|
 | *(none)* | Build, install and (re)launch. No sudo |
 | `--enable-power-helpers` | Installs the narrow sudoers rule that scheduled wakes and lid-closed-on-battery need (admin password once); see [SECURITY.md](SECURITY.md) for the exact commands. Old name: `--enable-wake` |
-| `--disable-power-helpers` | Stops Page, clears `disablesleep`, removes the rule and the sleep watchdog, then restarts Page. Old name: `--disable-wake` |
+| `--disable-power-helpers` | Stops Page Studio, clears `disablesleep`, removes the rule and the sleep watchdog, then restarts Page Studio. Old name: `--disable-wake` |
 | `--install-hook` | Copies the hook into `~/.claude/hooks` and prints the `settings.json` entries to add by hand. It does not edit `settings.json`; the in-app installer is easier |
-| `--uninstall [--force]` | Removes the app, the LaunchAgents, scheduled resumes and (with sudo) the rule. It stops if Page's hooks are still installed; remove them in the hook window first, or pass `--force` |
+| `--uninstall [--force]` | Removes the app, the LaunchAgents, scheduled resumes and (with sudo) the rule. It stops if Page Studio's hooks are still installed; remove them in the hook window first, or pass `--force` |
 | `--help` | Prints the usage header |
 
-The first time Page types into Terminal.app or iTerm2, macOS asks for
+The first time Page Studio types into Terminal.app or iTerm2, macOS asks for
 **Automation** permission. Codex delivery through Terminal.app also needs
 **Accessibility** permission, to press Return.
 
@@ -597,19 +623,19 @@ account or Play services, and, without push, pages you through an opt-in
 
 cmux's default socket mode only accepts processes cmux started itself, so it
 refuses Page. Phone replies to cmux sessions then fail with
-"cmux blocks Page — open Page ▸ Integrations ▸ Set up cmux…". To fix it:
+"cmux blocks Page Studio — open Page Studio ▸ Integrations ▸ Set up cmux…". To fix it:
 
 1. In cmux, open Settings ▸ Automation ▸ Socket Control Mode and choose
    **Password mode**. Under Socket Password, click Set.
-2. In Page, open **Integrations ▸ Set up cmux…**, enter the same password,
+2. In Page Studio, open **Integrations ▸ Set up cmux…**, enter the same password,
    click **Save** (it's stored in your login Keychain), then
    **Test connection**.
 3. Optional: in cmux, turn off Settings ▸ Notifications ▸ "Forward
    notifications to my iPhone", so each prompt reaches you once.
 
-Page drives cmux only through the `cmux` CLI bundled inside cmux.app. It
+Page Studio drives cmux only through the `cmux` CLI bundled inside cmux.app. It
 passes the password to that CLI only after checking the CLI's code signature
-against cmux's Team ID. Page contains no cmux code.
+against cmux's Team ID. Page Studio contains no cmux code.
 
 ### 6. Phone approvals everywhere (optional)
 
@@ -647,12 +673,12 @@ Apply hand edits with **Reload Config** in the menu.
 | `remoteSessionsEnabled` | `true` | Show live sessions on the paired phone (end-to-end encrypted) and let it type into them or stop them. See [Active sessions on your phone](#active-sessions-on-your-phone) |
 | `keepAwakeLidClosedOnAC` | `true` | While agents work on AC, also hold `PreventSystemSleep` so the lid can be closed |
 | `keepAwakeLidClosedOnBattery` | `false` | Opt-in lid-closed-on-battery via `pmset disablesleep`. Needs the power helper (installed from the app, or `--enable-power-helpers`) |
-| `lowBatteryCutoff` | `10` (0–100) | Battery % (on battery power) at which Page pauses agents and stops keeping the Mac awake |
+| `lowBatteryCutoff` | `10` (0–100) | Battery % (on battery power) at which Page Studio pauses agents and stops keeping the Mac awake |
 | `lowBatteryAction` | `"pause"` | `pause` (interrupt and summarise), `afterTurn` (finish the step, then summarise), or `off` (don't message the agents, just let the Mac sleep) |
 | `lowBatteryPauseGraceSeconds` | `90` (15–600) | How long to stay awake after the pause so the agents can write their summary |
 | `recoveryThreshold` | `25` (0–100, ≥ cutoff) | Battery % at which power counts as back. Without `recoveryRequiresAC` it must be above the cutoff |
 | `recoveryRequiresAC` | `true` | Power counts as back only when plugged in |
-| `resumeAfterBatteryRecovery` | `true` | When power is back, tell the sessions Page paused to carry on (sessions you haven't touched, while you're away) |
+| `resumeAfterBatteryRecovery` | `true` | When power is back, tell the sessions Page Studio paused to carry on (sessions you haven't touched, while you're away) |
 | `checkIntervalSeconds` | `15` (2–600) | Main tick interval |
 | `claudeProcessPattern` | `"claude"` | Process-name pattern for Claude processes |
 | `excludePatterns` | `["ClaudePowerMode"]` | Command-line substrings that disqualify a process from counting as Claude |
@@ -770,7 +796,7 @@ enforced in code and covered by tests:
 - **Exact target or nothing.** The reply's session id resolves to a live pid,
   then to that pid's tty, then to the tmux pane, Terminal/iTerm2 tab or cmux
   surface on that tty. If any step is ambiguous, delivery fails with a reason.
-  Page never guesses, never falls back to "any claude process", never uses the
+  Page Studio never guesses, never falls back to "any claude process", never uses the
   reply payload's `cwd`, and never uses System Events keystrokes aimed at
   whichever app is frontmost. (One exception: the Codex Terminal.app Return
   goes through System Events, but only after checking that Terminal is
@@ -786,10 +812,10 @@ enforced in code and covered by tests:
     because "the prompt is no longer showing".
 - **No Enter on a menu, and no digit is assumed to mean "No".** Claude's
   permission menu ignores letters, and Enter accepts the highlighted "Yes". So
-  "no, stop" followed by Enter would *approve*. Page doesn't send text and
+  "no, stop" followed by Enter would *approve*. Page Studio doesn't send text and
   Enter while a prompt is showing.
   - Everywhere except Terminal.app, Deny is a lone Esc.
-  - Page never sends a fixed `2`, which means "Yes, and don't ask again" on
+  - Page Studio never sends a fixed `2`, which means "Yes, and don't ask again" on
     three-option prompts.
   - **Terminal.app is the one exception.** AppleScript `do script` always
     appends a Return. Deny there types the digit that the visible menu labels
@@ -822,7 +848,7 @@ enforced in code and covered by tests:
 
 ## Privacy and where your data goes
 
-Page has no account, no analytics and no third-party SDKs. But a page has to
+Page Studio has no account, no analytics and no third-party SDKs. But a page has to
 travel, so "nothing leaves your devices" isn't true. What leaves your devices:
 
 - **To your Cloudflare Worker.** Each page carries the session id, project
@@ -838,7 +864,7 @@ travel, so "nothing leaves your devices" isn't true. What leaves your devices:
 - **To Apple's push service (APNs).** Each push carries the project name, the
   session id, the page kind and up to 180 characters of the context as the
   notification body.
-- **Redaction.** Before context leaves the Mac, Page masks common secret
+- **Redaction.** Before context leaves the Mac, Page Studio masks common secret
   shapes: `KEY=value` with secret-like names, bearer and basic credentials,
   PEM blocks, `user:pass@` in URLs, and `sk-`, `ghp_`, `github_pat_`, `xox*`,
   `AKIA` and `AIza` keys. The hook leaves tool output out by default.
@@ -851,18 +877,18 @@ travel, so "nothing leaves your devices" isn't true. What leaves your devices:
 |---|---|
 | Menu says the relay is off or misconfigured | Preferences ▸ Macs & phones: relay on, URL valid, **Test** passes. The placeholder URL counts as unset |
 | No pushes, but the app shows pages when open | `curl <worker>/health` → `apnsConfigured`. With your token, `GET /status` shows `devices` and `lastPushError`. Push needs a paid team and `Page-Push.entitlements`. See the [Worker troubleshooting](Cloudflare/README.md#troubleshooting) |
-| Phone says the Mac is offline | The menu shows the relay state. The Mac reconnects after wake. `GET /status` → `macConnected`, `lastHeartbeatAt` |
-| Phone says no Mac has ever connected with this pairing | You scanned an old QR, or regenerated the token. Pair again |
+| Phone says your computer is offline | The menu shows the relay state. The Mac reconnects after wake. `GET /status` → `macConnected`, `lastHeartbeatAt` |
+| Phone says no computer has ever connected with this pairing | You scanned an old QR, or regenerated the token. Pair again |
 | Everything answers 410 `token_retired` | The token was regenerated on the Mac. Scan the new QR |
-| "Page can't type into <App> yet" | That terminal isn't supported. Run the agent in tmux, or install the hooks |
-| "cmux blocks Page" | Follow [cmux setup](#5-cmux-setup-optional) |
+| "Page Studio can't type into <App> yet" | That terminal isn't supported. Run the agent in tmux, or install the hooks |
+| "cmux blocks Page Studio" | Follow [cmux setup](#5-cmux-setup-optional) |
 | "Session is now waiting for approval — open the new page" / "The prompt is no longer showing" | The session moved on before your reply arrived; answer the newer page |
 | "You have a half-typed message in that pane" | Clear the draft at the Mac, or answer there |
 | Terminal.app: "can't press Esc — deny this one at the Mac" | Terminal.app can't send a lone Esc; use tmux or iTerm2 for remote denies |
 | Codex reply refused "still working" | Codex replies are typed only after the turn ends |
 | Hook never pages | The hook pages only after 120 s with no input at the Mac. Check `~/Library/Logs/page-hook.log`. For Codex, run `/hooks` to trust the hook |
 | Lid-closed-on-battery won't turn on | Preferences ▸ Power shows whether the sudo helper and watchdog are installed. It needs a charge more than 5 points above your cutoff and agents mid-turn |
-| Mac won't sleep after Page quit | `pmset -g` shows `SleepDisabled`; run `sudo pmset -a disablesleep 0`. The menu warns when a clear fails |
+| Mac won't sleep after Page Studio quit | `pmset -g` shows `SleepDisabled`; run `sudo pmset -a disablesleep 0`. The menu warns when a clear fails |
 | config.json edits ignored | The menu shows a config problem. Look for `config.json.bad-<timestamp>` |
 
 Logs:
@@ -939,8 +965,8 @@ has the dev loop and the rules for contributors.
   [SECURITY.md](SECURITY.md).
 - Code of conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
-Page builds on Anthropic's Claude Code, OpenAI's Codex, Cloudflare Workers and
+Page Studio builds on Anthropic's Claude Code, OpenAI's Codex, Cloudflare Workers and
 Durable Objects, and XcodeGen.
 
-[Page Studio License](LICENSE): free to use and share, but not to modify, sell, or sell hosting/support of it as a product. The "Page" name and the Pulse mark are project
+[Page Studio License](LICENSE): free to use and share, but not to modify, sell, or sell hosting/support of it as a product. The "Page Studio" name and the Pulse mark are project
 trademarks; see [NOTICE](NOTICE).

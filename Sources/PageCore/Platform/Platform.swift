@@ -219,7 +219,7 @@ final class InertLidGuard: LidGuard {
 
 final class InertWakeScheduler: WakeScheduler {
     struct Unsupported: LocalizedError {
-        var errorDescription: String? { "This system has no job scheduler Page can use" }
+        var errorDescription: String? { "This system has no job scheduler Page Studio can use" }
     }
     func jobFileURL(label: String, in directory: URL) -> URL { directory.appendingPathComponent(label + ".job") }
     var jobFileExtension: String { "job" }
@@ -250,10 +250,10 @@ final class InertProcesses: ProcessInspector {
 
 final class InertTerminalHost: TerminalHostPlatform {
     func focus(candidates: [ClaudeLiveSession], table: [ProcessRunner.ProcessInfoRow]) -> TerminalFocusOutcome {
-        TerminalFocusOutcome(ok: false, detail: "Page can't bring terminals forward on this system")
+        TerminalFocusOutcome(ok: false, detail: "Page Studio can't bring terminals forward on this system")
     }
-    func activateAnyTerminal() -> TerminalFocusOutcome { TerminalFocusOutcome(ok: false, detail: "Page can't bring apps forward on this system") }
-    func activate(appNamed name: String) -> TerminalFocusOutcome { TerminalFocusOutcome(ok: false, detail: "Page can't bring apps forward on this system") }
+    func activateAnyTerminal() -> TerminalFocusOutcome { TerminalFocusOutcome(ok: false, detail: "Page Studio can't bring apps forward on this system") }
+    func activate(appNamed name: String) -> TerminalFocusOutcome { TerminalFocusOutcome(ok: false, detail: "Page Studio can't bring apps forward on this system") }
 }
 
 struct PortableQRRenderer: QRRenderer {

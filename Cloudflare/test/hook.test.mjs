@@ -239,7 +239,7 @@ test("SEC-5: plain http to a non-local host (or with user-info) never carries th
   assert.match(log(), /plain http for a non-local host/);
 });
 
-test("L3: a GNU stat ahead of /usr/bin doesn't make the Mac detector look dead", { skip: skip || (process.platform !== "darwin" && "macOS only: relies on BSD /usr/bin/stat"), timeout: 30000 }, async () => {
+test("L3: a GNU stat ahead of /usr/bin doesn't make the computer detector look dead", { skip: skip || (process.platform !== "darwin" && "macOS only: relies on BSD /usr/bin/stat"), timeout: 30000 }, async () => {
   writeFileSync(join(bin, "stat"), "#!/bin/sh\n# GNU stat: -f means --file-system\nexit 1\n");
   chmodSync(join(bin, "stat"), 0o755);
   writeFileSync(join(home, "Library", "Application Support", "ClaudePowerMode", "detector.alive"), "");
@@ -264,7 +264,7 @@ test("promptKey: PermissionRequest sends the event's tool_use_id", { skip, timeo
   await done;
 });
 
-test("promptKey: without tool_use_id, the first unanswered tool call (the prompt Claude shows first, as the Mac compares)", { skip, timeout: 30000 }, async () => {
+test("promptKey: without tool_use_id, the first unanswered tool call (the prompt Claude shows first, as the computer compares)", { skip, timeout: 30000 }, async () => {
   const transcript = join(home, "t.jsonl");
   const lines = [
     { type: "user", message: { content: "go" } },
@@ -306,7 +306,7 @@ test("promptKey: a malformed tool_use_id is never sent", { skip, timeout: 30000 
 
 // MARK: Page's own synthetic keystroke
 
-test("presence: an idle reset explained by Page's synthetic-input marker still pages; others step aside", { skip, timeout: 30000 }, async () => {
+test("presence: an idle reset explained by Page Studio's synthetic-input marker still pages; others step aside", { skip, timeout: 30000 }, async () => {
   // Input 1 s ago, and Page typed at that moment: away.
   userInputAt(nowSec() - 1);
   syntheticAt(nowSec() - 1);
@@ -322,7 +322,7 @@ test("presence: an idle reset explained by Page's synthetic-input marker still p
   let r = await runHook(permissionEvent()).done;
   assert.equal(r.stdout, "");
   assert.equal(requests.length, 0);
-  assert.match(log(), /user is at the Mac/);
+  assert.match(log(), /user is at the computer/);
 
   // A marker 10 s away from the input doesn't explain it.
   userInputAt(nowSec() - 1);
@@ -331,7 +331,7 @@ test("presence: an idle reset explained by Page's synthetic-input marker still p
   assert.equal(requests.length, 0);
 });
 
-test("wait: Page's own keystroke mid-wait doesn't end the wait; a real input does", { skip, timeout: 30000 }, async () => {
+test("wait: Page Studio's own keystroke mid-wait doesn't end the wait; a real input does", { skip, timeout: 30000 }, async () => {
   const first = runHook(permissionEvent());
   const open = await until(() => opens()[0]);
   const t = nowSec();

@@ -1,10 +1,10 @@
-# Run your own Page
+# Run your own Page Studio
 
 This is the one guide from zero to "my phone gets pages from my Mac". Follow
 it top to bottom. Plan on 30 to 60 minutes the first time.
 
 Everything here runs on accounts you own. Nothing is shared with the author
-of Page, and none of the author's keys, ids or URLs are needed.
+of Page Studio, and none of the author's keys, ids or URLs are needed.
 
 ## Contents
 
@@ -49,13 +49,13 @@ What else you need depends on the phone and on how much you want:
 | You want | You need | What you get |
 |---|---|---|
 | Mac app only, no phone | Nothing more | Keep-awake and the battery pause. No pages to a phone |
-| iPhone, no cost | Full Xcode, [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`), a free Apple ID | Pages arrive **only while the Page app is open**. No push notifications. Free provisioning expires after 7 days, so you rebuild and reinstall weekly |
+| iPhone, no cost | Full Xcode, [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`), a free Apple ID | Pages arrive **only while Page Relay is open**. No push notifications. Free provisioning expires after 7 days, so you rebuild and reinstall weekly |
 | iPhone with push | The above, plus a paid Apple Developer Program team | Lock-screen pages and actions. Needs the `.p8` push key and the push entitlements file. Builds last as long as your membership |
 | Android | Android SDK platform 35 and build-tools 35.0.0 (Android Studio's SDK Manager installs them), JDK 17 or later (Android Studio's bundled one works), `adb` | Full app, no Google account, no Play services. **No push**: see below |
 | Signed Mac app that keeps its permissions and widgets | An "Apple Development" certificate (free Apple ID, signed in to Xcode) or a "Developer ID Application" certificate (paid) | See [Step 2](#step-2-the-mac-app) |
 
 Android has no push because the relay's push path is APNs only. Instead the
-Android app does one of three things. While Page is open it holds a live
+Android app does one of three things. While Page Studio is open it holds a live
 connection and notifies you the moment a page opens. If you turn on **Stay
 connected** (Tower, then Attention; off by default) it keeps that connection
 in the background and you get pages within seconds. Otherwise a 15-minute
@@ -170,7 +170,7 @@ push troubleshooting.
    ```
 
    This runs [`build.sh`](../build.sh), copies `Page.app` to `/Applications`,
-   and registers a LaunchAgent (`local.Page`) so Page starts at login. It
+   and registers a LaunchAgent (`local.Page`) so Page Studio starts at login. It
    never uses sudo. To build without installing, run `./build.sh` and then
    `open ./Page.app`.
 
@@ -197,7 +197,7 @@ push troubleshooting.
    Mac, macOS will block it unless it is signed with a Developer ID and
    notarised. Build on each Mac instead.
 
-3. Put Page's menu-bar icon to work. The first time Page types into
+3. Put Page Studio's menu-bar icon to work. The first time Page Studio types into
    Terminal.app or iTerm2, macOS asks for **Automation** permission. Allow it.
 
 4. **Point the Mac at your relay.** Menu-bar icon, **Preferences…**, then
@@ -344,17 +344,17 @@ More detail, including the Simulator and development shortcuts, is in
    notification permission once, after pairing.
 
    For steady pages with the screen off, turn on **Stay connected** (Tower,
-   then Attention) and exclude Page from battery optimisation if your phone's
+   then Attention) and exclude Page Studio from battery optimisation if your phone's
    battery saver stops it.
 
 ## Optional: Page Aura link
 
 [Page Aura](https://github.com/roysinclair/page-studio-apps) is a separate
-bring-your-own-key chat app (Windows, macOS, Linux). If you use it, Page can keep
+bring-your-own-key chat app (Windows, macOS, Linux). If you use it, Page Studio can keep
 the Mac awake while Page Aura writes a reply, page your phone when a reply
 finishes or a tool wants approval, and let you answer from the phone. They
 talk over a local Unix socket on your Mac, and Page Aura never touches your
-relay. It is on by default in Page (Preferences ▸ Agents ▸ **Page Aura**) and
+relay. It is on by default in Page Studio (Preferences ▸ Agents ▸ **Page Aura**) and
 you also switch it on in Page Aura's own settings. Nothing to deploy. The
 protocol is in [`AURA-LINK.md`](AURA-LINK.md).
 
@@ -394,14 +394,14 @@ so keep those outside the checkout.
 | Xcode: "no provisioning profile" or push entitlement error | Free Apple ID with `Page-Push.entitlements`. Remove the `PAGE_ENTITLEMENTS` line, or use a paid team. Check `PAGE_BUNDLE_ID` isn't taken by another team |
 | App on iPhone stops opening after a week | Free provisioning expires after 7 days. Run it from Xcode again |
 | Pair phone… refuses | The relay is off, or its URL is unset, invalid or still the placeholder |
-| Phone refuses the QR | The relay must be `https://` (or `wss://`), not the placeholder, and must answer `/health` as a Page relay. A local `wrangler dev` (http) can't be paired from a phone |
+| Phone refuses the QR | The relay must be `https://` (or `wss://`), not the placeholder, and must answer `/health` as a Page Relay Worker. A local `wrangler dev` (http) can't be paired from a phone |
 | Phone says the Mac is offline | Check the Mac menu for the relay state. The Mac reconnects after wake. `GET /status` shows `macConnected` and `lastHeartbeatAt` |
 | "No Mac has ever connected with this pairing" | You scanned an old QR or a token you regenerated. Pair again |
 | Everything answers 410 `token_retired` | The token was regenerated on the Mac. Scan the new QR |
-| Sessions tab says to re-pair | The pairing has no session key (made by an older Page). Unpair and scan again |
+| Sessions tab says to re-pair | The pairing has no session key (made by an older Page Studio). Unpair and scan again |
 | macOS keeps asking for Automation or Accessibility permission again | You are building ad-hoc. Install an Apple Development certificate and rebuild |
 | Mac widgets missing | Ad-hoc builds have no team id, so `build.sh` skips them. Sign with a real identity |
-| Android: pages arrive late | No push on Android. Turn on Stay connected and exclude Page from battery optimisation |
+| Android: pages arrive late | No push on Android. Turn on Stay connected and exclude Page Studio from battery optimisation |
 | Android: Gradle says an SDK component is missing | Install platform 35 and build-tools 35.0.0 in the SDK Manager. Gradle won't download them |
 
 Log locations: `~/Library/Logs/ClaudePowerMode.log` (the Mac app),

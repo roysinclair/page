@@ -93,11 +93,11 @@ struct NWReceiptThreadView: View {
         switch f.stage {
         case .arming: return "Sending, tap to cancel"
         case .sending: return "Sending"
-        case .sent: return "Sent, waiting for your Mac to confirm"
-        case .queued: return "Queued until your Mac is back online"
-        case .held: return "Held on your Mac until the rate limit resets"
+        case .sent: return "Sent, waiting for your computer to confirm"
+        case .queued: return "Queued until your computer is back online"
+        case .held: return "Held on your computer until the rate limit resets"
         case .retracted(let why): return why
-        case .typed, .verified: return "Delivered and verified on your Mac"
+        case .typed, .verified: return "Delivered and verified on your computer"
         case .failed(let why): return why
         case .idle: return ""
         }

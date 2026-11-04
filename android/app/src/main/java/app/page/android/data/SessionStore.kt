@@ -630,7 +630,7 @@ object SessionStore {
         val clientId = UUID.randomUUID().toString().lowercase()
         val body = encrypt(SessionCommand.Input(sessionId, clean, target, hold), clientId)
         if (body == null) {
-            record(clientId, sessionId, SessionCommandKind.INPUT, clean, SessionDeliveryState.Failed("This phone has no session key. Re-pair with your Mac."), target)
+            record(clientId, sessionId, SessionCommandKind.INPUT, clean, SessionDeliveryState.Failed("This phone has no session key. Re-pair with your computer."), target)
             return null
         }
         if (!SessionComposer.fitsRelay(body)) return SessionComposer.Problem.TooLarge
@@ -665,7 +665,7 @@ object SessionStore {
         val clearId = UUID.randomUUID().toString().lowercase()
         val body = encrypt(SessionCommand.ClearDraft(cmd.sessionId, draft, cmd.target), clearId)
         if (body == null) {
-            setRefusal(clientId, SessionDeliveryState.Failed("This phone has no session key. Re-pair with your Mac."))
+            setRefusal(clientId, SessionDeliveryState.Failed("This phone has no session key. Re-pair with your computer."))
             return
         }
         val waiter = expectResult(clearId)
@@ -759,7 +759,7 @@ object SessionStore {
         val clearId = UUID.randomUUID().toString().lowercase()
         val body = encrypt(SessionCommand.ClearDraft(sessionId, typed.draft, target), clearId)
         if (body == null) {
-            setReplyDraft(interventionId, ReplyDraftRecovery.Problem("This phone has no session key. Re-pair with your Mac."))
+            setReplyDraft(interventionId, ReplyDraftRecovery.Problem("This phone has no session key. Re-pair with your computer."))
             return
         }
         val waiter = expectResult(clearId)
@@ -970,7 +970,7 @@ object SessionStore {
         }
         if (!SessionCaps.canRetract(s.caps)) {
             // Before the first list the Mac's caps are not known: nothing says it is old.
-            RelayClient.macRetractAnswered(interventionId, MacRetract.Outcome.Failed(if (s.hasList) "Update Page on your Mac to delete a held reply." else MacRetract.UNCONFIRMED))
+            RelayClient.macRetractAnswered(interventionId, MacRetract.Outcome.Failed(if (s.hasList) "Update Page Studio on your computer to delete a held reply." else MacRetract.UNCONFIRMED))
             return
         }
         sendRetract(SessionCommand.Retract(interventionId = interventionId), RetractTarget.Reply(interventionId))
@@ -1012,7 +1012,7 @@ object SessionStore {
         }
         val body = encrypt(command, retractId)
         if (body == null) {
-            fail(MacRetract.Outcome.Failed("This phone has no session key. Re-pair with your Mac."))
+            fail(MacRetract.Outcome.Failed("This phone has no session key. Re-pair with your computer."))
             return
         }
         retractTargets[retractId] = target
@@ -1055,9 +1055,9 @@ object SessionStore {
             simulateDemoPhotos(sessionId, text, photos.size, target)
             return null
         }
-        if (SessionCaps.IMAGES !in s.caps) return "Your Mac can't take photos from Page. Update Page on your Mac."
+        if (SessionCaps.IMAGES !in s.caps) return "Your computer can't take photos from Page Relay. Update Page Studio on your computer."
         if (rootKey == null) reloadKey()
-        if (rootKey == null) return "This phone has no session key. Re-pair with your Mac."
+        if (rootKey == null) return "This phone has no session key. Re-pair with your computer."
         // New ids for every send: the Mac remembers the ones it has used for 15 minutes.
         val upload = photos.map { UploadPhoto(PhotoChunks.newImageId(), it) }
         // The route the row named when it was sent (`image` or `path`): the receipt says which, as iOS does.
@@ -1110,7 +1110,7 @@ object SessionStore {
      */
     private fun photoTransport(bubbleId: String, photos: Int, attach: String?) = object : PhotoTransport {
         override suspend fun post(command: SessionCommand, clientId: String): SessionCommandOutcome {
-            val body = encrypt(command, clientId) ?: return SessionCommandOutcome.Failed("This phone has no session key. Re-pair with your Mac.")
+            val body = encrypt(command, clientId) ?: return SessionCommandOutcome.Failed("This phone has no session key. Re-pair with your computer.")
             if (!SessionComposer.fitsRelay(body)) return SessionCommandOutcome.TooLarge
             val outcome = RelayClient.postSessionCommand(body)
             noteOutcome(outcome)
@@ -1147,7 +1147,7 @@ object SessionStore {
         val clientId = UUID.randomUUID().toString().lowercase()
         val body = encrypt(SessionCommand.Interrupt(sessionId, target), clientId)
         if (body == null) {
-            record(clientId, sessionId, SessionCommandKind.INTERRUPT, "", SessionDeliveryState.Failed("This phone has no session key. Re-pair with your Mac."), target)
+            record(clientId, sessionId, SessionCommandKind.INTERRUPT, "", SessionDeliveryState.Failed("This phone has no session key. Re-pair with your computer."), target)
             return
         }
         record(clientId, sessionId, SessionCommandKind.INTERRUPT, "", SessionDeliveryState.Sending, target)
@@ -1169,7 +1169,7 @@ object SessionStore {
         val clientId = UUID.randomUUID().toString().lowercase()
         val body = encrypt(SessionCommand.Answer(sessionId, promptKey, answers, target), clientId)
         if (body == null) {
-            record(clientId, sessionId, SessionCommandKind.ANSWER, summary, SessionDeliveryState.Failed("This phone has no session key. Re-pair with your Mac."), target, promptKey)
+            record(clientId, sessionId, SessionCommandKind.ANSWER, summary, SessionDeliveryState.Failed("This phone has no session key. Re-pair with your computer."), target, promptKey)
             return
         }
         record(clientId, sessionId, SessionCommandKind.ANSWER, summary, SessionDeliveryState.Sending, target, promptKey)
@@ -1183,7 +1183,7 @@ object SessionStore {
             return SessionCommandOutcome.Accepted
         }
         val clientId = UUID.randomUUID().toString().lowercase()
-        val body = encrypt(SessionCommand.InterruptAll, clientId) ?: return SessionCommandOutcome.Failed("This phone has no session key. Re-pair with your Mac.")
+        val body = encrypt(SessionCommand.InterruptAll, clientId) ?: return SessionCommandOutcome.Failed("This phone has no session key. Re-pair with your computer.")
         val outcome = RelayClient.postSessionCommand(body)
         noteOutcome(outcome)
         return outcome
@@ -1316,7 +1316,7 @@ object SessionStore {
         }
         val body = encrypt(SessionCommand.Start(folder, prompt), clientId)
         if (body == null) {
-            update { it.copy(start = it.start?.copy(state = SessionDeliveryState.Failed("This phone has no session key. Re-pair with your Mac."))) }
+            update { it.copy(start = it.start?.copy(state = SessionDeliveryState.Failed("This phone has no session key. Re-pair with your computer."))) }
             return null
         }
         scope.launch {
@@ -1381,7 +1381,7 @@ object SessionStore {
     private fun askForAnswer(command: SessionCommand, clientId: String, op: String, fail: (String) -> Unit) {
         val body = encrypt(command, clientId)
         if (body == null) {
-            fail("This phone has no session key. Re-pair with your Mac.")
+            fail("This phone has no session key. Re-pair with your computer.")
             return
         }
         scope.launch {
@@ -1392,7 +1392,7 @@ object SessionStore {
         }
         scope.launch {
             delay((SessionDeliveryState.RESULT_TIMEOUT * 1000).toLong())
-            fail("Your Mac didn't answer within ${SessionDeliveryState.RESULT_TIMEOUT.toInt()} seconds. Pull to refresh, or try again.")
+            fail("Your computer didn't answer within ${SessionDeliveryState.RESULT_TIMEOUT.toInt()} seconds. Pull to refresh, or try again.")
         }
     }
 
@@ -1471,7 +1471,7 @@ object SessionStore {
                 SessionCommandKind.INPUT -> {
                     val busy = target.state == LiveSessionState.ACTIVE
                     when {
-                        busy && hold -> CommandResult(clientId, true, CommandResult.Code.QUEUED, null, "Held — Page types it when ${target.backend.displayName} finishes this turn", null, held = true)
+                        busy && hold -> CommandResult(clientId, true, CommandResult.Code.QUEUED, null, "Held — Page Studio types it when ${target.backend.displayName} finishes this turn", null, held = true)
                         target.state.isWaiting -> CommandResult(clientId, false, CommandResult.Code.REFUSED, "waiting", null, target.interventionId)
                         busy && text.firstOrNull()?.isDigit() == true -> CommandResult(clientId, false, CommandResult.Code.REFUSED, "digit_while_busy", null, null)
                         else -> CommandResult(
@@ -1508,7 +1508,7 @@ object SessionStore {
             delay(600)
             if (!_state.value.isDemoMode) return@launch
             update { it.copy(uploads = it.uploads - bubbleId) }
-            val where = session?.host ?: "your Mac"
+            val where = session?.host ?: "your computer"
             applyResult(CommandResult(bubbleId, true, CommandResult.Code.DELIVERED, null, "Sent ${PhotoText.chip(count)} to Claude in $where (demo)", null, attached = count))
             delay(600)
             if (!_state.value.isDemoMode) return@launch

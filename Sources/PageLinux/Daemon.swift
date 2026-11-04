@@ -207,7 +207,7 @@ final class PagedDaemon {
         coordinator.onNewRateLimit = { notice in
             let reset = DateFormatter.localizedString(from: notice.event.resetTime, dateStyle: .none, timeStyle: .short)
             notifier?.notify(title: "Rate limited — \(notice.event.projectName)",
-                             body: notice.scheduledResume != nil ? "Page will carry on at \(reset)" : "Resets at \(reset)",
+                             body: notice.scheduledResume != nil ? "Page Studio will carry on at \(reset)" : "Resets at \(reset)",
                              identifier: "rate-limit")
         }
         coordinator.onBatteryNotice = { notice in

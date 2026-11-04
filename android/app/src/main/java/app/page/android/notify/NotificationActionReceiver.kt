@@ -52,7 +52,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
         val info = PostedPages.get(parsed.interventionId)
         if (info == null) {
             // Page never posted this (or it closed and was forgotten).
-            PageNotifications.notice("Nothing was sent", "Page couldn't match that notification to a page. Open Page to answer it.", parsed.interventionId)
+            PageNotifications.notice("Nothing was sent", "Page Relay couldn't match that notification to a page. Open Page Relay to answer it.", parsed.interventionId)
             return
         }
         // Delete: takes back a reply that is sending or queued. It carries nothing but the page's id.
@@ -89,7 +89,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     // Not undoable, not in the inbox, or a session Page can't type into: a notification can't
                     // offer the tap or the hold plus biometrics (or the keystrokes), so nothing is sent and the
                     // app is where to decide.
-                    PageNotifications.notice("Nothing was sent", "This one needs a closer look. Open Page to answer it.", info.id)
+                    PageNotifications.notice("Nothing was sent", "This one needs a closer look. Open Page Relay to answer it.", info.id)
                 }
             }
             is NotificationDecision.Refuse -> {

@@ -98,6 +98,6 @@ final class CmuxConfigFileTests: XCTestCase {
         XCTAssertFalse(blocked.canType)
         XCTAssertFalse(blocked.canInterrupt)
         XCTAssertEqual(blocked.host, "cmux")
-        XCTAssertTrue(blocked.typeBlocker?.contains("Let Page type into cmux") ?? false)
+        XCTAssertTrue(blocked.typeBlocker?.contains("Let Page Studio type into cmux") ?? false)
     }
 }

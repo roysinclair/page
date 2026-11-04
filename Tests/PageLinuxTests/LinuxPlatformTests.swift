@@ -155,7 +155,7 @@ final class LinuxBatteryTests: XCTestCase {
 
     func testInhibitorChildIsAnArgumentListTiedToPaged() {
         let args = LogindInhibitor.arguments(what: "idle:sleep", why: "2 agents working; $(rm -rf ~)", parentPid: 4242)
-        XCTAssertEqual(args, ["--what=idle:sleep", "--who=Page", "--why=2 agents working; $(rm -rf ~)", "--mode=block",
+        XCTAssertEqual(args, ["--what=idle:sleep", "--who=Page Studio", "--why=2 agents working; $(rm -rf ~)", "--mode=block",
                               "/usr/bin/env", "tail", "--pid=4242", "-f", "/dev/null"])
     }
 
@@ -456,7 +456,7 @@ final class PagedFilesTests: XCTestCase {
     }
 
     func testNotifySendArgumentsEndOptions() {
-        XCTAssertEqual(NotifySendNotifier.arguments(title: "-x", body: "b"), ["--app-name=Page", "--icon=dialog-information", "--", "-x", "b"])
+        XCTAssertEqual(NotifySendNotifier.arguments(title: "-x", body: "b"), ["--app-name=Page Studio", "--icon=dialog-information", "--", "-x", "b"])
         XCTAssertFalse(NotifySendNotifier(tool: nil, environment: ["DISPLAY": ":0"]).available)
         XCTAssertFalse(NotifySendNotifier(tool: "/usr/bin/notify-send", environment: [:]).available, "no desktop session")
     }

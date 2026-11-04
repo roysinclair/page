@@ -215,7 +215,7 @@ function initHoldRing() {
         label.textContent = 'Approved';
         status.textContent = auto
           ? 'Held for 1.5 s, then Face ID: approved. Your turn: press and hold. (A demo: it sends nothing.)'
-          : 'Approved. In the app, Page would now type it into the exact terminal. (A demo: it sends nothing.)';
+          : 'Approved. In the app, Page Relay would now type it into the exact terminal. (A demo: it sends nothing.)';
         if (ENABLED) play(burst, [{ opacity: 0.9, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(1.45)' }], 600, { easing: OUT, fill: 'none' });
         setTimeout(reset, 2200);
       }, 450);

@@ -186,7 +186,7 @@ data class SessionRoomData(
             var loading = false
             if (items.isEmpty()) {
                 if (i.transcript != null) emptyStory = "Nothing in this session yet."
-                else if (!ready) emptyStory = "The story appears once your Mac is connected."
+                else if (!ready) emptyStory = "The story appears once your computer is connected."
                 else { emptyStory = "Loading the story…"; loading = true }
             }
             val story = StoryBuilder.build(items, busy, i.zone)

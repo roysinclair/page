@@ -135,22 +135,22 @@ data class ReceiptThread(
                 }
                 ReplyDelivery.Sending -> sending(since)
                 is ReplyDelivery.Sent -> {
-                    if (delivery.queued) return ReceiptThread(Stage.Queued, arm = 1.0, reach = 0.5, relayLit = true, word = "queued · Mac offline")
+                    if (delivery.queued) return ReceiptThread(Stage.Queued, arm = 1.0, reach = 0.5, relayLit = true, word = "queued · computer offline")
                     val waited = maxOf(0.0, now.secondsSince(delivery.at))
                     val moving = waited < glintFor
                     val glint = if (moving) 0.5 + 0.5 * (waited / glintPeriod).rem(1.0) else null
                     ReceiptThread(
                         Stage.Sent, arm = 1.0, reach = 0.5, glint = glint, relayLit = true,
-                        word = if (waited > ReplyConfirmation.SLOW_AFTER) "sent · waiting for your Mac" else "sent", moving = moving,
+                        word = if (waited > ReplyConfirmation.SLOW_AFTER) "sent · waiting for your computer" else "sent", moving = moving,
                     )
                 }
                 is ReplyDelivery.Delivered -> resolved(since)
                 is ReplyDelivery.Failed -> failed(delivery.message.ifEmpty { "Couldn't deliver the reply" }, since)
-                ReplyDelivery.AlreadyReplied -> failed("Already answered at the Mac", since)
+                ReplyDelivery.AlreadyReplied -> failed("Already answered at your computer", since)
                 ReplyDelivery.Gone -> failed("Prompt closed before your answer", since)
                 ReplyDelivery.Retracting -> sending(since).copy(stage = Stage.Deleting, word = "deleting")
                 is ReplyDelivery.Retracted -> deleted(since)
-                is ReplyDelivery.HeldOnMac -> ReceiptThread(Stage.Held, arm = 1.0, reach = 0.5, relayLit = true, word = "held on your Mac")
+                is ReplyDelivery.HeldOnMac -> ReceiptThread(Stage.Held, arm = 1.0, reach = 0.5, relayLit = true, word = "held on your computer")
             }
         }
 

@@ -109,7 +109,7 @@ class ActivityTipsHealthTest {
         assertEquals("Hold to approve — fingerprint confirms", NWTip.HOLD_TO_APPROVE.text())
         assertEquals("Hold to approve — screen lock confirms", NWTip.HOLD_TO_APPROVE.text("screen lock"))
         assertEquals("Tap to watch it work · Steer to guide it", NWTip.IN_FLIGHT.text())
-        assertEquals("Will type … shows exactly what lands on your Mac", NWTip.WILL_TYPE.text())
+        assertEquals("Will type … shows exactly what lands on your computer", NWTip.WILL_TYPE.text())
         for (tip in NWTip.entries) {
             assertTrue(GestureGuide.entry(tip) != null)
             assertFalse(tip.text().contains("{"))

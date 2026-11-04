@@ -282,7 +282,7 @@ enum RenderFixtures3 {
             i.ended = true
         case "room-blocked":
             i.session = session("room-claude", "mac-on-claude-code", state: .idle, host: "Ghostty", canType: false,
-                                blocker: "Page can't type into Ghostty yet", ago: 300)
+                                blocker: "Page Studio can't type into Ghostty yet", ago: 300)
             i.screen = nil; i.runs = []
         case "room-receipt", "room-receipt-refused":
             // The receipt after a send: where it went, or why nothing did.
@@ -419,7 +419,7 @@ struct HarnessOnboarding: View {
         case "welcome-notice":
             NWWelcomeScreen(notice: ("Pair again", "Your relay retired the old pairing token. Your old inbox and history were cleared."))
         case "scan", "scan-hint":
-            NWScanScreen(hint: screen == "scan-hint" ? "That QR code isn't a Page pairing code." : nil) {
+            NWScanScreen(hint: screen == "scan-hint" ? "That QR code isn't a Page Relay pairing code." : nil) {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .fill(LinearGradient(colors: [Color(white: 0.20), Color(white: 0.13)], startPoint: .top, endPoint: .bottom))
             }
@@ -430,7 +430,7 @@ struct HarnessOnboarding: View {
             NWPairStep(content: .confirm(mac: "Studio MBP", host: "page-relay.workers.dev", online: true, unused: false),
                        onPrimary: {}, primaryTitle: "Pair", onSecondary: {}, secondaryTitle: "Cancel")
         case "pair-problem":
-            NWPairStep(content: .problem(title: "The relay rejected this code", message: "Show the pairing code on your Mac again and scan the new one."),
+            NWPairStep(content: .problem(title: "The relay rejected this code", message: "Show the pairing code on your computer again and scan the new one."),
                        onSecondary: {}, secondaryTitle: "Start over")
         case "paired-denied":
             NWPairedScreen(model: PairedWelcome.build(macName: "Studio MBP", liveSessions: 14, isFirstMac: true, notifications: .off))
@@ -496,7 +496,7 @@ struct HarnessWidgets: View {
                 frame(358, 380, palette: s.facePalette) { NWWidgetStatusFace(status: s, size: .large, now: RenderHarness.now, timeZone: RenderHarness.timeZone) }
                 HStack(alignment: .top, spacing: 16) {
                     frame(170, 170, palette: offline.facePalette) { NWWidgetStatusFace(status: offline, size: .small, now: RenderHarness.now, timeZone: RenderHarness.timeZone) }
-                    frame(170, 170, palette: .asleep) { NWWidgetStatusFace(status: nil, problem: "Open Page to pair", size: .small) }
+                    frame(170, 170, palette: .asleep) { NWWidgetStatusFace(status: nil, problem: "Open Page Relay to pair", size: .small) }
                 }
             }
             .padding(.horizontal, 17).padding(.top, 60).padding(.bottom, 30)

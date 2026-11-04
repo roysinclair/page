@@ -135,7 +135,7 @@ object ActionCoordinator {
         if (RelayClient.inbox.value.none { it.id == rowId }) {
             setPending(rowId, null)
             jobs.remove(rowId)
-            setProblem(rowId, "Already answered at the Mac")
+            setProblem(rowId, "Already answered at your computer")
             return
         }
         _pending.value[rowId]?.let { setPending(rowId, it.copy(armed = false)) }

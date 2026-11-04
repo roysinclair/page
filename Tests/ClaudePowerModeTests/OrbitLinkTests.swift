@@ -88,7 +88,7 @@ final class OrbitLinkTests: XCTestCase {
         XCTAssertEqual(page.backend, .orbit)
         XCTAssertEqual(page.sessionId, "orbit-sesn_01ask")
         XCTAssertTrue(page.context.hasPrefix("Use Release manager · bash\n"), page.context)
-        XCTAssertFalse(page.context.contains("on this Mac"))
+        XCTAssertFalse(page.context.contains("on this computer"))
     }
 
     func testAllowFromThePhoneReachesPageOrbit() throws {
@@ -111,7 +111,7 @@ final class OrbitLinkTests: XCTestCase {
     }
 
     func testWordingSaysPageOrbit() {
-        XCTAssertEqual(LinkFlavor.orbit.say(AuraLink.notConnectedDetail), "Page Orbit isn't open on your Mac")
+        XCTAssertEqual(LinkFlavor.orbit.say(AuraLink.notConnectedDetail), "Page Orbit isn't open on your computer")
         XCTAssertEqual(LinkFlavor.orbit.say(AuraLink.chatGoneDetail), "That session no longer exists")
         XCTAssertEqual(LinkFlavor.aura.say(AuraLink.chatGoneDetail), AuraLink.chatGoneDetail)
     }

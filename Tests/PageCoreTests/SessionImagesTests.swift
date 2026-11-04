@@ -143,7 +143,7 @@ final class SessionImagesTests: XCTestCase {
         backends.hosts = [
             "tmux1": SessionHostInfo(host: "tmux", canType: true, canInterrupt: true),
             "term1": SessionHostInfo(host: "Terminal", canType: true, canInterrupt: false),
-            "ghost": .blocked("Ghostty", "Page can't type into Ghostty yet"),
+            "ghost": .blocked("Ghostty", "Page Studio can't type into Ghostty yet"),
             "codex1": SessionHostInfo(host: "tmux", canType: true, canInterrupt: true),
         ]
         setSessions([session("tmux1"), session("term1"), session("ghost"), session("codex1", backend: .codex)])

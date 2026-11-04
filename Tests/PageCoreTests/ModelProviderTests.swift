@@ -74,7 +74,7 @@ final class ModelProviderTests: XCTestCase {
         XCTAssertEqual(C.claude(env: ["ANTHROPIC_BASE_URL": "http://localhost.evil.example:1234"], settingsEnv: [:]),
                        .cloudGateway)
         XCTAssertEqual(C.claude(env: ["ANTHROPIC_BASE_URL": "http://192.168.1.20:11434"], settingsEnv: [:]),
-                       .cloudGateway, "a LAN server is not this Mac")
+                       .cloudGateway, "a LAN server is not this computer")
         XCTAssertEqual(C.claude(env: ["ANTHROPIC_BASE_URL": "::::"], settingsEnv: [:]), .cloudGateway,
                        "unparseable fails closed (non-Anthropic)")
     }

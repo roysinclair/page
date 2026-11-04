@@ -70,7 +70,7 @@ if case .success(let p) = PairingValidator.validate(good) {
     check(p.macName == "Roy's Mac", "name")
 } else { check(false, "good payload") }
 let curly = "{\u{201C}v\u{201D}:1,\u{201C}token\u{201D}:\u{201C}abcdefghijklmnopqrstuvwxyz\u{201D},\u{201C}relay\u{201D}:\u{201C}https://r.example.com/\u{201D}}"
-if case .success(let p) = PairingValidator.validate(curly) { check(p.relayBaseURL.absoluteString == "https://r.example.com", "curly \(p.relayBaseURL)"); check(p.macName == "Your Mac", "default name") } else { check(false, "curly quotes") }
+if case .success(let p) = PairingValidator.validate(curly) { check(p.relayBaseURL.absoluteString == "https://r.example.com", "curly \(p.relayBaseURL)"); check(p.macName == "Your computer", "default name") } else { check(false, "curly quotes") }
 check(PairingValidator.validate("") == .failure(.empty), "empty")
 check(PairingValidator.validate("https://example.com") == .failure(.notPageCode), "url qr")
 check(PairingValidator.validate(#"{"ssid":"x"}"#) == .failure(.notPageCode), "other json")
@@ -183,16 +183,16 @@ check(ReplyDelivery.synced(local: .alreadyReplied, deliveryStatus: "pending", de
 check(ReplyDelivery.synced(local: .sent(queued: true, at: sentAt), deliveryStatus: "pending", deliveryDetail: nil, deliveryMethod: nil, repliedAt: repAt, forwardedAt: nil, hookBlocking: false, now: now) == .sent(queued: true, at: sentAt), "pending keeps local sent")
 check(ReplyDelivery.synced(local: nil, deliveryStatus: "pending", deliveryDetail: nil, deliveryMethod: nil, repliedAt: nil, forwardedAt: now, hookBlocking: false, now: now) == .sent(queued: false, at: now), "pending seeds")
 check(ReplyDelivery.synced(local: .sending, deliveryStatus: "failed", deliveryDetail: "no", deliveryMethod: nil, repliedAt: nil, forwardedAt: nil, hookBlocking: false, now: now) == .sending, "failed never clobbers an in-progress send")
-check(ReplyDelivery.synced(local: .sent(queued: false, at: sentAt), deliveryStatus: "failed", deliveryDetail: nil, deliveryMethod: nil, repliedAt: nil, forwardedAt: nil, hookBlocking: false, now: now) == .failed("Your Mac couldn't deliver the reply."), "failed default detail")
+check(ReplyDelivery.synced(local: .sent(queued: false, at: sentAt), deliveryStatus: "failed", deliveryDetail: nil, deliveryMethod: nil, repliedAt: nil, forwardedAt: nil, hookBlocking: false, now: now) == .failed("Your computer couldn't deliver the reply."), "failed default detail")
 check(ReplyDelivery.synced(local: .sent(queued: false, at: sentAt), deliveryStatus: "delivered", deliveryDetail: "Typed", deliveryMethod: nil, repliedAt: repAt, forwardedAt: nil, hookBlocking: false, now: now) == .delivered(detail: "Typed"), "delivered")
 check(ReplyDelivery.synced(local: nil, deliveryStatus: nil, deliveryDetail: nil, deliveryMethod: nil, repliedAt: nil, forwardedAt: nil, hookBlocking: false, now: now) == nil, "v1 no reply")
 check(ReplyDelivery.synced(local: nil, deliveryStatus: nil, deliveryDetail: nil, deliveryMethod: nil, repliedAt: repAt, forwardedAt: nil, hookBlocking: false, now: now) == .sent(queued: false, at: repAt), "v1 repliedAt seeds")
 
 // Closed reply screen (IOS-5): an unknown reason after our own reply is looked up, not invented.
 check(ClosedReplyPhase.decide(reason: nil, hadOwnReply: true, lookupFinished: false) == .checking, "unknown close after reply -> check")
-check(ClosedReplyPhase.decide(reason: nil, hadOwnReply: true, lookupFinished: true) == .resolved("Resolved on your Mac."), "lookup found nothing")
+check(ClosedReplyPhase.decide(reason: nil, hadOwnReply: true, lookupFinished: true) == .resolved("Resolved on your computer."), "lookup found nothing")
 check(ClosedReplyPhase.decide(reason: "replied", hadOwnReply: true, lookupFinished: false) == .delivered, "replied -> delivered")
-check(ClosedReplyPhase.decide(reason: nil, hadOwnReply: false, lookupFinished: false) == .resolved("Resolved on your Mac."), "no reply of ours -> resolved")
+check(ClosedReplyPhase.decide(reason: nil, hadOwnReply: false, lookupFinished: false) == .resolved("Resolved on your computer."), "no reply of ours -> resolved")
 check(ClosedReplyPhase.decide(reason: "user_resolved_in_terminal", hadOwnReply: true, lookupFinished: false) == .resolved("Answered in the terminal."), "known reason")
 
 // Close ids from pushes (F5/IOS-1).
@@ -232,7 +232,7 @@ check(!MacStatusSnapshot(macConnected: true, macEverSeen: false).looksUnused, "c
 
 // Token retirement (shared definition: 410 token_retired anywhere, relay.retired frame).
 let retiredBody = Data(#"{"error":"token_retired","why":"This pairing was replaced on your Mac — scan the new QR code"}"#.utf8)
-check(TokenRetirement.why(status: 410, body: retiredBody) == "This pairing was replaced on your Mac — scan the new QR code", "410 token_retired -> why")
+check(TokenRetirement.why(status: 410, body: retiredBody) == "This pairing was replaced on your computer — scan the new QR code", "410 token_retired -> why")
 check(TokenRetirement.why(status: 410, body: Data(#"{"error":"token_retired"}"#.utf8)) == TokenRetirement.defaultWhy, "410 token_retired without why -> default")
 check(TokenRetirement.why(status: 410, body: Data(#"{"error":"token_retired","why":"   "}"#.utf8)) == TokenRetirement.defaultWhy, "blank why -> default")
 check(TokenRetirement.why(status: 410, body: Data(#"{"error":"token_retired","why":5}"#.utf8)) == TokenRetirement.defaultWhy, "non-string why -> default")
@@ -256,12 +256,12 @@ check(TokenRetirement.sentence("Scan the new code") == "Scan the new code.", "se
 check(TokenRetirement.sentence("Done.") == "Done.", "sentence keeps period")
 
 // Reply outcomes for a retired token vs a closed page.
-check(ReplyOutcome.from(status: 410, body: retiredBody) == .retired("This pairing was replaced on your Mac — scan the new QR code"), "reply 410 token_retired -> retired")
+check(ReplyOutcome.from(status: 410, body: retiredBody) == .retired("This pairing was replaced on your computer — scan the new QR code"), "reply 410 token_retired -> retired")
 check(ReplyOutcome.from(status: 410, body: Data(#"{"error":"gone","why":"prompt_closed","closeReason":"replied"}"#.utf8)) == .gone, "reply 410 gone -> gone")
 check(ReplyOutcome.from(status: 410, body: Data(#"{"error":"gone","why":"expired"}"#.utf8)) == .gone, "reply 410 expired page -> gone")
 
 // 422 approve_or_deny_only: show the relay's why, not the code.
-let v1Why = "This page comes from an older Page hook that can only apply Approve or Deny. Update it in Page → Phone approvals."
+let v1Why = "This page comes from an older Page Studio hook that can only apply Approve or Deny. Update it in Page Studio → Phone approvals."
 check(ReplyOutcome.from(status: 422, body: try! JSONSerialization.data(withJSONObject: ["error": "approve_or_deny_only", "why": v1Why])) == .failed(v1Why), "422 -> why text")
 check(ReplyOutcome.from(status: 422, body: Data(#"{"error":"approve_or_deny_only"}"#.utf8)) == .failed(ReplyOutcome.decisionsOnlyMessage), "422 without why -> built-in copy")
 check(ReplyOutcome.from(status: 422, body: Data(#"{"error":"approve_or_deny_only","why":"  "}"#.utf8)) == .failed(ReplyOutcome.decisionsOnlyMessage), "422 blank why -> built-in copy")
@@ -404,7 +404,7 @@ let listJSON = """
 {"kind":"list","boot":"b1","seq":12,"ts":1761300000000,"macName":"Roy's MacBook","futureField":{"x":1},
  "sessions":[
   {"id":"s-claude","backend":"claude","title":"mac-on-claude-code","cwd":"~/projects/mac-on-claude-code","state":"waitingOnApproval","host":"cmux","canType":true,"typeBlocker":"ignored when typable","canInterrupt":true,"provider":"anthropic","lastActivityAt":"2026-10-24T12:00:00Z","interventionId":"iv-1","preview":"Bash: npm test"},
-  {"id":"s-ollama","backend":"ollama","cwd":"~/code/llm-play","state":"thinkingHard","host":"Ghostty","canType":false,"typeBlocker":"Page can't type into Ghostty yet","canInterrupt":"yes","lastActivityAt":"bad"},
+  {"id":"s-ollama","backend":"ollama","cwd":"~/code/llm-play","state":"thinkingHard","host":"Ghostty","canType":false,"typeBlocker":"Page Studio can't type into Ghostty yet","canInterrupt":"yes","lastActivityAt":"bad"},
   {"id":"s-min"},
   {"id":""},
   {"title":"no id"},
@@ -421,7 +421,7 @@ if let p = SessionsPlaintext.decode(Data(listJSON.utf8)), case .list(let name, l
     check(b.backend == .other("ollama") && b.backend.badge == "OLLAMA" && b.backend.displayName == "Ollama", "other backend kept raw")
     check(b.state == .unknown && b.state.group == .idle, "unknown state -> unknown, grouped idle")
     check(b.title == "llm-play", "title from cwd")
-    check(!b.canType && b.blockerText == "Page can't type into Ghostty yet", "type blocker")
+    check(!b.canType && b.blockerText == "Page Studio can't type into Ghostty yet", "type blocker")
     check(!b.canInterrupt && !b.isStoppable, "non-bool canInterrupt -> false")
     check(b.lastActivityAt == nil, "bad date tolerated")
     check(m.title == "Session s-min" && !m.canType && m.blockerText == LiveSession.defaultBlocker && m.host == "unknown" && m.hostLabel == "Unknown host", "minimal session safe defaults")
@@ -584,13 +584,13 @@ check(SessionDeliveryState.typed(nil).timedOut(sentAt: cmdSentAt, now: cmdSentAt
 check(d.afterPost(.accepted) == .sending, "202 keeps waiting for the result")
 check(d.afterPost(.macOffline) == .failed(SessionCommandOutcome.macOffline.failureMessage!), "503 -> not sent")
 check(SessionDeliveryState.typed(nil).afterPost(.macOffline) == .typed(nil), "result that beat the POST is kept")
-check(SessionDeliveryState.typed(nil).label(.interrupt) == "Stopped" && SessionDeliveryState.noAnswer.label(.input) == "No answer from your Mac", "labels")
+check(SessionDeliveryState.typed(nil).label(.interrupt) == "Stopped" && SessionDeliveryState.noAnswer.label(.input) == "No answer from your computer", "labels")
 d = .noAnswer
 check(d.explanation(.input, agent: "Claude")?.contains("20 seconds") == true, "no-answer copy")
 // VoiceOver hears the same status and explanation the bubble shows.
 let draftRefusal = SessionDeliveryState.sending.applying(result(.refused, reason: "draft"), agent: "Claude")
 check(draftRefusal.spokenBubbleStatus(.input, agent: "Claude") == "Refused. " + SessionResultCopy.refusal(reason: "draft", detail: nil, agent: "Claude"), "spoken refusal says why")
-check(SessionDeliveryState.noAnswer.spokenBubbleStatus(.input, agent: "Claude").hasPrefix("No answer from your Mac. ") && SessionDeliveryState.noAnswer.spokenBubbleStatus(.input, agent: "Claude").contains("check the transcript"), "spoken no-answer guidance")
+check(SessionDeliveryState.noAnswer.spokenBubbleStatus(.input, agent: "Claude").hasPrefix("No answer from your computer. ") && SessionDeliveryState.noAnswer.spokenBubbleStatus(.input, agent: "Claude").contains("check the transcript"), "spoken no-answer guidance")
 check(SessionDeliveryState.failed("tmux went away").spokenBubbleStatus(.input, agent: "Claude") == "Not sent. tmux went away", "spoken failure")
 check(SessionDeliveryState.typed("Typed into cmux").bubbleExplanation(.input, agent: "Claude") == nil && SessionDeliveryState.typed("Typed into cmux").spokenBubbleStatus(.input, agent: "Claude") == "Typed", "typed detail not shown or spoken")
 check(SessionDeliveryState.sending.spokenBubbleStatus(.input, agent: "Claude") == "Sending…", "spoken sending")
@@ -629,19 +629,19 @@ for r in reasons {
     check(SessionResultCopy.refusal(reason: r, detail: nil, agent: "Claude") != fallback, "\(r) has its own copy")
 }
 check(Set(reasons.map { SessionResultCopy.refusal(reason: $0, detail: nil, agent: "Claude") }).count == reasons.count, "reason copy is distinct")
-check(SessionResultCopy.refusal(reason: "brand_new", detail: "Mac says no", agent: "Claude") == "Mac says no", "unknown reason uses the Mac's detail")
+check(SessionResultCopy.refusal(reason: "brand_new", detail: "Mac says no", agent: "Claude") == "Mac says no", "unknown reason uses the computer's detail")
 check(SessionResultCopy.refusal(reason: "waiting", detail: nil, agent: "Codex").hasPrefix("Codex"), "agent name in copy")
-check(SessionResultCopy.refusal(reason: "codex_mid_turn", detail: nil, agent: "Codex") == "Codex is mid-turn — Page can type once the turn ends.", "codex mid-turn copy")
+check(SessionResultCopy.refusal(reason: "codex_mid_turn", detail: nil, agent: "Codex") == "Codex is mid-turn — Page Studio can type once the turn ends.", "codex mid-turn copy")
 
 // "Clear it and send": the draft refusal names the text; the Mac couldn't see the box is its own reason.
 check(SessionResultCopy.refusal(reason: "input_unverified", detail: "No input box", agent: "Claude")
-      == "Page couldn't see the session's input box on your Mac, so it didn't type anything. Try again in a moment.", "input_unverified copy")
+      == "Page Studio couldn't see the session's input box on your computer, so it didn't type anything. Try again in a moment.", "input_unverified copy")
 check(SessionResultCopy.refusal(reason: "draft_changed", detail: nil, agent: "Claude")
-      == "The text in the input box changed on your Mac, so Page left it alone.", "draft_changed copy")
-check(SessionResultCopy.refusal(reason: "draft", detail: nil, agent: "Claude", draft: "0") == "There's “0” typed in the session's input box on your Mac.", "draft names the text")
-check(SessionResultCopy.refusal(reason: "draft", detail: nil, agent: "Claude", draft: nil) == "There's unsent text in the session's input box on your Mac. Clear it there, then try again.", "draft without the field keeps today's copy")
+      == "The text in the input box changed on your computer, so Page Studio left it alone.", "draft_changed copy")
+check(SessionResultCopy.refusal(reason: "draft", detail: nil, agent: "Claude", draft: "0") == "There's “0” typed in the session's input box on your computer.", "draft names the text")
+check(SessionResultCopy.refusal(reason: "draft", detail: nil, agent: "Claude", draft: nil) == "There's unsent text in the session's input box on your computer. Clear it there, then try again.", "draft without the field keeps today's copy")
 let longDraft = String(repeating: "x", count: 60)
-check(SessionResultCopy.refusal(reason: "draft", detail: nil, agent: "Claude", draft: longDraft) == "There's “\(String(repeating: "x", count: 40))…” typed in the session's input box on your Mac.", "long draft is cut for display only")
+check(SessionResultCopy.refusal(reason: "draft", detail: nil, agent: "Claude", draft: longDraft) == "There's “\(String(repeating: "x", count: 40))…” typed in the session's input box on your computer.", "long draft is cut for display only")
 check(SessionResultCopy.refusal(reason: "draft", detail: nil, agent: "Claude", draft: "a\nb").hasPrefix("There's unsent text"), "a multi-line draft is never shown")
 func resultFrame(_ extra: String) -> CommandResult? {
     let json = #"{"kind":"result","seq":1,"ts":1761300000000,"clientId":"c1","ok":false,"code":"refused","# + extra + "}"
@@ -671,17 +671,17 @@ check(SendReceipt.build(SentSessionCommand(clientId: "m1", sessionId: "s9", kind
 check(SendReceipt.build(SentSessionCommand(clientId: "m1", sessionId: "s9", kind: .input, text: "hi", sentAt: cmdNow,
                                            state: .refused(reason: "input_unverified", message: "m"), draft: "0"), agent: "Claude", now: cmdNow)?.canClearDraft == false, "only a draft refusal offers it")
 check(SessionResultCopy.refusal(reason: "draft", detail: nil, agent: "Claude", draft: String(repeating: "x", count: 40))
-      == "There's “\(String(repeating: "x", count: 40))” typed in the session's input box on your Mac.", "a 40-character draft is shown whole")
-check(ClearDraft.notAnswered == "Your Mac didn't confirm clearing the input box, so your message wasn't sent. Check the session on your Mac, then try again.", "no-answer copy")
-check(resultFrame(#""reason":"draft","draft":" 0 ""#)?.draft == nil, "an untrimmed draft is dropped, never trimmed (the Mac would refuse it back)")
+      == "There's “\(String(repeating: "x", count: 40))” typed in the session's input box on your computer.", "a 40-character draft is shown whole")
+check(ClearDraft.notAnswered == "Your computer didn't confirm clearing the input box, so your message wasn't sent. Check the session on your computer, then try again.", "no-answer copy")
+check(resultFrame(#""reason":"draft","draft":" 0 ""#)?.draft == nil, "an untrimmed draft is dropped, never trimmed (the computer would refuse it back)")
 check(resultFrame(#""reason":"input_unverified","draft":"0""#)?.draft == nil, "an unverified box never carries a draft")
 check(resultFrame(#""reason":"draft_changed","draft":"0""#)?.draft == nil, "a changed draft carries no draft")
 if let withDraft = resultFrame(#""reason":"draft","draft":"0""#) {
-    check(SessionDeliveryState.sending.applying(withDraft, agent: "Claude") == .refused(reason: "draft", message: "There's “0” typed in the session's input box on your Mac."),
+    check(SessionDeliveryState.sending.applying(withDraft, agent: "Claude") == .refused(reason: "draft", message: "There's “0” typed in the session's input box on your computer."),
           "a draft refusal's banner names the text")
 }
 if let unverified = resultFrame(#""reason":"input_unverified""#) {
-    check(SessionDeliveryState.sending.applying(unverified, agent: "Claude") == .refused(reason: "input_unverified", message: "Page couldn't see the session's input box on your Mac, so it didn't type anything. Try again in a moment."),
+    check(SessionDeliveryState.sending.applying(unverified, agent: "Claude") == .refused(reason: "input_unverified", message: "Page Studio couldn't see the session's input box on your computer, so it didn't type anything. Try again in a moment."),
           "an unverified box is refused with its own copy")
 }
 var photoDraft = SentSessionCommand(clientId: "m2", sessionId: "s9", kind: .input, text: "hi", sentAt: cmdNow,
@@ -690,16 +690,16 @@ photoDraft.photos = PhotoSend(count: 1, attach: "image", phase: .typing, attache
 check(SendReceipt.build(photoDraft, agent: "Claude", now: cmdNow)?.canClearDraft == false, "a photo message is never offered the clear")
 
 // A reply (the Decision sheet) refused for text in the input box: `reason` rides reply.injected, the text only a sealed peekDraft.
-check(ReplyRecoveryCopy.failure(reason: "draft") == "There's unsent text in the session's input box on your Mac.", "a draft reply failure has Page's words")
+check(ReplyRecoveryCopy.failure(reason: "draft") == "There's unsent text in the session's input box on your computer.", "a draft reply failure has Page Studio's words")
 check(ReplyRecoveryCopy.failure(reason: "input_unverified")
-      == "Page couldn't see the session's input box on your Mac, so it didn't type anything. Try again in a moment.", "an unverified reply failure uses the room's words")
-check(ReplyRecoveryCopy.failure(reason: nil) == nil && ReplyRecoveryCopy.failure(reason: "brand_new") == nil, "no known reason, the Mac's detail stands")
-check(ReplyRecoveryCopy.typed("0") == "There's “0” typed in the session's input box on your Mac.", "the reply names the text")
-check(ReplyRecoveryCopy.typed(longDraft) == "There's “\(String(repeating: "x", count: 40))…” typed in the session's input box on your Mac.", "the reply cuts the text as the room does")
-check(ReplyRecoveryCopy.nowClear == "The input box on your Mac is clear now.", "clear copy")
+      == "Page Studio couldn't see the session's input box on your computer, so it didn't type anything. Try again in a moment.", "an unverified reply failure uses the room's words")
+check(ReplyRecoveryCopy.failure(reason: nil) == nil && ReplyRecoveryCopy.failure(reason: "brand_new") == nil, "no known reason, the computer's detail stands")
+check(ReplyRecoveryCopy.typed("0") == "There's “0” typed in the session's input box on your computer.", "the reply names the text")
+check(ReplyRecoveryCopy.typed(longDraft) == "There's “\(String(repeating: "x", count: 40))…” typed in the session's input box on your computer.", "the reply cuts the text as the room does")
+check(ReplyRecoveryCopy.nowClear == "The input box on your computer is clear now.", "clear copy")
 let replyNow = Date(timeIntervalSince1970: 1_761_300_000)
 check(ReplyDelivery.synced(local: nil, deliveryStatus: "failed", deliveryDetail: "You have a half-typed message in that pane", deliveryMethod: "x", deliveryReason: "draft",
-                           repliedAt: nil, forwardedAt: nil, hookBlocking: false, now: replyNow) == .failed(ReplyRecoveryCopy.unsentText), "a draft failure from the list says Page's words, not the Mac's")
+                           repliedAt: nil, forwardedAt: nil, hookBlocking: false, now: replyNow) == .failed(ReplyRecoveryCopy.unsentText), "a draft failure from the list says Page Studio's words, not the computer's")
 check(ReplyDelivery.synced(local: nil, deliveryStatus: "failed", deliveryDetail: "Pane gone", deliveryMethod: "x",
                            repliedAt: nil, forwardedAt: nil, hookBlocking: false, now: replyNow) == .failed("Pane gone"), "an older Mac's failure is unchanged")
 check(ReplyRecovery.shouldStart(reason: "draft", failedAt: replyNow, hasReply: true, existing: nil), "a draft failure starts a peek")
@@ -731,9 +731,9 @@ check(ReplyRecovery(failedAt: replyNow, stage: .sendingAgain).button == .sendAga
 check(ReplyRecovery(failedAt: replyNow, stage: .clearFailed("why")).button == nil && ReplyRecovery(failedAt: replyNow, stage: .clearFailed("why")).copy == "why", "a failed clear says why, with no button")
 check(ReplyRecovery.afterClear(.typed("Cleared")) == nil, "a cleared box sends again")
 check(ReplyRecovery.afterClear(.typed("Already clear")) == nil, "an already clear box sends again")
-check(ReplyRecovery.afterClear(.refused(reason: "draft_changed", message: "The text in the input box changed on your Mac, so Page left it alone."))
-      == .clearFailed("The text in the input box changed on your Mac, so Page left it alone."), "a refused clear shows that result's copy")
-check(ReplyRecovery.afterClear(.failed("Your Mac didn't get that")) == .clearFailed("Your Mac didn't get that"), "a failed clear shows its copy")
+check(ReplyRecovery.afterClear(.refused(reason: "draft_changed", message: "The text in the input box changed on your computer, so Page Studio left it alone."))
+      == .clearFailed("The text in the input box changed on your computer, so Page Studio left it alone."), "a refused clear shows that result's copy")
+check(ReplyRecovery.afterClear(.failed("Your computer didn't get that")) == .clearFailed("Your computer didn't get that"), "a failed clear shows its copy")
 check(ReplyRecovery.afterClear(.noAnswer) == .clearFailed(ClearDraft.notAnswered), "an unanswered clear shows the room's no-answer copy")
 check(ReplyMapping.kinds(for: .deny) == [.deny, .stop] && ReplyMapping.kinds(for: .custom) == [.tellInstead]
       && ReplyMapping.kinds(for: .approve) == [.approve] && ReplyMapping.kinds(for: .carryOn) == [.carryOn], "a reply goes again as the action it was")
@@ -750,7 +750,7 @@ check(ReplyRecoveryCopy.failure(reason: "input_unverified") == SessionResultCopy
 check(ReplyDelivery.synced(local: nil, deliveryStatus: "failed", deliveryDetail: "Pane gone", deliveryMethod: "x", deliveryReason: "input_unverified",
                            repliedAt: nil, forwardedAt: nil, hookBlocking: false, now: replyNow) == .failed(ReplyRecoveryCopy.failure(reason: "input_unverified") ?? ""), "an unverified box from the list says the room's words")
 check(ReplyDelivery.synced(local: nil, deliveryStatus: "failed", deliveryDetail: "Pane gone", deliveryMethod: "x", deliveryReason: "brand_new",
-                           repliedAt: nil, forwardedAt: nil, hookBlocking: false, now: replyNow) == .failed("Pane gone"), "an unknown reason keeps the Mac's detail")
+                           repliedAt: nil, forwardedAt: nil, hookBlocking: false, now: replyNow) == .failed("Pane gone"), "an unknown reason keeps the computer's detail")
 check(!ReplyRecovery.shouldStart(reason: "draft", failedAt: nil, hasReply: true, existing: nil), "no failure time, nothing to peek for")
 let peekBox = ReplyRecovery.afterPeek(.refused(reason: "draft", message: "m"), draft: "")
 check(peekBox == .unsent && ReplyRecovery(failedAt: replyNow, stage: peekBox).button == nil, "a refused draft with an empty text offers nothing")
@@ -836,12 +836,12 @@ check(avail { $0.relayFeatures = []; $0.hasKey = false } == .relayTooOld, "relay
 check(avail { $0.relayFeatures = nil } == .waiting, "features unknown yet: don't block")
 check(avail { $0.hasKey = false } == .needsRepair(keyMismatch: false), "no sk")
 check(avail { $0.keyMismatch = true; $0.hasList = true } == .needsRepair(keyMismatch: true), "undecryptable frames")
-check(avail { $0.presence = .offline(lastSeen: nil) } == .macOffline, "Mac offline")
+check(avail { $0.presence = .offline(lastSeen: nil) } == .macOffline, "Computer offline")
 check(avail { $0.presence = .offline(lastSeen: nil); $0.hasList = true } == .macOffline, "offline hides a stale list")
 check(avail { $0.presence = .stale(lastSeen: cmdNow) } == .macOffline, "Mac stopped checking in")
 check(avail { $0.macOfflineHint = true; $0.hasList = true } == .macOffline, "503 hint")
 check(avail { $0.hasList = true } == .ready, "ready")
-check(avail { $0.hasList = true; $0.macDisabled = true } == .macDisabled, "list says off on the Mac")
+check(avail { $0.hasList = true; $0.macDisabled = true } == .macDisabled, "list says off on your computer")
 check(avail { $0.macDisabled = true } == .waiting, "disabled only counts once a list arrived")
 if let p = SessionsPlaintext.decode(Data(#"{"kind":"list","seq":5,"ts":1761300000000,"boot":"b","sessions":[],"disabled":true}"#.utf8)) { check(p.macDisabled, "disabled flag decoded") } else { check(false, "disabled list") }
 if let p = SessionsPlaintext.decode(Data(#"{"kind":"list","seq":6,"ts":1761300000000,"boot":"b","sessions":[]}"#.utf8)) { check(!p.macDisabled, "no flag: enabled") } else { check(false, "plain list") }
@@ -923,7 +923,7 @@ check(w.batteryLine == "Battery 30% · cutoff in about 50 min", "widget battery 
 check(w.macName == "Studio", "widget mac name")
 let w1 = WidgetStatus.from(json: ["macConnected": false, "pendingCount": 1, "lastHeartbeatAt": "2026-10-25T10:00:00Z"],
                            macName: nil, now: wNow, format: { _ in "t" })
-check(w1.headline == "1 needs you" && w1.presence == .offline && w1.macName == "Your Mac", "widget offline, singular")
+check(w1.headline == "1 needs you" && w1.presence == .offline && w1.macName == "Your computer", "widget offline, singular")
 check(WidgetStatus.from(json: [:], macName: nil, now: wNow, format: { _ in "t" }).headline == "All quiet", "widget quiet")
 
 // MARK: several Macs
@@ -1531,10 +1531,10 @@ do {
     check(row.canSwipeApprove, "an undoable row with an Approve action can be swiped")
 
     // A pane that cannot be typed into offers only "Open on Mac".
-    let ghost = nwSession("s3", title: "api", host: "Ghostty", canType: false, blocker: "Page can't type into Ghostty yet")
+    let ghost = nwSession("s3", title: "api", host: "Ghostty", canType: false, blocker: "Page Studio can't type into Ghostty yet")
     let blocked = NowRowBuilder.row(for: ap, session: ghost, macName: mac)
     // BUG (trust): such a row kept its Undoable chip and so offered swipe-to-approve with no Approve behind it.
-    check(blocked.action(.approve) == nil && !blocked.canSwipeApprove, "a row Page can't type into is never swipe-approvable, whatever its chip")
+    check(blocked.action(.approve) == nil && !blocked.canSwipeApprove, "a row Page Studio can't type into is never swipe-approvable, whatever its chip")
     check(!ActionGate.canBegin(row: blocked, kind: .approve) && ActionGate.canBegin(row: row, kind: .approve), "begin refuses an action the row does not offer")
     check(!ActionGate.canBegin(row: blocked, kind: .deny) && ActionGate.canBegin(row: row, kind: .deny), "deny likewise: only what the row offers")
     // An agent Page has no adapter for, on a command that would otherwise be Undoable: the same, no swipe and no Approve.
@@ -1547,13 +1547,13 @@ do {
     let bannerDeny = NotificationDecision.decide(.action("DENY"), userText: nil, kind: "permission", approveLevel: .undoable)
     let bannerReply = NotificationDecision.decide(.action("REPLY"), userText: "use v2", kind: "permission", approveLevel: .undoable)
     check(ActionGate.banner(bannerApprove, row: blocked) == .open && ActionGate.banner(bannerDeny, row: blocked) == .open
-          && ActionGate.banner(bannerReply, row: blocked) == .open, "a banner on a row Page can't type into opens the app, never sends")
+          && ActionGate.banner(bannerReply, row: blocked) == .open, "a banner on a row Page Studio can't type into opens the app, never sends")
     check(ActionGate.banner(bannerApprove, row: gemUndoRow) == .open, "a banner Approve for an unknown agent opens the app")
     check(ActionGate.banner(bannerApprove, row: row) == bannerApprove && ActionGate.banner(bannerDeny, row: row) == bannerDeny
           && ActionGate.banner(bannerReply, row: row) == bannerReply, "a banner on a typeable row sends as before")
     check(ActionGate.banner(bannerDeny, row: nil) == bannerDeny, "a page not in the inbox: the banner decision stands")
     check(blocked.actions.map(\.kind) == [.openOnMac], "blocked session offers one action")
-    check(blocked.action(.openOnMac)?.preview == "Can't type here · Page can't type into Ghostty yet · Studio MBP", "blocked preview names the blocker and Mac")
+    check(blocked.action(.openOnMac)?.preview == "Can't type here · Page Studio can't type into Ghostty yet · Studio MBP", "blocked preview names the blocker and Mac")
     check(blocked.commit == nil, "blocked row has no commit gesture")
 
     // Hook-owned pages: nothing is typed, the hook receives the answer.
@@ -1569,7 +1569,7 @@ do {
 
     // Blank Mac name is never omitted.
     let blank = NowRowBuilder.row(for: ap, session: term, macName: "  ")
-    check(blank.action(.approve)?.preview == "Will type 1 · Terminal › bottle-flip · your Mac", "blank Mac reads your Mac")
+    check(blank.action(.approve)?.preview == "Will type 1 · Terminal › bottle-flip · your computer", "blank Mac reads your computer")
 
     // Every preview names the Mac; nothing ever types 2.
     var pages: [Intervention] = [ap, hook, hb, nwIv("u", .userInput, "Which file?", session: "s1"),
@@ -1583,7 +1583,7 @@ do {
             let r = NowRowBuilder.row(for: p, session: session, macName: mac)
             for a in r.actions {
                 if let text = a.preview {
-                    check(text.contains(mac), "preview names the Mac: \(text)")
+                    check(text.contains(mac), "preview names the computer: \(text)")
                     check(!text.contains("Will type 2"), "never types 2: \(text)")
                 }
             }
@@ -1646,7 +1646,7 @@ do {
     let gem = try! JSONDecoder.page().decode(Intervention.self, from: Data(#"{"id":"g1","sessionId":"s9","kind":"approval","openedAt":"2027-01-15T08:00:00Z","context":"[Bash] ls","backend":"gemini"}"#.utf8))
     check(gem.backend == nil && gem.backendRaw == "gemini" && gem.hasUnknownBackend, "gemini decodes as unknown agent")
     let gemRow = NowRowBuilder.row(for: gem, session: nil, macName: mac)
-    check(gemRow.actions.map(\.kind) == [.openOnMac] && gemRow.action(.openOnMac)?.preview == "Couldn't tell what's on screen · Studio MBP", "unknown agent offers Open on Mac")
+    check(gemRow.actions.map(\.kind) == [.openOnMac] && gemRow.action(.openOnMac)?.preview == "Couldn't tell what's on screen · Studio MBP", "unknown agent offers Open on your computer")
     check(gemRow.commit == nil && gemRow.reversibility == .considered, "unknown agent is considered with no commit")
     let plain = try! JSONDecoder.page().decode(Intervention.self, from: Data(#"{"id":"n1","sessionId":"s1","kind":"approval","openedAt":"2027-01-15T08:00:00Z","context":"[Bash] ls"}"#.utf8))
     check(plain.backend == nil && !plain.hasUnknownBackend, "missing backend is an older Claude page, not unknown")
@@ -1661,7 +1661,7 @@ do {
     check(DeliveryPreview.route(host: "unknown", project: "page") == "page", "unknown host drops out of route")
     check(DeliveryPreview.route(host: "  ", project: "") == nil, "blank route is nil")
     check(DeliveryPreview.typeOne(route: "cmux › page", mac: "Studio MBP") == "Will type 1 · cmux › page · Studio MBP", "type one line")
-    check(DeliveryPreview.macLabel("  ") == "your Mac", "blank Mac label")
+    check(DeliveryPreview.macLabel("  ") == "your computer", "blank Mac label")
     check(DeliveryPreview.openInTerminal == "Open in terminal to choose this", "open in terminal copy")
     check(DeliveryPreview.isStandingPermissionOption("Yes, and don't ask again for npm"), "standing: don't ask again")
     check(DeliveryPreview.isStandingPermissionOption("Yes, allow all edits during this session"), "standing: this session")
@@ -1871,9 +1871,9 @@ do {
         nwSession("p\(i)", title: i <= 4 ? "t\(i)" : "idle\(i)", state: i <= 4 ? "active" : "idle", canInterrupt: true)
     }
     let plan = StopPlan.build(sessions: nine, hasSessionList: true, macName: "Studio MBP")
-    check(plan.busy == 4 && plan.scope == "Press Esc in 4 busy sessions on Studio MBP", "four busy of nine, naming the Mac")
-    check(plan.biometricReason == "Stop 4 busy sessions on Studio MBP. Presses Esc in each." && plan.canStop, "stop names the scope and the Mac and can stop")
-    check(StopPlan.build(sessions: nine, hasSessionList: true).scope == "Press Esc in 4 busy sessions on your Mac", "an unnamed Mac reads your Mac")
+    check(plan.busy == 4 && plan.scope == "Press Esc in 4 busy sessions on Studio MBP", "four busy of nine, naming the computer")
+    check(plan.biometricReason == "Stop 4 busy sessions on Studio MBP. Presses Esc in each." && plan.canStop, "stop names the scope and the computer and can stop")
+    check(StopPlan.build(sessions: nine, hasSessionList: true).scope == "Press Esc in 4 busy sessions on your computer", "an unnamed Mac reads your computer")
     check(plan.names == "t1, t2, t3, +1", "names are three titles plus the rest (\(plan.names))")
     let none = StopPlan.build(sessions: [], hasSessionList: true)
     check(none.busy == 0 && !none.canStop && none.blocker == "Nothing is working right now", "nothing busy cannot stop")
@@ -1923,10 +1923,10 @@ do {
     check(CardOutcome.from(pending: nil, delivery: nil, now: nwNow) == .none, "no pending and no delivery is none")
     check(CardOutcome.from(pending: nil, delivery: .sent(queued: false, at: nwNow), now: nwNow) == .sending, "sent is sending, never success")
     check(CardOutcome.from(pending: nil, delivery: .sending, now: nwNow) == .sending, "sending is sending")
-    check(CardOutcome.from(pending: nil, delivery: .delivered(detail: nil), now: nwNow) == .delivered("typed into the session on your Mac"), "delivered confirmed")
+    check(CardOutcome.from(pending: nil, delivery: .delivered(detail: nil), now: nwNow) == .delivered("typed into the session on your computer"), "delivered confirmed")
     check(CardOutcome.from(pending: nil, delivery: .delivered(detail: "x"), now: nwNow) == .delivered("x"), "delivered detail kept")
     check(CardOutcome.from(pending: nil, delivery: .failed("x"), now: nwNow) == .problem("x"), "failed is a problem")
-    check(CardOutcome.from(pending: nil, delivery: .alreadyReplied, now: nwNow) == .problem("Already answered at the Mac"), "already answered")
+    check(CardOutcome.from(pending: nil, delivery: .alreadyReplied, now: nwNow) == .problem("Already answered at your computer"), "already answered")
     check(CardOutcome.from(pending: nil, delivery: .gone, now: nwNow) == .problem("Prompt closed before your answer"), "prompt closed")
 }
 
@@ -1956,7 +1956,7 @@ do {
     let accepting: [DecisionPhase] = [.open, .failed("x"), .unconfirmed]
     check(accepting.allSatisfy(\.acceptsInput), "open, failed and unconfirmed accept input")
     check(![DecisionPhase.sending, .delivered(nil), .alreadyReplied, .loading, .missing, .resolved("x")].contains { $0.acceptsInput }, "others take no input")
-    check(DecisionPhase.alreadyReplied.statusLine(legacyRelay: false)?.text == "Already answered at the Mac", "already answered copy")
+    check(DecisionPhase.alreadyReplied.statusLine(legacyRelay: false)?.text == "Already answered at your computer", "already answered copy")
     check(DecisionPhase.open.statusLine(legacyRelay: false) == nil, "open shows no strip")
     check(DecisionPhase.delivered(nil).statusLine(legacyRelay: false)?.tone == .good, "delivered is the only good tone")
     check(DecisionPhase.sent(queued: false, slow: false).statusLine(legacyRelay: false)?.tone == .neutral, "sent is not success")
@@ -1973,7 +1973,7 @@ do {
     check(rmC.detail == "Delete every Dev build", "irreversible detail line")
     check(rmC.blurb == "Claude wants to do this. It can't be undone from your phone.", "irreversible blurb")
     check(rmC.undoNote == "No undo from your phone." && rmC.chip == .irreversible, "irreversible undo note and chip")
-    check(rmC.footer.contains(mac), "footer names the Mac")
+    check(rmC.footer.contains(mac), "footer names the computer")
     check(rmC.yesNo == nil, "a command page has no yes/no question")
     // A finished turn that ends on a yes/no question carries it for the sheet; a quiet one, and a decision, do not.
     let asks = nwIv("ya", .idle, "Changed 2 files (+9 −1) · tests passed\n\nThe fix is in. Should I go ahead and commit?", session: "s1")
@@ -1984,7 +1984,7 @@ do {
 
     let gem = try! JSONDecoder.page().decode(Intervention.self, from: Data(#"{"id":"g2","sessionId":"s9","kind":"approval","openedAt":"2027-01-15T08:00:00Z","context":"[Bash] ls","backend":"gemini"}"#.utf8))
     let gemC = DecisionContent.build(iv: gem, row: NowRowBuilder.row(for: gem, session: nil, macName: mac), session: nil, macName: mac)
-    check(gemC.screenNote == "Couldn't tell what's on screen · Open on Mac", "unknown agent screen note")
+    check(gemC.screenNote == "Couldn't tell what's on screen · Open on your computer", "unknown agent screen note")
 
     let planPage = nwIv("pl", .approval, "Plan ready for review\n1. Refactor", session: "s1")
     var plan = planPage; plan.subtype = "plan"
@@ -2002,7 +2002,7 @@ do {
 
     let hookPage = nwIv("hookpre-7", .approval, "[Bash] ls", session: "s1")
     let hookC = DecisionContent.build(iv: hookPage, row: NowRowBuilder.row(for: hookPage, session: term, macName: mac), session: term, macName: mac)
-    check(hookC.isHook && hookC.footer.contains("permission hook") && hookC.footer.contains(mac), "hook footer names the hook and the Mac")
+    check(hookC.isHook && hookC.footer.contains("permission hook") && hookC.footer.contains(mac), "hook footer names the hook and the computer")
 
     var decisionsOnly = nwIv("hk", .approval, "[Bash] ls", session: "s1"); decisionsOnly.hookBlocking = true
     let doC = DecisionContent.build(iv: decisionsOnly, row: NowRowBuilder.row(for: decisionsOnly, session: term, macName: mac), session: term, macName: mac)
@@ -2066,7 +2066,7 @@ do {
     check(failed.headline == "Nothing waiting" && failed.subline == "the list may be out of date", "failed inbox says it may be stale")
     let paused = NowModel.build(inputs([nwIv("lb", .idle, "Paused", subtype: "low_battery")], status: nwStatus(connected: true, age: 5, battery: 12, onAC: false)))
     check(paused.mood == .dusk && paused.headline == "Paused for battery" && paused.paused, "battery pause is dusk")
-    check(paused.subline == "plug the Mac in to resume", "battery pause says how to resume")
+    check(paused.subline == "plug your computer in to resume", "battery pause says how to resume")
 
     // Receipts: the newest reply with a verdict, for 15 minutes.
     let replied = { () -> Intervention in
@@ -2099,16 +2099,16 @@ do {
     func rec(_ d: ReplyDelivery) -> DeliveryReceipt? { ReceiptBuilder.receipt(for: base, delivery: d, route: "cmux › page", now: nwNow) }
     check(rec(.sending) == nil, "sending has no receipt")
     check(rec(.sent(queued: false, at: nwNow)) == nil, "sent is not delivered")
-    check(rec(.sent(queued: true, at: nwNow))?.outcome == .macOffline, "queued while the Mac is offline")
+    check(rec(.sent(queued: true, at: nwNow))?.outcome == .macOffline, "queued while the computer is offline")
     check(rec(.delivered(detail: nil))?.line(timeZone: nwUTC) == "Approved npm test → cmux › page · verified 08:00:00", "delivered receipt line")
     check(rec(.failed("x"))?.line(timeZone: nwUTC) == "npm test · x", "failed receipt line")
-    check(rec(.alreadyReplied)?.line(timeZone: nwUTC) == "npm test · Already answered at the Mac", "already answered receipt")
+    check(rec(.alreadyReplied)?.line(timeZone: nwUTC) == "npm test · Already answered at your computer", "already answered receipt")
     check(rec(.gone)?.line(timeZone: nwUTC) == "npm test · Prompt closed before your answer", "gone receipt")
     var denied = base; denied.repliedAction = "deny"
     check(ReceiptBuilder.receipt(for: denied, delivery: .delivered(detail: nil), route: "r", now: nwNow)?.verb == .denied, "deny reads Denied")
     var stopped = nwIv("st", .idle, "x", session: "w1", subtype: "looping"); stopped.repliedAction = "deny"; stopped.repliedAt = nwNow
     check(ReceiptBuilder.receipt(for: stopped, delivery: .delivered(detail: nil), route: "r", now: nwNow)?.verb == .stopped, "deny on a stuck page reads Stopped")
-    check(DeliveryReceipt.Outcome.timedOut.failureMessage == "Didn't confirm in time · Check on Mac", "timeout copy")
+    check(DeliveryReceipt.Outcome.timedOut.failureMessage == "Didn't confirm in time · Check on your computer", "timeout copy")
     check(DeliveryReceipt.Outcome.sessionEnded.failureMessage == "Session ended", "session ended copy")
     check(DeliveryReceipt.Outcome.other("").failureMessage == "Couldn't deliver the reply", "blank failure copy")
     check(DeliveryReceipt.Outcome.delivered.failureMessage == nil, "delivered has no failure copy")
@@ -2188,7 +2188,7 @@ do {
     check(relay.first?.title == "Can't reach your relay" && relay.first?.action == .retry, "relay banner retries")
     check(NowBanner.build(inp(presence: .offline(lastSeen: nwNow.addingTimeInterval(-300)))).first?.action == nil, "fresh offline offers no re-pair")
     check(NowBanner.build(inp(presence: .offline(lastSeen: nwNow.addingTimeInterval(-7200)))).first?.action == .repair, "offline over an hour offers re-pair")
-    check(NowBanner.build(inp(presence: .offline(lastSeen: nwNow.addingTimeInterval(-300)))).first?.title == "Your Mac is offline", "offline title")
+    check(NowBanner.build(inp(presence: .offline(lastSeen: nwNow.addingTimeInterval(-300)))).first?.title == "Your computer is offline", "offline title")
     check(NowBanner.build(inp(notifications: .off)).first?.action == .openNotificationSettings, "notifications off opens settings")
     check(NowBanner.build(inp(push: .problem("no token"))).first?.action == .retryPush, "push problem retries")
     check(NowBanner.build(inp()).isEmpty, "healthy has no banners")
@@ -2198,7 +2198,7 @@ do {
     check(SessionAvailabilityCopy(.ready).shortStatus == "Live", "ready shows Live")
     check(SessionAvailabilityCopy(.needsRepair(keyMismatch: true)).action == .repair, "key mismatch repairs")
     check(SessionAvailabilityCopy(.macOffline).action == .retry, "offline Mac retries")
-    check(SessionAvailabilityCopy(.macTooOld).title == "Update Page on your Mac", "old Mac copy")
+    check(SessionAvailabilityCopy(.macTooOld).title == "Update Page Studio on your computer", "old Mac copy")
 }
 
 do {
@@ -2391,7 +2391,7 @@ do {
 
     check(SkyModel.projectName(cwd: "~/projects/page", fallback: "x") == "page", "project name is the folder")
     check(SkyModel.projectName(cwd: "~/projects/page/", fallback: "x") == "page", "trailing slash ignored")
-    check(SkyModel.projectName(cwd: "~", fallback: "fb") == "~", "home reads ~, as on the Mac")
+    check(SkyModel.projectName(cwd: "~", fallback: "fb") == "~", "home reads ~, as on your computer")
     check(StableHash.fnv1a("") == 0xcbf29ce484222325, "fnv1a of empty")
     check(StableHash.fnv1a("a") == 0xaf63dc4c8601ec8c, "fnv1a of a")
     check(StableHash.unit("page", salt: 2) == StableHash.unit("page", salt: 2) && (0..<1).contains(StableHash.unit("page", salt: 2)), "unit is repeatable and in 0..<1")
@@ -2479,7 +2479,7 @@ do {
     check(TowerPower.build(status: nwStatus(connected: true, age: 5, battery: 41, onAC: false, forecast: MacBatteryForecast(cutoff: 10, minutes: 20, drainPerHour: 0))).warn, "under 30 minutes warns")
     let ac = TowerPower.build(status: nwStatus(connected: true, age: 5, battery: 82, onAC: true))
     check(ac.headline == "82% · agents keep running on power" && ac.state == "on power", "on power headline")
-    check(TowerPower.build(status: nil).headline == "No reading from your Mac", "no reading")
+    check(TowerPower.build(status: nil).headline == "No reading from your computer", "no reading")
 
     let saved = SavedMac(id: "a", name: "Studio MBP", relayURL: "https://page.example.workers.dev", token: "t", sessionKey: nil,
                          pairedAt: nwCal.date(from: DateComponents(year: 2026, month: 10, day: 2, hour: 12))!)
@@ -2505,7 +2505,7 @@ do {
         WidgetStatus(macName: "Studio MBP", presence: presence, needsYou: needsYou, working: nil, live: nil, batteryLine: nil,
                      usageLine: nil, fetchedAt: nwNow, usage: nil, snapshot: snapshot)
     }
-    check(ws(.offline, 0).faceHeadline == "Mac offline", "offline face headline even with nothing to do")
+    check(ws(.offline, 0).faceHeadline == "Computer offline", "offline face headline even with nothing to do")
     check(ws(.stale, 0).faceHeadline == "Not checking in", "stale face headline")
     check(ws(.online, 0).faceHeadline == "All quiet" && ws(.online, 2).faceHeadline == "2 need you", "online face headlines")
     check(ws(.offline, 0).isUnreachable && ws(.stale, 0).isUnreachable && !ws(.online, 0).isUnreachable, "unreachable is offline or stale")
@@ -2651,9 +2651,9 @@ do {
     check(long.promptProblem != nil && !long.canStart(availability: .ready, sending: false), "a prompt over 8000 characters cannot start")
     var fits = draft; fits.prompt = String(repeating: "a", count: SessionComposer.maxCharacters)
     check(fits.promptProblem == nil, "8000 characters fits")
-    check(draft.startTitle(mac: "Studio MBP") == "Start on Studio MBP" && draft.startTitle(mac: " ") == "Start on your Mac", "start title names the Mac")
-    check(DispatchDraft.footer(mac: "Studio MBP").contains("Studio MBP"), "footer names the Mac")
-    check(DispatchAvailability.from(folders: StartFolders(clientId: nil, enabled: false, folders: folders), error: nil) == .disabledOnMac, "disabled on the Mac")
+    check(draft.startTitle(mac: "Studio MBP") == "Start on Studio MBP" && draft.startTitle(mac: " ") == "Start on your computer", "start title names the computer")
+    check(DispatchDraft.footer(mac: "Studio MBP").contains("Studio MBP"), "footer names the computer")
+    check(DispatchAvailability.from(folders: StartFolders(clientId: nil, enabled: false, folders: folders), error: nil) == .disabledOnMac, "disabled on your computer")
     check(DispatchAvailability.from(folders: StartFolders(clientId: nil, enabled: true, folders: []), error: nil) == .noFolders, "no folders")
     check(DispatchAvailability.from(folders: nil, error: "boom") == .failed("boom"), "failed with an error")
     check(DispatchAvailability.from(folders: nil, error: nil) == .loading, "loading otherwise")
@@ -2718,13 +2718,13 @@ do {
 // MARK: - First run, problem states and paired welcome
 
 do {
-    check(PairedWelcome.build(macName: "", liveSessions: nil, isFirstMac: true, notifications: .notSet).title == "Your Mac is paired", "blank Mac is named Your Mac")
+    check(PairedWelcome.build(macName: "", liveSessions: nil, isFirstMac: true, notifications: .notSet).title == "Your computer is paired", "blank Mac is named Your computer")
     let first = PairedWelcome.build(macName: "Studio MBP", liveSessions: nil, isFirstMac: true, notifications: .notSet)
-    check(first.subtitle == "Your first star. Sessions appear as soon as your Mac reports them.", "first star with no list yet")
+    check(first.subtitle == "Your first star. Sessions appear as soon as your computer reports them.", "first star with no list yet")
     check(first.action == .allowNotifications && first.skipTitle == "Not now", "undecided notifications ask once, skippable")
     check(PairedWelcome.subtitle(liveSessions: 14, isFirstMac: true) == "Your first star. 14 sessions are live right now.", "fourteen live")
     check(PairedWelcome.subtitle(liveSessions: 1, isFirstMac: false) == "1 session is live right now.", "one live, not the first Mac")
-    check(PairedWelcome.subtitle(liveSessions: 0, isFirstMac: false) == "Start an agent on your Mac and it appears here.", "none live yet")
+    check(PairedWelcome.subtitle(liveSessions: 0, isFirstMac: false) == "Start an agent on your computer and it appears here.", "none live yet")
     check(PairedWelcome.build(macName: "M", liveSessions: 0, isFirstMac: false, notifications: .allowed).action == .continueToNow, "allowed continues")
     check(PairedWelcome.build(macName: "M", liveSessions: 0, isFirstMac: false, notifications: .allowed).skipTitle == nil, "allowed has no skip")
     check(PairedWelcome.build(macName: "M", liveSessions: 0, isFirstMac: false, notifications: .off).action == .openSettings, "off opens Settings")
@@ -2739,7 +2739,7 @@ do {
     check(replaced?.title == "This pairing was replaced", "replaced title")
     pi.authRejected = false
     pi.presence = .neverConnected
-    check(ProblemState.build(pi)?.title == "Your Mac hasn't used this pairing", "never connected title")
+    check(ProblemState.build(pi)?.title == "Your computer hasn't used this pairing", "never connected title")
     pi.presence = .online(lastSeen: nil)
     pi.connected = false
     pi.inboxFailure = "timeout"
@@ -2778,7 +2778,7 @@ do {
     check(claude.kind == .claude && claude.name == "Claude", "Claude character")
     check(codex.kind == .codex && codex.name == "Codex", "Codex character")
     check(other.kind == .other && other.name == "Gemini", "unknown agent keeps its own name")
-    check(ollama.kind == .local && ollama.runtime == "Ollama" && ollama.privacyTitle == "Private · nothing leaves this Mac", "local model privacy")
+    check(ollama.kind == .local && ollama.runtime == "Ollama" && ollama.privacyTitle == "Private · nothing leaves this computer", "local model privacy")
     check(AgentCharacter.from(backend: .known(.claude), provider: "lmStudio").runtime == "LM Studio", "LM Studio runtime")
     check(AgentCharacter.from(backend: .known(.claude), provider: "otherLocal").runtime == "A local model", "other local runtime")
     check(claude.subtitle(backend: .known(.claude), provider: nil, host: "cmux") == "Claude · cmux", "Claude subtitle")
@@ -2827,11 +2827,11 @@ do {
     check(mode(RoomComposerMode.Inputs(state: .active, canType: true, pageId: "p1", pageIsDecide: true)) == .tellInstead(pageId: "p1"), "a decision pinned while active is never steer")
     check(lockedText(mode(RoomComposerMode.Inputs(state: .waitingOnUser, canType: true, pageId: "p1", pageAcceptsReply: false))) == "Answer this prompt from its decision above.", "waiting page with no reply is locked")
     check(lockedText(mode(RoomComposerMode.Inputs(state: .waitingOnApproval, canType: true, pageArriving: true)))?.contains("still arriving") == true, "decision still arriving")
-    check(lockedText(mode(RoomComposerMode.Inputs(state: .waitingOnApproval, canType: true)))?.contains("on your Mac") == true, "waiting with no page says answer on the Mac")
+    check(lockedText(mode(RoomComposerMode.Inputs(state: .waitingOnApproval, canType: true)))?.contains("on your computer") == true, "waiting with no page says answer on your computer")
     check(mode(RoomComposerMode.Inputs(state: .idle, canType: false, typeBlocker: "Ghostty can't take input")) == .blocked("Ghostty can't take input"), "cannot type here")
     check(mode(RoomComposerMode.Inputs(state: .idle, canType: false)) == .blocked(LiveSession.defaultBlocker), "blocked with the default reason")
     check(mode(RoomComposerMode.Inputs(state: .active, canType: true, ended: true)) != .steer, "ended is never steerable")
-    check(mode(RoomComposerMode.Inputs(state: .active, canType: true, ready: false)) == .disabled("Waiting for your Mac."), "not ready is disabled")
+    check(mode(RoomComposerMode.Inputs(state: .active, canType: true, ready: false)) == .disabled("Waiting for your computer."), "not ready is disabled")
     check(mode(RoomComposerMode.Inputs(state: .waitingOnUser, canType: true, ended: true)) == .disabled("This session has ended."), "ended beats waiting")
     for s in [LiveSessionState.waitingOnUser, .waitingOnApproval] {
         let m = mode(RoomComposerMode.Inputs(state: s, canType: true, pageId: "p"))
@@ -2869,7 +2869,7 @@ do {
     check(reviewPlan.review?.id == "r1" && reviewPlan.pinned == nil && reviewPlan.mode == .nextTask, "a finished turn is reviewed, not pinned")
     let arriving = RoomPlan.build(RoomPlan.Inputs(session: waitingWithPage, character: claude, pageRow: nil, ended: false, ready: true, macName: "M"))
     check(lockedText(arriving.mode)?.contains("still arriving") == true, "a waiting session whose page has not arrived is locked")
-    check(RoomPlan.build(RoomPlan.Inputs(session: waitingWithPage, character: claude, pageRow: pageRow, ended: false, ready: true, macName: "M")).preview?.contains("M") == true, "the preview always names the Mac")
+    check(RoomPlan.build(RoomPlan.Inputs(session: waitingWithPage, character: claude, pageRow: pageRow, ended: false, ready: true, macName: "M")).preview?.contains("M") == true, "the preview always names the computer")
     let hookRow = NowRowBuilder.row(for: nwIv("hookpre-z", .approval, "[Bash] ls", session: "p1"), session: waitingWithPage, macName: "M")
     let hookPlan = RoomPlan.build(RoomPlan.Inputs(session: waitingWithPage, character: claude, pageRow: hookRow, ended: false, ready: true, macName: "M"))
     check(hookPlan.preview?.contains("hook") == true && hookPlan.preview?.contains("type") == false, "a hook page's preview names the hook, never typing")
@@ -3214,15 +3214,15 @@ do {
     let auraWireRoom = RoomPlan.build(RoomPlan.Inputs(session: auraWire, character: AgentCharacter.from(backend: .known(.aura), provider: "anthropic"),
                                                       pageRow: nil, ended: false, ready: true, macName: "Studio MBP", caps: ["images-v1"]))
     check(auraWire.cwd.isEmpty && auraWire.canType && auraWire.attach == nil, "an aura row without a cwd decodes")
-    check(auraWireRoom.photos.mode == .hidden && auraWireRoom.photos.note == "Page can't send photos to Page Aura yet", "the photo button is replaced by the Mac's reason")
+    check(auraWireRoom.photos.mode == .hidden && auraWireRoom.photos.note == "Page Studio can't send photos to Page Aura yet", "the photo button is replaced by the computer's reason")
     let auraBusy = nwSession("aura-b2", title: "Long refactor", state: "active", host: "Page Aura", canType: false, blocker: "Page Aura is still replying", backend: "aura", cwd: "")
     let auraBusyRoom = RoomPlan.build(RoomPlan.Inputs(session: auraBusy, character: AgentCharacter.from(backend: .known(.aura), provider: "anthropic"),
                                                       pageRow: nil, ended: false, ready: true, macName: "M", caps: ["images-v1"]))
-    if case .blocked(let why) = auraBusyRoom.mode { check(why == "Page Aura is still replying", "a replying chat shows the Mac's reason in place of the composer") }
+    if case .blocked(let why) = auraBusyRoom.mode { check(why == "Page Aura is still replying", "a replying chat shows the computer's reason in place of the composer") }
     else { check(false, "a busy chat blocks the composer (\(auraBusyRoom.mode))") }
-    check(target.expectCwd == "~/projects/rover-tracker" && target.expectTitle == "rover-tracker", "what travels is what the Mac listed")
-    check(SessionTarget(session: nwSession("x1", host: "unknown", cwd: "~/a/b"), macName: "").route == "b · your Mac", "unknown terminal and blank Mac name")
-    check(SessionTarget(session: nwSession("zz", title: "Some thread", cwd: "~"), macName: "M").project == "~", "home folder reads ~, as on the Mac")
+    check(target.expectCwd == "~/projects/rover-tracker" && target.expectTitle == "rover-tracker", "what travels is what the computer listed")
+    check(SessionTarget(session: nwSession("x1", host: "unknown", cwd: "~/a/b"), macName: "").route == "b · your computer", "unknown terminal and blank Mac name")
+    check(SessionTarget(session: nwSession("zz", title: "Some thread", cwd: "~"), macName: "M").project == "~", "home folder reads ~, as on your computer")
     let blank = nwSession("abcdef123456", title: "", cwd: "")
     check(SessionTarget(session: blank, macName: "M").expectCwd == nil && SessionTarget(session: blank, macName: "M").expectTitle == nil,
           "a title this phone made up is never sent as an expectation")
@@ -3243,7 +3243,7 @@ do {
     let clearWith = obj(.clearDraft(sessionId: page.id, text: "0", target: target))
     check(clearWith["expectCwd"] as? String == "~/projects/rover-tracker" && clearWith["expectTitle"] as? String == "rover-tracker"
           && clearWith["op"] as? String == "clearDraft" && clearWith["text"] as? String == "0", "clearDraft carries the target check too")
-    check(SessionResultCopy.refusal(reason: "target_mismatch", detail: "Nothing was typed. X", agent: "Claude") == "Nothing was typed. X", "a mismatch shows the Mac's own words")
+    check(SessionResultCopy.refusal(reason: "target_mismatch", detail: "Nothing was typed. X", agent: "Claude") == "Nothing was typed. X", "a mismatch shows the computer's own words")
     check(SessionResultCopy.refusal(reason: "target_mismatch", detail: nil, agent: "Claude").contains("nothing was typed"), "and has words of its own")
 }
 
@@ -3263,9 +3263,9 @@ do {
     check({ if case .refuse = decide(.steer, live: .some(nil)) { return true }; return false }(), "a session that left the list is refused")
     check(decide(.steer, "   ") == .refuse(SessionComposer.Problem.empty.message), "empty text says so")
     check(decide(.steer, String(repeating: "x", count: 8001)) == .refuse(SessionComposer.Problem.tooLong(count: 8001).message), "too long says so")
-    check(decide(.locked("Answer the prompt on your Mac.")) == .refuse("Answer the prompt on your Mac."), "locked says why")
+    check(decide(.locked("Answer the prompt on your computer.")) == .refuse("Answer the prompt on your computer."), "locked says why")
     check(decide(.blocked("Ghostty can't be typed into")) == .refuse("Ghostty can't be typed into"), "blocked says why")
-    check(decide(.disabled("Waiting for your Mac.")) == .refuse("Waiting for your Mac."), "disabled says why")
+    check(decide(.disabled("Waiting for your computer.")) == .refuse("Waiting for your computer."), "disabled says why")
     check(decide(.tellInstead(pageId: "p"), reply: true) == .tellInstead, "tell-instead goes through the page")
     check({ if case .refuse = decide(.tellInstead(pageId: "p"), reply: false) { return true }; return false }(), "tell-instead without its page is refused with a reason")
     for mode in [RoomComposerMode.steer, .nextTask, .tellInstead(pageId: "p"), .locked("a"), .blocked("b"), .disabled("c")] {
@@ -3296,8 +3296,8 @@ do {
     check(r(cmd(.queued(nil)), 2)?.headline == "Already with Claude — it reads it after this step." && r(cmd(.queued(nil)), 2)?.detail == "rover-tracker · cmux · Studio MBP", "queued says when, and where")
     let refused = r(cmd(.refused(reason: "target_mismatch", message: "Nothing was typed.")), 2)
     check(refused?.headline == "Refused: Nothing was typed." && refused?.tone == .problem && refused?.detail == "Target: rover-tracker · cmux · Studio MBP", "refused says why and which target it was for")
-    check(r(cmd(.failed("Your Mac is offline.")), 2)?.headline == "Not sent: Your Mac is offline." && r(cmd(.failed("x")), 2)?.tone == .problem, "failed says why")
-    check(r(cmd(.noAnswer), 25)?.headline == "No answer from Studio MBP" && r(cmd(.noAnswer), 25)?.detail?.contains("rover-tracker") == true, "no answer names the Mac and the target")
+    check(r(cmd(.failed("Your computer is offline.")), 2)?.headline == "Not sent: Your computer is offline." && r(cmd(.failed("x")), 2)?.tone == .problem, "failed says why")
+    check(r(cmd(.noAnswer), 25)?.headline == "No answer from Studio MBP" && r(cmd(.noAnswer), 25)?.detail?.contains("rover-tracker") == true, "no answer names the computer and the target")
     check(r(cmd(.typed(nil)), 61) == nil && r(cmd(.queued(nil)), 61) == nil, "good news fades after a minute")
     check(r(cmd(.refused(reason: nil, message: "no")), 300) != nil && r(cmd(.refused(reason: nil, message: "no")), 601) == nil, "a refusal stays for ten minutes")
     check(r(cmd(.sending), 3000) != nil, "a send still waiting is always shown")
@@ -3305,7 +3305,7 @@ do {
     check(r(cmd(.typed(nil), target: nil), 1)?.headline == "Typed into the session", "without a recorded target it still never says nothing")
     check(SendReceipt.stopLine(cmd(.typed(nil), kind: .interrupt), agent: "Claude") == "Stopped · pressed Esc in rover-tracker · cmux · Studio MBP", "Stop names the target")
     check(SendReceipt.stopLine(cmd(.sending, kind: .interrupt), agent: "Claude") == "Stopping rover-tracker · cmux · Studio MBP…", "Stop in flight names it")
-    check(SendReceipt.stopLine(cmd(.refused(reason: nil, message: "Page can't stop this."), kind: .interrupt), agent: "Claude")?.hasPrefix("Couldn't stop rover-tracker") == true, "a refused Stop says so")
+    check(SendReceipt.stopLine(cmd(.refused(reason: nil, message: "Page Studio can't stop this."), kind: .interrupt), agent: "Claude")?.hasPrefix("Couldn't stop rover-tracker") == true, "a refused Stop says so")
     check(SendReceipt.stopLine(cmd(.typed(nil)), agent: "Claude") == nil, "a message is not a Stop")
 
     check(target.whereLine == "~/projects/rover-tracker · #c4f7", "the header says which folder and which session")
@@ -3335,7 +3335,7 @@ do {
     check(!decodes(#"{"id":"x","questions":[{"question":"Q","options":[{"label":"a"},{"label":"b"},{"label":"c"},{"label":"d"},{"label":"e"},{"label":"f"},{"label":"g"},{"label":"h"}]}]}"#), "more options than keys is refused")
     check(decodes(#"{"id":"x","extra":1,"questions":[{"question":"Q","future":true,"options":[{"label":"a","preview":"p"}]}]}"#), "unknown fields are ignored")
     let withPreview = try! JSONDecoder.page().decode(SessionAsk.self, from: Data(#"{"id":"x","hasPreview":true,"questions":[{"question":"Q","options":[{"label":"a"}]}]}"#.utf8))
-    check(!withPreview.isAnswerable, "a preview layout is answered at the Mac")
+    check(!withPreview.isAnswerable, "a preview layout is answered at your computer")
 
     // The session row: ask is optional, and a bad ask never loses the session.
     let rowJSON = """
@@ -3369,7 +3369,7 @@ do {
                            AnswerWire(question: 2, picks: [0], other: nil)], "the wire is indices, sorted")
     check(sheet.reviewRows().map(\.answer) == ["Green", "Ham, Corn", "Small"] && sheet.reviewRows()[2].header == "Question 3", "review rows")
     check(sheet.previewLine(route: "cmux › page", mac: "Studio MBP") == "Will choose Green; Ham, Corn; Small · cmux › page · Studio MBP", "the delivery preview says what, where, on which Mac")
-    check(sheet.previewLine(route: nil, mac: "").hasSuffix("· your Mac"), "a preview always names the Mac")
+    check(sheet.previewLine(route: nil, mac: "").hasSuffix("· your computer"), "a preview always names the computer")
     sheet.back()
     check(sheet.step == .question(2), "Back from the review goes to the last question")
 
@@ -3438,7 +3438,7 @@ do {
     check(h.isReview && h.hookReply() == "2\n2, 4\n1", "one line per question: 1-based numbers, several comma-separated for a multi-select")
     check(sheet.hookReply() == nil, "a sheet made for the keys never sends hook text")
     check(h.previewLine(route: "cmux › page", mac: "Studio MBP", viaHook: true) == "Will answer through Claude's question hook: Green; Ham, Corn; Small · Studio MBP",
-          "the hook preview names the hook and the Mac, and no keys")
+          "the hook preview names the hook and the computer, and no keys")
     check(!h.previewLine(route: "cmux › page", mac: "Studio MBP", viaHook: true).contains("cmux"), "nothing is typed in a terminal, so no terminal is named")
     var oneMulti = AnswerSheet(ask: SessionAsk(id: "t", questions: [AskQuestion(text: "Tags?", header: "", multi: true, options: [AskOption(label: "a, b", detail: ""), AskOption(label: "c", detail: ""), AskOption(label: "d", detail: "")])], hasPreview: false), allowsOther: false)
     oneMulti.tap(option: 2); oneMulti.tap(option: 0)
@@ -3463,7 +3463,7 @@ do {
     done.tap(option: 1); done.tap(option: 0); done.next(); done.tap(option: 0); done.tap(option: 0)
     var unfinished = AnswerSheet(ask: ask, allowsOther: false)
     unfinished.tap(option: 1)
-    check(AnswerPicker.submit(viaHook: false, hasPage: false, sheet: done) == .keys, "no hook: the Mac presses the keys")
+    check(AnswerPicker.submit(viaHook: false, hasPage: false, sheet: done) == .keys, "no hook: the computer presses the keys")
     check(AnswerPicker.submit(viaHook: true, hasPage: true, sheet: done) == done.hookReply().map { .hook($0) }, "a hook page takes numbers as text")
     check({ if case .refuse = AnswerPicker.submit(viaHook: true, hasPage: false, sheet: done) { return true }; return false }(), "a hook answer with no page says so, it never silently does nothing")
     check({ if case .refuse = AnswerPicker.submit(viaHook: true, hasPage: true, sheet: unfinished) { return true }; return false }(), "an unfinished hook answer is refused with a reason")
@@ -3489,7 +3489,7 @@ do {
     // Delivery state copy and the picker's gate.
     check(SessionDeliveryState.sending.label(.answer) == "Sending your answers…" && SessionDeliveryState.typed(nil).label(.answer) == "Answered", "answer labels")
     check(SessionResultCopy.refusal(reason: "question_changed", detail: nil, agent: "Claude").contains("changed"), "question_changed has copy")
-    check(SessionResultCopy.refusal(reason: "answer_unsupported", detail: "Terminal.app can't press keys", agent: "Claude") == "Terminal.app can't press keys", "answer_unsupported shows the Mac's words")
+    check(SessionResultCopy.refusal(reason: "answer_unsupported", detail: "Terminal.app can't press keys", agent: "Claude") == "Terminal.app can't press keys", "answer_unsupported shows the computer's words")
     let waiting = LiveSession(id: "s1", backend: .known(.claude), title: "page", cwd: "~/p", state: .waitingOnUser, host: "tmux", canType: true,
                               typeBlocker: nil, canInterrupt: true, provider: nil, lastActivityAt: nil, interventionId: "p1", preview: "", ask: ask)
     check(AnswerPicker.ask(for: waiting, pageIsQuestion: true)?.id == "toolu_1", "the picker is offered for a waiting question")
@@ -3497,7 +3497,7 @@ do {
     check(AnswerPicker.ask(for: nil, pageIsQuestion: true) == nil, "…not without a session")
     let noAsk = LiveSession(id: "s1", backend: .known(.claude), title: "page", cwd: "~/p", state: .waitingOnUser, host: "tmux", canType: true,
                             typeBlocker: nil, canInterrupt: true, provider: nil, lastActivityAt: nil, interventionId: "p1", preview: "")
-    check(AnswerPicker.ask(for: noAsk, pageIsQuestion: true) == nil, "…not from a Mac that sent no ask")
+    check(AnswerPicker.ask(for: noAsk, pageIsQuestion: true) == nil, "…not from a computer that sent no ask")
     let sent = [SentSessionCommand(clientId: "a", sessionId: "s1", kind: .answer, text: "x", sentAt: Date(timeIntervalSince1970: 1), state: .sending, promptKey: "toolu_1"),
                 SentSessionCommand(clientId: "b", sessionId: "s1", kind: .answer, text: "x", sentAt: Date(timeIntervalSince1970: 2), state: .typed(nil), promptKey: "toolu_1"),
                 SentSessionCommand(clientId: "c", sessionId: "s1", kind: .answer, text: "x", sentAt: Date(timeIntervalSince1970: 3), state: .typed(nil), promptKey: "toolu_2"),
@@ -3782,18 +3782,18 @@ do {
 // change a number here and there together.
 do {
     for (agents, period) in [(1, 4.0), (5, 3.4), (20, 3.0)] {
-        check(nwNear(PulseModel(working: agents, waiting: 0).breathPeriod, period), "breath with \(agents) working matches the Mac")
+        check(nwNear(PulseModel(working: agents, waiting: 0).breathPeriod, period), "breath with \(agents) working matches the computer")
     }
     let emission: [(Int, Double, Double)] = [(1, 0, 3), (1, 300, 2.25), (1, 3600, 1.5), (3, 0, 1.5), (3, 300, 1.5), (3, 3600, 1.5)]
     for (waiting, wait, interval) in emission {
         check(nwNear(PulseModel(working: 0, waiting: waiting, longestWait: wait).emissionInterval, interval),
-              "a ring every \(interval) s with \(waiting) waiting for \(wait) s, as on the Mac")
+              "a ring every \(interval) s with \(waiting) waiting for \(wait) s, as on your computer")
     }
     for (waiting, wait, life) in [(1, 0.0, 3.0), (3, 0, 4.5), (4, 3600, 6)] {
-        check(nwNear(PulseModel(working: 0, waiting: waiting, longestWait: wait).ringLifetime, life), "ring life with \(waiting) waiting matches the Mac")
+        check(nwNear(PulseModel(working: 0, waiting: waiting, longestWait: wait).ringLifetime, life), "ring life with \(waiting) waiting matches the computer")
     }
     check(nwNear(PulseModel.ringOpacity(0.05), 0.46297, 1e-4) && nwNear(PulseModel.ringOpacity(0.5), 0.35355, 1e-4),
-          "a ring fades in and out on the Mac's curve")
+          "a ring fades in and out on your computer's curve")
 }
 
 // The exhale's colours blend through OKLCH: amber reaches teal by way of green, never khaki.
@@ -3827,7 +3827,7 @@ do {
     check((0...52).map { ApproachModel.frame(elapsed: Double($0) * 0.01) }.allSatisfy { $0.content == 0 || nwNear($0.scale, 1) },
           "it is full size before any of its words show")
     check(nwNear(ApproachModel.content(travel: 0.8), 0) && nwNear(ApproachModel.content(travel: 0.885), 0.5)
-          && nwNear(ApproachModel.content(travel: 0.97), 1), "the same content curve as the Mac's")
+          && nwNear(ApproachModel.content(travel: 0.97), 1), "the same content curve as the computer's")
     let a45 = ApproachModel.frame(elapsed: 0.45)
     check(nwNear(a45.contrail, 0.3254, 1e-3) && nwNear(a45.glow, 0.4067, 1e-3), "after landing, the contrail and glow fade")
     let a52 = ApproachModel.frame(elapsed: 0.52)
@@ -3862,17 +3862,17 @@ do {
 
     let onRelay = ReceiptThread.derive(pending: nil, delivery: .sent(queued: false, at: rt0), changedAt: nil, now: rt0.addingTimeInterval(0.7))
     check(onRelay.stage == .sent && nwNear(onRelay.reach, 0.5) && onRelay.relayLit && !onRelay.macLit && onRelay.word == "sent",
-          "the relay has it; the Mac has not confirmed")
+          "the relay has it; the computer has not confirmed")
     check(nwNear(onRelay.glint ?? -1, 0.75, 1e-3), "a glint travels past the relay")
     let longWait = ReceiptThread.derive(pending: nil, delivery: .sent(queued: false, at: rt0), changedAt: nil, now: rt0.addingTimeInterval(61))
-    check(longWait.word == "sent · waiting for your Mac" && longWait.glint == nil && !longWait.moving, "after a minute it says so and stops moving")
+    check(longWait.word == "sent · waiting for your computer" && longWait.glint == nil && !longWait.moving, "after a minute it says so and stops moving")
     let queued = ReceiptThread.derive(pending: nil, delivery: .sent(queued: true, at: rt0), changedAt: nil, now: rt0.addingTimeInterval(1))
-    check(queued.stage == .queued && queued.word == "queued · Mac offline" && !queued.isSuccess, "a queued reply is not a success")
+    check(queued.stage == .queued && queued.word == "queued · computer offline" && !queued.isSuccess, "a queued reply is not a success")
 
     let confirmed = { (s: Double) in ReceiptThread.derive(pending: nil, delivery: .delivered(detail: nil), changedAt: rt0, now: rt0.addingTimeInterval(s)) }
     check(confirmed(0.18).stage == .typed && nwNear(confirmed(0.18).reach, 0.9375, 1e-3) && !confirmed(0.18).macLit,
-          "typed once the Mac has confirmed, and not a moment before")
-    check(confirmed(0.36).macLit && confirmed(0.6).stage == .verified && confirmed(0.6).word == "verified ✓", "then the Mac lights, then verified")
+          "typed once the computer has confirmed, and not a moment before")
+    check(confirmed(0.36).macLit && confirmed(0.6).stage == .verified && confirmed(0.6).word == "verified ✓", "then the computer lights, then verified")
     check(nwNear(confirmed(0.8).dotTeal, 0.5, 1e-3) && nwNear(confirmed(0.8).rings, 0.5, 1e-3), "the dot turns teal and the rings draw in")
     check(nwNear(confirmed(1.15).fold, 0.5, 1e-3) && nwNear(confirmed(1.6).fold, 1) && nwNear(confirmed(1.6).drift, 1) && !confirmed(1.6).moving,
           "the card folds, drifts into Settled, and stops")
@@ -3886,10 +3886,10 @@ do {
     check(nwNear(failedAt(0.24).reach, 0) && !failedAt(0.5).moving, "snapped back, and still once the shake is over")
     check(ReceiptThread.derive(pending: nil, delivery: .failed(""), changedAt: rt0, now: rt0).word == "Couldn't deliver the reply", "an empty failure still says something")
     check(ReceiptThread.derive(pending: nil, delivery: .gone, changedAt: rt0, now: rt0).word == "Prompt closed before your answer"
-          && ReceiptThread.derive(pending: nil, delivery: .alreadyReplied, changedAt: rt0, now: rt0).word == "Already answered at the Mac",
+          && ReceiptThread.derive(pending: nil, delivery: .alreadyReplied, changedAt: rt0, now: rt0).word == "Already answered at your computer",
           "the closed and answered-elsewhere reasons say so")
     check(ReceiptThread.derive(pending: nil, delivery: .delivered(detail: nil), localProblem: "No passcode", changedAt: rt0, now: rt0).word == "No passcode",
-          "a problem on this phone beats the Mac's news")
+          "a problem on this phone beats the computer's news")
     check(ReceiptThread.derive(pending: nil, delivery: nil, changedAt: nil, now: rt0).stage == .idle, "nothing under way draws nothing")
 
     // The invariant: no delivery other than a confirmed one ever draws a success, at any moment.
@@ -4028,10 +4028,10 @@ do {
 // the same eight hosts in the same order (TerminalCatalog.namesLine), the same symbols.
 do {
     let names = TowerHosts.hosts.map(\.name)
-    check(names == ["Terminal", "iTerm2", "tmux", "cmux", "WezTerm", "kitty", "Herdr", "Claude Squad"], "hosts in the Mac's order \(names)")
+    check(names == ["Terminal", "iTerm2", "tmux", "cmux", "WezTerm", "kitty", "Herdr", "Claude Squad"], "hosts in the computer's order \(names)")
     check(Set(names).count == names.count, "host names are unique")
     check(TowerHosts.hosts.map(\.symbol) == ["macwindow", "terminal", "rectangle.split.3x1", "square.grid.2x2",
-                                             "terminal.fill", "pawprint", "rectangle.3.group", "person.3"], "host symbols match the Mac")
+                                             "terminal.fill", "pawprint", "rectangle.3.group", "person.3"], "host symbols match the computer")
     check(TowerHosts.hosts.allSatisfy { !$0.line.isEmpty }, "every host has a line")
     // Answering a question: measured end to end in every terminal but Terminal.app (the Mac's TerminalCatalog says the same).
     let notYet = TowerHosts.hosts.filter { if case .notYet = $0.answer { return true } else { return false } }.map(\.name)
@@ -4043,9 +4043,9 @@ do {
     check(TowerHosts.Answer.notYet("x").line == "Answer questions: not yet — x", "the not-yet line")
     // The same words as the Mac's TerminalCatalog (`answer: .notYet(...)` on Terminal.app).
     check(TowerHosts.hosts.first(where: { $0.name == "Terminal" })?.answer
-          == .notYet("Terminal adds a Return to every key Page types; use tmux or iTerm2"),
-          "Terminal's reason is the Mac's, word for word")
-    check(TowerHosts.setUpLine.contains("Page ▸ Tower ▸ Terminals"), "the set-up line points at the Mac page")
+          == .notYet("Terminal adds a Return to every key Page Studio types; use tmux or iTerm2"),
+          "Terminal's reason is the computer's, word for word")
+    check(TowerHosts.setUpLine.contains("Page Studio ▸ Tower ▸ Terminals"), "the set-up line points at your computer page")
     check(TowerHosts.othersLine.contains("Ghostty") && TowerHosts.othersLine.contains("Warp") && TowerHosts.othersLine.contains("VS Code"), "the unsupported terminals are named")
     check(TowerSection.allCases.contains(.terminals), "the Works with section is in the list")
     check(TowerSection.terminals.title == "Works with", "the section is titled Works with")
@@ -4061,12 +4061,12 @@ do {
 
     // The kinds are the strings the extension registers (iOS/PageWidget/PageWidget.swift).
     check(TowerWidgets.Widget.Kind.macStatus.rawValue == "page.mac-status" && TowerWidgets.Widget.Kind.claudeUsage.rawValue == "page.claude-usage", "the widget kinds match the extension")
-    check(TowerWidgets.widgets.map(\.name) == ["Page", "Claude usage"], "the widgets are named as the extension names them")
-    check(TowerWidgets.widgets[0].homeSizes == [.small, .medium, .large] && TowerWidgets.widgets[0].lockSizes == [.rectangular, .circular, .inline], "Page's sizes match its supportedFamilies")
+    check(TowerWidgets.widgets.map(\.name) == ["Page Relay", "Claude usage"], "the widgets are named as the extension names them")
+    check(TowerWidgets.widgets[0].homeSizes == [.small, .medium, .large] && TowerWidgets.widgets[0].lockSizes == [.rectangular, .circular, .inline], "Page Studio's sizes match its supportedFamilies")
     check(TowerWidgets.widgets[1].homeSizes == [.small, .medium] && TowerWidgets.widgets[1].lockSizes == [.circular, .rectangular], "Claude usage's sizes match its supportedFamilies")
     check(TowerWidgets.widgets[1].sizesLine == "Home Screen: small, medium\nLock Screen: circular, rectangular", "sizes line: \(TowerWidgets.widgets[1].sizesLine)")
     check(TowerWidgets.Size(family: "systemMedium") == .medium && TowerWidgets.Size(family: "accessoryInline") == .inline && TowerWidgets.Size(family: "systemExtraLarge") == nil
-          && TowerWidgets.Size(family: "") == nil, "families read as sizes; the ones Page has no widget for do not")
+          && TowerWidgets.Size(family: "") == nil, "families read as sizes; the ones Page Studio has no widget for do not")
 
     // The status line.
     func placed(_ pairs: (String, String)...) -> [TowerWidgets.PlacedWidget] { pairs.map { TowerWidgets.PlacedWidget(kind: $0.0, family: $0.1) } }
@@ -4074,37 +4074,37 @@ do {
     check(none.lines == ["Not added yet"] && none.placed == false && !none.isPlaced, "nothing placed reads Not added yet")
     check(TowerWidgets.Status.checking.placed == nil && TowerWidgets.Status.checking.text == "Checking…", "before WidgetCenter answers it says Checking…")
     let home = TowerWidgets.status(placed: placed(("page.mac-status", "systemMedium")))
-    check(home.lines == ["On your Home Screen: Page (medium)"] && home.isPlaced, "one medium Page: \(home.lines)")
+    check(home.lines == ["On your Home Screen: Page Relay (medium)"] && home.isPlaced, "one medium Page Studio: \(home.lines)")
     let lock = TowerWidgets.status(placed: placed(("page.claude-usage", "accessoryCircular")))
     check(lock.lines == ["On your Lock Screen: Claude usage (circular)"], "a Lock Screen circle: \(lock.lines)")
     let mixed = TowerWidgets.status(placed: placed(("page.claude-usage", "systemSmall"), ("page.mac-status", "accessoryRectangular"), ("page.mac-status", "systemLarge"), ("page.mac-status", "systemSmall")))
-    check(mixed.lines == ["On your Home Screen: Page (small, large), Claude usage (small)", "On your Lock Screen: Page (rectangular)"], "Page first, sizes small to large, Home then Lock: \(mixed.lines)")
+    check(mixed.lines == ["On your Home Screen: Page Relay (small, large), Claude usage (small)", "On your Lock Screen: Page Relay (rectangular)"], "Page Studio first, sizes small to large, Home then Lock: \(mixed.lines)")
     check(mixed.text == mixed.lines.joined(separator: "\n"), "the text is the lines, one per place")
     let twice = TowerWidgets.status(placed: placed(("page.mac-status", "systemMedium"), ("page.mac-status", "systemMedium")))
-    check(twice.lines == ["On your Home Screen: Page (medium)"], "the same size placed twice reads once: \(twice.lines)")
+    check(twice.lines == ["On your Home Screen: Page Relay (medium)"], "the same size placed twice reads once: \(twice.lines)")
     let foreign = TowerWidgets.status(placed: placed(("com.other.app", "systemMedium"), ("page.mac-status", "systemExtraLarge"), ("page.unknown", "systemSmall")))
     check(foreign.lines == ["Not added yet"] && foreign.placed == false, "other apps' widgets, unknown kinds and unknown families are ignored: \(foreign.lines)")
     let lockOrder = TowerWidgets.status(placed: placed(("page.mac-status", "accessoryInline"), ("page.mac-status", "accessoryCircular"), ("page.mac-status", "accessoryRectangular")))
-    check(lockOrder.lines == ["On your Lock Screen: Page (circular, rectangular, inline)"], "Lock Screen sizes in a fixed order: \(lockOrder.lines)")
+    check(lockOrder.lines == ["On your Lock Screen: Page Relay (circular, rectangular, inline)"], "Lock Screen sizes in a fixed order: \(lockOrder.lines)")
     let bothLock = TowerWidgets.status(placed: placed(("page.claude-usage", "accessoryRectangular"), ("page.mac-status", "accessoryCircular")))
-    check(bothLock.lines == ["On your Lock Screen: Page (circular), Claude usage (rectangular)"] && bothLock.isPlaced, "two Lock Screen widgets share one line, Page first: \(bothLock.lines)")
+    check(bothLock.lines == ["On your Lock Screen: Page Relay (circular), Claude usage (rectangular)"] && bothLock.isPlaced, "two Lock Screen widgets share one line, Page Studio first: \(bothLock.lines)")
     let lockAndHome = TowerWidgets.status(placed: placed(("page.claude-usage", "accessoryCircular"), ("page.claude-usage", "systemMedium")))
     check(lockAndHome.lines == ["On your Home Screen: Claude usage (medium)", "On your Lock Screen: Claude usage (circular)"], "Home line first, then Lock: \(lockAndHome.lines)")
     // A size a widget does not come in (Claude usage has no large or inline) cannot be placed, so it is not reported.
     let wrongSize = TowerWidgets.status(placed: placed(("page.claude-usage", "systemLarge"), ("page.claude-usage", "accessoryInline")))
     check(wrongSize.lines == ["Not added yet"] && wrongSize.placed == false, "a size the widget does not come in is ignored: \(wrongSize.lines)")
-    check(TowerWidgets.status(placed: placed(("page.claude-usage", "systemLarge"), ("page.mac-status", "systemLarge"))).lines == ["On your Home Screen: Page (large)"], "a large Claude usage is ignored, a large Page is not")
+    check(TowerWidgets.status(placed: placed(("page.claude-usage", "systemLarge"), ("page.mac-status", "systemLarge"))).lines == ["On your Home Screen: Page Relay (large)"], "a large Claude usage is ignored, a large Page Studio is not")
 
     // The steps.
     let homeSteps = TowerWidgets.steps(.homeScreen)
     let lockSteps = TowerWidgets.steps(.lockScreen)
     check(homeSteps.map(\.number) == [1, 2, 3, 4, 5] && lockSteps.map(\.number) == [1, 2, 3, 4], "the steps are numbered from 1")
-    check(homeSteps.map(\.title) == ["Touch and hold an empty spot", "Tap Edit, then Add Widget", "Search for Page", "Pick a size", "Tap Add Widget"], "Home Screen steps \(homeSteps.map(\.title))")
-    check(lockSteps.map(\.title) == ["Touch and hold the Lock Screen", "Tap Customize, then Lock Screen", "Tap the row of widgets", "Choose Page"], "Lock Screen steps \(lockSteps.map(\.title))")
+    check(homeSteps.map(\.title) == ["Touch and hold an empty spot", "Tap Edit, then Add Widget", "Search for Page Relay", "Pick a size", "Tap Add Widget"], "Home Screen steps \(homeSteps.map(\.title))")
+    check(lockSteps.map(\.title) == ["Touch and hold the Lock Screen", "Tap Customize, then Lock Screen", "Tap the row of widgets", "Choose Page Relay"], "Lock Screen steps \(lockSteps.map(\.title))")
     check((homeSteps + lockSteps).allSatisfy { !$0.detail.isEmpty }, "every step says more")
     check(TowerWidgets.Place.allCases.map(\.label) == ["Home Screen", "Lock Screen"], "the two places")
-    check(TowerWidgets.honestLine.contains("only lets you place a widget yourself") && TowerWidgets.hint(none).contains("can’t put one there for you"), "it says plainly that Page cannot place a widget")
-    check(TowerWidgets.macNote.contains("Use iPhone widgets") && TowerWidgets.macNote.contains("Desktop & Dock") && TowerWidgets.macNote.contains("Page ▸ Tower ▸ Widgets"), "the Mac note names the setting and the Mac page")
+    check(TowerWidgets.honestLine.contains("only lets you place a widget yourself") && TowerWidgets.hint(none).contains("can’t put one there for you"), "it says plainly that Page Studio cannot place a widget")
+    check(TowerWidgets.macNote.contains("Use iPhone widgets") && TowerWidgets.macNote.contains("Desktop & Dock") && TowerWidgets.macNote.contains("Page Studio ▸ Tower ▸ Widgets"), "the computer note names the setting and the computer page")
     let terminal = ["terminal", "command line", "defaults write", "swift run"]
     let words = (homeSteps + lockSteps).flatMap { [$0.title, $0.detail] } + [TowerWidgets.honestLine, TowerWidgets.macNote, TowerWidgets.hint(none), TowerWidgets.hint(home)]
     check(!words.contains { w in terminal.contains { w.lowercased().contains($0) } }, "no terminal steps in the words")
@@ -4148,7 +4148,7 @@ do {
     check(relay.host == "tmux" && open.rows.first { $0.id == "s-c" }?.host == "Ghostty", "the small print names the terminal alone")
     check(relay.canType && relay.canStop && relay.canMirror, "tmux can be typed into, stopped and mirrored")
     let cmux = open.rows.first { $0.id == "s-b" }!
-    check(cmux.step == "working" && cmux.age == "2m" && !cmux.canType && !cmux.canStop && cmux.canMirror, "no preview reads working; capabilities are the Mac's word")
+    check(cmux.step == "working" && cmux.age == "2m" && !cmux.canType && !cmux.canStop && cmux.canMirror, "no preview reads working; capabilities are the computer's word")
     let codex = open.rows.first { $0.id == "s-c" }!
     check(codex.character == "Codex" && !codex.canMirror && codex.age == nil, "an unmirrored terminal is marked and a missing time is nil")
     check(relay.spoken == "relay, Claude in tmux › relay, Running vitest · 212 passed, active 9s ago", "spoken row \(relay.spoken)")
@@ -4178,7 +4178,7 @@ do {
     check(book.nowTip(inputs([irrev])) == NowTipTarget(tip: .holdToApprove, anchorId: "irr"), "the first irreversible row gets the hold tip")
     check(book.nowTip(inputs([undo, irrev], inFlight: ["s-a"])) == NowTipTarget(tip: .holdToApprove, anchorId: "irr"), "hold first, then swipe, then in flight: never two at once")
     check(book.nowTip(inputs([], inFlight: ["s-a", "s-b"])) == NowTipTarget(tip: .inFlight, anchorId: "s-a"), "the first in-flight row gets its tip")
-    let blockedUndo = NowRowBuilder.row(for: nwIv("blk", .approval, "[Bash] swift test", session: "sb"), session: nwSession("sb", title: "api", host: "Ghostty", canType: false, blocker: "Page can't type into Ghostty yet"), macName: "M")
+    let blockedUndo = NowRowBuilder.row(for: nwIv("blk", .approval, "[Bash] swift test", session: "sb"), session: nwSession("sb", title: "api", host: "Ghostty", canType: false, blocker: "Page Studio can't type into Ghostty yet"), macName: "M")
     check(blockedUndo.chip == .undoable && !blockedUndo.canSwipeApprove && book.nowTip(inputs([blockedUndo])) == nil, "the swipe tip never anchors on a row that has no Approve")
     check(book.nowTip(inputs([blockedUndo, undo]))?.anchorId == "und", "it skips to a row that can really be swiped")
     check(book.nowTip(inputs([undo], busy: ["und"])) == nil, "no tip points at a row with an action under way")
@@ -4211,7 +4211,7 @@ do {
     check(NWTip.swipeToApprove.text() == "Swipe right to approve — it can be undone", "swipe tip copy")
     check(NWTip.holdToApprove.text() == "Hold to approve — Face ID confirms" && NWTip.holdToApprove.text(biometry: "Touch ID") == "Hold to approve — Touch ID confirms", "hold tip copy names the phone's own check")
     check(NWTip.inFlight.text() == "Tap to watch it work · Steer to guide it", "in flight tip copy")
-    check(NWTip.willType.text() == "Will type … shows exactly what lands on your Mac", "decision tip copy")
+    check(NWTip.willType.text() == "Will type … shows exactly what lands on your computer", "decision tip copy")
     for tip in NWTip.allCases {
         let e = GestureGuide.entry(for: tip)
         check(e != nil && e?.tipText?.contains("{biometry}") != nil && !tip.text().contains("{"), "\(tip) has one gesture entry and a filled-in line")
@@ -4254,7 +4254,7 @@ do {
     check(card.quiet == nil, "with a start time the quiet line is not also shown")
     check(card.now == "Running swift test" && card.previous == ["Editing SessionRoom.swift", "Reading Room.swift"], "the current step is not repeated; previous steps are newest first, in words")
     check(card.model == "Opus 4.5", "model")
-    check(card.health == .longRunning && card.healthLine == "Long-running command", "the Mac's health word")
+    check(card.health == .longRunning && card.healthLine == "Long-running command", "the computer's health word")
     check(card.workflows.count == 1 && card.workflows[0].text == "Review changes · Reviewing · 3/5 agents" && card.workflowHeading == "1 workflow running", "only running workflows, with name, phase, progress")
     check(abs((card.workflows[0].fraction ?? 0) - 0.6) < 0.0001, "progress fraction")
     // Seconds as numbers.
@@ -4272,7 +4272,7 @@ do {
 
     // Health: the Mac's word, a stuck page, a silence.
     check(FlightHealth.classify(state: .active, flight: nil, hasStuckPage: true, lastActivityAt: nwNow, now: nwNow) == .stuck, "a stuck page makes it look stuck")
-    check(FlightHealth.classify(state: .active, flight: rich.flight, hasStuckPage: true, lastActivityAt: nwNow, now: nwNow) == .longRunning, "the Mac's health word beats a guess")
+    check(FlightHealth.classify(state: .active, flight: rich.flight, hasStuckPage: true, lastActivityAt: nwNow, now: nwNow) == .longRunning, "the computer's health word beats a guess")
     check(FlightHealth.classify(state: .active, flight: decode(["health": "normal"]).flight, hasStuckPage: true, lastActivityAt: nwNow, now: nwNow) == .stuck, "a stuck page still wins over normal")
     check(FlightHealth.classify(state: .active, flight: nil, hasStuckPage: false, lastActivityAt: nwNow.addingTimeInterval(-6 * 60), now: nwNow) == .longRunning, "six silent minutes is a long-running command")
     check(FlightHealth.classify(state: .active, flight: nil, hasStuckPage: false, lastActivityAt: nwNow.addingTimeInterval(-60), now: nwNow) == .normal, "a recent step is normal")
@@ -4281,14 +4281,14 @@ do {
     let silent = InFlightCard.build(session: decode(["lastActivityAt": nwISO(nwT0 - 6 * 60)]), now: nwNow)
     check(silent.healthLine == "Long-running command · no new step for 6m", "the silence is named")
     let noted = InFlightCard.build(session: decode(["health": "stuck", "healthNote": "the same step 6 times"]), now: nwNow)
-    check(noted.healthLine == "Looks stuck · the same step 6 times" && noted.health.needsAttention, "the Mac's note follows the label")
+    check(noted.healthLine == "Looks stuck · the same step 6 times" && noted.health.needsAttention, "the computer's note follows the label")
     let stuckRow = InFlightSection.build(sessions: [old], hasSessionList: true, stuck: ["s1"], now: nwNow).rows[0]
     check(stuckRow.card.health == .stuck, "InFlightSection takes the open stuck pages")
     check(FlightHealth.stuckSessionIds([nwIv("a", .idle, "x", session: "s1", subtype: "looping"), nwIv("b", .idle, "x", session: "s2"), nwIv("c", .approval, "x", session: "s3", subtype: "stuck")]) == ["s1"], "only idle looping or stuck pages count")
 
     // Steps in plain words.
     check(StepPhrase.plain("[Bash] swift test") == "Running swift test", "bash")
-    check(StepPhrase.plain("Bash: swift test --filter A") == "Running swift test --filter A", "the Mac's own Tool: text form")
+    check(StepPhrase.plain("Bash: swift test --filter A") == "Running swift test --filter A", "the computer's own Tool: text form")
     check(StepPhrase.plain("[Edit] /Users/me/p/Sources/SessionRoom.swift") == "Editing SessionRoom.swift", "edit shows the file's name")
     check(StepPhrase.plain("[Write] a/b/c.txt") == "Writing c.txt" && StepPhrase.plain("[Read] x.swift") == "Reading x.swift", "write and read")
     check(StepPhrase.plain("[Grep] TODO") == "Searching TODO" && StepPhrase.plain("[Task] audit the docs") == "Sub-agent: audit the docs", "search and sub-agent")
@@ -4322,10 +4322,10 @@ do {
 
     // A project is never "/".
     check(ProjectLabel.name(cwd: "/", fallback: "builds") == "builds" && ProjectLabel.name(cwd: "", fallback: "builds") == "builds", "root falls back to the session's name")
-    check(ProjectLabel.name(cwd: "/", fallback: "") == "root" && ProjectLabel.name(cwd: "//", fallback: " / ") == "root" && ProjectLabel.name(cwd: "", fallback: "") == "Unknown project", "never a bare slash: root, as on the Mac")
+    check(ProjectLabel.name(cwd: "/", fallback: "") == "root" && ProjectLabel.name(cwd: "//", fallback: " / ") == "root" && ProjectLabel.name(cwd: "", fallback: "") == "Unknown project", "never a bare slash: root, as on your computer")
     check(ProjectLabel.name(cwd: "~", fallback: "") == "~" && ProjectLabel.name(cwd: "/Users/roy", fallback: "") == "~" && ProjectLabel.name(cwd: "/Users/roy/", fallback: "docs") == "~", "the home folder reads ~ whatever the session is called")
     check(ProjectLabel.name(cwd: "~/projects/page/", fallback: "x") == "page" && ProjectLabel.name(cwd: "/Users/roy/projects/page", fallback: "x") == "page", "a real folder is its own name")
-    check(ProjectLabel.clean("/", cwd: "/Users/roy/projects/page") == "page" && ProjectLabel.clean(" ", cwd: "/", fallback: "web") == "web" && ProjectLabel.clean("page", cwd: "/") == "page", "a name the Mac sent as / is repaired")
+    check(ProjectLabel.clean("/", cwd: "/Users/roy/projects/page") == "page" && ProjectLabel.clean(" ", cwd: "/", fallback: "web") == "web" && ProjectLabel.clean("page", cwd: "/") == "page", "a name the computer sent as / is repaired")
     check(SkyModel.projectName(cwd: "/", fallback: "tokenizer") == "tokenizer", "Lanes and In flight share the fallback")
     let slash = try! JSONDecoder.page().decode(Intervention.self, from: Data(#"{"id":"i","sessionId":"s","openedAt":"2026-10-27T01:00:00Z","cwd":"/","projectName":"/","kind":"idle"}"#.utf8))
     check(slash.projectName != "/" && !slash.projectName.isEmpty, "a finished page from / is not named /")
@@ -4362,10 +4362,10 @@ do {
     let stuckCard = InFlightCard.build(session: stuck, now: goldenNow)
     check(stuck.flight?.busySince == Date(timeIntervalSince1970: 1_790_000_000 - 720), "golden: busySince decodes as an absolute date")
     check(stuckCard.health == .stuck && stuckCard.now == "Running swift test", "golden: the stuck row reads as stuck, in words")
-    check(stuckCard.turn == "working 12m" && stuckCard.session == "session 2h 10m", "golden: the clocks match the Mac's card")
-    check(stuckCard.model == "Opus 4.7", "BUG: model version lost: the Mac sends \"Opus 4.7\", the phone shows \"\(stuckCard.model ?? "nil")\"")
+    check(stuckCard.turn == "working 12m" && stuckCard.session == "session 2h 10m", "golden: the clocks match the computer's card")
+    check(stuckCard.model == "Opus 4.7", "BUG: model version lost: the computer sends \"Opus 4.7\", the phone shows \"\(stuckCard.model ?? "nil")\"")
     check(stuckCard.healthLine?.contains("no progress for 15 min") == true,
-          "BUG: stuck detail lost: the Mac sends healthDetail, the phone reads healthNote; the line is \"\(stuckCard.healthLine ?? "nil")\"")
+          "BUG: stuck detail lost: the computer sends healthDetail, the phone reads healthNote; the line is \"\(stuckCard.healthLine ?? "nil")\"")
 
     // Rate limited and long-running: the health word arrives.
     check(InFlightCard.build(session: liveRow(goldenRateLimited), now: goldenNow).health == .rateLimited, "golden: rateLimited reads as rate limited")
@@ -4375,9 +4375,9 @@ do {
     // Six workflows: the Mac says six are running; the phone sends three and must not say three.
     let six = InFlightCard.build(session: liveRow(goldenSixWorkflows, preview: "Bash: swift test"), now: goldenNow)
     check(six.workflows.count == 3 && six.workflows.first?.text == "Review changes · Reviewing · 3/5 agents", "golden: the three sent workflows show in words")
-    check(liveRow(goldenSixWorkflows).flight?.workflows.map(\.agentsRunning) == [2, 1, 0], "the Mac's workflow \"running\" Int reads as its running agents")
-    check(liveRow(goldenSixWorkflows).flight?.workflows.allSatisfy(\.running) == true, "a listed workflow is running whatever its agent count (the Mac sends no status)")
-    check(six.workflowHeading == "6 workflows running", "BUG: workflow count: the Mac says workflowsRunning 6, the phone counts the 3 it was sent: \"\(six.workflowHeading ?? "nil")\"")
+    check(liveRow(goldenSixWorkflows).flight?.workflows.map(\.agentsRunning) == [2, 1, 0], "the computer's workflow \"running\" Int reads as its running agents")
+    check(liveRow(goldenSixWorkflows).flight?.workflows.allSatisfy(\.running) == true, "a listed workflow is running whatever its agent count (the computer sends no status)")
+    check(six.workflowHeading == "6 workflows running", "BUG: workflow count: the computer says workflowsRunning 6, the phone counts the 3 it was sent: \"\(six.workflowHeading ?? "nil")\"")
 
     // The current step must not come back as an earlier step, in whichever words each side used.
     let grep = InFlightCard.build(session: liveRow(#"{"recentSteps":["Reading Package.swift","Searching for TODO"]}"#, preview: "Grep: TODO in Sources"), now: goldenNow)
@@ -4390,19 +4390,19 @@ do {
     check(edit.now == "Editing SessionRoom.swift" && edit.previous.isEmpty, "an edit reads the same on both sides and is not repeated")
 
     // The home folder reads "~" on the Mac; the phone must agree even when the session has a name.
-    check(ProjectLabel.name(cwd: "/Users/roy/", fallback: "docs") == "~", "BUG: the home folder reads \"\(ProjectLabel.name(cwd: "/Users/roy/", fallback: "docs"))\" here, \"~\" on the Mac (spec: home → ~); see line 3698, which asserts the other way")
+    check(ProjectLabel.name(cwd: "/Users/roy/", fallback: "docs") == "~", "BUG: the home folder reads \"\(ProjectLabel.name(cwd: "/Users/roy/", fallback: "docs"))\" here, \"~\" on your computer (spec: home → ~); see line 3698, which asserts the other way")
 
     // Mac list rows: the model as sent, the current step as the Mac worded it, resets and step times, a missing health.
     check(InFlightCard.modelName("Opus 4.7") == "Opus 4.7" && InFlightCard.modelName("Sonnet 4.5") == "Sonnet 4.5" && InFlightCard.modelName("Haiku 4.5") == "Haiku 4.5"
-          && InFlightCard.modelName("claude-opus-4-7") == "Opus 4.7", "the Mac's model names show as sent; raw ids are read")
+          && InFlightCard.modelName("claude-opus-4-7") == "Opus 4.7", "the computer's model names show as sent; raw ids are read")
     let wording = InFlightCard.build(session: liveRow(#"{"recentSteps":["Reading Package.swift","Running swift test","Searching TODO in Sources"]}"#, preview: "Grep: TODO in Sources"), now: goldenNow)
-    check(wording.now == "Searching TODO in Sources" && wording.previous == ["Running swift test", "Reading Package.swift"], "the Mac's last step is NOW, the rest follow newest first")
+    check(wording.now == "Searching TODO in Sources" && wording.previous == ["Running swift test", "Reading Package.swift"], "the computer's last step is NOW, the rest follow newest first")
     let limited = InFlightCard.build(session: liveRow(goldenRateLimited), now: goldenNow)
     check(limited.healthLine == "Rate limited · resets \(NowFormat.clock(Date(timeIntervalSince1970: 1_790_000_000 + 900)))", "a rate limit names when it resets: \(limited.healthLine ?? "nil")")
     let longRun = InFlightCard.build(session: liveRow(goldenLongRunning, preview: "Bash: make all"), now: goldenNow)
-    check(longRun.healthLine == "Long-running command · no new step for 6m", "the Mac's stepSince names the wait: \(longRun.healthLine ?? "nil")")
+    check(longRun.healthLine == "Long-running command · no new step for 6m", "the computer's stepSince names the wait: \(longRun.healthLine ?? "nil")")
     let calm = InFlightCard.build(session: liveRow(#"{"busySince":"2026-09-21T14:01:20Z","recentSteps":["Running swift test"],"lastActivityAt":"2026-09-21T14:07:20Z"}"#), now: goldenNow)
-    check(calm.health == .normal && calm.healthLine == nil, "a Mac that sends fields and no health says normal: no guess from a quiet minute count")
+    check(calm.health == .normal && calm.healthLine == nil, "a computer that sends fields and no health says normal: no guess from a quiet minute count")
 
     // Old phones: the legacy fields read the same whether or not the new keys are there, and a decoder that knows only
     // the legacy keys accepts the whole new row.
@@ -4444,7 +4444,7 @@ do {
     check(!DecisionDraftGuard.blocksSwipeDismiss(draft: "", sendPending: false, phase: .sent(queued: false, slow: false)), "a reply the relay holds no longer blocks it")
 
     // A page that resolves under a message keeps the sheet (and the message); a delivered reply still closes it.
-    check(DecisionDraftGuard.keepsDraft(phase: .resolved("answered at the Mac"), draft: "use staging"), "resolved with a draft keeps it")
+    check(DecisionDraftGuard.keepsDraft(phase: .resolved("answered at your computer"), draft: "use staging"), "resolved with a draft keeps it")
     check(DecisionDraftGuard.keepsDraft(phase: .alreadyReplied, draft: "use staging"), "already answered with a draft keeps it")
     check(!DecisionDraftGuard.keepsDraft(phase: .resolved("x"), draft: " "), "resolved with no draft closes as before")
     check(!DecisionDraftGuard.keepsDraft(phase: .delivered(nil), draft: "use staging"), "delivered is not kept")
@@ -4520,7 +4520,7 @@ do {
         ("Should I go ahead\nand commit?", nil),
         ("Can you share the error log?", nil),
         ("Could you paste the stack trace?", nil),
-        ("Will you be at the Mac later?", nil),
+        ("Will you be at your computer later?", nil),
         ("Is the build green?", nil),
         ("Are there any other changes?", nil),
         ("Do the tests pass?", nil),
@@ -4569,7 +4569,7 @@ do {
     check(offer(mode: .steer, state: .active, [q]) == nil, "mid-turn: not offered")
     check(offer(mode: .tellInstead(pageId: "p1"), state: .waitingOnApproval, [q]) == nil, "a prompt waits (it has Approve and Deny): not offered")
     check(offer(mode: .blocked("x"), [q]) == nil && offer(mode: .locked("x"), [q]) == nil && offer(mode: .disabled("x"), [q]) == nil,
-          "where Page cannot type: not offered")
+          "where Page Studio cannot type: not offered")
     check(offer(state: .rateLimited, [q]) == nil, "only an idle session, not a rate-limited one")
     check(offer(ended: true, [q]) == nil && offer(ready: false, [q]) == nil, "an ended session or an unreachable Mac: not offered")
     check(offer(ask: true, [q]) == nil, "a question the picker answers is left to it")
@@ -4604,21 +4604,21 @@ do {
     check(plan().countsDown && !plan().holds, "send now to a busy session waits the countdown")
     check(plan(canHold: false).mode == .none && plan(canHold: false).countsDown, "no canHold: no choice, but Undo still applies")
     check(plan(caps: []).mode == .none && plan(caps: ["retract-v1"]).mode == .none, "an old Mac (no hold-v1): no hold option")
-    check(plan(caps: [], last: .whenFinished).selected == .now && !plan(caps: [], last: .whenFinished).holds, "a remembered hold falls back to Now when the Mac can't hold")
+    check(plan(caps: [], last: .whenFinished).selected == .now && !plan(caps: [], last: .whenFinished).holds, "a remembered hold falls back to Now when the computer can't hold")
     check(plan(canType: false).mode == .holdOnly && plan(canType: false).holds && plan(canType: false).selected == .whenFinished && !plan(canType: false).offersChoice,
           "busy Codex outside cmux (canType false, canHold true): hold only, no choice")
     check(plan(canType: false, canHold: false).mode == .none && plan(canType: false, caps: []).mode == .none, "can neither type nor hold: nothing offered")
     check(SendChoice.now.title == "Now" && SendChoice.whenFinished.title == "When it finishes", "choice titles")
-    check(SendChoice.whenFinished.explanation(agent: "Claude") == "Held on your Mac and typed when Claude finishes. Delete it any time before."
+    check(SendChoice.whenFinished.explanation(agent: "Claude") == "Held on your computer and typed when Claude finishes. Delete it any time before."
           && SendChoice.now.explanation(agent: "Claude") == "Claude reads it after its current step.", "choice explanations")
 
     // The composer takes the hold-only case instead of blocking it.
     func mode(canType: Bool, holdOnly: Bool, state: LiveSessionState = .active) -> RoomComposerMode {
-        RoomComposerMode.resolve(.init(state: state, canType: canType, typeBlocker: "Page can't type into Codex yet", holdOnly: holdOnly))
+        RoomComposerMode.resolve(.init(state: state, canType: canType, typeBlocker: "Page Studio can't type into Codex yet", holdOnly: holdOnly))
     }
     check(mode(canType: false, holdOnly: true) == .steer, "hold-only busy session: the composer takes text")
-    check(mode(canType: false, holdOnly: false) == .blocked("Page can't type into Codex yet"), "no hold: still blocked")
-    check(mode(canType: false, holdOnly: true, state: .idle) == .blocked("Page can't type into Codex yet"), "an idle session can't be typed to: hold-only doesn't apply")
+    check(mode(canType: false, holdOnly: false) == .blocked("Page Studio can't type into Codex yet"), "no hold: still blocked")
+    check(mode(canType: false, holdOnly: true, state: .idle) == .blocked("Page Studio can't type into Codex yet"), "an idle session can't be typed to: hold-only doesn't apply")
 
     // The 10 s countdown.
     let cd = SendCountdown(startedAt: t0)
@@ -4649,9 +4649,9 @@ do {
         PersistedSend(id: "c", scope: "page:p9", text: "  ", startedAt: 30),
         PersistedSend(id: "d", scope: "page:p2", text: "tell it", startedAt: 40)])
     check(kept.map(\.scope) == ["session:s1", "page:p2"] && kept[0].text == "first\n\nsecond" && kept[1].text == "tell it", "restore: oldest first, blank dropped, one draft per place")
-    check(kept[0].note == "Not sent — Page closed before the countdown ended. Your message is back here.", "restore note")
+    check(kept[0].note == "Not sent — Page Relay closed before the countdown ended. Your message is back here.", "restore note")
     check(RestoredDraft.undoneNote == "Not sent — you tapped Undo. Your message is back here."
-          && RestoredDraft.slept == "Not sent — Page was asleep when the countdown ended. Your message is back here.", "undo-from-a-card and slept notes")
+          && RestoredDraft.slept == "Not sent — Page Relay was asleep when the countdown ended. Your message is back here.", "undo-from-a-card and slept notes")
     check(OutboxRestore.scope(sessionId: "s1") == "session:s1" && OutboxRestore.scope(pageId: "p9") == "page:p9", "restore scopes")
     check(DraftRestore.merge(restored: "hello", current: "") == "hello" && DraftRestore.merge(restored: "hello", current: "and also") == "hello\n\nand also"
           && DraftRestore.merge(restored: "hello", current: "hello") == "hello", "Undo puts the text back above anything typed since")
@@ -4701,8 +4701,8 @@ do {
         CommandResult(clientId: "c7", ok: ok ?? (code == .delivered || code == .queued), code: code, reason: reason, detail: detail, interventionId: nil, held: held, fromHold: fromHold)
     }
     let sending = SessionDeliveryState.sending
-    let held = sending.applying(res(.queued, detail: "Held — Page types it when Claude finishes this turn", held: true), agent: "Claude")
-    check(held == .held("Held — Page types it when Claude finishes this turn") && held.isHeld && !held.isPending, "queued + held: Held, with the Mac's words")
+    let held = sending.applying(res(.queued, detail: "Held — Page Studio types it when Claude finishes this turn", held: true), agent: "Claude")
+    check(held == .held("Held — Page Studio types it when Claude finishes this turn") && held.isHeld && !held.isPending, "queued + held: Held, with the computer's words")
     check(sending.applying(res(.queued), agent: "Claude") == .queued(nil), "queued without held: in the agent's own queue")
     check(held.applying(res(.queued, held: true), agent: "Claude") == held, "a second held result changes nothing")
     check(held.applying(res(.delivered, detail: "no fromHold"), agent: "Claude") == held, "held ignores a result that isn't the final one")
@@ -4712,7 +4712,7 @@ do {
     if case .refused(let reason, _) = held.applying(res(.refused, ok: false, reason: "expired", detail: "Not sent — the turn didn't finish within 6 hours", fromHold: true), agent: "Claude") { check(reason == "expired", "final: refused") } else { check(false, "final refused") }
     check(SessionDeliveryState.deleted(nil).applying(res(.delivered, fromHold: true), agent: "Claude") == .deleted(nil), "deleted is settled")
     check(held.label(.input) == "Held" && SessionDeliveryState.deleted(nil).label(.input) == "Deleted" && SessionDeliveryState.unconfirmed("x").label(.input) == "Check the session", "labels")
-    check(held.explanation(.input, agent: "Claude") == "Held — Page types it when Claude finishes this turn" && SessionDeliveryState.held(nil).explanation(.input, agent: "Claude") == "Held — sends when Claude finishes", "held words: the Mac's, else Page's")
+    check(held.explanation(.input, agent: "Claude") == "Held — Page Studio types it when Claude finishes this turn" && SessionDeliveryState.held(nil).explanation(.input, agent: "Claude") == "Held — sends when Claude finishes", "held words: the computer's, else Page Studio's")
     check(SessionDeliveryState.queued("Queued").explanation(.input, agent: "Claude") == "Already with Claude — it reads it after this step.", "L5: already with Claude, said plainly")
     check(SessionDeliveryState.counting(cd).explanation(.input, agent: "Claude") == "Nothing has been sent yet. Undo it and the message comes back." && !SessionDeliveryState.counting(cd).isPending && SessionDeliveryState.counting(cd).isCounting, "counting")
 
@@ -4720,17 +4720,17 @@ do {
     func entry(_ state: HeldState, detail: String? = nil) -> HeldMessage { HeldMessage(clientId: "c7", text: "t", heldAt: t0, state: state, at: t0, detail: detail) }
     check(sending.reconciled(entry: entry(.held), seen: false, sessionListed: true) == .held(nil), "still sending but the row holds it: Held")
     check(held.reconciled(entry: entry(.held), seen: true, sessionListed: true) == held, "held and still held: unchanged")
-    check(held.reconciled(entry: entry(.typing), seen: true, sessionListed: true) == .held("Held — Page types it when Claude finishes this turn", note: nil, typing: true), "typing: the headline stays, Delete goes")
+    check(held.reconciled(entry: entry(.typing), seen: true, sessionListed: true) == .held("Held — Page Studio types it when Claude finishes this turn", note: nil, typing: true), "typing: the headline stays, Delete goes")
     check(held.reconciled(entry: entry(.typed, detail: "Typed into tmux pane %3"), seen: true, sessionListed: true) == .typed("Typed into tmux pane %3"), "row says typed")
     check(held.reconciled(entry: entry(.deleted), seen: true, sessionListed: true) == .deleted("Deleted — not sent"), "row says deleted")
     check(held.reconciled(entry: entry(.ended), seen: true, sessionListed: true) == .refused(reason: "ended", message: "Not sent — the session ended"), "row says ended: refused, as the final result reads")
     check(held.reconciled(entry: entry(.expired), seen: true, sessionListed: true) == .refused(reason: "expired", message: "Not sent — the turn didn't finish within 6 hours"), "row says expired")
-    check(held.applying(res(.refused, ok: false, reason: "ended", detail: "Not sent — the session ended", fromHold: true), agent: "Claude") == held.reconciled(entry: entry(.ended), seen: true, sessionListed: true), "the final result and the list agree on an ended session, in the Mac's words")
-    check(held.reconciled(entry: entry(.failed, detail: "Not sent — someone is typing at the Mac"), seen: true, sessionListed: true) == .failed("Not sent — someone is typing at the Mac"), "row says failed, with its reason")
+    check(held.applying(res(.refused, ok: false, reason: "ended", detail: "Not sent — the session ended", fromHold: true), agent: "Claude") == held.reconciled(entry: entry(.ended), seen: true, sessionListed: true), "the final result and the list agree on an ended session, in the computer's words")
+    check(held.reconciled(entry: entry(.failed, detail: "Not sent — someone is typing at your computer"), seen: true, sessionListed: true) == .failed("Not sent — someone is typing at your computer"), "row says failed, with its reason")
     if case .unconfirmed(let m) = held.reconciled(entry: entry(.unconfirmed), seen: true, sessionListed: true) { check(m.contains("Check the session"), "row says unconfirmed") } else { check(false, "unconfirmed") }
     check(held.reconciled(entry: nil, seen: true, sessionListed: true) == .unconfirmed("No longer held — check the session"), "seen held, then gone with no settled state: No longer held")
     check(held.reconciled(entry: nil, seen: false, sessionListed: false) == .unconfirmed("No longer held — check the session"), "its session left the list: No longer held")
-    check(held.reconciled(entry: nil, seen: false, sessionListed: true) == held, "race: a list built before the Mac accepted it names nothing yet: unchanged")
+    check(held.reconciled(entry: nil, seen: false, sessionListed: true) == held, "race: a list built before the computer accepted it names nothing yet: unchanged")
     check(sending.reconciled(entry: nil, seen: true, sessionListed: true) == .sending, "a plain send is never in held[]: unchanged")
     check(SessionDeliveryState.typed(nil).reconciled(entry: entry(.deleted), seen: true, sessionListed: true) == .typed(nil), "a settled message is never reopened")
     check(SessionDeliveryState.noAnswer.reconciled(entry: entry(.held), seen: false, sessionListed: true) == .held(nil), "a missed result is recovered from the list")
@@ -4744,7 +4744,7 @@ do {
               HeldMessage(clientId: "other", text: "from my iPad", heldAt: t0.addingTimeInterval(-60), state: .held, at: nil, detail: nil),
               HeldMessage(clientId: "gone", text: "old", heldAt: t0, state: .typed, at: t0, detail: nil)]
     let pending = HeldTimeline.pending(sent: [sent("c7", .held(nil), at: 0)], held: hm, sessionId: "s1")
-    check(pending.map(\.clientId) == ["c7", "other"] && pending[1].text == "from my iPad" && pending[1].state == .held(nil), "the Mac's own held entry: one bubble, settled ones left to the transcript")
+    check(pending.map(\.clientId) == ["c7", "other"] && pending[1].text == "from my iPad" && pending[1].state == .held(nil), "the computer's own held entry: one bubble, settled ones left to the transcript")
     let merged = TranscriptTimeline.merge(entries: [], sent: pending)
     check(merged.map(\.id) == ["p:other", "p:c7"], "pending bubbles, oldest first")
     let echoEntry = TranscriptEntry(id: "e1", role: .user, text: "mine c7", at: t0.addingTimeInterval(5), tool: nil)
@@ -4756,11 +4756,11 @@ do {
     }
     check(RetractOutcome.from(rr(retract: "deleted", detail: "Deleted — not sent")) == .deleted("Deleted — not sent"), "deleted arrives as code delivered: still Deleted, never Typed")
     check(RetractOutcome.from(rr(retract: "deleted")) == .deleted("Deleted — not sent"), "deleted default words")
-    check(RetractOutcome.from(rr(retract: "too_late", code: .refused, ok: false, reason: "too_late", detail: "Too late — it was already typed")) == .tooLate("Too late — it was already typed"), "too late, in the Mac's words")
+    check(RetractOutcome.from(rr(retract: "too_late", code: .refused, ok: false, reason: "too_late", detail: "Too late — it was already typed")) == .tooLate("Too late — it was already typed"), "too late, in the computer's words")
     check(RetractOutcome.from(rr(retract: "too_late", code: .refused, ok: false, reason: "too_late")) == .tooLate("Too late — it was already typed"), "too late default")
-    check(RetractOutcome.from(rr(retract: "not_found", code: .refused, ok: false, reason: "not_found", detail: "Page isn't holding that message")) == .notFound("Page isn't holding that message"), "not found")
+    check(RetractOutcome.from(rr(retract: "not_found", code: .refused, ok: false, reason: "not_found", detail: "Page Studio isn't holding that message")) == .notFound("Page Studio isn't holding that message"), "not found")
     check(RetractOutcome.from(rr(retract: nil, code: .refused, ok: false, reason: "too_late")) == .tooLate("Too late — it was already typed"), "no retract field: too_late from the reason")
-    check(RetractOutcome.from(rr(retract: nil, code: .refused, ok: false, reason: "not_found")) == .notFound("Page isn't holding that message"), "no retract field: not_found from the reason")
+    check(RetractOutcome.from(rr(retract: nil, code: .refused, ok: false, reason: "not_found")) == .notFound("Page Studio isn't holding that message"), "no retract field: not_found from the reason")
     check(RetractOutcome.from(rr(retract: nil)) == .deleted("Deleted — not sent"), "no retract field, ok: deleted")
     check(RetractOutcome.from(rr(retract: nil, code: .failed, ok: false, reason: "error", detail: "no")) == nil, "an error answer isn't an outcome")
     check(RetractOutcome.deleted("x").note == .deleted("x") && RetractOutcome.tooLate("y").note == .tooLate("y") && RetractOutcome.notFound("z").note == .notFound("z"), "outcome to note")
@@ -4772,22 +4772,22 @@ do {
     func relay(_ status: Int, _ body: String) -> RelayRetractOutcome { RelayRetractOutcome.from(status: status, body: Data(body.utf8)) }
     check(relay(200, #"{"ok":true,"retracted":true}"#) == .deleted && relay(200, #"{"ok":true,"retracted":true}"#).note == .deleted("Deleted — not sent"), "retracted: Deleted — not sent")
     check(relay(200, #"{"ok":true,"retracted":false,"nothing":true}"#) == .nothing && relay(200, #"{"ok":true,"retracted":false,"nothing":true}"#).note == .notFound("Nothing to delete"), "nothing: Nothing to delete")
-    check(relay(409, #"{"error":"too_late","stage":"forwarded","deliveryForwardedAt":"2026-10-24T01:03:00Z"}"#).note == .tooLate("Too late — your Mac already has it"), "too late, forwarded")
-    check(relay(409, #"{"error":"too_late","stage":"delivered"}"#).note == .tooLate("Too late — your Mac already has it"), "too late, delivered")
+    check(relay(409, #"{"error":"too_late","stage":"forwarded","deliveryForwardedAt":"2026-10-24T01:03:00Z"}"#).note == .tooLate("Too late — your computer already has it"), "too late, forwarded")
+    check(relay(409, #"{"error":"too_late","stage":"delivered"}"#).note == .tooLate("Too late — your computer already has it"), "too late, delivered")
     check(relay(409, #"{"error":"too_late","stage":"not_held"}"#).note == .failed("Couldn't take it back — it may still be sent"), "too late, not held: it may still be sent")
     check(relay(409, #"{"error":"too_late","stage":"somewhere_new"}"#).note == .failed("Couldn't take it back — it may still be sent") && relay(409, #"{"error":"too_late"}"#).note == .failed("Couldn't take it back — it may still be sent"), "unknown stage")
     check(relay(409, #"{"error":"hook_held"}"#) == .hookHeld && relay(409, #"{"error":"hook_held"}"#).note == .failed("It's waiting on the hook, so it can't be deleted."), "hook held")
     check(relay(404, #"{"error":"not_found"}"#) == .oldRelay && relay(404, #"{"error":"not_found"}"#).note == .failed("Update your relay to delete queued replies"), "an old relay: not_found")
     check(relay(404, #"{"error":"no_such_intervention"}"#) == .pageGone && relay(404, #"{"error":"no_such_intervention"}"#).note == nil, "a new relay's 404 is a gone page, never an old relay")
-    check(RetractNote.postFailure(.macOffline) == .failed("Your Mac is offline — try again when it's back") && RetractNote.postFailure(.accepted) == nil, "a retract the relay couldn't forward")
+    check(RetractNote.postFailure(.macOffline) == .failed("Your computer is offline — try again when it's back") && RetractNote.postFailure(.accepted) == nil, "a retract the relay couldn't forward")
     check(relay(404, "").note == .failed("Couldn't take it back — it may still be sent"), "a 404 with no error string is not called an old relay")
     check(relay(410, #"{"error":"token_retired","why":"Replaced"}"#) == .retired("Replaced") && relay(410, #"{"error":"token_retired","why":"Replaced"}"#).note == nil, "retired token")
-    check(relay(401, "{}").note == .failed("The relay no longer accepts this pairing. Re-pair with your Mac."), "unauthorised")
+    check(relay(401, "{}").note == .failed("The relay no longer accepts this pairing. Re-pair with your computer."), "unauthorised")
     check(relay(500, "oops").note == .failed("Couldn't take it back — it may still be sent") && RelayRetractOutcome.transportCopy == "Couldn't reach your relay — it may still be sent", "other failures")
 
     // Which replies are queued at the relay, from what the relay returns.
     check(RelayQueue.isQueued(deliveryStatus: "pending", forwardedAt: nil, hookBlocking: false), "pending, never forwarded: queued (docs/PROTOCOL.md)")
-    check(!RelayQueue.isQueued(deliveryStatus: "pending", forwardedAt: t0, hookBlocking: false), "forwarded: the Mac has it")
+    check(!RelayQueue.isQueued(deliveryStatus: "pending", forwardedAt: t0, hookBlocking: false), "forwarded: the computer has it")
     check(!RelayQueue.isQueued(deliveryStatus: "pending", forwardedAt: nil, hookBlocking: true), "a hook page is never queued")
     check(!RelayQueue.isQueued(deliveryStatus: "delivered", forwardedAt: nil, hookBlocking: false) && !RelayQueue.isQueued(deliveryStatus: nil, forwardedAt: nil, hookBlocking: false), "only pending")
     check(RelayQueue.canDelete(features: ["sessions-v1", "reply-retract-v1"]) && !RelayQueue.canDelete(features: ["sessions-v1"]) && !RelayQueue.canDelete(features: nil), "Delete only when the relay says reply-retract-v1")
@@ -4809,17 +4809,17 @@ do {
         ReplyQueueStatus.build(.init(delivery: delivery, isHook: hook, relayFeatures: features, macCaps: mac, note: note, resetsAt: resets))
     }
     let atRelay = qs(.sent(queued: true, at: t0))
-    check(atRelay?.layer == .relay && atRelay?.headline == "Queued — your Mac is offline" && atRelay?.canDelete == true && atRelay?.deleting == false, "L2: queued, with Delete")
+    check(atRelay?.layer == .relay && atRelay?.headline == "Queued — your computer is offline" && atRelay?.canDelete == true && atRelay?.deleting == false, "L2: queued, with Delete")
     check(qs(.sent(queued: true, at: t0), features: ["sessions-v1"])?.canDelete == false && qs(.sent(queued: true, at: t0), features: nil)?.canDelete == false, "an old relay: queued, but no Delete")
     check(qs(.sent(queued: true, at: t0), hook: true) == nil && qs(.sent(queued: false, at: t0)) == nil && qs(.delivered(detail: nil)) == nil && qs(nil) == nil, "not queued: nothing to show")
     check(qs(.sent(queued: true, at: t0), note: .deleting)?.deleting == true && qs(.sent(queued: true, at: t0), note: .deleting)?.canDelete == false, "deleting: no second tap")
     check(qs(.sent(queued: true, at: t0), note: .failed("Update your relay to delete queued replies"))?.note == .failed("Update your relay to delete queued replies"), "the note stays with the reply")
     let atMac = qs(.heldOnMac(detail: "Will send it when the limit resets at 3:00 PM"))
-    check(atMac?.layer == .macHold && atMac?.headline == "Held on your Mac until 3:00 PM" && atMac?.canDelete == true, "L3: held until the time, with Delete")
+    check(atMac?.layer == .macHold && atMac?.headline == "Held on your computer until 3:00 PM" && atMac?.canDelete == true, "L3: held until the time, with Delete")
     check(qs(.heldOnMac(detail: nil), mac: [])?.canDelete == false && qs(.heldOnMac(detail: nil), mac: ["hold-v1"])?.canDelete == false, "an old Mac (no retract-v1): no Delete for a held reply")
-    check(qs(.heldOnMac(detail: nil), resets: t0)?.headline.hasPrefix("Held on your Mac until ") == true && qs(.heldOnMac(detail: nil))?.headline == "Held on your Mac until the limit resets", "the session's reset time, else the words")
-    check(HeldUntilReset.headline(detail: "Will send it when the limit resets at 11:45 PM.", resetsAt: nil, timeZone: .current) == "Held on your Mac until 11:45 PM", "time from the Mac's sentence")
-    check(HeldUntilReset.headline(detail: "something at the shop", resetsAt: nil, timeZone: .current) == "Held on your Mac until the limit resets", "no time in the sentence")
+    check(qs(.heldOnMac(detail: nil), resets: t0)?.headline.hasPrefix("Held on your computer until ") == true && qs(.heldOnMac(detail: nil))?.headline == "Held on your computer until the limit resets", "the session's reset time, else the words")
+    check(HeldUntilReset.headline(detail: "Will send it when the limit resets at 11:45 PM.", resetsAt: nil, timeZone: .current) == "Held on your computer until 11:45 PM", "time from your computer's sentence")
+    check(HeldUntilReset.headline(detail: "something at the shop", resetsAt: nil, timeZone: .current) == "Held on your computer until the limit resets", "no time in the sentence")
 
     // Receipts.
     let nwAt = t0
@@ -4830,7 +4830,7 @@ do {
     check(rc(.counting(cd), at: 0)?.headline == "Sending in 10 s · Undo" && rc(.counting(cd), at: 0)?.countdown == cd && rc(.counting(cd), at: 0)?.tone == .working, "the Undo receipt")
     check(rc(.counting(cd), at: 4)?.headline == "Sending in 6 s · Undo", "the Undo receipt counts down")
     check(rc(.held(nil))?.headline == "Held — sends when Claude finishes" && rc(.held(nil))?.canDelete == true && rc(.held(nil))?.tone == .held, "held receipt, with Delete")
-    check(rc(.held("Held — Page types it when Claude finishes this turn"))?.headline == "Held — Page types it when Claude finishes this turn", "held receipt: the Mac's own words")
+    check(rc(.held("Held — Page Studio types it when Claude finishes this turn"))?.headline == "Held — Page Studio types it when Claude finishes this turn", "held receipt: the computer's own words")
     check(rc(.held(nil), retract: false)?.canDelete == false, "an old Mac: held, but no Delete")
     check(rc(.held(nil), note: .deleting)?.canDelete == false && rc(.held(nil), note: .tooLate("Too late — it was already typed"))?.note == .tooLate("Too late — it was already typed"), "deleting / too late")
     check(rc(.deleted(nil))?.headline == "Deleted — not sent" && rc(.deleted(nil))?.tone == .neutral && rc(.deleted(nil), at: 120) == nil, "deleted receipt fades")
@@ -4852,7 +4852,7 @@ do {
     func phase(_ d: ReplyDelivery?, live: Bool = true) -> DecisionPhase {
         DecisionPhase.derive(.init(delivery: d, isLive: live, hasSnapshot: true, lookupFinished: true, closeReason: "replied", closeLookupFinished: true, now: t0, legacyRelay: false))
     }
-    check(phase(.heldOnMac(detail: nil), live: false) == .heldOnMac(nil), "held on the Mac: the sheet stays after the page closes, so it can be deleted")
+    check(phase(.heldOnMac(detail: nil), live: false) == .heldOnMac(nil), "held on your computer: the sheet stays after the page closes, so it can be deleted")
     check(phase(.retracted("Deleted — not sent")) == .retracted("Deleted — not sent") && phase(.retracted("Deleted — not sent")).acceptsInput && phase(.retracted("x")).autoCloseDelay == nil, "deleted: a new reply is accepted, the sheet stays")
     check(phase(.retracted("Deleted — not sent")).statusLine(legacyRelay: false)?.text == "Deleted — not sent" && phase(.retracted("x")).statusLine(legacyRelay: false)?.tone == .neutral, "deleted status line")
     check(!phase(.heldOnMac(detail: nil)).acceptsInput && phase(.heldOnMac(detail: nil)).autoCloseDelay == nil, "held: no second reply, no auto close")
@@ -4861,7 +4861,7 @@ do {
           && ReceiptThread.derive(pending: nil, delivery: .retracted("Deleted — not sent"), changedAt: t0, now: t0).stage == .retracted("Deleted — not sent"), "thread stages for held and deleted")
     let ivq = Intervention(id: "a", sessionId: "s", cwd: "", projectName: "p", kind: .userInput, openedAt: t0, context: "")
     check(ReceiptBuilder.receipt(for: ivq, delivery: .retracted("Deleted — not sent"), route: nil, now: t0)?.outcome.failureMessage == "Deleted — not sent", "Now receipt: deleted")
-    check(ReceiptBuilder.receipt(for: ivq, delivery: .heldOnMac(detail: "Will send it when the limit resets at 3:00 PM"), route: nil, now: t0)?.outcome.failureMessage == "Held on your Mac until 3:00 PM", "Now receipt: held until")
+    check(ReceiptBuilder.receipt(for: ivq, delivery: .heldOnMac(detail: "Will send it when the limit resets at 3:00 PM"), route: nil, now: t0)?.outcome.failureMessage == "Held on your computer until 3:00 PM", "Now receipt: held until")
 
     // Leaving a sheet with a message written, and the layout under it.
     check(DecisionDraftGuard.needsConfirm(draft: "hi", countdownPending: false) && !DecisionDraftGuard.needsConfirm(draft: "  ", countdownPending: false)
@@ -4917,29 +4917,29 @@ do {
           == .sent(queued: true, at: t0), "…and one it hasn't stays queued")
 
     // 2. A relay 409 `forwarded`: ask the Mac, in the relay's words.
-    check(ForwardedRetract.asksMac(stage: "forwarded", macCaps: caps) && !ForwardedRetract.asksMac(stage: "forwarded", macCaps: ["hold-v1"]) && !ForwardedRetract.asksMac(stage: "forwarded", macCaps: []), "forwarded asks only a Mac that advertises retract-v1")
+    check(ForwardedRetract.asksMac(stage: "forwarded", macCaps: caps) && !ForwardedRetract.asksMac(stage: "forwarded", macCaps: ["hold-v1"]) && !ForwardedRetract.asksMac(stage: "forwarded", macCaps: []), "forwarded asks only a computer that advertises retract-v1")
     check(!ForwardedRetract.asksMac(stage: "delivered", macCaps: caps) && !ForwardedRetract.asksMac(stage: nil, macCaps: caps) && !ForwardedRetract.asksMac(stage: "not_held", macCaps: caps), "delivered (or anything else) never chains")
-    check(RetractNote.askingMac.text == "Asking your Mac…" && RetractNote.askingMac.isBusy && !RetractNote.askingMac.isFinal, "asking: busy, Asking your Mac…")
-    check(ForwardedRetract.note(for: res(.delivered, detail: "Deleted — not sent", retract: "deleted")) == .deleted("Deleted — not sent"), "the Mac deleted it: Deleted — not sent")
+    check(RetractNote.askingMac.text == "Asking your computer…" && RetractNote.askingMac.isBusy && !RetractNote.askingMac.isFinal, "asking: busy, Asking your computer…")
+    check(ForwardedRetract.note(for: res(.delivered, detail: "Deleted — not sent", retract: "deleted")) == .deleted("Deleted — not sent"), "the computer deleted it: Deleted — not sent")
     check(ForwardedRetract.note(for: res(.delivered, retract: "deleted")) == .deleted("Deleted — not sent"), "…its default words")
-    check(ForwardedRetract.note(for: res(.refused, reason: "too_late", detail: "Too late — it was already typed", retract: "too_late", ok: false)) == .tooLate("Too late — your Mac already has it"), "too late: the relay's words, not the Mac's")
-    check(ForwardedRetract.note(for: res(.refused, reason: "not_found", detail: "Page isn't holding that message", retract: "not_found", ok: false)) == .tooLate("Too late — your Mac already has it"), "not found: Too late — your Mac already has it")
-    check(ForwardedRetract.note(for: res(.refused, reason: "disabled", ok: false)) == .failed(SessionResultCopy.refusal(reason: "disabled", detail: nil, agent: "Claude")), "another refusal: the Mac's words")
-    check(ForwardedRetract.timeoutNote == .tooLate("Too late — your Mac already has it") && ForwardedRetract.tooLate.text == "Too late — your Mac already has it", "no retract-v1, or no answer in 20 s: Too late — your Mac already has it")
+    check(ForwardedRetract.note(for: res(.refused, reason: "too_late", detail: "Too late — it was already typed", retract: "too_late", ok: false)) == .tooLate("Too late — your computer already has it"), "too late: the relay's words, not the computer's")
+    check(ForwardedRetract.note(for: res(.refused, reason: "not_found", detail: "Page Studio isn't holding that message", retract: "not_found", ok: false)) == .tooLate("Too late — your computer already has it"), "not found: Too late — your computer already has it")
+    check(ForwardedRetract.note(for: res(.refused, reason: "disabled", ok: false)) == .failed(SessionResultCopy.refusal(reason: "disabled", detail: nil, agent: "Claude")), "another refusal: the computer's words")
+    check(ForwardedRetract.timeoutNote == .tooLate("Too late — your computer already has it") && ForwardedRetract.tooLate.text == "Too late — your computer already has it", "no retract-v1, or no answer in 20 s: Too late — your computer already has it")
     check(ForwardedRetract.isChainNote(.askingMac) && ForwardedRetract.isChainNote(ForwardedRetract.tooLate) && !ForwardedRetract.isChainNote(.deleting) && !ForwardedRetract.isChainNote(nil) && !ForwardedRetract.isChainNote(.tooLate("Too late — it was already typed")) && ForwardedRetract.isChainNote(.failed("Typing from your phone is turned off")), "the chain's own notes")
     // …kept on screen after the reply left the queue.
     let chainAsk = ReplyQueueStatus.build(.init(delivery: .sent(queued: false, at: t0), isHook: false, relayFeatures: ["reply-retract-v1"], macCaps: caps, note: .askingMac))
-    check(chainAsk?.headline == "Asking your Mac…" && chainAsk?.asking == true && chainAsk?.canDelete == false && chainAsk?.deleting == false, "asking: the block stays, no button")
-    check(ReplyQueueStatus.build(.init(delivery: .sent(queued: false, at: t0), isHook: false, relayFeatures: ["reply-retract-v1"], macCaps: caps, note: ForwardedRetract.tooLate))?.headline == "Too late — your Mac already has it", "…and the final word")
+    check(chainAsk?.headline == "Asking your computer…" && chainAsk?.asking == true && chainAsk?.canDelete == false && chainAsk?.deleting == false, "asking: the block stays, no button")
+    check(ReplyQueueStatus.build(.init(delivery: .sent(queued: false, at: t0), isHook: false, relayFeatures: ["reply-retract-v1"], macCaps: caps, note: ForwardedRetract.tooLate))?.headline == "Too late — your computer already has it", "…and the final word")
     check(ReplyQueueStatus.build(.init(delivery: .sent(queued: false, at: t0), isHook: false, relayFeatures: nil, macCaps: caps, note: nil)) == nil
           && ReplyQueueStatus.build(.init(delivery: .sent(queued: false, at: t0), isHook: false, relayFeatures: nil, macCaps: caps, note: .deleting)) == nil
-          && ReplyQueueStatus.build(.init(delivery: .delivered(detail: nil), isHook: false, relayFeatures: nil, macCaps: caps, note: .askingMac)) == nil, "no chain note, or the Mac has typed it: nothing")
+          && ReplyQueueStatus.build(.init(delivery: .delivered(detail: nil), isHook: false, relayFeatures: nil, macCaps: caps, note: .askingMac)) == nil, "no chain note, or the computer has typed it: nothing")
     // The Mac's refusal (a stale clock, typing turned off) decided nothing: its words stay on screen, as on Android.
     let chainRefused = ReplyQueueStatus.build(.init(delivery: .sent(queued: false, at: t0), isHook: false, relayFeatures: ["reply-retract-v1"], macCaps: caps, note: ForwardedRetract.note(for: res(.refused, reason: "disabled", ok: false))))
-    check(chainRefused?.headline == SessionResultCopy.refusal(reason: "disabled", detail: nil, agent: "Claude") && chainRefused?.asking == false && chainRefused?.canDelete == false, "a refusal after forwarded: the Mac's words, no button")
+    check(chainRefused?.headline == SessionResultCopy.refusal(reason: "disabled", detail: nil, agent: "Claude") && chainRefused?.asking == false && chainRefused?.canDelete == false, "a refusal after forwarded: the computer's words, no button")
     let iv = Intervention(id: "a", sessionId: "s", cwd: "", projectName: "p", kind: .userInput, openedAt: t0, context: "")
     check(ReceiptBuilder.receipt(for: iv, delivery: .sent(queued: false, at: t0), route: nil, now: t0) == nil
-          && ReceiptBuilder.receipt(for: iv, delivery: .sent(queued: false, at: t0), route: nil, now: t0, changedAt: t0, retractNote: .askingMac)?.outcome.failureMessage == "Asking your Mac…"
+          && ReceiptBuilder.receipt(for: iv, delivery: .sent(queued: false, at: t0), route: nil, now: t0, changedAt: t0, retractNote: .askingMac)?.outcome.failureMessage == "Asking your computer…"
           && ReceiptBuilder.receipt(for: iv, delivery: .sent(queued: false, at: t0), route: nil, now: t0, changedAt: t0, retractNote: .deleting) == nil, "Now keeps the ask on its receipt line")
 
     // 3. "No longer held" is not final for the Mac's own final result.
@@ -4948,27 +4948,27 @@ do {
     check(gone.applying(res(.cancelled, reason: "cancelled", detail: "Deleted — not sent", fromHold: true, ok: false), agent: "Claude") == .deleted("Deleted — not sent"), "…deleted")
     if case .refused(let why, _) = gone.applying(res(.refused, reason: "ended", detail: "Not sent — the session ended", fromHold: true, ok: false), agent: "Claude") { check(why == "ended", "…ended") } else { check(false, "ended replaces No longer held") }
     check(gone.applying(res(.delivered, detail: "x"), agent: "Claude") == gone, "a result that isn't the final one changes nothing")
-    let restarted = SessionDeliveryState.unconfirmed("Page restarted while typing this and won't retype it. Check the session.")
+    let restarted = SessionDeliveryState.unconfirmed("Page Studio restarted while typing this and won't retype it. Check the session.")
     check(restarted.applying(res(.delivered, fromHold: true), agent: "Claude") == restarted, "any other unconfirmed state stays terminal")
 
     // 4. A list 30 s after sending that names the session, not the message, and never held it before.
     let held = SessionDeliveryState.held(nil)
-    check(held.reconciled(entry: nil, seen: false, sessionListed: true, sentAt: t0, now: t0.addingTimeInterval(29)) == held, "29 s: a list built before the Mac accepted it")
+    check(held.reconciled(entry: nil, seen: false, sessionListed: true, sentAt: t0, now: t0.addingTimeInterval(29)) == held, "29 s: a list built before the computer accepted it")
     check(held.reconciled(entry: nil, seen: false, sessionListed: true, sentAt: t0, now: t0.addingTimeInterval(31)) == .unconfirmed("No longer held — check the session"), "31 s: No longer held")
     check(SessionDeliveryState.sending.reconciled(entry: nil, seen: false, sessionListed: true, sentAt: t0, now: t0.addingTimeInterval(60)) == .sending, "a plain send is never in held[]")
     check(held.reconciled(entry: nil, seen: false, sessionListed: true) == held && SessionDeliveryState.heldGrace == 30, "no times given: unchanged")
 
     // 5. A held entry's detail is a note under the headline, not the headline.
-    let entryHeld = HeldMessage(clientId: "c7", text: "t", heldAt: t0, state: .held, at: nil, detail: "Not typed — someone is typing at the Mac")
-    let withNote = SessionDeliveryState.held("Held — Page types it when Claude finishes this turn").reconciled(entry: entryHeld, seen: true, sessionListed: true)
-    check(withNote == .held("Held — Page types it when Claude finishes this turn", note: "Not typed — someone is typing at the Mac", typing: false), "still held, with why the last try didn't type it")
-    check(SessionDeliveryState.sending.reconciled(entry: entryHeld, seen: false, sessionListed: true) == .held(nil, note: "Not typed — someone is typing at the Mac", typing: false), "recovered from the list: the note, not a headline")
-    check(withNote.explanation(.input, agent: "Claude") == "Held — Page types it when Claude finishes this turn · Not typed — someone is typing at the Mac"
+    let entryHeld = HeldMessage(clientId: "c7", text: "t", heldAt: t0, state: .held, at: nil, detail: "Not typed — someone is typing at your computer")
+    let withNote = SessionDeliveryState.held("Held — Page Studio types it when Claude finishes this turn").reconciled(entry: entryHeld, seen: true, sessionListed: true)
+    check(withNote == .held("Held — Page Studio types it when Claude finishes this turn", note: "Not typed — someone is typing at your computer", typing: false), "still held, with why the last try didn't type it")
+    check(SessionDeliveryState.sending.reconciled(entry: entryHeld, seen: false, sessionListed: true) == .held(nil, note: "Not typed — someone is typing at your computer", typing: false), "recovered from the list: the note, not a headline")
+    check(withNote.explanation(.input, agent: "Claude") == "Held — Page Studio types it when Claude finishes this turn · Not typed — someone is typing at your computer"
           && SessionDeliveryState.held(nil, note: "why").explanation(.input, agent: "Claude") == "Held — sends when Claude finishes · why", "explanation: headline · note")
-    check(SessionDeliveryState.held(nil, note: nil, typing: true).explanation(.input, agent: "Claude") == "Page is typing it into the session now."
+    check(SessionDeliveryState.held(nil, note: nil, typing: true).explanation(.input, agent: "Claude") == "Page Studio is typing it into the session now."
           && SessionDeliveryState.held(nil, note: nil, typing: true).label(.input) == "Typing it now" && withNote.label(.input) == "Held", "typing: its own words")
     let noteReceipt = SendReceipt.build(SentSessionCommand(clientId: "c7", sessionId: "s", kind: .input, text: "t", sentAt: t0, state: withNote, target: nil), agent: "Claude", now: t0.addingTimeInterval(2), canRetract: true)
-    check(noteReceipt?.headline == "Held — Page types it when Claude finishes this turn" && noteReceipt?.detail == "Not typed — someone is typing at the Mac" && noteReceipt?.canDelete == true, "receipt: the note under the headline")
+    check(noteReceipt?.headline == "Held — Page Studio types it when Claude finishes this turn" && noteReceipt?.detail == "Not typed — someone is typing at your computer" && noteReceipt?.canDelete == true, "receipt: the note under the headline")
     let typingReceipt = SendReceipt.build(SentSessionCommand(clientId: "c7", sessionId: "s", kind: .input, text: "t", sentAt: t0, state: .held(nil, note: "x", typing: true), target: nil), agent: "Claude", now: t0.addingTimeInterval(2), canRetract: true)
     check(typingReceipt?.headline == "Typing it now" && typingReceipt?.canDelete == false && SessionDeliveryState.held(nil, note: nil, typing: true).isHeldTyping && !held.isHeldTyping, "typing: no Delete")
     let foreign = HeldTimeline.pending(sent: [], held: [HeldMessage(clientId: "o", text: "x", heldAt: t0, state: .typing, at: nil, detail: nil),
@@ -4977,7 +4977,7 @@ do {
 
     // 6. A `retract` value this build doesn't know is a refusal, in the Mac's words.
     check(RetractOutcome.note(for: res(.delivered, detail: "Something new", retract: "someday")) == .failed("Something new"), "unknown retract: refused, with the result's detail")
-    check(RetractOutcome.note(for: res(.delivered, retract: "someday")) == .failed("Your Mac didn't type this."), "…and the plain words when there is none")
+    check(RetractOutcome.note(for: res(.delivered, retract: "someday")) == .failed("Your computer didn't type this."), "…and the plain words when there is none")
     check(RetractOutcome.note(for: res(.delivered, retract: "deleted")) == .deleted("Deleted — not sent") && RetractOutcome.note(for: res(.refused, reason: "stale", ok: false)) == .failed(SessionResultCopy.refusal(reason: "stale", detail: nil, agent: "Claude")), "known answers and other refusals as before")
 
     // 7. Why a queued reply has no Delete, said up front, from the Mac only once its list has arrived.
@@ -4987,13 +4987,13 @@ do {
     check(why(.sent(queued: true, at: t0), hook: true) == "Waiting on the hook. It can't be deleted from here.", "hook-held")
     check(why(.sent(queued: true, at: t0), relay: ["sessions-v1"]) == "Update your relay to delete queued replies.", "an old relay")
     check(why(.sent(queued: true, at: t0), relay: nil) == nil && why(.sent(queued: true, at: t0)) == nil && why(.sent(queued: false, at: t0), hook: true) == nil, "relay unknown yet, or a reply that can be deleted, or not queued: nothing")
-    check(why(.heldOnMac(detail: nil), mac: []) == "Update Page on your Mac to delete a held reply.", "an old Mac")
-    check(why(.heldOnMac(detail: nil), mac: [], list: false) == nil && why(.heldOnMac(detail: nil), mac: ["hold-v1"], list: false) == nil, "…but not before the first list has said what the Mac can do")
-    check(why(.heldOnMac(detail: nil)) == nil && why(.delivered(detail: nil), mac: []) == nil && why(nil) == nil, "a Mac that can take it back, or nothing queued: nothing")
+    check(why(.heldOnMac(detail: nil), mac: []) == "Update Page Studio on your computer to delete a held reply.", "an old Mac")
+    check(why(.heldOnMac(detail: nil), mac: [], list: false) == nil && why(.heldOnMac(detail: nil), mac: ["hold-v1"], list: false) == nil, "…but not before the first list has said what the computer can do")
+    check(why(.heldOnMac(detail: nil)) == nil && why(.delivered(detail: nil), mac: []) == nil && why(nil) == nil, "a computer that can take it back, or nothing queued: nothing")
     let oldRelayBlock = ReplyQueueStatus.build(.init(delivery: .sent(queued: true, at: t0), isHook: false, relayFeatures: ["sessions-v1"], macCaps: caps, note: nil))
     check(oldRelayBlock?.whyNot == "Update your relay to delete queued replies." && oldRelayBlock?.canDelete == false, "the block carries it")
     check(ReplyQueueStatus.build(.init(delivery: .heldOnMac(detail: nil), isHook: false, relayFeatures: nil, macCaps: [], note: nil, hasList: false))?.whyNot == nil
-          && ReplyQueueStatus.build(.init(delivery: .heldOnMac(detail: nil), isHook: false, relayFeatures: nil, macCaps: [], note: nil, hasList: true))?.whyNot == "Update Page on your Mac to delete a held reply.", "the block: the old-Mac note only after the first list")
+          && ReplyQueueStatus.build(.init(delivery: .heldOnMac(detail: nil), isHook: false, relayFeatures: nil, macCaps: [], note: nil, hasList: true))?.whyNot == "Update Page Studio on your computer to delete a held reply.", "the block: the old-Mac note only after the first list")
 
     // 8. A late `inputImages` result still finds its bubble for 5 minutes.
     var routes = PhotoResultRoutes()
@@ -5010,7 +5010,7 @@ do {
           && SessionDeliveryState.failed("x").applying(res(.delivered), agent: "Claude") == .typed(nil), "a late result beats No answer, or a POST that looked lost")
 
     // 9. The Mac stops offering photos with some staged: dim, and say so. A piece that fails in transit goes straight back.
-    check(PhotoOffer.build(caps: [], attach: nil, attachBlocker: nil, composer: .nextTask, ended: false, staged: 2) == PhotoOffer(mode: .unavailable("Your Mac can't take photos any more"), attach: nil, note: nil), "staged photos, Mac stopped offering: dimmed, with its reason")
+    check(PhotoOffer.build(caps: [], attach: nil, attachBlocker: nil, composer: .nextTask, ended: false, staged: 2) == PhotoOffer(mode: .unavailable("Your computer can't take photos any more"), attach: nil, note: nil), "staged photos, Mac stopped offering: dimmed, with its reason")
     check(PhotoOffer.build(caps: [], attach: nil, attachBlocker: nil, composer: .nextTask, ended: false, staged: 0).mode == .hidden, "nothing staged: no button")
     var retry = PhotoUploadMachine(counts: [1])
     let first = retry.startable(now: t0)
@@ -5103,10 +5103,10 @@ do {
           && !offer(allCaps, "image", mode: .steer).isAvailable, "while it works: shown, dim, with its reason")
     check(offer(allCaps, "image", mode: .tellInstead(pageId: "p")).reason == "Answer the prompt first" && offer(allCaps, "image", mode: .locked("x")).reason == "Answer the prompt first", "while it waits: Answer the prompt first")
     check(offer(allCaps, "image", mode: .blocked("x")).mode == .hidden && offer(allCaps, "image", mode: .disabled("x")).mode == .hidden && offer(allCaps, "image", ended: true).mode == .hidden, "blocked, disabled or ended: no button")
-    check(offer(allCaps, nil, "Page can't send photos to Codex yet").note == "Page can't send photos to Codex yet" && offer(allCaps, nil, "Page can't send photos to Codex yet").mode == .hidden,
+    check(offer(allCaps, nil, "Page Studio can't send photos to Codex yet").note == "Page Studio can't send photos to Codex yet" && offer(allCaps, nil, "Page Studio can't send photos to Codex yet").mode == .hidden,
           "attachBlocker is a one-line note on a row that takes no photos")
-    check(offer([], nil, "Page can't send photos to Codex yet").note == nil && offer(allCaps, nil, "x", mode: .steer).note == "x" && offer(allCaps, nil, "x", mode: .tellInstead(pageId: "p")).note == nil, "…only when the Mac does photos and the field takes text")
-    check(offer(["hold-v1"], "image", staged: 2).reason == "Your Mac can't take photos any more" && offer(allCaps, "image", staged: 2).mode == .available, "a Mac that stops offering photos is said out loud when some are staged")
+    check(offer([], nil, "Page Studio can't send photos to Codex yet").note == nil && offer(allCaps, nil, "x", mode: .steer).note == "x" && offer(allCaps, nil, "x", mode: .tellInstead(pageId: "p")).note == nil, "…only when the computer does photos and the field takes text")
+    check(offer(["hold-v1"], "image", staged: 2).reason == "Your computer can't take photos any more" && offer(allCaps, "image", staged: 2).mode == .available, "a computer that stops offering photos is said out loud when some are staged")
     check(offer(allCaps, "image").previewTail == "pasted as images, then Return" && offer(allCaps, "path").previewTail == "typed as file locations, then Return", "the preview says how they go")
     // …through the room's own plan: the row's fields reach it.
     var row = LiveSession(id: "s1", backend: .known(.claude), title: "page", cwd: "~/p", state: .idle, host: "tmux", canType: true,
@@ -5124,7 +5124,7 @@ do {
     let rowJSON = #"{"kind":"list","seq":1,"ts":1761300000000,"caps":["images-v1"],"sessions":[{"id":"a","backend":"claude","state":"idle","canType":true,"attach":"path"},{"id":"b","backend":"codex","state":"idle","canType":true,"attachBlocker":"Page can't send photos to Codex yet"},{"id":"c","state":"idle","attach":"wormhole"}]}"#
     if let p = SessionsPlaintext.decode(Data(rowJSON.utf8)), case .list(_, let ss) = p.update {
         check(p.caps == ["images-v1"] && ss[0].attach == "path" && ss[0].attachBlocker == nil, "attach decodes")
-        check(ss[1].attach == nil && ss[1].attachBlocker == "Page can't send photos to Codex yet" && ss[2].attach == nil, "attachBlocker decodes; an unknown route is none")
+        check(ss[1].attach == nil && ss[1].attachBlocker == "Page Studio can't send photos to Codex yet" && ss[2].attach == nil, "attachBlocker decodes; an unknown route is none")
     } else { check(false, "list with attach decodes") }
 
     // The caption.
@@ -5133,7 +5133,7 @@ do {
     check(PhotoCaption.problem("look\n  /Users/me/Desktop/shot.JPG  \nplease") == PhotoCaption.pathLineMessage && PhotoCaption.problem("'/Users/me/a b.png'") == PhotoCaption.pathLineMessage, "on any line, quoted or not")
     check(PhotoCaption.problem("~/Pictures/a.webp") == PhotoCaption.pathLineMessage && PhotoCaption.problem("/etc/hosts") == nil && PhotoCaption.problem("fix /a/b.png now") == nil, "~/ counts; non-images and words around a path don't")
     check(PhotoCaption.problem(String(repeating: "a", count: 8001)) == PhotoCaption.tooLongMessage && PhotoCaption.problem(String(repeating: "a", count: 8000)) == nil, "8000 characters at most")
-    check(PhotoCaption.pathLineMessage.contains("add a word before it"), "the Mac's wording")
+    check(PhotoCaption.pathLineMessage.contains("add a word before it"), "the computer's wording")
 
     // Chunking.
     check(PhotoPieces.count(bytes: 1) == 1 && PhotoPieces.count(bytes: 32768) == 1 && PhotoPieces.count(bytes: 32769) == 2 && PhotoPieces.count(bytes: 1024 * 1024) == 32 && PhotoPieces.count(bytes: 0) == 0, "piece counts: 1 MiB is 32 pieces")
@@ -5289,9 +5289,9 @@ do {
     var off = PhotoUploadMachine(counts: [4])
     let o1 = off.startable(now: t0)
     off.finished(o1[0], .macOffline, now: t0)
-    check(off.phase == .stopped("Your Mac went offline") && off.startable(now: t0).isEmpty, "503 mac_offline: stop, post nothing more")
+    check(off.phase == .stopped("Your computer went offline") && off.startable(now: t0).isEmpty, "503 mac_offline: stop, post nothing more")
     off.finished(o1[1], .accepted, now: t0)
-    check(off.phase == .stopped("Your Mac went offline") && off.doneCount == 0, "answers that land after a stop change nothing")
+    check(off.phase == .stopped("Your computer went offline") && off.doneCount == 0, "answers that land after a stop change nothing")
     // Transport errors are retried, then reported; other relay refusals stop at once.
     var flaky = PhotoUploadMachine(counts: [1])
     for n in 1...3 {
@@ -5346,16 +5346,16 @@ do {
     if let p = SessionsPlaintext.decode(Data(#"{"kind":"result","seq":3,"ts":1761300000000,"clientId":"c9","ok":true,"code":"delivered"}"#.utf8)), case .result(let res) = p.update {
         check(res.attached == nil && res.missing.isEmpty, "an older Mac sends neither")
     } else { check(false, "plain result decodes") }
-    check(SessionResultCopy.refusal(reason: "attachment_missing", detail: nil, agent: "Claude") == "Part of a photo didn't reach your Mac — send it again"
+    check(SessionResultCopy.refusal(reason: "attachment_missing", detail: nil, agent: "Claude") == "Part of a photo didn't reach your computer — send it again"
           && SessionResultCopy.refusal(reason: "attach_busy", detail: "x", agent: "Claude") == "Claude is working — send the photo when it finishes"
-          && SessionResultCopy.refusal(reason: "attachment_invalid", detail: "Your phone sent location data with the photo, so Page didn't use it", agent: "Claude").contains("location data")
+          && SessionResultCopy.refusal(reason: "attachment_invalid", detail: "Your phone sent location data with the photo, so Page Studio didn't use it", agent: "Claude").contains("location data")
           && SessionResultCopy.refusal(reason: "attach_unsupported", detail: nil, agent: "Claude").contains("can't take photos"), "the new reasons have their copy")
-    check(PhotoCopy.delivered(detail: "Sent 2 photos to Claude in tmux pane %3", attached: 2, count: 2, attach: "image") == "Sent 2 photos to Claude in tmux pane %3", "the Mac's own sentence wins")
+    check(PhotoCopy.delivered(detail: "Sent 2 photos to Claude in tmux pane %3", attached: 2, count: 2, attach: "image") == "Sent 2 photos to Claude in tmux pane %3", "the computer's own sentence wins")
     check(PhotoCopy.delivered(detail: nil, attached: 2, count: 2, attach: "image") == "Sent 2 photos to Claude"
           && PhotoCopy.delivered(detail: nil, attached: 1, count: 2, attach: "image") == "Sent, but Claude received 1 of 2 photos"
           && PhotoCopy.delivered(detail: nil, attached: 0, count: 1, attach: "image") == "Sent, but Claude took the photo as a file location, not an image"
           && PhotoCopy.delivered(detail: nil, attached: 0, count: 1, attach: "path") == "Sent as a file location — Claude opens the photo itself (not attached)"
-          && PhotoCopy.delivered(detail: nil, attached: nil, count: 1, attach: "image") == "Sent the photo to Claude — it hasn't logged it yet", "delivered, without the Mac's sentence")
+          && PhotoCopy.delivered(detail: nil, attached: nil, count: 1, attach: "image") == "Sent the photo to Claude — it hasn't logged it yet", "delivered, without the computer's sentence")
 
     // The sent message: bubble labels and receipt.
     let sendTarget = SessionTarget(session: row, macName: "Studio MBP")
@@ -5369,10 +5369,10 @@ do {
     check(up.statusLabel() == "Uploading 7 of 13" && photoCmd(.sending).statusLabel() == "Typing into tmux…", "bubble: Uploading 7 of 13, then Typing into tmux…")
     let upReceipt = SendReceipt.build(up, agent: "Claude", now: tNow)
     check(upReceipt?.headline == "Uploading 7 of 13" && upReceipt?.tone == .working && upReceipt?.progress == 7.0 / 13.0 && upReceipt?.detail?.hasPrefix("2 photos to ") == true, "receipt while uploading: words and a bar")
-    check(SendReceipt.build(photoCmd(.sending), agent: "Claude", now: tNow)?.headline == "Typing into tmux…", "receipt while the Mac puts them in")
+    check(SendReceipt.build(photoCmd(.sending), agent: "Claude", now: tNow)?.headline == "Typing into tmux…", "receipt while the computer puts them in")
     let doneCmd = photoCmd(.typed("Sent 2 photos to Claude in tmux pane %3"), attached: 2)
     check(SendReceipt.build(doneCmd, agent: "Claude", now: tNow)?.headline == "Sent 2 photos to Claude in tmux pane %3" && SendReceipt.build(doneCmd, agent: "Claude", now: tNow)?.tone == .good
-          && doneCmd.statusLabel() == "Sent" && doneCmd.statusExplanation(agent: "Claude") == "Sent 2 photos to Claude in tmux pane %3", "receipt and bubble: the Mac's sentence")
+          && doneCmd.statusLabel() == "Sent" && doneCmd.statusExplanation(agent: "Claude") == "Sent 2 photos to Claude in tmux pane %3", "receipt and bubble: the computer's sentence")
     let pathCmd = photoCmd(.typed("Sent as a file location — Claude opens the photo itself (not attached)"), attached: 0)
     check(SendReceipt.build(pathCmd, agent: "Claude", now: tNow)?.tone == .neutral, "a path-route delivery is not dressed up as attached")
     check(SendReceipt.build(photoCmd(.refused(reason: "attach_busy", message: PhotoOffer.busyReason)), agent: "Claude", now: tNow)?.headline == "Refused: \(PhotoOffer.busyReason)"
@@ -5409,7 +5409,7 @@ do {
     textCmd.sentAt = sentAt
     var pendingUp = pendingPhoto; pendingUp.state = .sending
     items = TranscriptTimeline.merge(entries: [echoEntry("e1", "[Image #1] [Image #2]what is this?", images: 2)], sent: [pendingUp])
-    check(items.count == 1, "the row may arrive before the Mac's result")
+    check(items.count == 1, "the row may arrive before the computer's result")
 }
 
 // MARK: - Now motion: In flight arcs and bars, the grace for ended lines, the shared table
@@ -5543,7 +5543,7 @@ do {
     var again = NM.FlightGrace()
     again.observe(s0, at: at0)
     again.reset()
-    check(again.observe(sDone, at: at0.addingTimeInterval(1)).isEmpty, "after a reset (resume, another Mac) the next look is a first look")
+    check(again.observe(sDone, at: at0.addingTimeInterval(1)).isEmpty, "after a reset (resume, another computer) the next look is a first look")
     var played = NM.FlightGrace()
     played.observe(s0, at: at0)
     check(played.observe(sDone, at: at0.addingTimeInterval(1), once: { _ in false }).isEmpty, "an ending that already played (once per run) does not play again")

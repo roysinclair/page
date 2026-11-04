@@ -46,7 +46,7 @@ data class WidgetStatus(
     /** What the widget's first line says. Silence has to be earned: a Mac that is offline or not checking in is never "All quiet". */
     val faceHeadline: String
         get() = when (presence) {
-            Presence.OFFLINE -> "Mac offline"
+            Presence.OFFLINE -> "Computer offline"
             Presence.STALE -> "Not checking in"
             else -> headline
         }
@@ -73,11 +73,11 @@ data class WidgetStatus(
                 MacPresence.Unknown -> Presence.UNKNOWN
             }
             return WidgetStatus(
-                macName ?: "Your Mac", presence, snap.pendingCount ?: 0, snap.working, snap.activeSessions,
+                macName ?: "Your computer", presence, snap.pendingCount ?: 0, snap.working, snap.activeSessions,
                 snap.batteryLine, snap.usageLine(now, format), now, snap.usage, snap,
             )
         }
 
-        fun placeholder(now: Instant = Instant.EPOCH) = WidgetStatus("Your Mac", Presence.ONLINE, 1, 2, 5, null, null, now)
+        fun placeholder(now: Instant = Instant.EPOCH) = WidgetStatus("Your computer", Presence.ONLINE, 1, 2, 5, null, null, now)
     }
 }

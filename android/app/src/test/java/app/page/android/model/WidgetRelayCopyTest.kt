@@ -16,7 +16,7 @@ class WidgetRelayCopyTest {
     )
 
     @Test fun `an offline or silent Mac is never All quiet on the widget face`() {
-        assertEquals("Mac offline", ws(WidgetStatus.Presence.OFFLINE, 0).faceHeadline)
+        assertEquals("Computer offline", ws(WidgetStatus.Presence.OFFLINE, 0).faceHeadline)
         assertEquals("Not checking in", ws(WidgetStatus.Presence.STALE, 0).faceHeadline)
         assertEquals("All quiet", ws(WidgetStatus.Presence.ONLINE, 0).faceHeadline)
         assertEquals("2 need you", ws(WidgetStatus.Presence.ONLINE, 2).faceHeadline)

@@ -278,7 +278,7 @@ private fun Attention(data: TowerScreenData, actions: TowerScreenActions) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text("Stay connected", style = NW.Typo.bodyStrong, color = NW.Palette.textPrimary.color)
                 Text(
-                    if (data.stayConnected) "Page keeps its connection open in the background and pages you instantly. Shows an ongoing notification; uses a little battery."
+                    if (data.stayConnected) "Page Relay keeps its connection open in the background and pages you instantly. Shows an ongoing notification; uses a little battery."
                     else "Off: pages are checked every 15 minutes while the app is closed. Turn on to be paged the moment an agent needs you.",
                     style = NW.Typo.caption, color = NW.Palette.textTertiary.color,
                 )
@@ -288,7 +288,7 @@ private fun Attention(data: TowerScreenData, actions: TowerScreenActions) {
         Divider()
         TRow("sparkle", NW.Palette.teal, "Live sessions", data.liveSessionsText)
         Divider()
-        TRow("moon", NW.Palette.textTertiary, "Quiet hours and when to page", "set in Page on your Mac, where they apply")
+        TRow("moon", NW.Palette.textTertiary, "Quiet hours and when to page", "set in Page Studio on your computer, where they apply")
     }
 }
 
@@ -384,7 +384,7 @@ private fun About(data: TowerScreenData, actions: TowerScreenActions) {
         TRow("info.circle", NW.Palette.textSecondary, "Version", data.version)
         if (data.feedbackUrl != null) {
             Divider()
-            TRow("bubble.left.and.bubble.right", NW.Palette.teal, "Help & feedback", "opens the Page issue tracker on GitHub", chevron = true, onClick = actions.openFeedback)
+            TRow("bubble.left.and.bubble.right", NW.Palette.teal, "Help & feedback", "opens the Page Studio issue tracker on GitHub", chevron = true, onClick = actions.openFeedback)
         }
     }
 }

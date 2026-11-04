@@ -54,8 +54,8 @@ struct AgentCharacter: Equatable {
             case .other(let raw): harness = raw == "unknown" ? nil : backend.displayName
             }
             return AgentCharacter(kind: .local, name: harness == nil ? runtime : (runtime == "A local model" ? harness! : runtime),
-                                  symbol: "cpu", privacyTitle: "Private · nothing leaves this Mac",
-                                  privacyNote: "No usage limits or cost. Page keeps the Mac awake only while it's generating.",
+                                  symbol: "cpu", privacyTitle: "Private · nothing leaves this computer",
+                                  privacyNote: "No usage limits or cost. Page Power keeps your computer awake only while it's generating.",
                                   runtime: runtime)
         }
         switch backend {
@@ -269,12 +269,12 @@ enum RoomComposerMode: Equatable {
     /// reply needs the page's own row, so Send can never do nothing quietly.
     static func resolve(_ i: Inputs) -> RoomComposerMode {
         if i.ended { return .disabled("This session has ended.") }
-        if !i.ready { return .disabled("Waiting for your Mac.") }
+        if !i.ready { return .disabled("Waiting for your computer.") }
         if i.state.isWaiting || i.pageIsDecide {
             if let page = i.pageId, i.pageAcceptsReply { return .tellInstead(pageId: page) }
             if i.pageId != nil { return .locked("Answer this prompt from its decision above.") }
-            if i.pageArriving { return .locked("Its decision is still arriving. Answer on your Mac, or wait a moment.") }
-            return .locked("Answer the prompt on your Mac. Page won't type over a prompt.")
+            if i.pageArriving { return .locked("Its decision is still arriving. Answer on your computer, or wait a moment.") }
+            return .locked("Answer the prompt on your computer. Page Studio won't type over a prompt.")
         }
         if !i.canType {
             if i.holdOnly && i.state == .active { return .steer }
@@ -473,14 +473,14 @@ struct RoomBanner: Equatable, Identifiable {
                       pageShownInStory: Bool) -> [RoomBanner] {
         if ended {
             return [RoomBanner(id: "ended", tone: .info, symbol: "checkmark.circle", title: "This session has ended",
-                               message: "It's no longer on your Mac's list. The story below is the last one Page received.",
+                               message: "It's no longer on your computer's list. The story below is the last one Page Relay received.",
                                actionTitle: nil, action: nil)]
         }
         if availability != .ready {
             let c = SessionAvailabilityCopy(availability)
             return [RoomBanner(id: "availability", tone: c.tone == .error ? .error : (c.tone == .info ? .info : .warning),
                                symbol: c.systemImage, title: c.title,
-                               message: c.message.isEmpty ? "Waiting for your Mac…" : c.message,
+                               message: c.message.isEmpty ? "Waiting for your computer…" : c.message,
                                actionTitle: c.action == .retry ? c.actionTitle : (c.action == .repair ? c.actionTitle : nil),
                                action: c.action == .retry ? .retry : (c.action == .repair ? .repair : nil))]
         }
@@ -488,12 +488,12 @@ struct RoomBanner: Equatable, Identifiable {
         if let page = session.openPageId {
             return [RoomBanner(id: "page", tone: .warning, symbol: "bell.badge",
                                title: session.state == .waitingOnApproval ? "\(agent) needs your approval" : "\(agent) is waiting for you",
-                               message: "Answer the prompt from its decision. Page won't type over a prompt.",
+                               message: "Answer the prompt from its decision. Page Studio won't type over a prompt.",
                                actionTitle: "Open decision", action: .openDecision(page))]
         }
         if session.state.isWaiting {
             return [RoomBanner(id: "prompt", tone: .warning, symbol: "bell.badge", title: "\(agent) is showing a prompt",
-                               message: "There's no decision for it yet. Answer it on your Mac, or wait a moment for it to arrive.",
+                               message: "There's no decision for it yet. Answer it on your computer, or wait a moment for it to arrive.",
                                actionTitle: nil, action: nil)]
         }
         return []

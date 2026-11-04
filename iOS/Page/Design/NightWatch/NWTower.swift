@@ -225,7 +225,7 @@ struct NWTowerScreen: View {
                 macRow(m)
             }
             if !data.macs.isEmpty { divider }
-            towerRow(icon: "plus", tint: NightWatch.Palette.teal, title: "Add another Mac", detail: "scan its pairing code; you can switch between them",
+            towerRow(icon: "plus", tint: NightWatch.Palette.teal, title: "Add another computer", detail: "scan its pairing code; you can switch between them",
                      trailing: nil, chevron: true, action: actions.addMac)
         }
     }
@@ -271,7 +271,7 @@ struct NWTowerScreen: View {
             divider
             towerRow(icon: "sparkles", tint: NightWatch.Palette.teal, title: "Live sessions", detail: data.liveSessionsText, trailing: nil, chevron: false, action: nil)
             divider
-            towerRow(icon: "moon", tint: NightWatch.Palette.textTertiary, title: "Quiet hours and when to page", detail: "set in Page on your Mac, where they apply",
+            towerRow(icon: "moon", tint: NightWatch.Palette.textTertiary, title: "Quiet hours and when to page", detail: "set in Page Studio on your computer, where they apply",
                      trailing: nil, chevron: false, action: nil)
         }
     }
@@ -372,7 +372,7 @@ struct NWTowerScreen: View {
             if let url = data.feedbackURL {
                 divider
                 Link(destination: url) {
-                    towerRowBody(icon: "bubble.left.and.bubble.right", tint: NightWatch.Palette.teal, title: "Help & feedback", detail: "opens the Page issue tracker on GitHub",
+                    towerRowBody(icon: "bubble.left.and.bubble.right", tint: NightWatch.Palette.teal, title: "Help & feedback", detail: "opens the Page Studio issue tracker on GitHub",
                                  trailing: nil, chevron: true)
                 }
                 .buttonStyle(.plain)

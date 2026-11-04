@@ -71,7 +71,7 @@ class DisplayCopyTest {
 
     @Test
     fun tokenRetirement() {
-        assertEquals("This pairing was replaced on your Mac — scan the new QR code", TokenRetirement.why(410, retiredBody))
+        assertEquals("This pairing was replaced on your computer — scan the new QR code", TokenRetirement.why(410, retiredBody))
         assertEquals(TokenRetirement.DEFAULT_WHY, TokenRetirement.why(410, """{"error":"token_retired"}"""))
         assertEquals(TokenRetirement.DEFAULT_WHY, TokenRetirement.why(410, """{"error":"token_retired","why":"   "}"""))
         assertEquals(TokenRetirement.DEFAULT_WHY, TokenRetirement.why(410, """{"error":"token_retired","why":5}"""))

@@ -55,11 +55,11 @@ public enum WidgetRegistration {
     /// Pure. The words under the status chip, and whether it is good news.
     public static func line(_ s: Status) -> (text: String, good: Bool) {
         switch s {
-        case .checking: return ("Checking whether macOS sees Page’s widgets…", false)
-        case .registered: return ("macOS sees Page’s widgets", true)
-        case .disabled: return ("Page’s widgets are switched off in System Settings (Login Items & Extensions → Widgets)", false)
-        case .elsewhere(let path): return ("macOS has Page’s widgets from another copy of Page (\(abbreviate(path))), not this one", false)
-        case .notRegistered: return ("macOS hasn’t found Page’s widgets yet", false)
+        case .checking: return ("Checking whether macOS sees Page Studio’s widgets…", false)
+        case .registered: return ("macOS sees Page Studio’s widgets", true)
+        case .disabled: return ("Page Studio’s widgets are switched off in System Settings (Login Items & Extensions → Widgets)", false)
+        case .elsewhere(let path): return ("macOS has Page Studio’s widgets from another copy of Page Studio (\(abbreviate(path))), not this one", false)
+        case .notRegistered: return ("macOS hasn’t found Page Studio’s widgets yet", false)
         case .unavailable(let reason): return (reason, false)
         }
     }

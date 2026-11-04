@@ -85,7 +85,7 @@ enum HerdrBridge {
         guard let socket = env["HERDR_SOCKET_PATH"], let pane = env["HERDR_PANE_ID"] else {
             return .refuse(missingPaneReason)
         }
-        guard isUsableSocketPath(socket) else { return .refuse("Herdr's socket path looks wrong — answer at the Mac") }
+        guard isUsableSocketPath(socket) else { return .refuse("Herdr's socket path looks wrong — answer at your computer") }
         guard isValidPaneId(pane) else { return .refuse(missingPaneReason) }
         let workspace = env["HERDR_WORKSPACE_ID"].flatMap { $0.isEmpty ? nil : $0 }
         return .target(socketPath: socket, paneId: pane, workspaceId: workspace)
@@ -124,9 +124,9 @@ enum HerdrBridge {
     /// a symlink is refused rather than followed.
     static func socketTrustFailure(path: String) -> String? {
         var st = stat()
-        guard lstat(path, &st) == 0 else { return "Herdr isn't running (no socket) — answer at the Mac" }
+        guard lstat(path, &st) == 0 else { return "Herdr isn't running (no socket) — answer at your computer" }
         guard isTrustedSocket(mode: st.st_mode, ownerUid: st.st_uid, currentUid: getuid()) else {
-            return "Herdr's socket isn't safe to use — answer at the Mac"
+            return "Herdr's socket isn't safe to use — answer at your computer"
         }
         return nil
     }
@@ -139,15 +139,15 @@ enum HerdrBridge {
     /// is known, to catch a pane id reused for another terminal.
     static func verification(pane: PaneInfo, processes: ProcessInfo, paneId: String, workspaceId: String?,
                              expectTerminalId: String?, pid: Int32) -> String? {
-        guard pane.paneId == paneId else { return "Herdr moved the session's pane — answer at the Mac" }
+        guard pane.paneId == paneId else { return "Herdr moved the session's pane — answer at your computer" }
         if let workspaceId, let actual = pane.workspaceId, actual != workspaceId {
-            return "Herdr moved the session's pane — answer at the Mac"
+            return "Herdr moved the session's pane — answer at your computer"
         }
         if let expectTerminalId, pane.terminalId != expectTerminalId {
-            return "The Herdr pane now holds a different terminal — answer at the Mac"
+            return "The Herdr pane now holds a different terminal — answer at your computer"
         }
         if let processPane = processes.paneId, processPane != paneId {
-            return "Herdr moved the session's pane — answer at the Mac"
+            return "Herdr moved the session's pane — answer at your computer"
         }
         guard pid > 0, processes.foregroundPids.contains(pid) else {
             return "Couldn't confirm the session is in front in its Herdr pane"
@@ -161,7 +161,7 @@ enum HerdrBridge {
         }
         switch snapshot(socketPath: socketPath, paneId: paneId) {
         case .failure(let e):
-            return .failure(.init("Couldn't reach Herdr — answer at the Mac", output: "herdr: \(describe(e))"))
+            return .failure(.init("Couldn't reach Herdr — answer at your computer", output: "herdr: \(describe(e))"))
         case .success(let (pane, processes)):
             if let why = verification(pane: pane, processes: processes, paneId: paneId, workspaceId: workspaceId,
                                       expectTerminalId: nil, pid: pid) {
@@ -175,7 +175,7 @@ enum HerdrBridge {
     /// terminal, with the session in front). Run before every key.
     static func recheck(_ target: Target) -> String? {
         switch snapshot(socketPath: target.socketPath, paneId: target.paneId) {
-        case .failure: return "Couldn't reach Herdr — answer at the Mac"
+        case .failure: return "Couldn't reach Herdr — answer at your computer"
         case .success(let (pane, processes)):
             return verification(pane: pane, processes: processes, paneId: target.paneId, workspaceId: nil,
                                 expectTerminalId: target.terminalId, pid: target.sessionPid)

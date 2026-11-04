@@ -180,7 +180,7 @@ final class ImageDeliveryTests: XCTestCase {
 
     func testOtherTextBesideTheChipNeverGetsEnter() {
         let f = fake()
-        f.afterPaste = [Self.box("[Image #1]what is this? and something typed at the Mac")]
+        f.afterPaste = [Self.box("[Image #1]what is this? and something typed at your computer")]
         f.receiptMisses = 99
         let r = run(f)
         XCTAssertEqual(r.code, .failed)
@@ -194,7 +194,7 @@ final class ImageDeliveryTests: XCTestCase {
         let r = run(f)
         XCTAssertEqual(r.code, .delivered, r.detail)
         XCTAssertEqual(r.attached, 1)
-        XCTAssertEqual(f.keys.count, 1, "Page didn't press Enter itself")
+        XCTAssertEqual(f.keys.count, 1, "Page Studio didn't press Enter itself")
     }
 
     func testAPromptThatOpensBeforeEnterStopsTheRun() {
@@ -294,10 +294,10 @@ final class ImageDeliveryTests: XCTestCase {
 
     func testAHostWithoutPhotosIsRefused() {
         let f = fake()
-        f.attach = .notYet("Page can't type into Ghostty yet")
+        f.attach = .notYet("Page Studio can't type into Ghostty yet")
         let r = run(f)
         XCTAssertEqual(r.reason, .attachUnsupported)
-        XCTAssertEqual(r.detail, "Page can't type into Ghostty yet")
+        XCTAssertEqual(r.detail, "Page Studio can't type into Ghostty yet")
     }
 
     func testEndedBackgroundedAndUnknownSessionsAreRefused() {
@@ -312,7 +312,7 @@ final class ImageDeliveryTests: XCTestCase {
         XCTAssertEqual(run(h).reason, .unknownState)
         let u = fake()
         u.host = .unsupported("Ghostty")
-        XCTAssertEqual(run(u).detail, "Page can't type into Ghostty yet")
+        XCTAssertEqual(run(u).detail, "Page Studio can't type into Ghostty yet")
     }
 
     func testABadPhotoIsRefusedBeforeTheSessionIsLookedUp() {
@@ -451,7 +451,7 @@ final class ImageDeliveryTests: XCTestCase {
         XCTAssertEqual(ImageDelivery.attachSupport(of: .tmux(tmuxPath: "t", paneId: "%1", inMode: false, session: "claudesquad_x")),
                        TerminalCatalog.entry(.claudeSquad).capabilities.attach)
         XCTAssertEqual(ImageDelivery.attachSupport(of: .terminalApp(tty: "/dev/ttys001")), .pathOnly(TerminalCatalog.pathOnlyReason))
-        XCTAssertEqual(ImageDelivery.attachSupport(of: .unsupported("Warp")), .notYet("Page can't type into Warp yet"))
+        XCTAssertEqual(ImageDelivery.attachSupport(of: .unsupported("Warp")), .notYet("Page Studio can't type into Warp yet"))
         XCTAssertEqual(ImageDelivery.attachSupport(of: .unknown), .notYet("Couldn't find the session's terminal"))
     }
 

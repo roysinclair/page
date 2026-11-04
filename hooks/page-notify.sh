@@ -297,7 +297,7 @@ fall_back() {
     log "FALLBACK ($why) — no decision printed"
     if [ "$FAIL_MODE" = "ask" ]; then
         close_intervention "$close_reason"
-        decide_pretool_legacy "ask" "Page: $why — answer here instead."
+        decide_pretool_legacy "ask" "Page Studio: $why — answer here instead."
     fi
     close_intervention "$close_reason"
     exit 0
@@ -1004,13 +1004,13 @@ begin_blocking() {
     # Not set up at all: behave exactly as if the hook weren't installed.
     [ -n "$RELAY_URL" ] || quiet_exit "$EVENT_NAME: no relay configured — normal flow"
     if user_is_present; then
-        quiet_exit "$EVENT_NAME: user is at the Mac — normal flow"
+        quiet_exit "$EVENT_NAME: user is at the computer — normal flow"
     fi
     if [ "$AGENT" = "claude" ] && [ "${PAGE_HOOK_PRINT:-}" != "1" ] && under_claude_print; then
         quiet_exit "$EVENT_NAME: non-interactive claude --print run — normal flow (PAGE_HOOK_PRINT=1 pages these)"
     fi
     read_token
-    [ -n "$TOKEN" ] || fall_back "no usable relay token (pair the Page Mac app first)"
+    [ -n "$TOKEN" ] || fall_back "no usable relay token (pair Page Studio with your phone first)"
     resolve_timeout
     [ "$TIMEOUT" -ge 5 ] || fall_back "only ${TIMEOUT}s left before the agent's ${AGENT_TIMEOUT}s hook timeout"
 
@@ -1026,7 +1026,7 @@ begin_blocking() {
     case "$RESP_CODE" in
         2??) ;;
         401|403) IV_OPEN=0; fall_back "the relay rejected the token (HTTP $RESP_CODE)" ;;
-        410)     IV_OPEN=0; fall_back "the relay token was retired (re-paired on the Mac)" ;;
+        410)     IV_OPEN=0; fall_back "the relay token was retired (re-paired on this computer)" ;;
         4??) IV_OPEN=0; fall_back "relay error (HTTP $RESP_CODE)" ;;
         000) fall_back "relay unreachable" ;;
         *)   fall_back "relay error (HTTP $RESP_CODE)" ;;
@@ -1069,7 +1069,7 @@ wait_for_reply() {
                         if synthetic_input_explains_idle "$idle"; then
                             log "input ${idle}s ago was Page's own keystroke — still waiting"
                         else
-                            fall_back "you're back at the Mac (input ${idle}s ago)" user_returned
+                            fall_back "you're back at the computer (input ${idle}s ago)" user_returned
                         fi
                     fi
                     ;;
@@ -1090,7 +1090,7 @@ wait_for_reply() {
                 # token_retired: the pairing was replaced on the Mac. The
                 # Worker already dropped our page; nothing will ever answer.
                 IV_OPEN=0
-                fall_back "the relay token was retired (re-paired on the Mac)"
+                fall_back "the relay token was retired (re-paired on this computer)"
                 ;;
             *)
                 failures=$((failures + 1))
@@ -1296,19 +1296,19 @@ handle_permission_request() {
         deny)
             settle true "Denied — $(agent_label) won't run it"
             if [ -n "$REPLY_TEXT" ] && [ "$(lowercase "$REPLY_TEXT")" != "deny" ]; then
-                decide_permission deny "The user denied this from their phone (Page): $REPLY_TEXT"
+                decide_permission deny "The user denied this from their phone (Page Relay): $REPLY_TEXT"
             fi
-            decide_permission deny "The user denied this from their phone (Page)."
+            decide_permission deny "The user denied this from their phone (Page Relay)."
             ;;
         custom)
-            [ -n "$REPLY_TEXT" ] || not_a_decision "Empty reply — answer on the Mac"
+            [ -n "$REPLY_TEXT" ] || not_a_decision "Empty reply — answer on your computer"
             settle true "Sent to $(agent_label) instead of running it"
-            decide_permission deny "The user replied from their phone (Page) instead of approving: $REPLY_TEXT"
+            decide_permission deny "The user replied from their phone (Page Relay) instead of approving: $REPLY_TEXT"
             ;;
         *)
             # carry_on, an empty reply or anything newer than this script:
             # none of these is an explicit decision.
-            not_a_decision "That reply isn't an approval — answer on the Mac"
+            not_a_decision "That reply isn't an approval — answer on your computer"
             ;;
     esac
 }
@@ -1366,9 +1366,9 @@ handle_question() {
         deny)
             settle true "Told Claude you'd rather not answer"
             if [ -n "$REPLY_TEXT" ] && [ "$(lowercase "$REPLY_TEXT")" != "deny" ]; then
-                decide_pretool_deny "The user declined to answer from their phone (Page): $REPLY_TEXT"
+                decide_pretool_deny "The user declined to answer from their phone (Page Relay): $REPLY_TEXT"
             fi
-            decide_pretool_deny "The user declined to answer from their phone (Page)."
+            decide_pretool_deny "The user declined to answer from their phone (Page Relay)."
             ;;
         custom|approve|carry_on)
             # Only typed text answers a question; a bare Approve / Carry on
@@ -1379,16 +1379,16 @@ handle_question() {
                 updated=$(jq -c --argjson a "$answers" '(.tool_input // {}) + {answers: $a}' <<<"$EVENT_JSON" 2>/dev/null)
                 if [ -n "$updated" ]; then
                     settle true "Answered — Claude has your choice"
-                    decide_pretool_allow_with_input "Answered via Page" "$updated"
+                    decide_pretool_allow_with_input "Answered via Page Relay" "$updated"
                 fi
             fi
             # Not one of the options (or can't be split per question): hand
             # the text to Claude rather than guess an answer.
             settle true "Sent your reply to Claude as text"
-            decide_pretool_deny "The user answered from their phone (Page) in their own words instead of picking an option: $REPLY_TEXT"
+            decide_pretool_deny "The user answered from their phone (Page Relay) in their own words instead of picking an option: $REPLY_TEXT"
             ;;
         *)
-            not_a_decision "That reply doesn't answer the question — answer on the Mac"
+            not_a_decision "That reply doesn't answer the question — answer on your computer"
             ;;
     esac
 }
@@ -1413,17 +1413,17 @@ handle_plan() {
         deny)
             settle true "Plan rejected — Claude keeps planning"
             if [ -n "$REPLY_TEXT" ] && [ "$(lowercase "$REPLY_TEXT")" != "deny" ]; then
-                decide_pretool_deny "The user rejected this plan from their phone (Page). Their feedback: $REPLY_TEXT"
+                decide_pretool_deny "The user rejected this plan from their phone (Page Relay). Their feedback: $REPLY_TEXT"
             fi
-            decide_pretool_deny "The user rejected this plan from their phone (Page). Keep planning and ask what to change."
+            decide_pretool_deny "The user rejected this plan from their phone (Page Relay). Keep planning and ask what to change."
             ;;
         custom)
-            [ -n "$REPLY_TEXT" ] || not_a_decision "Empty reply — answer on the Mac"
+            [ -n "$REPLY_TEXT" ] || not_a_decision "Empty reply — answer on your computer"
             settle true "Sent your feedback — Claude keeps planning"
-            decide_pretool_deny "The user replied from their phone (Page) instead of approving the plan. Their feedback: $REPLY_TEXT"
+            decide_pretool_deny "The user replied from their phone (Page Relay) instead of approving the plan. Their feedback: $REPLY_TEXT"
             ;;
         *)
-            not_a_decision "That reply isn't an approval — answer on the Mac"
+            not_a_decision "That reply isn't an approval — answer on your computer"
             ;;
     esac
 }
@@ -1469,17 +1469,17 @@ handle_pretooluse_generic() {
         deny)
             settle true "Denied — Claude won't run it"
             if [ -n "$REPLY_TEXT" ] && [ "$(lowercase "$REPLY_TEXT")" != "deny" ]; then
-                decide_pretool_legacy "deny" "User denied this via Page: $REPLY_TEXT"
+                decide_pretool_legacy "deny" "User denied this via Page Relay: $REPLY_TEXT"
             fi
             decide_pretool_legacy "deny" "User denied this via Page."
             ;;
         custom)
-            [ -n "$REPLY_TEXT" ] || not_a_decision "Empty reply — answer on the Mac"
+            [ -n "$REPLY_TEXT" ] || not_a_decision "Empty reply — answer on your computer"
             settle true "Sent to Claude instead of running the tool"
-            decide_pretool_legacy "deny" "User replied via Page: $REPLY_TEXT"
+            decide_pretool_legacy "deny" "User replied via Page Relay: $REPLY_TEXT"
             ;;
         *)
-            not_a_decision "That reply isn't an approval — answer on the Mac"
+            not_a_decision "That reply isn't an approval — answer on your computer"
             ;;
     esac
 }

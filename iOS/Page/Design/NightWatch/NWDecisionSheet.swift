@@ -477,7 +477,7 @@ struct NWDecisionScreen: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Button("Close", action: actions.close).buttonStyle(NWButtonStyle(kind: .quiet))
             } else if row.action(.openOnMac) != nil {
-                Text(c.screenNote != nil ? "Answer this one on your Mac." : (row.action(.openOnMac)?.preview ?? "Page can't type here. Answer this one on your Mac."))
+                Text(c.screenNote != nil ? "Answer this one on your computer." : (row.action(.openOnMac)?.preview ?? "Page Studio can't type here. Answer this one on your computer."))
                     .font(NightWatch.Typo.caption).foregroundColor(NightWatch.Palette.textSecondary.color)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 if state.hasSession { Button("Open session", action: actions.openSession).buttonStyle(NWButtonStyle(kind: .quiet)) }
@@ -665,7 +665,7 @@ struct NWDecisionScreen: View {
     private func composer(label: String, placeholder: String, alwaysOpen: Bool) -> some View {
         NWDecisionComposer(
             label: label, placeholder: placeholder, alwaysOpen: alwaysOpen,
-            preview: state.sendChoice.holds ? "Your message, then Return · held on your Mac until this turn ends" : row.action(.tellInstead)?.preview,
+            preview: state.sendChoice.holds ? "Your message, then Return · held on your computer until this turn ends" : row.action(.tellInstead)?.preview,
             yesNo: yesNoQuestion, agent: c.agent, onReply: actions.send,
             choice: state.sendChoice, explainChoice: state.explainChoice, onChoose: actions.setChoice,
             sending: state.pending != nil, locked: !accepts || !rowTakesReply, draft: $draft,
@@ -760,7 +760,7 @@ private struct NWDecisionComposer: View {
                     .frame(width: 92)
                     .disabled(!canSend)
                     .opacity(canSend ? 1 : 0.45)
-                    .accessibilityHint(Text(choice.holds ? "Holds your message on your Mac until the turn ends. You can delete it until then."
+                    .accessibilityHint(Text(choice.holds ? "Holds your message on your computer until the turn ends. You can delete it until then."
                                             : (preview ?? "Sends your message to the session.")))
             }
         }

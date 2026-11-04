@@ -20,5 +20,5 @@
   "devDependencies": {
     "playwright": "^1.64.1"
   },
-  "description": "The Page Studio website and printable brochure (Astro + Tailwind). Free apps you run yourself: Page Power (Mac, iPhone, Android and Page Relay), Page Aura and Page Orbit."
+  "description": "The Page Studio website and printable brochure (Astro + Tailwind). Free apps you run yourself: Page Studio for Mac (Page Power and Page Relay), Page Relay for iPhone and Android, Page Aura and Page Orbit."
 }

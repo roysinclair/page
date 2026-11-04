@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds paged (Page Power's Linux daemon) and installs it for this user:
+# Builds paged (Page Studio for Linux, the headless daemon) and installs it for this user:
 #   ~/.local/bin/paged                       the daemon and CLI
 #   ~/.local/share/page/hooks/               page-notify.sh + page-extract-context.py
 #   ~/.config/systemd/user/paged.service     a systemd user unit, enabled and started
@@ -37,7 +37,7 @@ for arg in "$@"; do
 done
 
 if [ "$(id -u)" = "0" ]; then
-    echo "!! Run this as the user whose agents Page should watch, not as root." >&2
+    echo "!! Run this as the user whose agents Page Studio should watch, not as root." >&2
     echo "   (Running as root installs into /root and watches root's sessions.)" >&2
     [ "${PAGE_ALLOW_ROOT:-}" = "1" ] || exit 1
 fi
@@ -55,7 +55,7 @@ if [ "$MODE" = "uninstall" ]; then
     rm -rf "$HOOK_DIR"
     have_systemd_user && systemctl --user daemon-reload || true
     echo "Uninstalled paged. Config and pairing remain in $CONFIG_DIR and $DATA_DIR."
-    echo "Remove Page's hook from Claude Code / Codex first if you installed it:"
+    echo "Remove Page Studio's hook from Claude Code / Codex first if you installed it:"
     echo "  (before uninstalling) paged install-hooks --uninstall"
     exit 0
 fi
@@ -93,9 +93,9 @@ if [ "$SERVICE" = "1" ]; then
         # systemd quoting for the path: \ and " escaped, % and $ doubled.
         exe=$(printf '%s' "$BIN_DIR/paged" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/%/%%/g' -e 's/\$/$$/g')
         cat > "$UNIT.new" <<EOF
-# Written by Page's install-linux.sh.
+# Written by Page Studio's install-linux.sh.
 [Unit]
-Description=Page Power: pages your phone when coding agents need you
+Description=Page Studio for Linux: keeps agents running and pages your phone when they need you
 Documentation=https://github.com/roysinclair/page/blob/main/docs/LINUX.md
 
 [Service]
@@ -136,5 +136,5 @@ On a server (or to keep paging after you log out), let your user services
 run without a login session:
   loginctl enable-linger $(id -un)
 polkit allows this for your own user on most desktops; on a server it may
-need an administrator, once. Page itself never asks for root.
+need an administrator, once. Page Studio itself never asks for root.
 EOF

@@ -92,7 +92,7 @@ final class AnswerProbeTests: XCTestCase {
         let iterm = InjectionExecutor.TerminalHost.iTerm(tty: "/dev/ttys001")
         // Page's own gate refuses Terminal.app; --caps overrides it, and nothing else about the host.
         if case .success = AnswerProbe.caps(for: nil, host: .terminalApp(tty: "/dev/ttys001")) { XCTFail("Terminal.app must stay gated without --caps") }
-        XCTAssertEqual(try? AnswerProbe.caps(for: nil, host: iterm).get(), .withArrows, "no --caps: Page's own gate")
+        XCTAssertEqual(try? AnswerProbe.caps(for: nil, host: iterm).get(), .withArrows, "no --caps: Page Studio's own gate")
         XCTAssertEqual(try? AnswerProbe.caps(for: .plain, host: iterm).get(), .plainKeysOnly)
         XCTAssertEqual(try? AnswerProbe.caps(for: .arrows, host: iterm).get(), AnswerKeyCaps(arrows: true))
         XCTAssertEqual(try? AnswerProbe.caps(for: .terminalReturn, host: .terminalApp(tty: "/dev/ttys001")).get(), .plainKeysOnly)

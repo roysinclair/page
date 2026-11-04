@@ -9,12 +9,12 @@ Email the maintainer with details instead. We'll acknowledge receipt within
 a real exposure. We credit reporters in the release notes unless you'd
 prefer otherwise.
 
-## What Page is, from a security point of view
+## What Page Studio is, from a security point of view
 
-Page relays prompts from AI coding agents on your Mac to your phone, and
+Page Studio relays prompts from AI coding agents on your Mac to your phone, and
 types your answers back into those agents' terminals. Those terminals can run
-arbitrary commands. So **a reply Page delivers can approve a tool call**, and
-the security model is about who can send replies and what Page will type.
+arbitrary commands. So **a reply Page Studio delivers can approve a tool call**, and
+the security model is about who can send replies and what Page Studio will type.
 
 ```
  Mac (trusted)  ──wss/https──▶  your Cloudflare Worker  ──APNs──▶  your iPhone (trusted)
@@ -109,7 +109,7 @@ encrypted with a second secret, the **session key**:
   decrypts with the phone→Mac key, is within ±5 minutes of the Mac's clock
   and hasn't been seen in the last 15 minutes (seen ids are kept on disk,
   in `session_replay.json`, so a captured command can't be replayed after
-  Page restarts either). A leaked relay token alone
+  Page Studio restarts either). A leaked relay token alone
   can't type anything here. Every accepted command then goes through the
   Mac's input gate, which never weakens the reply path's rules (no Esc on a
   prompt, no typing over a draft, no background resume).
@@ -145,7 +145,7 @@ encrypted with a second secret, the **session key**:
   itself carries only counts ("Changed 3 files (+12 −4)").
 - **Usage capture** edits `~/.claude/settings.json` (`statusLine.command`)
   only when you turn it on, after a backup, and puts the original back
-  byte for byte when you turn it off. The wrapper script is 0700 in Page's
+  byte for byte when you turn it off. The wrapper script is 0700 in Page Studio's
   Application Support folder; the saved status line input (model, folder,
   usage numbers, no secrets) is 0600.
 
@@ -197,7 +197,7 @@ The hook leaves tool output out of the page by default
 pattern matching.** Treat anything an agent shows on screen as something
 that can reach your Worker and, in part, Apple.
 
-## Local privileges Page installs
+## Local privileges Page Studio installs
 
 ### sudoers (only when you turn on the power helper)
 
@@ -222,9 +222,9 @@ into place. The fragment allows your user, without a password,
 
 - The wake rules take exactly one `MM/dd/yyyy HH:mm:ss` argument, with no
   trailing wildcard (`*` would match extra arguments) and no `cancelall`.
-- Installs made by earlier Page versions had a broader wildcard rule. Re-run
+- Installs made by earlier Page Studio versions had a broader wildcard rule. Re-run
   `--enable-power-helpers` to replace it.
-- `--disable-power-helpers` stops Page, clears `disablesleep`, removes the
+- `--disable-power-helpers` stops Page Studio, clears `disablesleep`, removes the
   file, clears the flag again and removes the watchdog. `--uninstall` removes
   the file too.
 
@@ -236,8 +236,8 @@ from sleeping with the lid closed.
 | Label | Installed by | What it runs |
 |---|---|---|
 | `local.Page` | `install.sh` | `/Applications/Page.app` at login. It's restarted after a crash, not after a clean exit |
-| `local.Page.sleepguard` | Page, when lid-closed-on-battery is turned on (removed when it's off and the flag is clear) | Every 60 s (and at load), `~/Library/Application Support/ClaudePowerMode/sleepguard.sh` clears `pmset disablesleep` if Page isn't running or hasn't refreshed its `disablesleep.active` marker for 3 minutes |
-| `local.ClaudePowerMode.resume.<sessionId>` | Page, per scheduled rate-limit resume (`autoResumeEnabled`) | A 0700 bash script that runs `claude --resume <id> --print "<prompt>"` once after the reset, unless the session is live. It removes itself afterwards. Older builds used `local.Page.resume.*` / `local.PageAI.resume.*`; those are cleaned up |
+| `local.Page.sleepguard` | Page Studio, when lid-closed-on-battery is turned on (removed when it's off and the flag is clear) | Every 60 s (and at load), `~/Library/Application Support/ClaudePowerMode/sleepguard.sh` clears `pmset disablesleep` if Page Studio isn't running or hasn't refreshed its `disablesleep.active` marker for 3 minutes |
+| `local.ClaudePowerMode.resume.<sessionId>` | Page Studio, per scheduled rate-limit resume (`autoResumeEnabled`) | A 0700 bash script that runs `claude --resume <id> --print "<prompt>"` once after the reset, unless the session is live. It removes itself afterwards. Older builds used `local.Page.resume.*` / `local.PageAI.resume.*`; those are cleaned up |
 
 ## Hooks never auto-allow
 
@@ -251,13 +251,13 @@ from sleeping with the lid closed.
 - **One opt-in exception:** `PAGE_HOOK_AUTO=allow|deny|ask` makes a legacy
   generic `PreToolUse` install return that decision without asking the phone.
   It's ignored by the `PermissionRequest`, `AskUserQuestion` and
-  `ExitPlanMode` handlers that Page installs. Don't set it unless you mean it.
+  `ExitPlanMode` handlers that Page Studio installs. Don't set it unless you mean it.
 - The hook's temporary payload files (which hold commands and transcript
   excerpts) are 0600 inside a private temp directory deleted on exit.
 
 ## cmux
 
-- Phone replies to cmux sessions need cmux in Password mode. Page stores that
+- Phone replies to cmux sessions need cmux in Password mode. Page Studio stores that
   password in your **login Keychain** (service `local.Page.cmux`).
 - It passes the password to cmux only through the `CMUX_SOCKET_PASSWORD`
   environment variable of the `cmux` CLI inside cmux.app, never on a command
@@ -265,16 +265,16 @@ from sleeping with the lid closed.
   Apple-anchored with cmux's Team ID.
 - Inherited `CMUX_*` variables are stripped from every call, and each call
   names its surface explicitly.
-- Page reads only `CMUX_SURFACE_ID` and `CMUX_WORKSPACE_ID` from a session's
+- Page Studio reads only `CMUX_SURFACE_ID` and `CMUX_WORKSPACE_ID` from a session's
   environment, and discards everything else, including cmux's capability
   token.
 
 ## Headless resumes
 
-When a session has ended, Page may deliver a text reply with
+When a session has ended, Page Studio may deliver a text reply with
 `claude --resume <id> --print` or `codex exec resume`, which runs with **your
 default permission settings** for that agent. Turn this off with
-`headlessResumeFallbackEnabled: false`. Page refuses a headless resume
+`headlessResumeFallbackEnabled: false`. Page Studio refuses a headless resume
 whenever there's any sign the session is still running.
 
 ## Scope
@@ -291,11 +291,11 @@ We're most interested in:
 - token leaks (logs, build artifacts, pushes, the clipboard);
 - escalation through the sudoers rules or LaunchAgents beyond what's
   described above;
-- TCC scope creep, or unexpected use of the macOS permissions Page requests.
+- TCC scope creep, or unexpected use of the macOS permissions Page Studio requests.
 
 Out of scope:
 
-- attacks that already require running code as your user on the Mac (Page
+- attacks that already require running code as your user on the Mac (Page Studio
   assumes the Mac is trusted; such code could read the token file anyway);
 - denial of service against your own Worker;
 - vulnerabilities in third-party software (Apple frameworks, the Cloudflare

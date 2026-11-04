@@ -16,7 +16,7 @@ const pkcs8 = new Uint8Array(await crypto.subtle.exportKey("pkcs8", keyPair.priv
 const PEM = `-----BEGIN PRIVATE KEY-----\n${btoa(String.fromCharCode(...pkcs8)).match(/.{1,64}/g).join("\n")}\n-----END PRIVATE KEY-----\n`;
 const apnsEnv = () => env({ APNS_KEY_P8: PEM, APNS_KEY_ID: "KEYID12345", APNS_TEAM_ID: "TEAMID1234" });
 const TOKEN = "c".repeat(64);
-const RETIRED = { error: "token_retired", why: "This pairing was replaced on your Mac — scan the new QR code" };
+const RETIRED = { error: "token_retired", why: "This pairing was replaced on your computer — scan the new QR code" };
 
 let calls, realFetch, state, relay;
 beforeEach(async () => {
@@ -40,7 +40,7 @@ const connect = (mac) => { const ws = new FakeWS(); relay.attachSocket(ws, mac);
 
 // MARK: promptKey
 
-test("promptKey is stored on the page and echoed to the Mac in the reply frame", async () => {
+test("promptKey is stored on the page and echoed to your computer in the reply frame", async () => {
   const mac = connect(true);
   await open(relay, iv("hook-11111111-100-1", { kind: "question", promptKey: "toolu_01AbC-9" }));
   const [stored] = (await call(relay, "GET", "/interventions")).body;
@@ -135,7 +135,7 @@ test("retirement survives hibernation (a fresh object on the same storage)", asy
   assert.equal(meta.retiredReason, "token_regenerated");
 });
 
-test("relay.retire over the Mac socket: phones hear the closes and relay.retired, then every socket is closed", async () => {
+test("relay.retire over the computer socket: phones hear the closes and relay.retired, then every socket is closed", async () => {
   const phone = connect(false);
   const mac = connect(true);
   await open(relay, iv("sess-1-permission-1"));

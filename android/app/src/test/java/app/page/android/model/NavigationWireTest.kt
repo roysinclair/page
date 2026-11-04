@@ -126,7 +126,7 @@ class NavigationWireTest {
         val noteOnly = LiveSession.decode(obj("""{"id":"s","health":"stuck","healthNote":"the same step 6 times"}"""))!!
         assertEquals("the same step 6 times", noteOnly.flight?.healthNote)
         val both = LiveSession.decode(obj("""{"id":"s","health":"stuck","healthDetail":"from the Mac","healthNote":"older name"}"""))!!
-        assertEquals("from the Mac", both.flight?.healthNote)
+        assertEquals("from your computer", both.flight?.healthNote)
     }
 
     @Test fun `the session commands carry the expectation only when it is known, and the Stop-all is the bare op`() {

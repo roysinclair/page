@@ -85,7 +85,7 @@ class NowModelTest {
         assertEquals(NowModel.Mood.DUSK, paused.mood)
         assertEquals("Paused for battery", paused.headline)
         assertTrue(paused.paused)
-        assertEquals("plug the Mac in to resume", paused.subline)
+        assertEquals("plug your computer in to resume", paused.subline)
     }
 
     // MARK: receipts
@@ -142,7 +142,7 @@ class NowModelTest {
         assertEquals(DeliveryReceipt.Outcome.MacOffline, rec(ReplyDelivery.Sent(queued = true, at = nwNow))?.outcome)
         assertEquals("Approved npm test → cmux › page · verified 08:00:00", rec(ReplyDelivery.Delivered(null))?.line(NW_ZONE))
         assertEquals("npm test · x", rec(ReplyDelivery.Failed("x"))?.line(NW_ZONE))
-        assertEquals("npm test · Already answered at the Mac", rec(ReplyDelivery.AlreadyReplied)?.line(NW_ZONE))
+        assertEquals("npm test · Already answered at your computer", rec(ReplyDelivery.AlreadyReplied)?.line(NW_ZONE))
         assertEquals("npm test · Prompt closed before your answer", rec(ReplyDelivery.Gone)?.line(NW_ZONE))
     }
 
@@ -154,7 +154,7 @@ class NowModelTest {
     }
 
     @Test fun `the failure copy for each outcome`() {
-        assertEquals("Didn't confirm in time · Check on Mac", DeliveryReceipt.Outcome.TimedOut.failureMessage)
+        assertEquals("Didn't confirm in time · Check on your computer", DeliveryReceipt.Outcome.TimedOut.failureMessage)
         assertEquals("Session ended", DeliveryReceipt.Outcome.SessionEnded.failureMessage)
         assertEquals("Couldn't deliver the reply", DeliveryReceipt.Outcome.Other("").failureMessage)
         assertNull(DeliveryReceipt.Outcome.Delivered.failureMessage)

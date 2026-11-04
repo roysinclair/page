@@ -24,24 +24,24 @@ enum TowerSection: String, CaseIterable, Identifiable, Equatable {
         case .widgets: return "Widgets"
         case .shortcuts: return "Shortcuts"
         case .pairing: return "Pairing & encryption"
-        case .about: return "About Page"
+        case .about: return "About Page Studio"
         }
     }
 
     /// The line under the page title.
     var subtitle: String {
         switch self {
-        case .power: return "Keep agents running, and stop them gracefully before the battery does."
-        case .budget: return "How much of Claude’s limit is left, and what Page does when you hit it."
-        case .macsPhones: return "Where Page sends pages, and what your phone may do on this Mac."
+        case .power: return "Page Power: keep agents running, and stop them gracefully before the battery does."
+        case .budget: return "How much of Claude’s limit is left, and what Page Relay does when you hit it."
+        case .macsPhones: return "Where Page Relay sends pages, and what your phone may do on this Mac."
         case .attention: return "What is worth interrupting you for, and when."
-        case .agents: return "Which agents Page watches, and the tools it works with."
+        case .agents: return "Which agents Page Studio watches, and the tools it works with."
         case .phoneApprovals: return "Approve, deny or reply from your phone in any app, when you’re away."
-        case .terminals: return "Where Page can reply, approve and stop agents for you, and what each terminal needs."
-        case .widgets: return "Page and your Claude usage on the desktop and in Notification Center."
-        case .shortcuts: return "Every key Page answers to. Page only ever approves, denies or sends your own words."
+        case .terminals: return "Where Page Relay can reply, approve and stop agents for you, and what each terminal needs."
+        case .widgets: return "Page Studio and your Claude usage on the desktop and in Notification Center."
+        case .shortcuts: return "Every key Page Studio answers to. Page Studio only ever approves, denies or sends your own words."
         case .pairing: return "How your phone and this Mac find each other, and who can read what."
-        case .about: return "This copy of Page, its files and its defaults."
+        case .about: return "This copy of Page Studio, its files and its defaults."
         }
     }
 
@@ -487,9 +487,9 @@ enum ShortcutCatalog {
         TowerShortcutGroup(title: "IN THE MENU", items: [
             TowerShortcut(keys: ["⌘", "P"], title: "Pair phone…", detail: "Right-click the menu bar icon for the classic menu"),
             TowerShortcut(keys: ["⌘", ","], title: "Preferences…", detail: "This window. Also works in the Now panel"),
-            TowerShortcut(keys: ["⌘", "L"], title: "Open Log", detail: "Everything Page did, in one file"),
+            TowerShortcut(keys: ["⌘", "L"], title: "Open Log", detail: "Everything Page Studio did, in one file"),
             TowerShortcut(keys: ["⌘", "R"], title: "Reload Config", detail: "Re-reads config.json"),
-            TowerShortcut(keys: ["⌘", "Q"], title: "Quit Page", detail: "")
+            TowerShortcut(keys: ["⌘", "Q"], title: "Quit Page Studio", detail: "")
         ])
     ]
 }
@@ -558,13 +558,13 @@ enum TowerControlMap {
         .init(old: "action: power helper Install / Check again", oldTab: "Power", section: .power, newControl: "Power helper row"),
         .init(old: "action: Reset to defaults", oldTab: "window", section: .about, newControl: "Reset to defaults (footer)"),
         .init(old: "action: Cancel / Apply", oldTab: "window", section: .about, newControl: "Cancel and Apply (footer)"),
-        .init(old: "action: Set up cmux…", oldTab: "menu", section: .terminals, newControl: "cmux row: Set up… opens the cmux setup page (also the Agents page's Set up cmux… button and the menu): version and socket mode, Let Page type into cmux, password, Test connection"),
+        .init(old: "action: Set up cmux…", oldTab: "menu", section: .terminals, newControl: "cmux row: Set up… opens the cmux setup page (also the Agents page's Set up cmux… button and the menu): version and socket mode, Let Page Studio type into cmux, password, Test connection"),
         .init(old: "action: Terminals list", oldTab: "(new)", section: .terminals, newControl: "Terminals page: every supported terminal, its status chip and one action"),
         .init(old: "action: Set up kitty remote control", oldTab: "(new)", section: .terminals, newControl: "kitty row: Set up… adds two lines to kitty.conf (backed up), Undo"),
         .init(old: "action: Allow Terminal / iTerm2 automation", oldTab: "(new)", section: .terminals, newControl: "Terminal and iTerm2 rows: Allow… asks macOS for Automation permission"),
         .init(old: "action: Get a terminal", oldTab: "(new)", section: .terminals, newControl: "Not-installed rows: Get it ↗ opens the official site"),
         .init(old: "action: Open widget settings", oldTab: "(new)", section: .widgets, newControl: "Widgets page: Widget settings (macOS 14 and later) opens System Settings at Desktop & Dock, for showing widgets on the desktop and using iPhone widgets; adding a widget is Show me how"),
-        .init(old: "action: Widgets how-to", oldTab: "(new)", section: .widgets, newControl: "Widgets page: Show me how draws the steps (right-click the desktop, Edit Widgets, search Page, drag)"),
+        .init(old: "action: Widgets how-to", oldTab: "(new)", section: .widgets, newControl: "Widgets page: Show me how draws the steps (right-click the desktop, Edit Widgets, search Page Studio, drag)"),
         .init(old: "action: Register widgets", oldTab: "(new)", section: .widgets, newControl: "Widgets page: the status line, and Ask macOS to find them when it hasn’t"),
         .init(old: "action: Install agent hooks…", oldTab: "menu", section: .phoneApprovals, newControl: "Phone approvals page: Claude Code and Codex rows with Install… / Uninstall…, the reply-to-continue toggle and the diff preview (the Agents and Terminals pages' Install agent hooks… buttons and the menu open it)"),
         .init(old: "action: Copy local-model diagnostics", oldTab: "menu", section: .agents, newControl: "Copy local-model diagnostics button"),

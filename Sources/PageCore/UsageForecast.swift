@@ -187,9 +187,9 @@ struct UsageCapture {
 
     static let script = """
     #!/bin/sh
-    # Page: saves the usage numbers Claude Code gives the status line
+    # Page Studio: saves the usage numbers Claude Code gives the status line
     # (rate_limits), then runs your own status line command unchanged.
-    # Installed from Page → Preferences → Rate limits; turning that option
+    # Installed from Page Studio → Preferences → Rate limits; turning that option
     # off puts your original command back.
     dir="$(cd "$(dirname "$0")" && pwd)"
     input=$(cat)

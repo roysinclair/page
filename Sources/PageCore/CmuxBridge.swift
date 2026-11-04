@@ -43,13 +43,13 @@ enum CmuxBridge {
     static let bundleIdentifier = "com.cmuxterm.app"
 
     // Phone-facing details (short, human, no command output).
-    static let blockedDetail = "cmux blocks Page — open Page ▸ Integrations ▸ Set up cmux…"
-    static let needsPasswordDetail = "Page needs your cmux socket password — open Page ▸ Integrations ▸ Set up cmux…"
-    static let passwordRejectedDetail = "cmux rejected Page's password — open Page ▸ Integrations ▸ Set up cmux…"
+    static let blockedDetail = "cmux blocks Page Studio — open Page Studio ▸ Integrations ▸ Set up cmux…"
+    static let needsPasswordDetail = "Page Studio needs your cmux socket password — open Page Studio ▸ Integrations ▸ Set up cmux…"
+    static let passwordRejectedDetail = "cmux rejected Page Studio's password — open Page Studio ▸ Integrations ▸ Set up cmux…"
     static let notRunningDetail = "cmux isn't running"
     static let draftDetail = "You have a half-typed message in that pane"
     static let dialogOpenDetail = "A prompt is open in that pane — answer it first"
-    static let noInputBoxDetail = "Couldn't see the agent's input box in that cmux pane — reply at the Mac"
+    static let noInputBoxDetail = "Couldn't see the agent's input box in that cmux pane — reply at your computer"
     static let paneNotFoundDetail = "Couldn't find the session's cmux pane"
 
     struct Failure: Error, Equatable {
@@ -132,7 +132,7 @@ enum CmuxBridge {
             case .match:
                 return .success(Target(surfaceId: entry.surfaceId, workspaceId: entry.workspaceId, cliPath: cli, source: "hook-sessions"))
             case .surfaceTaken:
-                return .failure(Failure("Another session is in front in that cmux pane — reply at the Mac",
+                return .failure(Failure("Another session is in front in that cmux pane — reply at your computer",
                                         output: "surface \(entry.surfaceId) active session differs"))
             case .mismatch:
                 break   // stale entry (pid reused / restarted): fall back to the process environment
@@ -144,7 +144,7 @@ enum CmuxBridge {
             // session is in front in that surface (this one suspended, a
             // new one started), keys would reach that one.
             if surfaceTaken(surface: surface, by: sessionId, activeBySurface: sessions?.activeBySurface ?? [:]) {
-                return .failure(Failure("Another session is in front in that cmux pane — reply at the Mac",
+                return .failure(Failure("Another session is in front in that cmux pane — reply at your computer",
                                         output: "surface \(surface) (environment) active session differs"))
             }
             let ws = env["CMUX_WORKSPACE_ID"].flatMap { ClaudeSessionRegistry.isValidSessionId($0) ? $0 : nil }
@@ -419,7 +419,7 @@ enum CmuxBridge {
                         allowKeychainUI: Bool = false,
                         verifyCLI: (String) -> Bool = CmuxBridge.isTrustedCLI) -> Result<Client, Failure> {
         guard let status = socketStatus(cliPath: cliPath, runner: runner) else {
-            return .failure(Failure("Couldn't check whether cmux lets Page in", output: "socket-status failed"))
+            return .failure(Failure("Couldn't check whether cmux lets Page Studio in", output: "socket-status failed"))
         }
         switch status.effectiveMode {
         case .automation, .allowAll:
@@ -446,7 +446,7 @@ enum CmuxBridge {
     /// Team ID of cmux's developer (Manaflow, Inc.), as signed on every
     /// channel's app and bundled CLI.
     static let cmuxTeamIdentifier = "7WLXT3NR37"
-    static let unverifiedCLIDetail = "Page couldn't verify this copy of cmux, so it won't send it your socket password — reinstall cmux from its official download"
+    static let unverifiedCLIDetail = "Page Studio couldn't verify this copy of cmux, so it won't send it your socket password — reinstall cmux from its official download"
 
     private static let trustLock = NSLock()
     private static var trustCache: [String: (key: String, trusted: Bool)] = [:]
@@ -665,9 +665,9 @@ enum CmuxBridge {
         case refuse(String)
     }
 
-    static let feedAmbiguousDetail = "Several prompts are waiting in cmux — answer at the Mac"
-    static let feedUnmatchedDetail = "Couldn't match this page to the prompt cmux is holding — answer at the Mac, or try again in two minutes"
-    static let feedQuestionDetail = "cmux is holding this question — answer it at the Mac, or reply again in two minutes"
+    static let feedAmbiguousDetail = "Several prompts are waiting in cmux — answer at your computer"
+    static let feedUnmatchedDetail = "Couldn't match this page to the prompt cmux is holding — answer at your computer, or try again in two minutes"
+    static let feedQuestionDetail = "cmux is holding this question — answer it at your computer, or reply again in two minutes"
 
     /// Pure. Picks the single pending Feed request for `sessionId` and maps
     /// the phone's action onto it. Never chooses "always", "all" or
@@ -765,7 +765,7 @@ enum CmuxBridge {
         func inputStateAndLength(surface: String) -> Result<(state: InputState, draftLength: Int?), Failure> {
             guard ClaudeSessionRegistry.isValidSessionId(surface) else { return .failure(Failure(paneNotFoundDetail)) }
             return rpc("surface.input_state", ["surface_id": surface],
-                       fallback: "Couldn't read that cmux pane — update cmux, or reply at the Mac")
+                       fallback: "Couldn't read that cmux pane — update cmux, or reply at your computer")
                 .map { (CmuxBridge.parseInputState($0), CmuxBridge.parseDraftLength($0)) }
         }
 

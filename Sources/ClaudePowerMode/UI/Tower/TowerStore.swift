@@ -404,7 +404,7 @@ final class TowerStore: ObservableObject {
         case .success(let p):
             switch p.plan {
             case .alreadyDone:
-                terminalNotice = TowerStatusLine(text: "kitty already lets Page in. If a session still can’t be typed into, restart kitty.", tone: .good)
+                terminalNotice = TowerStatusLine(text: "kitty already lets Page Studio in. If a session still can’t be typed into, restart kitty.", tone: .good)
             case .conflict(let why):
                 env.showAlert("kitty.conf already says something else", why)
             case .write(_, let added):
@@ -428,8 +428,8 @@ final class TowerStore: ObservableObject {
 
     func undoKitty() {
         terminalNotice = env.undoKitty()
-            ? TowerStatusLine(text: "Took Page’s lines out of kitty.conf (a copy was saved first). Restart kitty.", tone: .good)
-            : TowerStatusLine(text: "Page found none of its lines in kitty.conf, so it left the file alone.", tone: .bad)
+            ? TowerStatusLine(text: "Took Page Studio’s lines out of kitty.conf (a copy was saved first). Restart kitty.", tone: .good)
+            : TowerStatusLine(text: "Page Studio found none of its lines in kitty.conf, so it left the file alone.", tone: .bad)
         refreshTerminals(force: true)
     }
 
@@ -621,7 +621,7 @@ enum TowerApply {
     /// Pure. What the "config.json couldn’t be read" alert says.
     static func replaceWarning(problem: String?, backupName: String?) -> String {
         var info = (problem ?? "The file is malformed.")
-            + "\n\nSaving replaces it with the settings shown here plus Page’s current settings."
+            + "\n\nSaving replaces it with the settings shown here plus Page Studio’s current settings."
         if let backupName { info += " The broken file was copied to \(backupName)." }
         return info
     }

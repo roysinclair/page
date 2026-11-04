@@ -224,7 +224,7 @@ struct NWNowScreen: View {
             NWHorizon(palette: p.map { $0.tone == .slate ? .asleep : .problem } ?? NightWatch.AuroraPalette(m.mood, daypart: daypart),
                       pulse: p.map { $0.tone == .slate ? .hollowSlate : .hollowAmber } ?? NWPulseOrb.Style(m.mood),
                       headline: data.horizonHeadline, subline: data.horizonSubline,
-                      footnote: p == nil && quiet && m.headline == "All quiet" ? "Page is keeping watch. Go to sleep." : nil,
+                      footnote: p == nil && quiet && m.headline == "All quiet" ? "Page Relay is keeping watch. Go to sleep." : nil,
                       height: height, topInset: inset, model: pulseModel,
                       workingJump: workingJump(problem: p).map { j in (j.jump, j.rest, { scrollRequest = HeaderJump.sectionId }) },
                       motion: motion)
@@ -372,7 +372,7 @@ struct NWNowScreen: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityHint(Text(r.layer == .relay ? "Takes the reply back from the relay so it is never typed."
-                                        : "Takes the reply back from your Mac so it is never typed."))
+                                        : "Takes the reply back from your computer so it is never typed."))
             }
         }
         .padding(.horizontal, 14)

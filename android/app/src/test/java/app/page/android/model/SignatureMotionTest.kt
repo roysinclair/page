@@ -112,14 +112,14 @@ class SignatureMotionTest {
     @Test
     fun pulseTimingsMatchTheMac() {
         for ((agents, period) in listOf(1 to 4.0, 5 to 3.4, 20 to 3.0)) {
-            assertNear("breath with $agents working matches the Mac", period, PulseModel(agents, 0).breathPeriod)
+            assertNear("breath with $agents working matches the computer", period, PulseModel(agents, 0).breathPeriod)
         }
         val emission = listOf(Triple(1, 0.0, 3.0), Triple(1, 300.0, 2.25), Triple(1, 3600.0, 1.5), Triple(3, 0.0, 1.5), Triple(3, 300.0, 1.5), Triple(3, 3600.0, 1.5))
         for ((waiting, wait, interval) in emission) {
             assertNear("a ring every $interval s with $waiting waiting for $wait s", interval, PulseModel(0, waiting, longestWait = wait).emissionInterval)
         }
         for ((waiting, wait, life) in listOf(Triple(1, 0.0, 3.0), Triple(3, 0.0, 4.5), Triple(4, 3600.0, 6.0))) {
-            assertNear("ring life with $waiting waiting matches the Mac", life, PulseModel(0, waiting, longestWait = wait).ringLifetime)
+            assertNear("ring life with $waiting waiting matches the computer", life, PulseModel(0, waiting, longestWait = wait).ringLifetime)
         }
         assertNear("ring fade in", 0.46297, PulseModel.ringOpacity(0.05), 1e-4)
         assertNear("ring half way", 0.35355, PulseModel.ringOpacity(0.5), 1e-4)
@@ -170,7 +170,7 @@ class SignatureMotionTest {
             (0..52).map { ApproachModel.frame(it * 0.01) }.all { it.content == 0.0 || near(it.scale, 1.0) },
         )
         assertTrue(
-            "the same content curve as the Mac's",
+            "the same content curve as the computer's",
             near(ApproachModel.content(0.8), 0.0) && near(ApproachModel.content(0.885), 0.5) && near(ApproachModel.content(0.97), 1.0),
         )
         val a45 = ApproachModel.frame(0.45)
@@ -218,22 +218,22 @@ class SignatureMotionTest {
 
         val onRelay = ReceiptThread.derive(null, ReplyDelivery.Sent(false, rt0), changedAt = null, now = plus(0.7))
         assertTrue(
-            "the relay has it; the Mac has not confirmed",
+            "the relay has it; the computer has not confirmed",
             onRelay.stage == ReceiptThread.Stage.Sent && near(onRelay.reach, 0.5) && onRelay.relayLit && !onRelay.macLit && onRelay.word == "sent",
         )
         assertNear("a glint travels past the relay", 0.75, onRelay.glint ?: -1.0, 1e-3)
         val longWait = ReceiptThread.derive(null, ReplyDelivery.Sent(false, rt0), changedAt = null, now = plus(61.0))
-        assertTrue("after a minute it says so and stops moving", longWait.word == "sent · waiting for your Mac" && longWait.glint == null && !longWait.moving)
+        assertTrue("after a minute it says so and stops moving", longWait.word == "sent · waiting for your computer" && longWait.glint == null && !longWait.moving)
         val queued = ReceiptThread.derive(null, ReplyDelivery.Sent(true, rt0), changedAt = null, now = plus(1.0))
-        assertTrue("a queued reply is not a success", queued.stage == ReceiptThread.Stage.Queued && queued.word == "queued · Mac offline" && !queued.isSuccess)
+        assertTrue("a queued reply is not a success", queued.stage == ReceiptThread.Stage.Queued && queued.word == "queued · computer offline" && !queued.isSuccess)
 
         fun confirmed(s: Double) = ReceiptThread.derive(null, ReplyDelivery.Delivered(null), changedAt = rt0, now = plus(s))
         assertTrue(
-            "typed once the Mac has confirmed, and not a moment before",
+            "typed once the computer has confirmed, and not a moment before",
             confirmed(0.18).stage == ReceiptThread.Stage.Typed && near(confirmed(0.18).reach, 0.9375, 1e-3) && !confirmed(0.18).macLit,
         )
         assertTrue(
-            "then the Mac lights, then verified",
+            "then the computer lights, then verified",
             confirmed(0.36).macLit && confirmed(0.6).stage == ReceiptThread.Stage.Verified && confirmed(0.6).word == "verified ✓",
         )
         assertTrue("the dot turns teal and the rings draw in", near(confirmed(0.8).dotTeal, 0.5, 1e-3) && near(confirmed(0.8).rings, 0.5, 1e-3))
@@ -252,9 +252,9 @@ class SignatureMotionTest {
         assertTrue("snapped back, and still once the shake is over", near(failedAt(0.24).reach, 0.0) && !failedAt(0.5).moving)
         assertEquals("an empty failure still says something", "Couldn't deliver the reply", ReceiptThread.derive(null, ReplyDelivery.Failed(""), changedAt = rt0, now = rt0).word)
         assertEquals("Prompt closed before your answer", ReceiptThread.derive(null, ReplyDelivery.Gone, changedAt = rt0, now = rt0).word)
-        assertEquals("Already answered at the Mac", ReceiptThread.derive(null, ReplyDelivery.AlreadyReplied, changedAt = rt0, now = rt0).word)
+        assertEquals("Already answered at your computer", ReceiptThread.derive(null, ReplyDelivery.AlreadyReplied, changedAt = rt0, now = rt0).word)
         assertEquals(
-            "a problem on this phone beats the Mac's news", "No passcode",
+            "a problem on this phone beats the computer's news", "No passcode",
             ReceiptThread.derive(null, ReplyDelivery.Delivered(null), localProblem = "No passcode", changedAt = rt0, now = rt0).word,
         )
         assertEquals("nothing under way draws nothing", ReceiptThread.Stage.Idle, ReceiptThread.derive(null, null, changedAt = null, now = rt0).stage)

@@ -73,7 +73,7 @@ final class TowerConfirmFlowsTests: XCTestCase {
         let before = read(".claude/settings.json")
 
         s.hooks.run(.install, .claude)
-        XCTAssertEqual(d.open.map(\.spec.title), ["Install Page's Claude Code hooks?"])
+        XCTAssertEqual(d.open.map(\.spec.title), ["Install Page Studio's Claude Code hooks?"])
         XCTAssertEqual(read(".claude/settings.json"), before, "nothing is written before Install is pressed")
 
         answerNext(d, ok)
@@ -88,7 +88,7 @@ final class TowerConfirmFlowsTests: XCTestCase {
         let s = makeHooks(d)
 
         s.hooks.run(.install, .codex)
-        XCTAssertEqual(d.open.map(\.spec.title), ["Install Page's Codex hooks?"])
+        XCTAssertEqual(d.open.map(\.spec.title), ["Install Page Studio's Codex hooks?"])
         answerNext(d, cancel)
 
         XCTAssertNil(read(".codex/hooks.json"), "Cancel writes no Codex hooks")
@@ -103,7 +103,7 @@ final class TowerConfirmFlowsTests: XCTestCase {
 
         s.hooks.run(.install, .codex)
         s.hooks.run(.install, .codex)
-        XCTAssertEqual(d.open.map(\.spec.title), ["Install Page's Codex hooks?"], "one dialog, not two")
+        XCTAssertEqual(d.open.map(\.spec.title), ["Install Page Studio's Codex hooks?"], "one dialog, not two")
         XCTAssertEqual(d.history.count, 1)
 
         answerNext(d, ok)
@@ -149,7 +149,7 @@ final class TowerConfirmFlowsTests: XCTestCase {
         let installed = read(".claude/settings.json")
 
         s.hooks.run(.uninstall, .claude)
-        XCTAssertEqual(d.open.map(\.spec.title), ["Remove Page's Claude Code hooks?"])
+        XCTAssertEqual(d.open.map(\.spec.title), ["Remove Page Studio's Claude Code hooks?"])
         answerNext(d, cancel)
         XCTAssertEqual(read(".claude/settings.json"), installed, "Cancel keeps the hooks as they were")
         XCTAssertTrue(d.open.isEmpty, "no 'Hooks removed' notice after Cancel")
@@ -157,7 +157,7 @@ final class TowerConfirmFlowsTests: XCTestCase {
 
         s.hooks.run(.uninstall, .claude)
         answerNext(d, ok)
-        XCTAssertFalse(read(".claude/settings.json")?.contains("page-notify") == true, "OK removed Page's entries")
+        XCTAssertFalse(read(".claude/settings.json")?.contains("page-notify") == true, "OK removed Page Studio's entries")
         XCTAssertEqual(d.open.map(\.spec.title), ["Hooks removed"])
         answerNext(d, ok)
         XCTAssertEqual(s.hooks.claude.chip, .notInstalled)

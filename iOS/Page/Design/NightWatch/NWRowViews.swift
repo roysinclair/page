@@ -103,7 +103,7 @@ struct NWOutcomeStrip: View {
         case .sending:
             HStack(spacing: 10) {
                 ProgressView().controlSize(.small).tint(NightWatch.Palette.textSecondary.color)
-                Text("Waiting for your Mac to confirm…").font(NightWatch.Typo.monoMicro)
+                Text("Waiting for your computer to confirm…").font(NightWatch.Typo.monoMicro)
                     .foregroundColor(NightWatch.Palette.textSecondary.color)
                 Spacer(minLength: 0)
             }
@@ -215,7 +215,7 @@ struct NWDecideCard: View {
                 }
             }
         } else if row.action(.openOnMac) != nil {
-            Button("Open on Mac", action: onOpen).buttonStyle(NWButtonStyle(kind: .quiet))
+            Button("Open on your computer", action: onOpen).buttonStyle(NWButtonStyle(kind: .quiet))
         }
     }
 
@@ -495,7 +495,7 @@ struct NWReviewCard: View {
                     if row.action(.carryOn) != nil {
                         Button(action: onLooksGood) { Text("Looks good ✦") }.buttonStyle(NWButtonStyle(kind: .bright))
                     } else if row.action(.openOnMac) != nil {
-                        Button("Open on Mac", action: onOpen).buttonStyle(NWButtonStyle(kind: .quiet))
+                        Button("Open on your computer", action: onOpen).buttonStyle(NWButtonStyle(kind: .quiet))
                     }
                 }
             }

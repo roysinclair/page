@@ -162,12 +162,12 @@ fun NWRoomScreenLens(data: SessionRoomData, actions: SessionRoomActions, modifie
                 }
                 Terminal(screen.lines, data.runs, wrap, actions, Modifier.weight(1f))
                 Text(
-                    if (data.runs.isEmpty()) "Redacted before it leaves the Mac" else "Tap a workflow row to open it · redacted before it leaves the Mac",
+                    if (data.runs.isEmpty()) "Redacted before it leaves your computer" else "Tap a workflow row to open it · redacted before it leaves your computer",
                     style = NW.Typo.caption, color = NW.Palette.textTertiary.color, modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                 )
             }
         } else {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("The screen appears once your Mac sends it.", style = NW.Typo.body, color = NW.Palette.textTertiary.color) }
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("The screen appears once your computer sends it.", style = NW.Typo.body, color = NW.Palette.textTertiary.color) }
         }
         // The question the terminal is asking, answerable over its own screen.
         data.ask?.let { ask ->
@@ -242,12 +242,12 @@ private val removedColor: Rgba = NW.Palette.red.mixed(NW.Palette.amber, 0.45)
 @Composable
 fun NWChangesPanel(model: ChangesModel?, load: ChangesModel.Load, onRefresh: () -> Unit = {}, onCopy: (String) -> Unit = {}, modifier: Modifier = Modifier, footer: @Composable () -> Unit = {}) {
     when (load) {
-        ChangesModel.Load.Loaded -> if (model != null) ChangesContent(model, onRefresh, onCopy, modifier, footer) else Message("No answer from your Mac.", true, onRefresh, modifier)
+        ChangesModel.Load.Loaded -> if (model != null) ChangesContent(model, onRefresh, onCopy, modifier, footer) else Message("No answer from your computer.", true, onRefresh, modifier)
         ChangesModel.Load.Loading -> Column(modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             CircularProgressIndicator(Modifier.size(24.dp), color = NW.Palette.textSecondary.color, strokeWidth = 2.dp)
-            Text("Asking your Mac…", style = NW.Typo.body, color = NW.Palette.textTertiary.color, modifier = Modifier.padding(top = 12.dp))
+            Text("Asking your computer…", style = NW.Typo.body, color = NW.Palette.textTertiary.color, modifier = Modifier.padding(top = 12.dp))
         }
-        ChangesModel.Load.NoAnswer -> Message("No answer from your Mac. Tap Refresh to try again.", true, onRefresh, modifier)
+        ChangesModel.Load.NoAnswer -> Message("No answer from your computer. Tap Refresh to try again.", true, onRefresh, modifier)
         is ChangesModel.Load.Failed -> Message(load.why, true, onRefresh, modifier)
     }
 }
@@ -312,7 +312,7 @@ private fun ChangesContent(m: ChangesModel, onRefresh: () -> Unit, onCopy: (Stri
             Text(if (sec.path.isEmpty()) "Patch" else sec.path, style = NW.Typo.monoSmall, color = NW.Palette.textSecondary.color, maxLines = 1)
             DiffBlock(sec.lines)
         }
-        if (m.truncated) Text("Cut short to fit — the rest is on your Mac.", style = NW.Typo.caption, color = NW.Palette.textTertiary.color, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        if (m.truncated) Text("Cut short to fit — the rest is on your computer.", style = NW.Typo.caption, color = NW.Palette.textTertiary.color, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         footer()
     }
 }
@@ -828,7 +828,7 @@ fun NWAgentRoomScreen(
                 } else {
                     Row(Modifier.fillMaxWidth().padding(top = 40.dp), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(Modifier.size(20.dp), color = NW.Palette.textSecondary.color, strokeWidth = 2.dp)
-                        Text("Asking your Mac…", style = NW.Typo.body, color = NW.Palette.textTertiary.color)
+                        Text("Asking your computer…", style = NW.Typo.body, color = NW.Palette.textTertiary.color)
                     }
                 }
                 NWInfoNote(AgentRoomModel.readOnlyNote, Modifier.padding(top = 8.dp), Icons.Outlined.Visibility)

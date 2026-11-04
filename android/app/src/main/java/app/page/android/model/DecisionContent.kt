@@ -153,10 +153,10 @@ data class DecisionContent(
             }
 
             val isInfo: String? = when {
-                iv.kind == InterventionKind.RATE_LIMIT && iv.subtype == "battery_forecast" -> "Nothing to answer. Plug your Mac in to keep the agents going."
-                iv.kind == InterventionKind.RATE_LIMIT && iv.subtype == "usage_forecast" -> "Nothing to answer. Page keeps the Mac awake through the reset and can resume sessions when it resets."
+                iv.kind == InterventionKind.RATE_LIMIT && iv.subtype == "battery_forecast" -> "Nothing to answer. Plug your computer in to keep the agents going."
+                iv.kind == InterventionKind.RATE_LIMIT && iv.subtype == "usage_forecast" -> "Nothing to answer. Page Power keeps your computer awake through the reset and can resume sessions when it resets."
                 iv.kind == InterventionKind.RATE_LIMIT && iv.backend == InterventionBackend.CODEX -> "Nothing to answer. Codex picks up again once the limit resets."
-                iv.kind == InterventionKind.IDLE && iv.subtype == "low_battery" -> "Page paused your agents at the battery cutoff. Plug the Mac in and they resume."
+                iv.kind == InterventionKind.IDLE && iv.subtype == "low_battery" -> "Page Power paused your agents at the battery cutoff. Plug your computer in and they resume."
                 else -> null
             }
 
@@ -168,7 +168,7 @@ data class DecisionContent(
                 var where_ = "session ${Sw.prefix(iv.sessionId, 8)}"
                 val source = iv.source
                 if (source != null && source != InterventionSource.UNKNOWN) where_ += " (${source.label})"
-                footer = "Page types your reply into $where_ on $mac."
+                footer = "Page Studio types your reply into $where_ on $mac."
             }
             val level = row.reversibility
             val unknownAgent = iv.hasUnknownBackend || (session?.backend is AgentBackend.Other)

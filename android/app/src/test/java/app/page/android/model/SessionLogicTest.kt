@@ -57,14 +57,14 @@ class SessionLogicTest {
         assertEquals("202 keeps waiting", SessionDeliveryState.Sending, d.afterPost(SessionCommandOutcome.Accepted))
         assertEquals(SessionDeliveryState.Failed(SessionCommandOutcome.MacOffline.failureMessage!!), d.afterPost(SessionCommandOutcome.MacOffline))
         assertEquals(SessionDeliveryState.Typed(null), SessionDeliveryState.Typed(null).afterPost(SessionCommandOutcome.MacOffline))
-        assertTrue(SessionDeliveryState.Typed(null).label(stop) == "Stopped" && SessionDeliveryState.NoAnswer.label(input) == "No answer from your Mac")
+        assertTrue(SessionDeliveryState.Typed(null).label(stop) == "Stopped" && SessionDeliveryState.NoAnswer.label(input) == "No answer from your computer")
         assertTrue(SessionDeliveryState.NoAnswer.explanation(input, "Claude")!!.contains("20 seconds"))
 
         // TalkBack hears the same status and explanation the bubble shows.
         val draft = d.applying(result(CommandResult.Code.REFUSED, reason = "draft"), "Claude")
         assertEquals("Refused. " + SessionResultCopy.refusal("draft", null, "Claude"), draft.spokenBubbleStatus(input, "Claude"))
         val noAnswer = SessionDeliveryState.NoAnswer.spokenBubbleStatus(input, "Claude")
-        assertTrue(noAnswer.startsWith("No answer from your Mac. ") && noAnswer.contains("check the transcript"))
+        assertTrue(noAnswer.startsWith("No answer from your computer. ") && noAnswer.contains("check the transcript"))
         assertEquals("Not sent. tmux went away", SessionDeliveryState.Failed("tmux went away").spokenBubbleStatus(input, "Claude"))
         assertNull(SessionDeliveryState.Typed("Typed into cmux").bubbleExplanation(input, "Claude"))
         assertEquals("Typed", SessionDeliveryState.Typed("Typed into cmux").spokenBubbleStatus(input, "Claude"))
@@ -114,7 +114,7 @@ class SessionLogicTest {
         assertEquals("reason copy is distinct", reasons.size, reasons.map { SessionResultCopy.refusal(it, null, "Claude") }.toSet().size)
         assertEquals("Mac says no", SessionResultCopy.refusal("brand_new", "Mac says no", "Claude"))
         assertTrue(SessionResultCopy.refusal("waiting", null, "Codex").startsWith("Codex"))
-        assertEquals("Codex is mid-turn — Page can type once the turn ends.", SessionResultCopy.refusal("codex_mid_turn", null, "Codex"))
+        assertEquals("Codex is mid-turn — Page Studio can type once the turn ends.", SessionResultCopy.refusal("codex_mid_turn", null, "Codex"))
     }
 
     private fun te(id: String, role: TranscriptRole, text: String, at: Double? = null) =

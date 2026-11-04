@@ -45,7 +45,7 @@ struct NWTerminalsPage: View {
             if let notice = store.terminalNotice {
                 NWNote(text: notice.text, tone: notice.tone).padding(.horizontal, 4)
             }
-            NWNote(text: "Run Claude Code inside any of these and it shows up on your phone, ready to reply. Page types only into the exact pane or tab the session runs in, and checks it is still that session first. Anything else (Ghostty, Warp, VS Code’s terminal…) can’t be typed into yet: run the agent inside tmux, or install the agent hooks so approvals work from any terminal. Questions Claude asks can be answered from your phone wherever the line above says yes. Photos sent from your phone's session chat are attached where it says so; elsewhere Claude gets the file's location and opens it itself. Nothing here is installed for you.")
+            NWNote(text: "Run Claude Code inside any of these and it shows up on your phone, ready to reply. Page Studio types only into the exact pane or tab the session runs in, and checks it is still that session first. Anything else (Ghostty, Warp, VS Code’s terminal…) can’t be typed into yet: run the agent inside tmux, or install the agent hooks so approvals work from any terminal. Questions Claude asks can be answered from your phone wherever the line above says yes. Photos sent from your phone's session chat are attached where it says so; elsewhere Claude gets the file's location and opens it itself. Nothing here is installed for you.")
                 .padding(.horizontal, 4)
             NWCard(title: "ANY OTHER TERMINAL") {
                 NWRow(title: "Agent hooks", detail: "phone approvals for Claude Code and Codex in any terminal, with a diff and a backup first") {

@@ -97,11 +97,11 @@ final class LogindInhibitor {
         p.terminate()
     }
 
-    static let unavailableMessage = "systemd-inhibit isn't installed, so this system has no logind to ask: Page can't keep it awake. Paging still works. (Install systemd or elogind.)"
+    static let unavailableMessage = "systemd-inhibit isn't installed, so this system has no logind to ask: Page Studio can't keep it awake. Paging still works. (Install systemd or elogind.)"
 
     /// Pure: the child's argv.
     static func arguments(what: String, why: String, parentPid: Int32) -> [String] {
-        ["--what=\(what)", "--who=Page", "--why=\(why)", "--mode=block",
+        ["--what=\(what)", "--who=Page Studio", "--why=\(why)", "--mode=block",
          "/usr/bin/env", "tail", "--pid=\(parentPid)", "-f", "/dev/null"]
     }
 
@@ -111,7 +111,7 @@ final class LogindInhibitor {
         let lower = s.lowercased()
         if lower.contains("system has not been booted with systemd") || lower.contains("failed to connect to bus")
             || lower.contains("no such file or directory") || lower.contains("could not activate") || lower.contains("not provided by any .service") {
-            return "logind isn't running here (\(s.isEmpty ? "no system bus" : s)): Page can't keep this machine awake. Paging still works."
+            return "logind isn't running here (\(s.isEmpty ? "no system bus" : s)): Page Studio can't keep this machine awake. Paging still works."
         }
         if lower.contains("access denied") || lower.contains("interactive authentication required") || lower.contains("permission") {
             return "logind refused the inhibitor (\(s)): this user may not block sleep (polkit). Paging still works."

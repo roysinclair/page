@@ -107,7 +107,7 @@ class StayConnectedService : Service() {
         }
         return NotificationCompat.Builder(this, PageNotifications.CHANNEL_CONNECTION)
             .setSmallIcon(R.drawable.ic_stat_page)
-            .setContentTitle("Page is staying connected")
+            .setContentTitle("Page Relay is staying connected")
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setContentIntent(open)

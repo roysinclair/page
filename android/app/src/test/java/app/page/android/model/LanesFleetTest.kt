@@ -167,7 +167,7 @@ class LanesFleetTest {
         val ac = TowerPower.build(nwStatus(connected = true, age = 5.0, battery = 82, onAC = true))
         assertEquals("82% · agents keep running on power", ac.headline)
         assertEquals("on power", ac.state)
-        assertEquals("No reading from your Mac", TowerPower.build(null).headline)
+        assertEquals("No reading from your computer", TowerPower.build(null).headline)
     }
 
     @Test fun `the Tower's one Mac row is active and says live and the pairing date`() {

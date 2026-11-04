@@ -1,6 +1,6 @@
 ---
 // How Page Studio connects, as live HTML (it reflows: a row on wide screens, a column on phones or when `vertical`).
-// Coding agents, Page Aura and Page Orbit all reach Page Power on the same Mac; Page Power connects out to your own
+// Coding agents, Page Aura and Page Orbit all reach Page Studio on the same computer; Page Studio connects out to your own
 // relay; your phone connects out to the same relay. Comets travel each link: pages out, replies back
 // (styles/motion.css, .flow-line). Facts from docs/AURA-LINK.md, docs/ORBIT-LINK.md and Cloudflare/README.md.
 import ProductIcon from './ProductIcon.astro';
@@ -8,13 +8,13 @@ import Icon from './Icon.astro';
 interface Props { vertical?: boolean; sources?: boolean; compact?: boolean; class?: string }
 const { vertical = false, sources = true, compact = false, class: cls = '' } = Astro.props;
 const links = [
-  { top: 'same Mac', bottom: 'local socket', dl: '0s' },
+  { top: 'same computer', bottom: 'local socket', dl: '0s' },
   { top: 'outbound wss', bottom: 'live sessions sealed end to end', dl: '-0.9s' },
   { top: 'wss · HTTPS', bottom: 'Apple push optional', dl: '-1.8s' },
 ];
 const Link = links;
-const label = (sources ? 'How Page Studio connects: AI coding agents, Page Aura and Page Orbit reach Page Power on your Mac. ' : '')
-  + 'Page Power connects out to your own relay, a Cloudflare Worker on your account; your phone connects out to the same relay.';
+const label = (sources ? 'How Page Studio connects: AI coding agents, Page Aura and Page Orbit reach Page Studio on your computer. ' : '')
+  + 'Page Studio connects out to Page Relay, a Cloudflare Worker on your own account; your phone connects out to the same relay.';
 ---
 <div class={`flow ${vertical ? 'vert' : ''} ${sources ? '' : 'nosrc'} ${compact ? 'compact' : ''} ${cls}`} role="group" aria-label={label}>
   {sources && <div class="flow-sources">
@@ -43,23 +43,23 @@ const label = (sources ? 'How Page Studio connects: AI coding agents, Page Aura 
       {i === 0 && (
         <div class="flow-node hero">
           <ProductIcon product="power" size={44} glow />
-          <strong>Page Power</strong>
-          <small>menu bar · your Mac</small>
-          <em>keeps it awake · pages you</em>
+          <strong>Page Studio</strong>
+          <small>your Mac · Linux preview</small>
+          <em>Power keeps it awake · Relay pages you</em>
         </div>
       )}
       {i === 1 && (
         <div class="flow-node">
           <span class="flow-ico big"><Icon name="cloud" size={22} /></span>
           <strong>Page Relay</strong>
-          <small>your Cloudflare Worker</small>
+          <small>Worker on your Cloudflare</small>
           <em>yours, not ours</em>
         </div>
       )}
       {i === 2 && (
         <div class="flow-node">
           <span class="flow-ico big"><Icon name="phone" size={22} /></span>
-          <strong>Your phone</strong>
+          <strong>Page Relay app</strong>
           <small>iPhone · Android</small>
           <em>answer from the lock screen</em>
         </div>

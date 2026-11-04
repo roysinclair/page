@@ -1,6 +1,8 @@
 # Page Relay — Cloudflare Worker
 
-The relay between the **Page** Mac app (menu bar, `Sources/ClaudePowerMode`), the optional Claude Code hook (`hooks/page-notify.sh`) and the **Page** iOS app. Built on Cloudflare Workers + Durable Objects + APNs HTTP/2.
+The **Page Relay** Worker: the relay between **Page Studio** on your computer (the Mac menu-bar app, `Sources/ClaudePowerMode`, or `paged` on Linux), the optional Claude Code hook (`hooks/page-notify.sh`) and the **Page Relay** phone apps (iPhone and Android). Built on Cloudflare Workers + Durable Objects + APNs HTTP/2.
+
+In this reference, **Mac** names the computer side of the protocol: Page Studio for Mac or `paged` on Linux. The wire names (`role: "mac"`, `mac.status`, the `page-mac/…` User-Agent) keep that spelling for compatibility; what the Worker shows people says "your computer".
 
 ## What it does
 
@@ -30,7 +32,7 @@ Cloudflare/
 
 All routes except `/health` need `Authorization: Bearer <relayToken>`. Every response is JSON; errors are `{ "error": "<code>", … }`.
 
-**Retired tokens.** Once a token has been retired (see [Token retirement](#token-retirement)), *every* request on it — each route below, a WebSocket upgrade, an unknown path — is answered `410 {"error": "token_retired", "why": "This pairing was replaced on your Mac — scan the new QR code"}`. Only `/health` (which never reaches the token's Durable Object) still answers `200`. `410` therefore has two meanings: clients must key on `error` — `gone` (that one page closed, see [Replies](#replies)) vs `token_retired` (the whole pairing is dead: re-pair).
+**Retired tokens.** Once a token has been retired (see [Token retirement](#token-retirement)), *every* request on it — each route below, a WebSocket upgrade, an unknown path — is answered `410 {"error": "token_retired", "why": "This pairing was replaced on your computer — scan the new QR code"}`. Only `/health` (which never reaches the token's Durable Object) still answers `200`. `410` therefore has two meanings: clients must key on `error` — `gone` (that one page closed, see [Replies](#replies)) vs `token_retired` (the whole pairing is dead: re-pair).
 
 | Route | Who | What |
 |---|---|---|
@@ -94,7 +96,7 @@ Optional on any open: `promptKey` — the prompt the page is about, as the agent
 { "type": "heartbeat",           "payload": { "ts": "...", "activeSessions": N, "battery": N, "onAC": bool } }
 { "type": "reply.result",        "payload": { "interventionId": "...", "success": bool, "method": "...", "detail": "..." } }
 { "type": "mac.status",          "payload": { "macConnected": bool, "lastHeartbeatAt": "..." } }
-{ "type": "relay.retired",       "payload": { "reason": "token_regenerated", "why": "This pairing was replaced on your Mac — scan the new QR code" } }
+{ "type": "relay.retired",       "payload": { "reason": "token_regenerated", "why": "This pairing was replaced on your computer — scan the new QR code" } }
 ```
 Text `"ping"` is answered with `"pong"` without waking the Durable Object. Phones should ignore frame types they don't know.
 

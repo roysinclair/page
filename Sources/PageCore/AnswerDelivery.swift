@@ -18,13 +18,13 @@ import Foundation
 enum AnswerDelivery {
     static let questionChangedMessage = "That question changed — look at your phone for the new one"
     static let alreadyAnsweredMessage = "That question was already answered"
-    static let unreadableMessage = "Page can't read this question's layout — answer at your Mac"
-    static let holdMessage = "Page's phone-approval hook is handling this question — answer that page instead"
-    static let severalMessage = "Several prompts are queued — answer at your Mac"
+    static let unreadableMessage = "Page Studio can't read this question's layout — answer at your computer"
+    static let holdMessage = "Page Studio's phone-approval hook is handling this question — answer that page instead"
+    static let severalMessage = "Several prompts are queued — answer at your computer"
     /// Terminal.app's `do script` appends a Return to everything it types. Measured on a tmux stand-in: that
     /// Return lands on the next question or dismisses an Other answer, so no question shape is safe yet.
-    static let terminalAppMessage = "Terminal.app adds a Return to every key Page types, which would skip or dismiss questions — answer at your Mac, or use tmux or iTerm2"
-    static let noScreenMessage = "Page can't read this terminal's screen, so it can't check the question — answer at your Mac"
+    static let terminalAppMessage = "Terminal.app adds a Return to every key Page Studio types, which would skip or dismiss questions — answer at your Mac, or use tmux or iTerm2"
+    static let noScreenMessage = "Page Studio can't read this terminal's screen, so it can't check the question — answer at your computer"
     static let confirmWait: TimeInterval = 4
 
     struct IO {
@@ -66,7 +66,7 @@ enum AnswerDelivery {
         case .tmux, .iTerm, .cmux, .wezterm, .kitty, .herdr: return .success(.withArrows)
         case .terminalApp: return .failure(.init(terminalAppMessage))
         case .unreachable(let why): return .failure(.init(why))
-        case .unsupported(let app): return .failure(.init("Page can't type into \(app) yet — use tmux or iTerm2"))
+        case .unsupported(let app): return .failure(.init("Page Studio can't type into \(app) yet — use tmux or iTerm2"))
         case .unknown: return .failure(.init("Couldn't find the session's terminal"))
         }
     }
@@ -80,7 +80,7 @@ enum AnswerDelivery {
         case .failed(let f): return .refused(.notTypable, f.detail)
         case .live(let s, let t): session = s; table = t
         }
-        guard session.tty != nil else { return .refused(.notTypable, "This session isn't running in a terminal Page can type into") }
+        guard session.tty != nil else { return .refused(.notTypable, "This session isn't running in a terminal Page Studio can type into") }
         guard session.hasSessionFile, let rec = io.currentRecord(session.pid) else {
             return .refused(.unknownState, SessionInputGate.unknownStateMessage)
         }
@@ -142,7 +142,7 @@ enum AnswerDelivery {
             Logger.shared.log("Answer session=\(session.sessionId.prefix(8)) stopped after \(sent) key(s)")
             // Nothing was typed: the question moved on, or the terminal itself refused the first key.
             if sent == 0 { return .refused(hostFailed ? .notTypable : .questionChanged, why) }
-            return .failed(String("\(why). The question is part-filled at your Mac.".prefix(SessionCommandResult.maxDetail)))
+            return .failed(String("\(why). The question is part-filled at your computer.".prefix(SessionCommandResult.maxDetail)))
         case .submitted:
             return confirm(asked: asked, answers: answers, session: session, host: host, io: io)
         }
@@ -172,11 +172,11 @@ enum AnswerDelivery {
         case .different:
             return .failed("Sent, but Claude received different answers than you picked — check the transcript")
         case .rejected:
-            return .failed("The question was dismissed at your Mac before the answers went in")
+            return .failed("The question was dismissed at your computer before the answers went in")
         case .notFound:
             // No transcript record, and the session still shows a question: the screen parse alone said "closed".
             if stillWaiting {
-                return .failed("Sent the keys, but the question may still be open at your Mac — check it there")
+                return .failed("Sent the keys, but the question may still be open at your computer — check it there")
             }
             return SessionCommandResult(code: .delivered, reason: nil,
                                         detail: "Answered \(n) question\(n == 1 ? "" : "s") in \(where_) (couldn't confirm what Claude received)")
@@ -246,7 +246,7 @@ extension InjectionExecutor {
         case .cmux(let target):
             return sendOneKeyViaCmux(key, to: target)
         case .terminalApp, .unreachable, .unsupported, .unknown:
-            return "Page can't press keys in \(host.label)"
+            return "Page Studio can't press keys in \(host.label)"
         }
         return result.success ? nil : (result.detail.isEmpty ? "Couldn't type into \(host.label)" : result.detail)
     }

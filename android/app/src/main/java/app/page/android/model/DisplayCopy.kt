@@ -70,24 +70,24 @@ object CloseReason {
 
     /** Reads on its own (History) and after "Resolved — " (reply screen). */
     fun description(reason: String?): String = when (reason) {
-        "replied" -> "Answered from Page"
+        "replied" -> "Answered from Page Relay"
         "user_resolved_in_terminal" -> "Answered in the terminal"
         "superseded" -> "Replaced by a newer page from this session"
         "evicted" -> "Removed to make room for newer pages"
         "timeout" -> "Timed out"
         "stale" -> "The session is no longer waiting"
-        "session_resolved" -> "Resolved on your Mac"
-        "hook_lost" -> "Lost contact with the hook on your Mac, so the prompt went back to the terminal"
+        "session_resolved" -> "Resolved on your computer"
+        "hook_lost" -> "Lost contact with the hook on your computer, so the prompt went back to the terminal"
         "expired" -> "Expired after a day without an answer"
         "agent_exited" -> "The agent exited before your answer could be applied"
         "too_late" -> "Your reply arrived too late to apply, so the prompt went back to the terminal"
-        "token_retired" -> "This pairing was replaced on your Mac"
-        "hook_exited" -> "The hook on your Mac stopped waiting"
-        "hook_fallback" -> "Handed back to the terminal on your Mac"
-        "user_returned" -> "You came back to your Mac, so it's waiting there"
+        "token_retired" -> "This pairing was replaced on your computer"
+        "hook_exited" -> "The hook on your computer stopped waiting"
+        "hook_fallback" -> "Handed back to the terminal on your computer"
+        "user_returned" -> "You came back to your computer, so it's waiting there"
         "resolved_elsewhere" -> "Answered somewhere else"
         "not_a_decision" -> "That reply wasn't an approve or deny, so the prompt went back to the terminal"
-        else -> "Resolved on your Mac"
+        else -> "Resolved on your computer"
     }
 }
 
@@ -133,7 +133,7 @@ object ReplyCopy {
  * sockets. Either means this pairing is dead for good: re-pair.
  */
 object TokenRetirement {
-    const val DEFAULT_WHY = "This pairing was replaced on your Mac — scan the new QR code"
+    const val DEFAULT_WHY = "This pairing was replaced on your computer — scan the new QR code"
     const val MAX_WHY_LENGTH = 300
 
     /**

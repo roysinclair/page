@@ -389,7 +389,7 @@ final class AuraBackend: AgentBackend, @unchecked Sendable {
     static func permissionContext(server: String, tool: String, args: String, onThisMac: Bool = true) -> String {
         var head = "Use \(server.isEmpty ? "an app" : server)"
         if !tool.isEmpty { head += " · \(tool)" }
-        if onThisMac { head += " on this Mac" }
+        if onThisMac { head += " on this computer" }
         let shown = ContextRedactor.redactedPrefix(args, maxPromptContext).prefix(maxPromptContext)
         guard !shown.isEmpty else { return head }
         return head + "\n" + shown + (args.count > maxPromptContext ? "…" : "")

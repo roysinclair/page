@@ -21,7 +21,7 @@ final class PreferencesWindowController: NSWindowController, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "Page Settings"
+        window.title = "Page Studio Settings"
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.isMovableByWindowBackground = true
@@ -126,11 +126,11 @@ final class PreferencesWindowController: NSWindowController, NSWindowDelegate {
             } else if (response as? HTTPURLResponse)?.statusCode == 200,
                       let data, let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                       json["ok"] as? Bool == true {
-                message = "✓ Page relay is reachable"
+                message = "✓ Page Relay is reachable"
                 ok = true
             } else {
                 let code = (response as? HTTPURLResponse)?.statusCode ?? 0
-                message = "✗ That server answered (HTTP \(code)) but isn’t a Page relay"
+                message = "✗ That server answered (HTTP \(code)) but isn’t a Page Relay"
                 ok = false
             }
             DispatchQueue.main.async { done(message, ok) }

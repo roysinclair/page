@@ -168,7 +168,7 @@ enum NightWatchFixtures {
         var local: [LocalActivity] = []
         if blocked {
             sessions.append(working("payments-api", since: 9))
-            hosts["sess-payments-api"] = .blocked("Ghostty", "Page can't type into Ghostty yet")
+            hosts["sess-payments-api"] = .blocked("Ghostty", "Page Studio can't type into Ghostty yet")
             activity["sess-payments-api"] = "Read: Package.swift"
             local = [LocalActivity(id: "ollama", displayName: "Ollama", kind: .server, busy: true, signal: .exact,
                                    detail: "generating · exact")]

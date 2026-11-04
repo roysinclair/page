@@ -200,9 +200,9 @@ final class SystemdTimerScheduler: WakeScheduler {
 
     static func serviceUnit(scriptPath: String, path: String) -> String {
         """
-        # Page scheduled resume — written by paged; removed when it has run.
+        # Page Studio scheduled resume — written by paged; removed when it has run.
         [Unit]
-        Description=Page: carry on a rate-limited Claude Code session
+        Description=Page Studio: carry on a rate-limited Claude Code session
 
         [Service]
         Type=oneshot
@@ -216,9 +216,9 @@ final class SystemdTimerScheduler: WakeScheduler {
         let c = ResumeScheduler.calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fireAt)
         let when = String(format: "%04d-%02d-%02d %02d:%02d:00", c.year ?? 1970, c.month ?? 1, c.day ?? 1, c.hour ?? 0, c.minute ?? 0)
         return """
-        # Page scheduled resume — written by paged; removed when it has run.
+        # Page Studio scheduled resume — written by paged; removed when it has run.
         [Unit]
-        Description=Page: resume timer
+        Description=Page Studio: resume timer
 
         [Timer]
         OnCalendar=\(when)
@@ -280,7 +280,7 @@ final class NotifySendNotifier: Notifier {
 
     /// Pure. `--` ends the options, so a title starting with "-" stays text.
     static func arguments(title: String, body: String) -> [String] {
-        ["--app-name=Page", "--icon=dialog-information", "--", String(title.prefix(200)), String(body.prefix(1000))]
+        ["--app-name=Page Studio", "--icon=dialog-information", "--", String(title.prefix(200)), String(body.prefix(1000))]
     }
 }
 
@@ -311,15 +311,15 @@ final class LinuxTerminalHost: TerminalHostPlatform {
             let r = ProcessRunner.run(target.kittenPath, TerminalFocus.kittyArgs(socket: target.socket, windowId: target.windowId), timeout: 3)
             return TerminalFocusOutcome(ok: r.succeeded, detail: r.succeeded ? "Selected the kitty window" : "Couldn't select the kitty window")
         default:
-            return TerminalFocusOutcome(ok: false, detail: "Page can only select tmux, WezTerm and kitty panes on Linux")
+            return TerminalFocusOutcome(ok: false, detail: "Page Studio can only select tmux, WezTerm and kitty panes on Linux")
         }
     }
 
     func activateAnyTerminal() -> TerminalFocusOutcome {
-        TerminalFocusOutcome(ok: false, detail: "Page can't bring windows forward on Linux")
+        TerminalFocusOutcome(ok: false, detail: "Page Studio can't bring windows forward on Linux")
     }
 
     func activate(appNamed name: String) -> TerminalFocusOutcome {
-        TerminalFocusOutcome(ok: false, detail: "Page can't bring \(name) forward on Linux")
+        TerminalFocusOutcome(ok: false, detail: "Page Studio can't bring \(name) forward on Linux")
     }
 }

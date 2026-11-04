@@ -434,7 +434,7 @@ struct NWAuroraHeader: View {
                 .overlay(NWCursorRect(cursor: .pointingHand))
                 .help("Settings")
                 .accessibilityLabel(Text("Settings"))
-                .accessibilityHint(Text("Opens Page's settings"))
+                .accessibilityHint(Text("Opens Page Studio's settings"))
         } else {
             orb
         }

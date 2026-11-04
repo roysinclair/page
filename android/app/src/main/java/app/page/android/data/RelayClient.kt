@@ -392,7 +392,7 @@ object RelayClient {
             }
             val decoded = Intervention.decodeList(r.body)
             if (decoded == null) {
-                _inboxLoad.value = LoadState.Failed("The relay sent data this version of Page doesn't understand.")
+                _inboxLoad.value = LoadState.Failed("The relay sent data this version of Page Relay doesn't understand.")
                 return
             }
             if (decoded.droppedCount > 0) Log.i(TAG, "skipped ${decoded.droppedCount} undecodable intervention(s)")
@@ -494,7 +494,7 @@ object RelayClient {
             }
             val decoded = Intervention.decodeList(r.body)
             if (decoded == null) {
-                _historyLoad.value = LoadState.Failed("The relay sent data this version of Page doesn't understand.")
+                _historyLoad.value = LoadState.Failed("The relay sent data this version of Page Relay doesn't understand.")
                 return
             }
             _history.value = decoded.elements.sortedByDescending { it.closedAt ?: it.openedAt }
@@ -561,7 +561,7 @@ object RelayClient {
                 _authRejected.value = true
                 state.value = LoadState.Failed("The relay no longer accepts this pairing.")
             }
-            404 -> state.value = LoadState.Failed("The relay doesn't recognise this request (HTTP 404). Is the relay URL on your Mac right?")
+            404 -> state.value = LoadState.Failed("The relay doesn't recognise this request (HTTP 404). Is the relay URL on your computer right?")
             else -> state.value = LoadState.Failed("The relay returned an error (HTTP $status).")
         }
     }
@@ -576,8 +576,8 @@ object RelayClient {
         val creds = credentials()
         val url = creds?.url("reply", interventionId)
         if (creds == null || url == null) {
-            setDelivery(interventionId, ReplyDelivery.Failed("Page isn't paired with a Mac."))
-            return ReplyOutcome.Failed("Page isn't paired with a Mac.")
+            setDelivery(interventionId, ReplyDelivery.Failed("Page Relay isn't paired with a computer."))
+            return ReplyOutcome.Failed("Page Relay isn't paired with a computer.")
         }
         setDelivery(interventionId, ReplyDelivery.Sending)
         lastReplies.remove(interventionId)
@@ -612,7 +612,7 @@ object RelayClient {
             }
             ReplyOutcome.Unauthorized -> {
                 _authRejected.value = true
-                setDelivery(interventionId, ReplyDelivery.Failed("The relay no longer accepts this pairing. Re-pair with your Mac."))
+                setDelivery(interventionId, ReplyDelivery.Failed("The relay no longer accepts this pairing. Re-pair with your computer."))
             }
             is ReplyOutcome.Retired -> markRetired(outcome.why)
             is ReplyOutcome.Failed -> setDelivery(interventionId, ReplyDelivery.Failed(outcome.message))
@@ -632,7 +632,7 @@ object RelayClient {
         if (SessionStore.state.value.relayFeatures == null) refreshStatus()
         val creds = credentials()
         val url = creds?.url("reply", interventionId)
-        if (creds == null || url == null) return ReplyRetract.Outcome.Failed("Page isn't paired with a Mac.")
+        if (creds == null || url == null) return ReplyRetract.Outcome.Failed("Page Relay isn't paired with a computer.")
         // Features still unknown: /status couldn't be read, which says nothing about the relay's age. Not "update your
         // relay": a delete that never reached it, which can be tried again.
         if (SessionStore.state.value.relayFeatures == null) return ReplyRetract.Outcome.Failed(ReplyRetract.TRANSPORT)
@@ -714,7 +714,7 @@ object RelayClient {
     suspend fun postSessionCommand(body: String): SessionCommandOutcome {
         val creds = credentials()
         val url = creds?.url("sessions", "command")
-        if (creds == null || url == null) return SessionCommandOutcome.Failed("Page isn't paired with a Mac.")
+        if (creds == null || url == null) return SessionCommandOutcome.Failed("Page Relay isn't paired with a computer.")
         val outcome = try {
             val r = perform(request(url, creds.token, "POST", rawBody = body))
             SessionCommandOutcome.from(r.status, r.body)

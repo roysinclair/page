@@ -148,7 +148,7 @@ class PhotoUploadTest {
         val t = Fake(pieceAnswer = { p, _ -> if (p.index == 2) SessionCommandOutcome.MacOffline else SessionCommandOutcome.Accepted })
         val out = run(t, 900_000) as UploadOutcome.Stopped
         assertTrue(out.macOffline)
-        assertEquals("Your Mac went offline", out.message)
+        assertEquals("Your computer went offline", out.message)
         assertTrue("no inputImages", t.inputs.isEmpty())
         assertTrue("it stopped early", t.parts.size < 28)
     }

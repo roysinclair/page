@@ -63,12 +63,12 @@ object BiometricGate {
      * Asks the owner to confirm. [reason] names the scope ("Stop 4 busy sessions on Studio MBP"), because the
      * prompt is the last thing they read.
      */
-    suspend fun confirm(reason: String, title: String = "Confirm with Page"): Outcome {
+    suspend fun confirm(reason: String, title: String = "Confirm with Page Relay"): Outcome {
         if (demoBypass) {
             delay(250)
             return Outcome.Passed
         }
-        val activity = activityRef?.get() ?: return Outcome.Unavailable("Confirmation isn't available right now. Open Page and try again.")
+        val activity = activityRef?.get() ?: return Outcome.Unavailable("Confirmation isn't available right now. Open Page Relay and try again.")
         if (BiometricManager.from(activity).canAuthenticate(AUTHENTICATORS) != BiometricManager.BIOMETRIC_SUCCESS) {
             return Outcome.Unavailable("Set a screen lock on this phone to confirm this.")
         }

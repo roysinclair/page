@@ -370,7 +370,7 @@ class ReversibilityMirrorTest {
         assertEquals(350, rvTable.size)
         val wrong = rvTable.filter { (ctx, want) -> Reversibility.classify(ctx, rvCwd).level != want }
         assertEquals(
-            "rows that disagree with the Mac:\n" + wrong.joinToString("\n") { (ctx, want) -> ctx.replace("\n", " / ") + " wanted " + want },
+            "rows that disagree with the computer:\n" + wrong.joinToString("\n") { (ctx, want) -> ctx.replace("\n", " / ") + " wanted " + want },
             0, wrong.size,
         )
     }

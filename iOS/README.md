@@ -1,10 +1,11 @@
-# Page — iOS app
+# Page Relay for iPhone
 
 The on-call interface for AI coding agents. When a Claude Code or Codex
-session on your Mac needs you (an approval, a question, an idle session, a
-rate limit), the Page menu-bar app sends a page through your Cloudflare
-Worker relay to this app. You answer from the lock screen or the app, and
-the Mac types your reply into the live session.
+session on your computer needs you (an approval, a question, an idle session, a
+rate limit), Page Studio (the Mac menu-bar app, or `paged` on Linux) sends a
+page through your Cloudflare Worker relay to this app. You answer from the
+lock screen or the app, and your computer types your reply into the live session.
+The home-screen name is **Page Relay**.
 
 ## Build
 
@@ -75,7 +76,7 @@ shows them.
 
 There are no accounts. The phone and the Mac share one relay token.
 
-1. On the Mac, click the Page menu-bar icon → **Pair phone…**.
+1. On the Mac, click the Page Studio menu-bar icon → **Pair phone…**.
 2. In the app, tap **Scan pairing code**, or **Enter pairing code manually**
    and paste the JSON from **Copy pairing JSON**. The Simulator has no camera,
    so use the manual option there.
@@ -83,7 +84,7 @@ There are no accounts. The phone and the Mac share one relay token.
    - It must be version 1.
    - The relay must be `https://` or `wss://`.
    - The relay must not still be the example host `your-page-relay.workers.dev`.
-   - The relay's `/health` must answer as a Page relay.
+   - The relay's `/health` must answer as a Page Relay Worker.
    - The relay must accept the token on `/status`. Older Workers without
      `/status` are checked on `/interventions` instead.
 4. You confirm the Mac name and relay host, and the app saves the pairing.
@@ -201,15 +202,15 @@ time, not only when it pages you. The wire contract is
 
 ### Re-pairing for live sessions
 
-Pairings made before live sessions existed, or with an older Page on the
+Pairings made before live sessions existed, or with an older Page Studio on the
 Mac, have no session key. The Sessions tab then says **Re-pair with your Mac
-to see live sessions**. Update Page on the Mac, unpair in Settings (or tap
+to see live sessions**. Update Page Studio on the Mac, unpair in Settings (or tap
 **Re-pair…**), then on the Mac open **Pair phone…** and scan the new code.
 The inbox keeps working meanwhile.
 
 The tab also tells you when the relay needs updating (its `/status` lacks
 `sessions-v1`), when the Mac is offline, when the Mac is online but sends no
-list within 5 seconds (update Page on the Mac), and when the two clocks
+list within 5 seconds (update Page Studio on the Mac), and when the two clocks
 disagree by more than 10 minutes.
 
 ## Files

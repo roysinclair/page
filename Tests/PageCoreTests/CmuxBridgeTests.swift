@@ -203,7 +203,7 @@ final class CmuxAccessTests: XCTestCase {
     func testCmuxOnlyBlocksPageWithSetupHint() {
         let (r, _) = connect(mode: "cmuxOnly", secret: .found("pw"))
         guard case .failure(let f) = r else { return XCTFail("expected failure") }
-        XCTAssertEqual(f.detail, "cmux blocks Page — open Page ▸ Integrations ▸ Set up cmux…")
+        XCTAssertEqual(f.detail, "cmux blocks Page Studio — open Page Studio ▸ Integrations ▸ Set up cmux…")
         let (off, _) = connect(mode: "off", secret: .notFound)
         guard case .failure(let f2) = off else { return XCTFail("expected failure") }
         XCTAssertEqual(f2.detail, CmuxBridge.blockedDetail)

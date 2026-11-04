@@ -198,7 +198,7 @@ object Demo {
     @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
     private fun liveMotion() {
         val o = DemoFixtures.open
-        val paused = DemoFixtures.iv("pz", "bottle-flip", app.page.android.model.InterventionKind.IDLE, "Page paused your agents at 10% battery.", 5, sub = "low_battery")
+        val paused = DemoFixtures.iv("pz", "bottle-flip", app.page.android.model.InterventionKind.IDLE, "Page Power paused your agents at 10% battery.", 5, sub = "low_battery")
         // The fixtures' heartbeat is on the harness clock; live, the Mac must look present or the Horizon goes hollow.
         fun beat() = RelayClient.seedDemoStatus(DemoFixtures.status.copy(macConnected = true, lastHeartbeatAt = Instant.now()))
         beat()
@@ -273,8 +273,8 @@ object Demo {
             screen in setOf("now-inflight-long", "now-tip-undoable") -> listOf(o[1])
             screen in setOf("now-quiet", "now-still", "now-brief-quiet", "now-working", "now-flight-quiet", "now-tip-inflight") -> emptyList()
             screen.startsWith("problem-") || screen == "lanes-empty" -> emptyList()
-            screen == "lanes-paused" -> listOf(DemoFixtures.iv("pz", "bottle-flip", InterventionKind.IDLE, "Page paused your agents at 10% battery.", 600, sub = "low_battery"))
-            screen == "now-dusk" -> listOf(DemoFixtures.iv("pz", "bottle-flip", InterventionKind.IDLE, "Page paused your agents at 10% battery.", 600, sub = "low_battery"))
+            screen == "lanes-paused" -> listOf(DemoFixtures.iv("pz", "bottle-flip", InterventionKind.IDLE, "Page Power paused your agents at 10% battery.", 600, sub = "low_battery"))
+            screen == "now-dusk" -> listOf(DemoFixtures.iv("pz", "bottle-flip", InterventionKind.IDLE, "Page Power paused your agents at 10% battery.", 600, sub = "low_battery"))
             screen.startsWith("decision") -> o + listOfNotNull(DemoFixtures.page(screen).takeIf { p -> o.none { it.id == p.id } })
             else -> o
         }
@@ -344,7 +344,7 @@ object Demo {
         ActivityStore.overridePowerForRender(DemoMotion.power(motion))
         val extra: Map<String, app.page.android.model.ReplyDelivery> = when (screen) {
             "decision-delivered" -> mapOf("p1" to app.page.android.model.ReplyDelivery.Delivered("typed into tmux pane %3"))
-            "decision-failed" -> mapOf("p1" to app.page.android.model.ReplyDelivery.Failed("The Mac didn't confirm in time. Check the session before answering again."))
+            "decision-failed" -> mapOf("p1" to app.page.android.model.ReplyDelivery.Failed("The computer didn't confirm in time. Check the session before answering again."))
             "decision-queued" -> mapOf("p4" to app.page.android.model.ReplyDelivery.Sent(true, DemoFixtures.now.minusSeconds(40)))
             "decision-held" -> mapOf("rl1" to app.page.android.model.ReplyDelivery.HeldOnMac("Will send it when the limit resets at 3:00 PM"))
             else -> emptyMap()
@@ -383,7 +383,7 @@ object Demo {
         }
         if (screen == "now-receipt") {
             rows.firstOrNull { it.section == app.page.android.model.NowRow.Section.REVIEW }?.let { r ->
-                ActionCoordinator.seedForRender(emptyMap(), mapOf(r.id to "Didn't confirm in time · Check on Mac"))
+                ActionCoordinator.seedForRender(emptyMap(), mapOf(r.id to "Didn't confirm in time · Check on your computer"))
             }
         }
         // Where the screen sits.

@@ -397,8 +397,8 @@ enum ResumeProviderGate {
             parts.append(String(m.unicodeScalars.filter { $0.value >= 0x20 && $0.value != 0x7F }.prefix(60).map(Character.init)))
         }
         let label = parts.isEmpty ? "model unknown" : parts.joined(separator: " / ")
-        return "This session ran on a non-Anthropic model (\(label)). Page can't restart it in the background — "
-            + "that would run on your Anthropic account. Reply at the Mac."
+        return "This session ran on a non-Anthropic model (\(label)). Page Studio can't restart it in the background — "
+            + "that would run on your Anthropic account. Reply at your computer."
     }
 
     /// Reads the evidence: the provider store and the transcript tail.

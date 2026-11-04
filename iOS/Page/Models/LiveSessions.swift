@@ -126,7 +126,7 @@ struct LiveSession: Identifiable, Hashable {
     /// Why a row Page can type into takes no photos ("Page can't send photos to Codex yet").
     var attachBlocker: String? = nil
 
-    static let defaultBlocker = "Page can't type into this session."
+    static let defaultBlocker = "Page Studio can't type into this session."
 
     var hostLabel: String {
         let h = host.trimmingCharacters(in: .whitespaces)
@@ -487,7 +487,7 @@ enum ClearDraft {
         draft.count > displayCharacters ? String(draft.prefix(displayCharacters)) + "…" : draft
     }
 
-    static let notAnswered = "Your Mac didn't confirm clearing the input box, so your message wasn't sent. Check the session on your Mac, then try again."
+    static let notAnswered = "Your computer didn't confirm clearing the input box, so your message wasn't sent. Check the session on your computer, then try again."
 }
 
 // MARK: - Plaintext kinds (Mac → phone)
@@ -1042,11 +1042,11 @@ enum SessionCommandOutcome: Equatable {
     var failureMessage: String? {
         switch self {
         case .accepted:     return nil
-        case .macOffline:   return "Your Mac is offline, so nothing was sent. Try again when Page on your Mac is connected."
-        case .invalid:      return "The relay couldn't read this message. Re-pair with your Mac if this keeps happening."
+        case .macOffline:   return "Your computer is offline, so nothing was sent. Try again when Page Studio on your computer is connected."
+        case .invalid:      return "The relay couldn't read this message. Re-pair with your computer if this keeps happening."
         case .tooLarge:     return SessionComposer.Problem.tooLarge.message
         case .rateLimited:  return "Too many messages in a minute. Wait a moment and try again."
-        case .unauthorized: return "The relay no longer accepts this pairing. Re-pair with your Mac."
+        case .unauthorized: return "The relay no longer accepts this pairing. Re-pair with your computer."
         case .retired(let why): return why
         case .relayTooOld:  return "Your relay doesn't support live sessions yet. Update your Cloudflare Worker."
         case .failed(let m): return m
@@ -1167,7 +1167,7 @@ enum SessionDeliveryState: Equatable {
         case (.unconfirmed, _):      return "Check the session"
         case (.refused, _):          return "Refused"
         case (.failed, _):           return "Not sent"
-        case (.noAnswer, _):         return "No answer from your Mac"
+        case (.noAnswer, _):         return "No answer from your computer"
         }
     }
 
@@ -1187,7 +1187,7 @@ enum SessionDeliveryState: Equatable {
         case .refused(_, let message), .failed(let message):
             return message
         case .noAnswer:
-            return "Your Mac didn't confirm this within \(Int(Self.resultTimeout)) seconds. It may still arrive; check the transcript before sending again."
+            return "Your computer didn't confirm this within \(Int(Self.resultTimeout)) seconds. It may still arrive; check the transcript before sending again."
         }
     }
 
@@ -1252,7 +1252,7 @@ struct SentSessionCommand: Identifiable, Equatable {
             case .typing: return PhotoCopy.typing(host: target?.host)
             }
         case .typed: return "Sent"
-        case .noAnswer: return "No answer from your Mac"
+        case .noAnswer: return "No answer from your computer"
         default: return state.label(kind)
         }
     }
@@ -1284,42 +1284,42 @@ enum SessionResultCopy {
     static func refusal(reason: String?, detail: String?, agent: String, draft: String? = nil) -> String {
         switch reason {
         case "waiting":
-            return "\(agent) is showing a prompt on your Mac. Answer it from its page instead."
+            return "\(agent) is showing a prompt on your computer. Answer it from its page instead."
         case "unknown_state":
-            return "Page can't tell what this session is doing right now, so it didn't type anything. Try again in a moment."
+            return "Page Studio can't tell what this session is doing right now, so it didn't type anything. Try again in a moment."
         case "not_typable":
-            return detail ?? "Page can't type into this session's terminal."
+            return detail ?? "Page Studio can't type into this session's terminal."
         case "draft":
-            if let draft = ClearDraft.accepted(draft) { return "There's “\(ClearDraft.shown(draft))” typed in the session's input box on your Mac." }
-            return "There's unsent text in the session's input box on your Mac. Clear it there, then try again."
+            if let draft = ClearDraft.accepted(draft) { return "There's “\(ClearDraft.shown(draft))” typed in the session's input box on your computer." }
+            return "There's unsent text in the session's input box on your computer. Clear it there, then try again."
         case "input_unverified":
-            return "Page couldn't see the session's input box on your Mac, so it didn't type anything. Try again in a moment."
+            return "Page Studio couldn't see the session's input box on your computer, so it didn't type anything. Try again in a moment."
         case "draft_changed":
-            return "The text in the input box changed on your Mac, so Page left it alone."
+            return "The text in the input box changed on your computer, so Page Studio left it alone."
         case "digit_while_busy":
             return "Starts with a number: wait for \(agent) to finish, or add a word first."
         case "ended":
             return "This session has ended."
         case "codex_mid_turn":
-            return "Codex is mid-turn — Page can type once the turn ends."
+            return "Codex is mid-turn — Page Studio can type once the turn ends."
         case "disabled":
-            return "Typing from your iPhone is turned off on your Mac. Turn it back on in Page's Preferences on the Mac."
+            return "Typing from your iPhone is turned off on your computer. Turn it back on in Page Studio's settings."
         case "stale":
-            return "Your Mac ignored this because its clock and your iPhone's differ by more than 5 minutes. Check Date & Time on both."
+            return "Your computer ignored this because its clock and your iPhone's differ by more than 5 minutes. Check Date & Time on both."
         case "replay":
-            return "Your Mac already received this message."
+            return "Your computer already received this message."
         case "not_found":
-            return "This session is no longer on your Mac's list."
+            return "This session is no longer on your computer's list."
         case "interrupt_unsupported":
-            return "Page can't stop this session from here: it isn't mid-turn, or its terminal doesn't support it."
+            return "Page Studio can't stop this session from here: it isn't mid-turn, or its terminal doesn't support it."
         case "question_changed":
-            return detail ?? "That question changed on your Mac, so nothing was pressed. Open it again to see the new one."
+            return detail ?? "That question changed on your computer, so nothing was pressed. Open it again to see the new one."
         case "answer_unsupported":
-            return detail ?? "Page can't answer this question from here. Answer it on your Mac."
+            return detail ?? "Page Studio can't answer this question from here. Answer it on your computer."
         case "target_mismatch":
-            return detail ?? "This room doesn't match the session on your Mac any more, so nothing was typed. Close it and open the session again."
+            return detail ?? "This room doesn't match the session on your computer any more, so nothing was typed. Close it and open the session again."
         case "attachment_missing", "attachment_invalid", "attach_unsupported", "attach_busy":
-            return PhotoCopy.refusal(reason: reason, detail: detail) ?? detail ?? "Your Mac didn't take the photo."
+            return PhotoCopy.refusal(reason: reason, detail: detail) ?? detail ?? "Your computer didn't take the photo."
         case "cancelled":
             return detail ?? SessionDeliveryState.deletedCopy
         case "expired":
@@ -1327,14 +1327,14 @@ enum SessionResultCopy {
         case "too_late":
             return detail ?? "Too late — it was already typed."
         case "error":
-            return detail ?? "Something went wrong on your Mac. Try again."
+            return detail ?? "Something went wrong on your computer. Try again."
         default:
-            return detail ?? "Your Mac didn't type this."
+            return detail ?? "Your computer didn't type this."
         }
     }
 
     static func failure(reason: String?, detail: String?) -> String {
-        detail ?? "Your Mac couldn't type this into the session."
+        detail ?? "Your computer couldn't type this into the session."
     }
 }
 

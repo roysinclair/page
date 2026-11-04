@@ -38,13 +38,13 @@ struct NWRoomScreenLens: View {
                 VStack(spacing: 10) {
                     statusRow
                     terminal(screen)
-                    Text(data.runs.isEmpty ? "Redacted before it leaves the Mac" : "Tap a workflow row to open it · redacted before it leaves the Mac")
+                    Text(data.runs.isEmpty ? "Redacted before it leaves your computer" : "Tap a workflow row to open it · redacted before it leaves your computer")
                         .font(NightWatch.Typo.caption).foregroundColor(NightWatch.Palette.textTertiary.color)
                         .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 4)
                 }
                 .padding(.horizontal, NightWatch.Space.lg).padding(.top, 8).padding(.bottom, 8)
             } else {
-                VStack { Spacer(); Text("The screen appears once your Mac sends it.").font(NightWatch.Typo.body)
+                VStack { Spacer(); Text("The screen appears once your computer sends it.").font(NightWatch.Typo.body)
                     .foregroundColor(NightWatch.Palette.textTertiary.color); Spacer() }.frame(maxWidth: .infinity)
             }
         }
@@ -173,16 +173,16 @@ struct NWChangesPanel<Footer: View>: View {
     var body: some View {
         switch load {
         case .loaded:
-            if let m = model { content(m) } else { message("exclamationmark.triangle", "No answer from your Mac.", retry: true) }
+            if let m = model { content(m) } else { message("exclamationmark.triangle", "No answer from your computer.", retry: true) }
         case .loading:
             VStack(spacing: 12) {
                 Spacer()
                 ProgressView().tint(NightWatch.Palette.textSecondary.color)
-                Text("Asking your Mac…").font(NightWatch.Typo.body).foregroundColor(NightWatch.Palette.textTertiary.color)
+                Text("Asking your computer…").font(NightWatch.Typo.body).foregroundColor(NightWatch.Palette.textTertiary.color)
                 Spacer()
             }.frame(maxWidth: .infinity)
         case .noAnswer:
-            message("wifi.exclamationmark", "No answer from your Mac. Pull down or tap Refresh to try again.", retry: true)
+            message("wifi.exclamationmark", "No answer from your computer. Pull down or tap Refresh to try again.", retry: true)
         case .failed(let why):
             message("exclamationmark.triangle", why, retry: true)
         }
@@ -227,7 +227,7 @@ struct NWChangesPanel<Footer: View>: View {
                     }
                 }
                 if m.truncated {
-                    Text("Cut short to fit — the rest is on your Mac.").font(NightWatch.Typo.caption)
+                    Text("Cut short to fit — the rest is on your computer.").font(NightWatch.Typo.caption)
                         .foregroundColor(NightWatch.Palette.textTertiary.color).frame(maxWidth: .infinity)
                 }
                 footer()
@@ -855,7 +855,7 @@ struct NWAgentRoomScreen: View {
                                     Text("Nothing yet.").font(NightWatch.Typo.body).foregroundColor(NightWatch.Palette.textTertiary.color)
                                 }
                             } else {
-                                HStack(spacing: 10) { ProgressView().tint(NightWatch.Palette.textSecondary.color); Text("Asking your Mac…") }
+                                HStack(spacing: 10) { ProgressView().tint(NightWatch.Palette.textSecondary.color); Text("Asking your computer…") }
                                     .font(NightWatch.Typo.body).foregroundColor(NightWatch.Palette.textTertiary.color)
                                     .frame(maxWidth: .infinity).padding(.top, 40)
                             }

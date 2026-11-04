@@ -345,7 +345,7 @@ final class AuraBackendTests: XCTestCase {
         XCTAssertEqual(page.backend, .aura)
         XCTAssertEqual(page.source, .desktop)
         XCTAssertEqual(page.projectName, "Tidy Downloads")
-        XCTAssertTrue(page.context.hasPrefix("Use Filesystem · move_file on this Mac\n"), page.context)
+        XCTAssertTrue(page.context.hasPrefix("Use Filesystem · move_file on this computer\n"), page.context)
         XCTAssertFalse(page.context.contains("sk-abcdefghijklmnopqrstuvwx"), "secrets are redacted")
         XCTAssertEqual(callbacks.map(\.id), [permId])
         XCTAssertEqual(backend.openInterventionIds(), [permId])
@@ -567,7 +567,7 @@ final class AuraBackendTests: XCTestCase {
         XCTAssertEqual(relay.injected.last?.success, false)
 
         backend.handleReply(reply(permId, action: "approve"))
-        XCTAssertEqual(relay.injected.last?.detail, "Page Aura isn't open on your Mac")
+        XCTAssertEqual(relay.injected.last?.detail, "Page Aura isn't open on your computer")
         XCTAssertFalse(backend.isConnected)
     }
 
@@ -576,7 +576,7 @@ final class AuraBackendTests: XCTestCase {
         transport.accepts = false
         backend.handleReply(reply(permId, action: "approve"))
         XCTAssertEqual(relay.injected.last?.success, false)
-        XCTAssertEqual(relay.injected.last?.detail, "Page Aura isn't open on your Mac")
+        XCTAssertEqual(relay.injected.last?.detail, "Page Aura isn't open on your computer")
         XCTAssertEqual(backend.openInterventionIds(), [permId])
     }
 
@@ -941,7 +941,7 @@ final class AuraSessionsTests: XCTestCase {
         XCTAssertEqual(idle["preview"] as? String, "Totals look right.")
         XCTAssertEqual(idle["lastActivityAt"] as? String, SessionTranscript.isoFormatter.string(from: Date(timeIntervalSince1970: 1_762_160_300)))
         XCTAssertNil(idle["attach"], "no photos")
-        XCTAssertEqual(idle["attachBlocker"] as? String, "Page can't send photos to Page Aura yet")
+        XCTAssertEqual(idle["attachBlocker"] as? String, "Page Studio can't send photos to Page Aura yet")
         XCTAssertNil(idle["ask"])
         XCTAssertNil(idle["canHold"])
         XCTAssertNil(idle["held"])
@@ -1120,7 +1120,7 @@ final class AuraSessionsTests: XCTestCase {
                                               state: .idle, lastActivityAt: nil, activeFlags: [], supportsRemoteReply: true)], pending: [])
         send(["op": "input", "sessionId": "aura-k3j9x", "text": "hi", "clientId": "c1"])
         XCTAssertEqual(lastResult?["code"] as? String, "refused")
-        XCTAssertEqual(lastResult?["detail"] as? String, "Page Aura isn't open on your Mac")
+        XCTAssertEqual(lastResult?["detail"] as? String, "Page Aura isn't open on your computer")
     }
 
     func testAckLostWhenTheSocketCloses() throws {
@@ -1131,7 +1131,7 @@ final class AuraSessionsTests: XCTestCase {
         remote.waitUntilIdle()
         XCTAssertEqual(lastResult?["clientId"] as? String, "c1")
         XCTAssertEqual(lastResult?["code"] as? String, "refused")
-        XCTAssertEqual(lastResult?["detail"] as? String, "Page Aura isn't open on your Mac")
+        XCTAssertEqual(lastResult?["detail"] as? String, "Page Aura isn't open on your computer")
     }
 
     // MARK: interrupt

@@ -76,15 +76,15 @@ class PageWidget : GlanceAppWidget() {
             else -> Color(0xF5FFFFFF)
         }
         val open = actionStartActivity(Intent(context, MainActivity::class.java).setAction(Intent.ACTION_VIEW).setData(Uri.parse("page://now")))
-        val said = if (s == null) "Page. Open Page to pair." else "Page. ${s.faceHeadline}. ${s.detail ?: ""}. ${s.macName}."
+        val said = if (s == null) "Page Relay. Open Page Relay to pair." else "Page Relay. ${s.faceHeadline}. ${s.detail ?: ""}. ${s.macName}."
         Box(
             GlanceModifier.fillMaxSize().cornerRadius(28.dp).background(ImageProvider(sky(s))).clickable(open).semantics { contentDescription = said }.padding(16.dp),
         ) {
             Column(GlanceModifier.fillMaxSize(), verticalAlignment = Alignment.Top) {
-                Text("Page", style = TextStyle(color = ColorProvider(Color(0x80FFFFFF)), fontSize = 12.sp, fontWeight = FontWeight.Medium))
+                Text("Page Relay", style = TextStyle(color = ColorProvider(Color(0x80FFFFFF)), fontSize = 12.sp, fontWeight = FontWeight.Medium))
                 Spacer(GlanceModifier.defaultWeight())
                 Text(
-                    if (s == null) "Open Page to pair" else s.faceHeadline, maxLines = 2,
+                    if (s == null) "Open Page Relay to pair" else s.faceHeadline, maxLines = 2,
                     style = TextStyle(color = ColorProvider(tone), fontSize = if (wide) 28.sp else 22.sp, fontWeight = FontWeight.Bold),
                 )
                 s?.detail?.let { Text(it, maxLines = 1, style = TextStyle(color = ColorProvider(Color(0xB3FFFFFF)), fontSize = 12.sp, fontWeight = FontWeight.Medium)) }

@@ -133,7 +133,7 @@ final class NotificationService: NSObject, ObservableObject {
     func didFailToRegister(error: Error) {
         let message = error.localizedDescription
         if message.contains("aps-environment") {
-            push = .unavailable("This build isn't signed for push notifications, so pages only arrive while Page is open.")
+            push = .unavailable("This build isn't signed for push notifications, so pages only arrive while Page Relay is open.")
         } else {
             push = .unavailable(message)
         }
@@ -158,7 +158,7 @@ final class NotificationService: NSObject, ObservableObject {
                 return
             }
         }
-        push = .failed("Couldn't register this iPhone with your relay. Page will retry next time it opens.")
+        push = .failed("Couldn't register this iPhone with your relay. Page Relay will retry next time it opens.")
     }
 
     /// Called on unpair with the credentials captured before deletion.
@@ -285,7 +285,7 @@ final class NotificationService: NSObject, ObservableObject {
         defer { token.end(app) }
 
         let outcome = await APIClient.shared.reply(to: interventionId, text: text, action: action)
-        let where_ = project.isEmpty ? "your Mac" : project
+        let where_ = project.isEmpty ? "your computer" : project
         switch outcome {
         case .accepted, .alreadyReplied, .inFlight:
             // 409 is almost always a double tap or an in-app reply that got
@@ -299,11 +299,11 @@ final class NotificationService: NSObject, ObservableObject {
                        interventionId: interventionId)
         case .unauthorized:
             postNotice(title: "Reply not sent",
-                       body: "Your relay no longer accepts this pairing. Open Page to re-pair with your Mac.",
+                       body: "Your relay no longer accepts this pairing. Open Page Relay to re-pair with your computer.",
                        interventionId: interventionId)
         case .retired(let why):
             postNotice(title: "Reply not sent",
-                       body: "\(TokenRetirement.sentence(why)) Open Page to pair again.",
+                       body: "\(TokenRetirement.sentence(why)) Open Page Relay to pair again.",
                        interventionId: interventionId)
         case .failed(let message):
             postNotice(title: "Reply not sent",

@@ -199,7 +199,7 @@ final class HeadlessGuardTests: XCTestCase {
     func testAnotherClaudeOnTheSessionBlocks() {
         let table = [row(1, "/sbin/launchd"), row(50, "/Users/me/.local/bin/claude --resume \(sid) --print carry on")]
         XCTAssertEqual(InjectionExecutor.headlessBlocker(sessionId: sid, processTable: table, transcript: nil),
-                       "The session is still running — reply at the Mac")
+                       "The session is still running — reply at your computer")
     }
 
     func testLiveCmuxRecordedProcessBlocks() {

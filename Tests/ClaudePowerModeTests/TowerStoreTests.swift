@@ -402,7 +402,7 @@ final class TowerApplyTests: XCTestCase {
     func testReplaceWarningWording() {
         let plain = TowerApply.replaceWarning(problem: nil, backupName: nil)
         XCTAssertTrue(plain.hasPrefix("The file is malformed."), plain)
-        XCTAssertTrue(plain.contains("Saving replaces it with the settings shown here plus Page’s current settings."))
+        XCTAssertTrue(plain.contains("Saving replaces it with the settings shown here plus Page Studio’s current settings."))
         XCTAssertFalse(plain.contains("copied to"))
         let copied = TowerApply.replaceWarning(problem: "Line 3 is broken", backupName: "config.bad.json")
         XCTAssertTrue(copied.hasPrefix("Line 3 is broken"), copied)

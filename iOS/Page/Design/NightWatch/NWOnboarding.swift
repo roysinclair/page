@@ -213,7 +213,7 @@ struct NWScanScreen<Camera: View>: View {
         }
         .frame(width: side, height: side)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Camera view. Point it at the QR code in Page on your Mac."))
+        .accessibilityLabel(Text("Camera view. Point it at the QR code in Page Studio on your computer."))
     }
 
     private var facts: some View {
@@ -297,11 +297,11 @@ struct NWPairStep: View {
             Text("Relay: \(host)").font(NightWatch.Typo.monoSmall).foregroundColor(NightWatch.Palette.textTertiary.color)
                 .lineLimit(1).truncationMode(.middle)
             switch online {
-            case true?: line("checkmark.circle", "Your Mac is connected to this relay.", NightWatch.Palette.teal)
+            case true?: line("checkmark.circle", "Your computer is connected to this relay.", NightWatch.Palette.teal)
             case false? where unused:
-                line("exclamationmark.triangle", "No Mac has connected to this relay with this code yet. If it's an old screenshot, or you regenerated the token on your Mac, show the pairing code on your Mac again and scan the new one.", NightWatch.Palette.amber)
+                line("exclamationmark.triangle", "No computer has connected to this relay with this code yet. If it's an old screenshot, or you regenerated the token on your computer, show the pairing code on your computer again and scan the new one.", NightWatch.Palette.amber)
             case false?:
-                line("exclamationmark.circle", "Your Mac isn't connected to this relay right now. That's fine — pages will arrive once it is.", NightWatch.Palette.amber)
+                line("exclamationmark.circle", "Your computer isn't connected to this relay right now. That's fine — pages will arrive once it is.", NightWatch.Palette.amber)
             case nil: EmptyView()
             }
             Text(OnboardingCopy.confirmWarning).font(NightWatch.Typo.caption).foregroundColor(NightWatch.Palette.textTertiary.color)

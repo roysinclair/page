@@ -134,7 +134,7 @@ struct NWInFlightRowView: View {
                     .contentShape(Rectangle())
                     .onTapGesture { store.clickFlight(.open, on: row) }
                     .help(row.actions.canOpen || row.actions.checking ? "Open · \(PanelKeys.open) · shows its terminal pane, types nothing"
-                                                                        : (row.actions.openBlocker ?? "Page can't open this one"))
+                                                                        : (row.actions.openBlocker ?? "Page Studio can't open this one"))
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(Text(row.accessibilityText))
                     .accessibilityHint(Text("Opens its terminal"))
@@ -346,7 +346,7 @@ struct NWInFlightRowView: View {
                     .font(NightWatch.Typo.monoBody)
                     .foregroundColor(NightWatch.Palette.textSecondary.opacity(0.78).color)
                     .lineLimit(1)
-                Text("Local model · Page can't open or steer it")
+                Text("Local model · Page Studio can't open or steer it")
                     .font(NightWatch.Typo.monoMicro)
                     .foregroundColor(NightWatch.Palette.textTertiary.color)
             }

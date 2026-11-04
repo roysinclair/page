@@ -40,7 +40,7 @@ class SettledHistoryBannerTest {
     @Test fun `a fresh offline Mac offers no re-pair, an offline one for over an hour does`() {
         assertNull(banner(presence = MacPresence.Offline(nwNow.minusSeconds(300))).first().action)
         assertEquals(NowBanner.Action.REPAIR, banner(presence = MacPresence.Offline(nwNow.minusSeconds(7200))).first().action)
-        assertEquals("Your Mac is offline", banner(presence = MacPresence.Offline(nwNow.minusSeconds(300))).first().title)
+        assertEquals("Your computer is offline", banner(presence = MacPresence.Offline(nwNow.minusSeconds(300))).first().title)
     }
 
     @Test fun `notifications off opens settings, and a healthy page has no banners`() {
@@ -52,7 +52,7 @@ class SettledHistoryBannerTest {
         assertEquals("Live", SessionAvailabilityCopy.of(SessionAvailability.Ready).shortStatus)
         assertEquals(SessionAvailabilityCopy.Action.REPAIR, SessionAvailabilityCopy.of(SessionAvailability.NeedsRepair(keyMismatch = true)).action)
         assertEquals(SessionAvailabilityCopy.Action.RETRY, SessionAvailabilityCopy.of(SessionAvailability.MacOffline).action)
-        assertEquals("Update Page on your Mac", SessionAvailabilityCopy.of(SessionAvailability.MacTooOld).title)
+        assertEquals("Update Page Studio on your computer", SessionAvailabilityCopy.of(SessionAvailability.MacTooOld).title)
     }
 
     // MARK: Settled

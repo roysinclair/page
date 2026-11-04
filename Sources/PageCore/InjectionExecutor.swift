@@ -152,12 +152,12 @@ enum InjectionExecutor {
     static let promptGoneMessage = "The prompt is no longer showing"
     static let staleMessage = "That prompt was already answered — a newer one is waiting"
     static let emptyReplyMessage = "The reply was empty"
-    static let notForegroundMessage = "The session is suspended or in the background — reply at the Mac"
-    static let unverifiedPromptMessage = "Can't confirm which prompt is showing — answer it at the Mac"
-    static let closedPageMessage = "That page already closed — answer at the Mac, or wait for the next page"
-    static let busyAgainMessage = "Claude started working again before Page typed it"
-    static let inputUnverifiedMessage = "Couldn't confirm the session's input box is empty — carry on at the Mac"
-    static let backgroundJobMessage = "This session is running as a Claude Code background job — reply at the Mac"
+    static let notForegroundMessage = "The session is suspended or in the background — reply at your computer"
+    static let unverifiedPromptMessage = "Can't confirm which prompt is showing — answer it at your computer"
+    static let closedPageMessage = "That page already closed — answer at your computer, or wait for the next page"
+    static let busyAgainMessage = "Claude started working again before Page Studio typed it"
+    static let inputUnverifiedMessage = "Couldn't confirm the session's input box is empty — carry on at your computer"
+    static let backgroundJobMessage = "This session is running as a Claude Code background job — reply at your computer"
     static let sessionExitedMessage = "The session exited"
 
     /// What to type for `action` given the session's live `status` and the
@@ -328,7 +328,7 @@ enum InjectionExecutor {
         let withTTY = candidates.filter { $0.tty != nil }
         if withTTY.count == 1 { return .success(withTTY[0]) }
         if withTTY.count > 1 {
-            return .failure(InjectionFailure("Session is open in more than one terminal — reply at the Mac"))
+            return .failure(InjectionFailure("Session is open in more than one terminal — reply at your computer"))
         }
         if candidates.count == 1 { return .success(candidates[0]) }
         return .failure(InjectionFailure("Couldn't find the session's terminal"))
@@ -462,9 +462,9 @@ enum InjectionExecutor {
         // (its tool_use is the one pending, alone) — and, below, only
         // while a menu is actually on screen.
         if promptAction && session.status == .unknown {
-            guard kind == .approval else { return refused("Answer this one at the Mac — Page can't see which question is showing") }
+            guard kind == .approval else { return refused("Answer this one at your computer — Page Studio can't see which question is showing") }
             guard let pk = req.pagePromptKey, let ck = currentPromptKey, pk == ck else { return refused(unverifiedPromptMessage) }
-            if pendingToolCount > 1 { return refused("Several prompts are queued — answer at the Mac") }
+            if pendingToolCount > 1 { return refused("Several prompts are queued — answer at your computer") }
         }
 
         // While Page's blocking PermissionRequest hook holds this session's
@@ -473,14 +473,14 @@ enum InjectionExecutor {
         // own page is the one to answer.
         if promptAction,
            HookHoldMarkers.heldSessions(in: HookHoldMarkers.defaultDirectory).contains(session.sessionId) {
-            return refused("Page's phone-approval hook is handling this prompt — answer that page instead")
+            return refused("Page Studio's phone-approval hook is handling this prompt — answer that page instead")
         }
 
         let planned = plan(action: req.action, kind: kind, status: session.status, text: req.text)
         guard session.tty != nil else {
             if case .refuse(let reason) = planned { return refused(reason) }
             return InjectionResult(method: .none, success: false, output: "pid \(session.pid) has no tty",
-                                   detail: "This session isn't running in a terminal Page can type into")
+                                   detail: "This session isn't running in a terminal Page Studio can type into")
         }
         let promptWasOpen = session.status == .waiting
         // After "1" / Esc alone: did the menu go? Any change of state
@@ -613,7 +613,7 @@ enum InjectionExecutor {
             return InjectionResult(method: .none, success: false, output: "host unreachable: \(detail)", detail: detail)
         case .unsupported(let app):
             return InjectionResult(method: .none, success: false, output: "host=\(app)",
-                                   detail: "Page can't type into \(app) yet — use tmux or Terminal.app")
+                                   detail: "Page Studio can't type into \(app) yet — use tmux or Terminal.app")
         case .unknown:
             return InjectionResult(method: .none, success: false, output: "no host for tty \(session.tty ?? "?")",
                                    detail: "Couldn't find the session's terminal")
@@ -625,7 +625,7 @@ enum InjectionExecutor {
         if promptWasOpen, steps == [.text("1")] || steps == [.escape], !confirmClosed() {
             return InjectionResult(method: result.method, success: false,
                                    output: result.output + " (status still waiting)",
-                                   detail: "Sent, but the prompt is still showing — answer it at the Mac")
+                                   detail: "Sent, but the prompt is still showing — answer it at your computer")
         }
         let verb: String
         switch summary {
@@ -1354,7 +1354,7 @@ enum InjectionExecutor {
 
     /// A `.paste` into a host whose paste route Page hasn't measured.
     static func pasteUnsupportedMessage(_ app: String) -> String {
-        "Page can't paste a photo into \(app) yet"
+        "Page Studio can't paste a photo into \(app) yet"
     }
 
     // MARK: Terminal.app transport
@@ -1600,10 +1600,10 @@ enum InjectionExecutor {
                 return fail(f.output, f.detail)
             }
             guard client.waitForFeedResolution(requestId: id, timeout: 3) else {
-                return fail("feed request \(id) still pending", "Sent to cmux, but the plan is still waiting — answer it at the Mac")
+                return fail("feed request \(id) still pending", "Sent to cmux, but the plan is still waiting — answer it at your computer")
             }
             guard confirmClosed() else {
-                return fail("status still waiting after feed reply", "Sent to cmux, but the plan is still showing — answer it at the Mac")
+                return fail("status still waiting after feed reply", "Sent to cmux, but the plan is still showing — answer it at your computer")
             }
             let detail = mode == "manual" ? "Approved the plan in cmux"
                 : (feedback == nil ? "Rejected the plan in cmux" : "Rejected the plan in cmux and sent your feedback")
@@ -1613,10 +1613,10 @@ enum InjectionExecutor {
                 return fail(f.output, f.detail)
             }
             guard client.waitForFeedResolution(requestId: id, timeout: 3) else {
-                return fail("feed request \(id) still pending", "Sent to cmux, but the prompt is still waiting — answer it at the Mac")
+                return fail("feed request \(id) still pending", "Sent to cmux, but the prompt is still waiting — answer it at your computer")
             }
             guard confirmClosed() else {
-                return fail("status still waiting after feed reply", "Sent to cmux, but the prompt is still showing — answer it at the Mac")
+                return fail("status still waiting after feed reply", "Sent to cmux, but the prompt is still showing — answer it at your computer")
             }
             guard let text = thenType else {
                 return InjectionResult(method: .cmuxFeed, success: true, output: "feed.permission.reply \(mode)",
@@ -1723,7 +1723,7 @@ enum InjectionExecutor {
             case .enter:
                 return fail("refused bare Enter", partialDetail(sentSomething, "Couldn't type into that cmux pane"))
             case .key:
-                return fail("refused navigation key", "Page can't press the arrow or Tab keys in cmux — answer at your Mac")
+                return fail("refused navigation key", "Page Studio can't press the arrow or Tab keys in cmux — answer at your computer")
             case .pause(let t):
                 usleep(useconds_t(t * 1_000_000))
             case .awaitPromptClosed:
@@ -1777,7 +1777,7 @@ enum InjectionExecutor {
         if let err = r.error {
             let detail: String
             switch r.errorNumber {
-            case .some(-1743): detail = "Allow Page to control \(app) in System Settings → Privacy & Security → Automation"
+            case .some(-1743): detail = "Allow Page Studio to control \(app) in System Settings → Privacy & Security → Automation"
             case .some(-600): detail = "\(app) isn't running"
             case .some(-1712): detail = "\(app) didn't respond"
             default: detail = "Couldn't type into \(app)"
@@ -1840,7 +1840,7 @@ enum InjectionExecutor {
             return InjectionResult(method: .cmux, success: true, output: "escape \(target.surfaceId)")
         case .terminalApp, .unreachable, .unsupported, .unknown:
             return InjectionResult(method: .none, success: false, output: "no lone Esc for \(host.label)",
-                                   detail: "Page can't press Esc in \(host.label)")
+                                   detail: "Page Studio can't press Esc in \(host.label)")
         }
     }
 
@@ -1869,11 +1869,11 @@ enum InjectionExecutor {
         if !backgroundOwnerPids.isEmpty { return backgroundJobMessage }
         let sid = sessionId.lowercased()
         if processTable.contains(where: { ClaudeSessionRegistry.isClaudeCommand($0.command) && $0.command.lowercased().contains(sid) }) {
-            return "The session is still running — reply at the Mac"
+            return "The session is still running — reply at your computer"
         }
         if let entry = cmuxEntry, let pid = entry.pid, processTable.contains(where: { $0.pid == pid }),
            let recorded = entry.pidStartSeconds, let actual = startSeconds(pid), abs(recorded - actual) <= 1 {
-            return "The session is still open in cmux — reply at the Mac"
+            return "The session is still open in cmux — reply at your computer"
         }
         if let transcript,
            let mtime = (try? FileManager.default.attributesOfItem(atPath: transcript.path))?[.modificationDate] as? Date,

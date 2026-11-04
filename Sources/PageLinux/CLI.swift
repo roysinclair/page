@@ -7,7 +7,7 @@ import Glibc
 /// `paged <command>`.
 public enum PagedCLI {
     static let usage = """
-    paged \(PagedVersion.string) — Page Power for Linux (headless)
+    paged \(PagedVersion.string) — Page Studio for Linux (headless; preview)
 
     usage: paged <command> [options]
 
@@ -16,9 +16,9 @@ public enum PagedCLI {
       stop                    Stop it
       status                  What the daemon is doing
       pair [--png FILE] [--regenerate] [--plain]
-                              Show the pairing QR for the Page phone app (and write a PNG)
+                              Show the pairing QR for the Page Relay phone app (and write a PNG)
       install-hooks [--agent claude|codex|all] [--uninstall] [--yes] [--script PATH]
-                              Add Page's hook to Claude Code / Codex (shows the change first)
+                              Add Page Studio's hook to Claude Code / Codex (shows the change first)
       logs [-f] [-n LINES]    Show the log
       config [path | show | get KEY | set KEY VALUE]
                               Read or change config.json (the daemon reloads it)
@@ -175,7 +175,7 @@ public enum PagedCLI {
         let payload = PairingTokenManager.pairingPayloadJSON(relayBaseURL: base, sessionKey: PairingTokenManager.currentSessionKey())
         guard let matrix = Platform.current.qr.modules(for: payload) else { err("paged: couldn't make a QR code"); return 1 }
         let ansi = !args.contains("--plain") && isatty(STDOUT_FILENO) != 0
-        print("Scan this with the Page app on your phone (Pair with a Mac ▸ Scan):\n")
+        print("Scan this with Page Relay on your phone (Pair with a computer ▸ Scan):\n")
         print(QRRender.terminal(matrix, quietZone: 2, ansi: ansi))
         var pngURL = files.pairingPNG
         if let i = args.firstIndex(of: "--png"), i + 1 < args.count { pngURL = URL(fileURLWithPath: args[i + 1]) }
@@ -211,7 +211,7 @@ public enum PagedCLI {
             do {
                 let plan = uninstall ? try installer.planUninstall(agent) : try installer.planInstall(agent)
                 guard plan.originalText != plan.newText else {
-                    print("\(agent.rawValue): already \(uninstall ? "without" : "has") Page's hook")
+                    print("\(agent.rawValue): already \(uninstall ? "without" : "has") Page Studio's hook")
                     continue
                 }
                 let file = installer.fileURL(for: agent)

@@ -31,44 +31,44 @@ data class SessionAvailabilityCopy(
         fun of(availability: SessionAvailability): SessionAvailabilityCopy = when (availability) {
             SessionAvailability.RelayTooOld -> SessionAvailabilityCopy(
                 Icons.Filled.Sync, BannerTone.WARNING, "Update your relay",
-                "Your relay (the Cloudflare Worker) doesn't support live sessions yet. Redeploy it from the latest Page release, then pull down to refresh. Pages keep working meanwhile.",
+                "Your relay (the Cloudflare Worker) doesn't support live sessions yet. Redeploy it from the latest Page Studio release, then pull down to refresh. Pages keep working meanwhile.",
                 "Check again", Action.RETRY, "Relay needs an update",
             )
             is SessionAvailability.NeedsRepair -> if (availability.keyMismatch) {
                 SessionAvailabilityCopy(
-                    Icons.Filled.KeyOff, BannerTone.ERROR, "Re-pair with your Mac",
-                    "Live updates from your Mac can't be unlocked with this phone's key, so the pairing was probably regenerated on the Mac. Unpair, then on your Mac open Page → Pair phone… and scan the code.",
+                    Icons.Filled.KeyOff, BannerTone.ERROR, "Re-pair with your computer",
+                    "Live updates from your computer can't be unlocked with this phone's key, so the pairing was probably regenerated on your computer. Unpair, then on your computer open Page Studio → Pair phone… and scan the code.",
                     "Re-pair…", Action.REPAIR, "Pairing key changed",
                 )
             } else {
                 SessionAvailabilityCopy(
-                    Icons.Filled.Key, BannerTone.WARNING, "Re-pair with your Mac to see live sessions",
-                    "This pairing has no session key: it came from an older Page on your Mac, or was made before live sessions existed. Update Page on your Mac, unpair here, then open Page → Pair phone… on the Mac and scan the new code. Pages keep working meanwhile.",
+                    Icons.Filled.Key, BannerTone.WARNING, "Re-pair with your computer to see live sessions",
+                    "This pairing has no session key: it came from an older Page Studio on your computer, or was made before live sessions existed. Update Page Studio on your computer, unpair here, then open Page Studio → Pair phone… on your computer and scan the new code. Pages keep working meanwhile.",
                     "Re-pair…", Action.REPAIR, "Re-pair needed",
                 )
             }
             SessionAvailability.MacOffline -> SessionAvailabilityCopy(
-                Icons.Filled.DesktopAccessDisabled, BannerTone.WARNING, "Your Mac is offline",
-                "Live sessions show up while Page on your Mac is connected to the relay. Wake the Mac, or check that Page is running there.",
-                "Try again", Action.RETRY, "Mac offline",
+                Icons.Filled.DesktopAccessDisabled, BannerTone.WARNING, "Your computer is offline",
+                "Live sessions show up while Page Studio on your computer is connected to the relay. Wake the computer, or check that Page Studio is running there.",
+                "Try again", Action.RETRY, "Computer offline",
             )
             SessionAvailability.ClockSkew -> SessionAvailabilityCopy(
                 Icons.Filled.Schedule, BannerTone.WARNING, "Your clocks disagree",
-                "Updates from your Mac arrive more than 10 minutes old by this phone's clock, so they're ignored. Turn on automatic date & time on both your phone and your Mac.",
+                "Updates from your computer arrive more than 10 minutes old by this phone's clock, so they're ignored. Turn on automatic date & time on both your phone and your computer.",
                 "Try again", Action.RETRY, "Clock mismatch",
             )
             SessionAvailability.MacTooOld -> SessionAvailabilityCopy(
-                Icons.Filled.SystemUpdate, BannerTone.WARNING, "Update Page on your Mac",
-                "Your Mac is online but isn't sending live sessions. Update Page on your Mac to the latest version, and check that remote sessions are turned on in its Preferences.",
-                "Check again", Action.RETRY, "Mac needs an update",
+                Icons.Filled.SystemUpdate, BannerTone.WARNING, "Update Page Studio on your computer",
+                "Your computer is online but isn't sending live sessions. Update Page Studio on your computer to the latest version, and check that remote sessions are turned on in its Preferences.",
+                "Check again", Action.RETRY, "Computer needs an update",
             )
             SessionAvailability.MacDisabled -> SessionAvailabilityCopy(
-                Icons.Filled.VisibilityOff, BannerTone.WARNING, "Live sessions are off on your Mac",
-                "Page on your Mac isn't sharing its sessions. Turn them back on in Page → Preferences → Phone on the Mac.",
-                "Check again", Action.RETRY, "Off on your Mac",
+                Icons.Filled.VisibilityOff, BannerTone.WARNING, "Live sessions are off on your computer",
+                "Page Studio on your computer isn't sharing its sessions. Turn them back on in Page Studio → Preferences → Phone on your computer.",
+                "Check again", Action.RETRY, "Off on your computer",
             )
             SessionAvailability.Waiting -> SessionAvailabilityCopy(
-                Icons.Filled.HourglassEmpty, BannerTone.INFO, "Connecting to your Mac…", "", null, null, "Connecting…",
+                Icons.Filled.HourglassEmpty, BannerTone.INFO, "Connecting to your computer…", "", null, null, "Connecting…",
             )
             SessionAvailability.Ready -> SessionAvailabilityCopy(
                 Icons.Filled.CheckCircle, BannerTone.INFO, "Live", "", null, null, "Live",

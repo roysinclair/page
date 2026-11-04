@@ -32,7 +32,7 @@ enum SendChoice: String, Equatable, CaseIterable {
     func explanation(agent: String) -> String {
         switch self {
         case .now: return "\(agent) reads it after its current step."
-        case .whenFinished: return "Held on your Mac and typed when \(agent) finishes. Delete it any time before."
+        case .whenFinished: return "Held on your computer and typed when \(agent) finishes. Delete it any time before."
         }
     }
 }
@@ -212,9 +212,9 @@ struct RestoredDraft: Equatable {
     /// Why it is back.
     var note = RestoredDraft.killedNote
 
-    static let killedNote = "Not sent — Page closed before the countdown ended. Your message is back here."
-    static let answeredNote = "Not sent — the page was answered or closed on your Mac first. Your message is back here."
-    static let slept = "Not sent — Page was asleep when the countdown ended. Your message is back here."
+    static let killedNote = "Not sent — Page Relay closed before the countdown ended. Your message is back here."
+    static let answeredNote = "Not sent — the page was answered or closed on your computer first. Your message is back here."
+    static let slept = "Not sent — Page Relay was asleep when the countdown ended. Your message is back here."
     /// Undo on a card (Now, the room's page card) after the sheet that held the words has closed.
     static let undoneNote = "Not sent — you tapped Undo. Your message is back here."
 }
@@ -319,7 +319,7 @@ extension SessionDeliveryState {
     }
 
     /// While the Mac is typing a held message: nothing can take it back now.
-    static let typingCopy = "Page is typing it into the session now."
+    static let typingCopy = "Page Studio is typing it into the session now."
     static let typingHeadline = "Typing it now"
 
     static let noLongerHeld = "No longer held — check the session"
@@ -355,9 +355,9 @@ extension SessionDeliveryState {
             // Refused, as the final `result` for the same message reads (`refused` / `ended` or `expired`).
             case .ended: return .refused(reason: "ended", message: e.detail ?? "Not sent — the session ended")
             case .expired: return .refused(reason: "expired", message: e.detail ?? "Not sent — the turn didn't finish within 6 hours")
-            case .failed: return .failed(e.detail ?? "Not sent — Page couldn't type it")
+            case .failed: return .failed(e.detail ?? "Not sent — Page Studio couldn't type it")
             case .unconfirmed:
-                return .unconfirmed(e.detail ?? "Page restarted while typing this and won't retype it. Check the session.")
+                return .unconfirmed(e.detail ?? "Page Studio restarted while typing this and won't retype it. Check the session.")
             case .unknown: return self
             }
         }
@@ -402,7 +402,7 @@ enum RetractOutcome: Equatable {
         switch kind {
         case "deleted": return .deleted(r.detail ?? SessionDeliveryState.deletedCopy)
         case "too_late": return .tooLate(r.detail ?? "Too late — it was already typed")
-        case "not_found": return .notFound(r.detail ?? "Page isn't holding that message")
+        case "not_found": return .notFound(r.detail ?? "Page Studio isn't holding that message")
         default: return nil
         }
     }
@@ -427,8 +427,8 @@ enum RetractOutcome: Equatable {
 /// does about it: stage `forwarded` means the Mac may still hold it (its rate-limit or resume queue), so Page asks
 /// the Mac to take it back (`retract` with `interventionId`); stage `delivered` never does.
 enum ForwardedRetract {
-    static let askingCopy = "Asking your Mac…"
-    static let tooLateCopy = "Too late — your Mac already has it"
+    static let askingCopy = "Asking your computer…"
+    static let tooLateCopy = "Too late — your computer already has it"
 
     /// Ask the Mac only when the relay says `forwarded` and the Mac says it can take a message back.
     static func asksMac(stage: String?, macCaps: Set<String>) -> Bool {
@@ -475,7 +475,7 @@ enum RetractNote: Equatable {
     case failed(String)
 
     static let unconfirmedCopy = "Couldn't confirm the delete — it may still be sent"
-    static let offlineCopy = "Your Mac is offline — try again when it's back"
+    static let offlineCopy = "Your computer is offline — try again when it's back"
 
     /// The relay didn't forward the `retract` (nil when it did): an offline Mac is said plainly.
     static func postFailure(_ outcome: SessionCommandOutcome) -> RetractNote? {
@@ -555,7 +555,7 @@ enum RelayRetractOutcome: Equatable {
             if error == "no_such_intervention" { return .pageGone }
             return .failed("Couldn't take it back — it may still be sent")
         case 401, 403:
-            return .failed("The relay no longer accepts this pairing. Re-pair with your Mac.")
+            return .failed("The relay no longer accepts this pairing. Re-pair with your computer.")
         default:
             return .failed("Couldn't take it back — it may still be sent")
         }
@@ -587,7 +587,7 @@ enum RelayRetractOutcome: Equatable {
 enum QueuedDelete {
     static let hookCopy = "Waiting on the hook. It can't be deleted from here."
     static let oldRelayCopy = "Update your relay to delete queued replies."
-    static let oldMacCopy = "Update Page on your Mac to delete a held reply."
+    static let oldMacCopy = "Update Page Studio on your computer to delete a held reply."
 
     /// What a queued reply says when it can't be deleted from here: a hook-held page, an old relay (no
     /// `reply-retract-v1`), or an old Mac for a rate-limit hold (no `retract-v1`). nil when there is nothing worth
@@ -625,7 +625,7 @@ struct ReplyQueueStatus: Equatable {
     /// Page is asking the Mac (the headline says so): a spinner, no button.
     var asking = false
 
-    static let relayHeadline = "Queued — your Mac is offline"
+    static let relayHeadline = "Queued — your computer is offline"
 
     struct Inputs {
         var delivery: ReplyDelivery?
@@ -653,12 +653,12 @@ struct ReplyQueueStatus: Equatable {
                                         asking: n.isBusy)
             }
             return ReplyQueueStatus(layer: .relay, headline: relayHeadline,
-                                    detail: "It's typed in when your Mac reconnects, within an hour.",
+                                    detail: "It's typed in when your computer reconnects, within an hour.",
                                     canDelete: RelayQueue.canDelete(features: i.relayFeatures) && i.note?.isBusy != true,
                                     deleting: i.note?.isBusy == true, note: i.note, whyNot: whyNot)
         case .heldOnMac(let detail)?:
             return ReplyQueueStatus(layer: .macHold, headline: HeldUntilReset.headline(detail: detail, resetsAt: i.resetsAt, timeZone: i.timeZone),
-                                    detail: "Page types it when the limit resets.",
+                                    detail: "Page Studio types it when the limit resets.",
                                     canDelete: i.macCaps.contains(SendChoicePlan.retractCap) && i.note?.isBusy != true,
                                     deleting: i.note?.isBusy == true, note: i.note, whyNot: whyNot)
         default:
@@ -673,11 +673,11 @@ enum HeldUntilReset {
     /// "Held on your Mac until 3:00 PM". The time is the session's own reset time when known, else the
     /// one the Mac wrote ("Will send it when the limit resets at 3:00 PM").
     static func headline(detail: String?, resetsAt: Date?, timeZone: TimeZone) -> String {
-        if let at = resetsAt { return "Held on your Mac until \(NowFormat.clock(at, timeZone: timeZone))" }
+        if let at = resetsAt { return "Held on your computer until \(NowFormat.clock(at, timeZone: timeZone))" }
         if let d = detail, let r = d.range(of: " at ", options: .backwards) {
             let t = d[r.upperBound...].trimmingCharacters(in: CharacterSet(charactersIn: " .")).trimmingCharacters(in: .whitespaces)
-            if !t.isEmpty, t.count <= 12, t.contains(where: \.isNumber) { return "Held on your Mac until \(t)" }
+            if !t.isEmpty, t.count <= 12, t.contains(where: \.isNumber) { return "Held on your computer until \(t)" }
         }
-        return "Held on your Mac until the limit resets"
+        return "Held on your computer until the limit resets"
     }
 }

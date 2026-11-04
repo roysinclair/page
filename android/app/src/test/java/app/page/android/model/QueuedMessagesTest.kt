@@ -124,7 +124,7 @@ class QueuedMessagesTest {
 
     @Test fun `the composer is HoldOnly for that Codex row, Blocked without hold, and Steer when Page can type`() {
         fun mode(canType: Boolean, canHold: Boolean, state: LiveSessionState = LiveSessionState.ACTIVE) = RoomComposerMode.resolve(
-            RoomComposerMode.Inputs(state = state, canType = canType, typeBlocker = "Page can't type into Codex yet", canHold = canHold),
+            RoomComposerMode.Inputs(state = state, canType = canType, typeBlocker = "Page Studio can't type into Codex yet", canHold = canHold),
         )
         assertEquals(RoomComposerMode.HoldOnly, mode(canType = false, canHold = true))
         assertTrue(mode(canType = false, canHold = false) is RoomComposerMode.Blocked)
@@ -149,8 +149,8 @@ class QueuedMessagesTest {
     @Test fun `the delivery preview follows the selected side`() {
         val c = AgentCharacter.from(AgentBackend.fromWire("claude"), null)
         assertEquals("Your message, then Return · queues after this step · cmux › page · Mac", RoomComposerMode.Steer.preview(c, "cmux › page", "Mac"))
-        assertEquals("Held on your Mac · typed when Claude finishes · cmux › page · Mac", RoomComposerMode.Steer.preview(c, "cmux › page", "Mac", sendWhen = SendWhen.WHEN_FINISHED))
-        assertEquals("Held on your Mac · typed when Claude finishes · cmux › page · Mac", RoomComposerMode.HoldOnly.preview(c, "cmux › page", "Mac"))
+        assertEquals("Held on your computer · typed when Claude finishes · cmux › page · Mac", RoomComposerMode.Steer.preview(c, "cmux › page", "Mac", sendWhen = SendWhen.WHEN_FINISHED))
+        assertEquals("Held on your computer · typed when Claude finishes · cmux › page · Mac", RoomComposerMode.HoldOnly.preview(c, "cmux › page", "Mac"))
     }
 
     // MARK: the 10 s countdown
@@ -232,7 +232,7 @@ class QueuedMessagesTest {
         assertEquals("one\n\ntwo", drafts["s1"]?.text)
         assertEquals("three", drafts["s2"]?.text)
         assertTrue(drafts.values.all { it.note == OutboxRestore.NOTE_KILLED })
-        assertEquals("Not sent — Page closed before the countdown ended. Your message is back here.", OutboxRestore.NOTE_KILLED)
+        assertEquals("Not sent — Page Relay closed before the countdown ended. Your message is back here.", OutboxRestore.NOTE_KILLED)
         assertEquals(emptyList<ScheduledSend>(), OutboxRestore.decode(null))
         assertEquals(emptyList<ScheduledSend>(), OutboxRestore.decode("not json"))
         assertEquals("a blank text is not a draft", emptyList<ScheduledSend>(), OutboxRestore.decode("""[{"id":"a","sessionId":"s","text":"  ","at":1}]"""))
@@ -282,7 +282,7 @@ class QueuedMessagesTest {
     @Test fun `a held ack is Held, and exactly one more result, the fromHold one, settles it`() {
         val ack = result(""""ok":true,"code":"queued","held":true,"detail":"Held — Page types it when Claude finishes this turn"""")
         val heldState = SessionDeliveryState.Sending.applying(ack, "Claude")
-        assertEquals(SessionDeliveryState.Held("Held — Page types it when Claude finishes this turn"), heldState)
+        assertEquals(SessionDeliveryState.Held("Held — Page Studio types it when Claude finishes this turn"), heldState)
         assertFalse(heldState.isPending)
         assertEquals("a repeat of the ack changes nothing", heldState, heldState.applying(ack, "Claude"))
         assertEquals("a result that is not the final one changes nothing", heldState, heldState.applying(result(""""ok":true,"code":"delivered","detail":"Typed into cmux""""), "Claude"))
@@ -309,9 +309,9 @@ class QueuedMessagesTest {
     }
 
     @Test fun `the list settles a held receipt from the row's held entry`() {
-        val h = SessionDeliveryState.Held("Held — Page types it when Claude finishes this turn")
+        val h = SessionDeliveryState.Held("Held — Page Studio types it when Claude finishes this turn")
         fun entry(state: HeldMessage.State, detail: String? = null) = HeldMessage("c7", "t", t0, state, null, detail)
-        assertEquals(h.copy(note = "Someone is typing at the Mac"), HeldMessages.settle(h, entry(HeldMessage.State.HELD, "Someone is typing at the Mac"), true))
+        assertEquals(h.copy(note = "Someone is typing at your computer"), HeldMessages.settle(h, entry(HeldMessage.State.HELD, "Someone is typing at your computer"), true))
         assertEquals(h.copy(typing = true), HeldMessages.settle(h, entry(HeldMessage.State.TYPING), true))
         assertEquals(SessionDeliveryState.Typed("Typed into tmux"), HeldMessages.settle(h, entry(HeldMessage.State.TYPED, "Typed into tmux"), true))
         assertEquals(SessionDeliveryState.Deleted("Deleted — not sent"), HeldMessages.settle(h, entry(HeldMessage.State.DELETED), true))
@@ -326,13 +326,13 @@ class QueuedMessagesTest {
     @Test fun `an entry that vanished reads No longer held, but only if this phone saw it listed first`() {
         val h = SessionDeliveryState.Held(null)
         assertEquals(SessionDeliveryState.CheckSession("No longer held — check the session"), HeldMessages.settle(h, null, seen = true))
-        assertEquals("a list built before the Mac took it lacks it too", h, HeldMessages.settle(h, null, seen = false))
+        assertEquals("a list built before the computer took it lacks it too", h, HeldMessages.settle(h, null, seen = false))
         assertEquals("a settled state is never undone by a list", SessionDeliveryState.Typed("x"), HeldMessages.settle(SessionDeliveryState.Typed("x"), null, true))
         assertEquals(SessionDeliveryState.Queued("q"), HeldMessages.settle(SessionDeliveryState.Queued("q"), null, true))
     }
 
     @Test fun `a held message whose session left the list reads No longer held, never Held forever`() {
-        val h = SessionDeliveryState.Held("Held — Page types it when Claude finishes this turn")
+        val h = SessionDeliveryState.Held("Held — Page Studio types it when Claude finishes this turn")
         val gone = SessionDeliveryState.CheckSession(HeldMessages.NO_LONGER_HELD)
         assertEquals("seen or not, the row and its settled entry are gone", gone, HeldMessages.settle(h, null, seen = false, sessionListed = false))
         assertEquals(gone, HeldMessages.settle(h, null, seen = true, sessionListed = false))
@@ -375,9 +375,9 @@ class QueuedMessagesTest {
     }
 
     @Test fun `the held receipt uses the Mac's sentence, else ours, stays, and offers Delete only when it can work`() {
-        val withMac = SessionDeliveryState.Held("Held — Page types it when Claude finishes this turn")
+        val withMac = SessionDeliveryState.Held("Held — Page Studio types it when Claude finishes this turn")
         val r = SendReceipt.build(held(withMac), "Claude", t0.plusSeconds(3600.0), canDelete = true)!!
-        assertEquals("Held — Page types it when Claude finishes this turn", r.headline)
+        assertEquals("Held — Page Studio types it when Claude finishes this turn", r.headline)
         assertEquals(SendReceipt.Tone.HELD, r.tone)
         assertEquals(SendReceipt.Action.DELETE, r.action)
         assertEquals("Held — sends when Claude finishes", SendReceipt.build(held(SessionDeliveryState.Held(null)), "Claude", t0, canDelete = false)?.headline)
@@ -396,14 +396,14 @@ class QueuedMessagesTest {
         assertEquals(MacRetract.Outcome.Deleted("Deleted — not sent"), del)
         assertEquals("Already deleted — not sent", MacRetract.outcome(result(""""ok":true,"code":"delivered","retract":"deleted","detail":"Already deleted — not sent"""")).text)
         val late = MacRetract.outcome(result(""""ok":false,"code":"refused","reason":"too_late","retract":"too_late","detail":"Too late — Page had started typing it; check the session""""))
-        assertEquals("Too late — Page had started typing it; check the session", late.text)
+        assertEquals("Too late — Page Studio had started typing it; check the session", late.text)
         assertTrue(late is MacRetract.Outcome.TooLate)
         val nf = MacRetract.outcome(result(""""ok":false,"code":"refused","reason":"not_found","retract":"not_found","detail":"Page isn't holding that message""""))
-        assertEquals("Page isn't holding that message", nf.text)
+        assertEquals("Page Studio isn't holding that message", nf.text)
         // Defaults when the Mac sends no detail.
         assertEquals("Deleted — not sent", MacRetract.Outcome.Deleted(null).text)
         assertEquals("Too late — it was already typed", MacRetract.Outcome.TooLate(null).text)
-        assertEquals("Page isn't holding that message", MacRetract.Outcome.NotFound(null).text)
+        assertEquals("Page Studio isn't holding that message", MacRetract.Outcome.NotFound(null).text)
         // A Mac that omits `retract` is read from code and reason.
         assertTrue(MacRetract.outcome(result(""""ok":true,"code":"delivered"""")) is MacRetract.Outcome.Deleted)
         assertTrue(MacRetract.outcome(result(""""ok":false,"code":"refused","reason":"too_late"""")) is MacRetract.Outcome.TooLate)
@@ -420,7 +420,7 @@ class QueuedMessagesTest {
         assertEquals("a settled delete is never timed out", un, un.timedOut(t0.plusSeconds(99.0)))
         assertTrue(d.isDeleting)
         assertNull(d.text)
-        assertEquals("Your Mac is offline — try again when it's back", MacRetract.relayFailure(SessionCommandOutcome.MacOffline)?.text)
+        assertEquals("Your computer is offline — try again when it's back", MacRetract.relayFailure(SessionCommandOutcome.MacOffline)?.text)
         assertNull(MacRetract.relayFailure(SessionCommandOutcome.Accepted))
         assertEquals(SessionCommandOutcome.RateLimited.failureMessage, MacRetract.relayFailure(SessionCommandOutcome.RateLimited)?.text)
     }
@@ -474,7 +474,7 @@ class QueuedMessagesTest {
         for (stage in listOf("forwarded", "delivered")) {
             val o = out(409, """{"error":"too_late","stage":"$stage"}""")
             assertEquals(ReplyRetract.Outcome.TooLate(stage), o)
-            assertEquals("Too late — your Mac already has it", o.text)
+            assertEquals("Too late — your computer already has it", o.text)
         }
         assertEquals(ReplyRetract.Outcome.CouldntTakeBack, out(409, """{"error":"too_late","stage":"not_held"}"""))
         assertEquals(ReplyRetract.Outcome.CouldntTakeBack, out(409, """{"error":"too_late","stage":"somethingNew"}"""))
@@ -503,7 +503,7 @@ class QueuedMessagesTest {
         assertTrue("the sheet takes a fresh reply", DecisionPhase.derive(phaseInputs(deleted.first!!)).acceptsInput)
         // Too late: the Mac has it, so it is no longer queued, with the relay's words as the note.
         val late = ReplyDelivery.afterRetract(ReplyDelivery.Retracting, ReplyRetract.Outcome.TooLate("forwarded"), NOW)
-        assertEquals(ReplyDelivery.Sent(true, NOW).copy(queued = false) to "Too late — your Mac already has it", late)
+        assertEquals(ReplyDelivery.Sent(true, NOW).copy(queued = false) to "Too late — your computer already has it", late)
         assertEquals(queued to "Couldn't take it back — it may still be sent", ReplyDelivery.afterRetract(queued, ReplyRetract.Outcome.CouldntTakeBack, NOW))
         assertEquals(queued to "Update your relay to delete queued replies", ReplyDelivery.afterRetract(queued, ReplyRetract.Outcome.RelayTooOld, NOW))
         assertEquals(queued to "Nothing to delete", ReplyDelivery.afterRetract(queued, ReplyRetract.Outcome.NothingToDelete, NOW))
@@ -521,7 +521,7 @@ class QueuedMessagesTest {
         assertEquals("cancelled without a method", ReplyDelivery.Retracted("x"), ReplyResultFrame.delivery(false, null, "x", cancelled = true))
         assertEquals(ReplyDelivery.HeldOnMac("Will send it when the limit resets at 3:00 PM"), ReplyResultFrame.delivery(true, "held_until_reset", "Will send it when the limit resets at 3:00 PM"))
         assertEquals(ReplyDelivery.Delivered("Typed"), ReplyResultFrame.delivery(true, "tmux", "Typed"))
-        assertEquals(ReplyDelivery.Failed("Your Mac couldn't deliver the reply."), ReplyResultFrame.delivery(false, "none", null))
+        assertEquals(ReplyDelivery.Failed("Your computer couldn't deliver the reply."), ReplyResultFrame.delivery(false, "none", null))
         // The relay's record after a relaunch.
         assertEquals(ReplyDelivery.Retracted("Deleted — not sent"), ReplyDelivery.synced(null, "failed", "Deleted — not sent", null, NOW, deliveryMethod = "retracted"))
         assertEquals(ReplyDelivery.HeldOnMac("Will send it when the limit resets at 3:00 PM"), ReplyDelivery.synced(null, "delivered", "Will send it when the limit resets at 3:00 PM", NOW, NOW, deliveryMethod = "held_until_reset"))
@@ -532,23 +532,23 @@ class QueuedMessagesTest {
     @Test fun `a rate-limit hold reads Held on your Mac until the time, and Delete asks the Mac to retract the page`() {
         val d = ReplyDelivery.HeldOnMac("Will send it when the limit resets at 3:00 PM")
         assertEquals("3:00 PM", d.until)
-        assertEquals("Held on your Mac until 3:00 PM", HeldUntilReset.line(d.detail))
-        assertEquals("Held on your Mac until the limit resets", HeldUntilReset.line("Will send it later"))
-        assertEquals("Held on your Mac until 11:45 PM", HeldUntilReset.line("Will send it when the limit resets at 11:45 PM."))
-        assertEquals("no time in the sentence (iOS's case)", "Held on your Mac until the limit resets", HeldUntilReset.line("something at the shop"))
-        assertEquals("Held on your Mac until the limit resets", HeldUntilReset.line(null))
+        assertEquals("Held on your computer until 3:00 PM", HeldUntilReset.line(d.detail))
+        assertEquals("Held on your computer until the limit resets", HeldUntilReset.line("Will send it later"))
+        assertEquals("Held on your computer until 11:45 PM", HeldUntilReset.line("Will send it when the limit resets at 11:45 PM."))
+        assertEquals("no time in the sentence (iOS's case)", "Held on your computer until the limit resets", HeldUntilReset.line("something at the shop"))
+        assertEquals("Held on your computer until the limit resets", HeldUntilReset.line(null))
         assertEquals(QueuedDelete.Layer.MAC_RATE_LIMIT, QueuedDelete.reply(d, false, features, setOf("retract-v1")))
         assertNull("old Mac: no Delete", QueuedDelete.reply(d, false, features, emptySet()))
-        assertEquals("Update Page on your Mac to delete a held reply.", QueuedDelete.whyNot(d, false, features, emptySet(), hasList = true))
+        assertEquals("Update Page Studio on your computer to delete a held reply.", QueuedDelete.whyNot(d, false, features, emptySet(), hasList = true))
         assertEquals(DecisionPhase.HeldOnMac(d.detail), DecisionPhase.derive(phaseInputs(d)))
         assertFalse("held is not a delivery: the sheet must not close itself", DecisionPhase.derive(phaseInputs(d)).isDelivered)
         assertNull(DecisionPhase.derive(phaseInputs(d)).autoCloseDelay)
-        assertEquals(CardOutcome.Note("Held on your Mac until 3:00 PM"), CardOutcome.from(null, d, NOW))
+        assertEquals(CardOutcome.Note("Held on your computer until 3:00 PM"), CardOutcome.from(null, d, NOW))
         // The Mac's answers.
         assertEquals(ReplyDelivery.Retracted("Deleted — not sent. Nothing will be typed at reset") to null,
             ReplyDelivery.afterMacRetract(ReplyDelivery.Retracting, MacRetract.Outcome.Deleted("Deleted — not sent. Nothing will be typed at reset")))
-        assertEquals(d to "Too late — Page was already typing it after the limit reset",
-            ReplyDelivery.afterMacRetract(d, MacRetract.Outcome.TooLate("Too late — Page was already typing it after the limit reset")))
+        assertEquals(d to "Too late — Page Studio was already typing it after the limit reset",
+            ReplyDelivery.afterMacRetract(d, MacRetract.Outcome.TooLate("Too late — Page Studio was already typing it after the limit reset")))
         assertEquals(d to MacRetract.UNCONFIRMED, ReplyDelivery.afterMacRetract(d, MacRetract.Outcome.Failed(MacRetract.UNCONFIRMED)))
     }
 
@@ -561,7 +561,7 @@ class QueuedMessagesTest {
         assertEquals("Deleted — not sent. Nothing was typed.", gone.statusLine(false)?.text)
         assertEquals(DecisionPhase.Tone.NEUTRAL, gone.statusLine(false)?.tone)
         assertNull("the sheet stays open", gone.autoCloseDelay)
-        assertEquals("a Mac's longer sentence is kept", "Deleted — not sent. Nothing will be typed at reset", DecisionPhase.Retracted("Deleted — not sent. Nothing will be typed at reset").statusLine(false)?.text)
+        assertEquals("a computer's longer sentence is kept", "Deleted — not sent. Nothing will be typed at reset", DecisionPhase.Retracted("Deleted — not sent. Nothing will be typed at reset").statusLine(false)?.text)
         assertEquals(CardOutcome.None, CardOutcome.from(null, ReplyDelivery.Retracted("x"), NOW))
         assertEquals(CardOutcome.Sending, CardOutcome.from(null, ReplyDelivery.Retracting, NOW))
     }
@@ -572,7 +572,7 @@ class QueuedMessagesTest {
         val deleted = ReceiptThread.derive(null, ReplyDelivery.Retracted("x"), null, t0, t0.plusSeconds(5.0))
         assertEquals("deleted · not sent", deleted.word)
         assertFalse("nothing went wrong, so no failure", deleted.isFailure)
-        assertEquals("held on your Mac", ReceiptThread.derive(null, ReplyDelivery.HeldOnMac("x"), null, t0, t0).word)
+        assertEquals("held on your computer", ReceiptThread.derive(null, ReplyDelivery.HeldOnMac("x"), null, t0, t0).word)
     }
 
     // MARK: notifications (L1) and the sheet's one-tap Steer
@@ -584,7 +584,7 @@ class QueuedMessagesTest {
         assertNull("the page's own actions are back", deleted.status)
         assertEquals("Deleted — not sent", deleted.note)
         assertEquals("Nothing to delete", QueuedReplyNotification.after(ReplyRetract.Outcome.NothingToDelete).note)
-        assertEquals("Too late — your Mac already has it", QueuedReplyNotification.after(ReplyRetract.Outcome.TooLate("forwarded")).status)
+        assertEquals("Too late — your computer already has it", QueuedReplyNotification.after(ReplyRetract.Outcome.TooLate("forwarded")).status)
         assertEquals("Couldn't take it back — it may still be sent", QueuedReplyNotification.after(ReplyRetract.Outcome.CouldntTakeBack).status)
         assertEquals("Update your relay to delete queued replies", QueuedReplyNotification.after(ReplyRetract.Outcome.RelayTooOld).status)
         val transport = QueuedReplyNotification.after(ReplyRetract.Outcome.Failed(ReplyRetract.TRANSPORT))
@@ -592,7 +592,7 @@ class QueuedMessagesTest {
         assertTrue("a delete that never reached the relay can be tried again", transport.deleteAgain)
         assertFalse(QueuedReplyNotification.after(ReplyRetract.Outcome.TooLate("delivered")).deleteAgain)
         assertEquals("Sending your reply…", QueuedReplyNotification.SENDING)
-        assertEquals("Queued — your Mac is offline. It'll be typed in when it reconnects.", QueuedReplyNotification.QUEUED)
+        assertEquals("Queued — your computer is offline. It'll be typed in when it reconnects.", QueuedReplyNotification.QUEUED)
     }
 
     @Test fun `the queued notification offers Delete only when the relay can take it back`() {
@@ -620,7 +620,7 @@ class QueuedMessagesTest {
         val d = OutboxRestore.gone(scheduled(text = "keep", at = t0).copy(pageId = "p4"))
         assertEquals(OutboxRestore.NOTE_PAGE_GONE, d.note)
         assertEquals("keep", d.text)
-        assertEquals("Not sent — the page was answered or closed on your Mac first. Your message is back here.", OutboxRestore.NOTE_PAGE_GONE)
+        assertEquals("Not sent — the page was answered or closed on your computer first. Your message is back here.", OutboxRestore.NOTE_PAGE_GONE)
     }
 
     // MARK: the wire is untouched for anything not queued

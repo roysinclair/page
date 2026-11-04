@@ -496,7 +496,7 @@ struct NowModel: Equatable {
             phoneLine: phoneLine, rings: i.day?.rings ?? [], glyph: glyph, macName: i.macName,
             inFlight: inFlight(s), flight: InFlightRows.build(s, hosts: i.hosts, activity: i.activity, busySince: i.busySince, facts: i.facts, now: i.now),
             stoppableCount: s.sessions.filter { $0.state == .active }.count,
-            accessibilityLabel: "Page — \(headline)", configProblem: s.configProblem)
+            accessibilityLabel: "Page Studio — \(headline)", configProblem: s.configProblem)
     }
 
     /// Pure. Working sessions by project name, one entry per session.
@@ -511,7 +511,7 @@ struct NowModel: Equatable {
         NowModel(mood: .quiet, headline: "Starting…", subline: "checking your agents", needYouCount: 0, lookCount: 0,
                  reviewCount: 0, workingCount: 0, rows: [], runway: RunwayModel(markers: [], onAC: true, clearUntil: nil),
                  receiptLine: nil, paused: [], canResumeNow: false, phoneLine: nil, rings: [],
-                 glyph: GlyphState(mode: .off), macName: macName, accessibilityLabel: "Page — starting")
+                 glyph: GlyphState(mode: .off), macName: macName, accessibilityLabel: "Page Studio — starting")
     }
 
     // MARK: lines
@@ -660,7 +660,7 @@ struct NowModel: Equatable {
                 keys = [open]
                 returnAction = .openTerminal
                 tellPreview = nil
-                approve = "Answer in the terminal · Page can't approve \(AgentDisplay.agentName(ev.backend)) prompts"
+                approve = "Answer in the terminal · Page Studio can't approve \(AgentDisplay.agentName(ev.backend)) prompts"
             } else {
                 // The verdict from the structured call when the page has one; else the
                 // conservative read of its display text.
@@ -701,7 +701,7 @@ struct NowModel: Equatable {
 
         // Page cannot type into this terminal (or the page is the hook's): the
         // only honest key is O, and the preview says why instead of promising keystrokes.
-        let why = hookOwned ? "Answer at the Mac · Page's hook is handling this prompt" : blocker.map { "Can't type here · \($0)" }
+        let why = hookOwned ? "Answer at the Mac · Page Studio's hook is handling this prompt" : blocker.map { "Can't type here · \($0)" }
         if let why, !isForecast(ev), !keys.isEmpty {
             keys = [open]
             more = []

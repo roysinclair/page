@@ -70,7 +70,7 @@ sealed interface StopOutcome {
 
     val message: String
         get() = when (this) {
-            Asked -> "Asked your Mac to stop your working agents."
+            Asked -> "Asked your computer to stop your working agents."
             NothingBusy -> "Nothing was working, so nothing was sent."
             Cancelled -> "Cancelled. Nothing was sent."
             is Unavailable -> why

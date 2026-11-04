@@ -47,7 +47,7 @@ sealed interface ReplyOutcome {
     companion object {
         /** Fallback for a 422 `approve_or_deny_only` without a `why`. */
         const val DECISIONS_ONLY_MESSAGE =
-            "This page comes from an older Page hook that can only apply Approve or Deny. Use one of those, or update the hook in Page → Phone approvals on your Mac."
+            "This page comes from an older Page Studio hook that can only apply Approve or Deny. Use one of those, or update the hook in Page Studio → Phone approvals on your computer."
 
         fun from(status: Int, body: String): ReplyOutcome {
             // Before the 410 arm below: a retired token also answers 410.
@@ -235,7 +235,7 @@ sealed interface ReplyDelivery {
         /** A failure the Mac reported: Page's sentence for a [reason] it knows, else the Mac's [detail]. */
         fun failed(reason: String?, detail: String?): Failed {
             val known = ReplyDraft.failureCopy(reason)
-            return Failed(known ?: detail ?: "Your Mac couldn't deliver the reply.", reason.takeIf { known != null })
+            return Failed(known ?: detail ?: "Your computer couldn't deliver the reply.", reason.takeIf { known != null })
         }
 
         private fun restored(prev: ReplyDelivery?, now: Instant): ReplyDelivery? = when (prev) {
@@ -277,7 +277,7 @@ object HeldUntilReset {
     }
 
     /** The status line for a reply the Mac holds for a rate limit. */
-    fun line(detail: String?): String = until(detail)?.let { "Held on your Mac until $it" } ?: "Held on your Mac until the limit resets"
+    fun line(detail: String?): String = until(detail)?.let { "Held on your computer until $it" } ?: "Held on your computer until the limit resets"
 }
 
 /**
@@ -305,7 +305,7 @@ object ReplyRetract {
 
         /** `409 too_late`, the Mac has it ("forwarded") or already delivered it. */
         data class TooLate(val stage: String) : Outcome {
-            override val text: String get() = "Too late — your Mac already has it"
+            override val text: String get() = "Too late — your computer already has it"
         }
 
         /** `409 too_late` with `not_held` or a stage this build doesn't know: the relay can't vouch it wasn't sent. */
@@ -329,7 +329,7 @@ object ReplyRetract {
         }
 
         data object Unauthorized : Outcome {
-            override val text: String get() = "The relay no longer accepts this pairing. Re-pair with your Mac."
+            override val text: String get() = "The relay no longer accepts this pairing. Re-pair with your computer."
         }
         data class Retired(val why: String) : Outcome {
             override val text: String get() = why
@@ -369,7 +369,7 @@ object ReplyRetract {
     }
 
     /** What a delete shows while the relay's "forwarded" is being checked with the Mac (`retract {interventionId}`). */
-    const val ASKING_MAC = "Asking your Mac…"
+    const val ASKING_MAC = "Asking your computer…"
 
     /** The relay's `stage` for a reply it handed to a Mac socket: only this one is worth asking the Mac about. */
     const val FORWARDED = "forwarded"

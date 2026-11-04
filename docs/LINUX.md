@@ -1,13 +1,13 @@
-# Page Power on Linux (`paged`)
+# Page Studio for Linux (`paged`)
 
-`paged` is Page Power for Linux: a headless daemon with a command-line
+`paged` is Page Studio for Linux (preview), with Page Power and Page Relay: a headless daemon with a command-line
 interface, run as a systemd user service. It shares its core (`PageCore`)
 with the Mac app: the same detection, pages, approvals, reply delivery,
 battery policy, live sessions and relay protocol. It has no tray or window
 yet.
 
-It pairs with the same phone apps and the same relay Worker as the Mac. The
-phone apps still say "Mac" in places (see [Limits](#limits)).
+It pairs with the same Page Relay phone apps and the same relay Worker as the
+Mac, and the phones and the relay say "your computer".
 
 ## Install
 
@@ -36,7 +36,7 @@ Then:
 ```sh
 paged config set relayURL https://<your-worker>.workers.dev   # docs/SELF-HOSTING.md
 paged config set relayEnabled true
-paged pair            # QR in the terminal; scan it in the Page app
+paged pair            # QR in the terminal; scan it in Page Relay on your phone
 paged install-hooks   # shows the change to ~/.claude/settings.json / ~/.codex/hooks.json first
 paged status
 ```
@@ -50,7 +50,7 @@ loginctl enable-linger "$USER"
 ```
 
 polkit allows this for your own account on most desktops. On a locked-down
-server an administrator may have to run it. Page itself never asks for root.
+server an administrator may have to run it. Page Studio itself never asks for root.
 
 ## Commands
 
@@ -60,7 +60,7 @@ server an administrator may have to run it. Page itself never asks for root.
 | `paged start` / `paged stop` | Through `systemctl --user` when the unit is installed, otherwise directly. |
 | `paged status` | Relay, sessions, waiting pages, keep-awake (and why not), battery, presence. |
 | `paged pair [--png FILE] [--regenerate] [--plain]` | Prints the pairing QR with Unicode half blocks (black on white, so it scans on any theme; `--plain` for no colours) and writes a PNG (0600; default `~/.local/share/page/pairing-qr.png`). `--regenerate` makes a new token and session key: the daemon retires the old token on the relay and reconnects, and paired phones must scan again. |
-| `paged install-hooks [--agent claude\|codex\|all] [--uninstall] [--yes]` | Adds Page's hook to Claude Code and Codex. It shows the diff and asks first. |
+| `paged install-hooks [--agent claude\|codex\|all] [--uninstall] [--yes]` | Adds Page Studio's hook to Claude Code and Codex. It shows the diff and asks first. |
 | `paged logs [-f] [-n N]` | The daemon's log. |
 | `paged config [path\|show\|get KEY\|set KEY VALUE]` | Reads or changes `config.json`. Values are type-checked and validated before anything is written, and the daemon reloads them (SIGHUP). |
 
@@ -148,8 +148,8 @@ Mac, so a headless server needs no keyring.
   the machine to sleep. Check your desktop's lid setting if a closed laptop
   sleeps.
 - **`idle:sleep` also holds a sleep you ask for** while agents work. On macOS,
-  Page's idle assertion lets you sleep the Mac from the menu. On Linux your
-  desktop shows that Page is inhibiting sleep and usually lets you override
+  Page Studio's idle assertion lets you sleep the Mac from the menu. On Linux your
+  desktop shows that Page Studio is inhibiting sleep and usually lets you override
   it.
 - **Wayland idle.** There is no standard way to read idle time on Wayland.
   GNOME works through Mutter. On KDE, Sway and others `paged` falls back to
@@ -167,7 +167,7 @@ Mac, so a headless server needs no keyring.
 - **Local models.** Ollama, LM Studio and llama.cpp servers are found through
   `/proc`. The GPU sampler is Apple-only, so on Linux it shows no GPU
   utilisation.
-- **Phone wording.** The phone apps and the relay still say "your Mac". The
+- **Wire names.** The phone apps and the relay say "your computer", but the
   wire names (`role: "mac"`, `mac.status`, the `page-mac` User-Agent) stay as
   they are for compatibility. `paged` sends `page-mac/<version> (Linux …;
   paged)`.

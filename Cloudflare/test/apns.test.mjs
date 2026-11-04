@@ -192,7 +192,7 @@ test("close sends one silent push listing the cascaded ids", async () => {
   assert.deepEqual(c.body, { aps: { "content-available": 1 }, interventionClosedId: "a", interventionClosedIds: ["a", "b"] });
 });
 
-test("a failed injection with a reason alerts with the phone's copy, not the Mac's wording", async () => {
+test("a failed injection with a reason alerts with the phone's copy, not the computer's wording", async () => {
   const { relay } = await relayWithDevices([{ apnsToken: TOKEN_A, apnsEnv: "development" }]);
   const mac = new FakeWS();
   relay.attachSocket(mac, true);
@@ -203,7 +203,7 @@ test("a failed injection with a reason alerts with the phone's copy, not the Mac
     interventionId: "a", method: "none", success: false, reason: "draft", detail: "You have a half-typed message in that pane"
   });
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].body.aps.alert.body, "There's unsent text in the session's input box on your Mac.");
+  assert.equal(calls[0].body.aps.alert.body, "There's unsent text in the session's input box on your computer.");
 
   await call(relay, "POST", "/reply/a", { text: "go on" });
   calls = [];
@@ -211,7 +211,7 @@ test("a failed injection with a reason alerts with the phone's copy, not the Mac
     interventionId: "a", method: "none", success: false, reason: "input_unverified", detail: "raw"
   });
   assert.equal(calls[0].body.aps.alert.body,
-    "Page couldn't see the session's input box on your Mac, so it didn't type anything. Try again in a moment.");
+    "Page Studio couldn't see the session's input box on your computer, so it didn't type anything. Try again in a moment.");
 });
 
 test("a failed injection alerts the phone only when the app isn't connected", async () => {

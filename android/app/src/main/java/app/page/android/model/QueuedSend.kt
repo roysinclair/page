@@ -27,7 +27,7 @@ enum class SendWhen(val wire: String) {
     /** One short line, said under the choice the first time it shows. */
     fun explanation(agent: String): String = when (this) {
         NOW -> "$agent reads it after its current step."
-        WHEN_FINISHED -> "Held on your Mac and typed when $agent finishes. Delete it any time before."
+        WHEN_FINISHED -> "Held on your computer and typed when $agent finishes. Delete it any time before."
     }
 
     companion object {
@@ -169,10 +169,10 @@ object OutboxFire {
 data class RestoredDraft(val sessionId: String, val text: String, val note: String)
 
 object OutboxRestore {
-    const val NOTE_KILLED = "Not sent — Page closed before the countdown ended. Your message is back here."
-    const val NOTE_GONE = "Not sent — that session isn't on your Mac's list any more. Your message is back here."
-    const val NOTE_PAGE_GONE = "Not sent — the page was answered or closed on your Mac first. Your message is back here."
-    const val NOTE_SLEPT = "Not sent — Page was asleep when the countdown ended. Your message is back here."
+    const val NOTE_KILLED = "Not sent — Page Relay closed before the countdown ended. Your message is back here."
+    const val NOTE_GONE = "Not sent — that session isn't on your computer's list any more. Your message is back here."
+    const val NOTE_PAGE_GONE = "Not sent — the page was answered or closed on your computer first. Your message is back here."
+    const val NOTE_SLEPT = "Not sent — Page Relay was asleep when the countdown ended. Your message is back here."
     const val NOTE_PAGE_BUSY = "Not sent — that page couldn't take your reply just then. Your message is back here."
     const val NOTE_REPLY_FAILED = "Not sent — your reply didn't go through. Your message is back here."
 

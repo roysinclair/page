@@ -20,7 +20,7 @@ class SessionsPlaintextTest {
         {"kind":"list","boot":"b1","seq":12,"ts":1761300000000,"macName":"Roy's MacBook","futureField":{"x":1},
          "sessions":[
           {"id":"s-claude","backend":"claude","title":"mac-on-claude-code","cwd":"~/projects/mac-on-claude-code","state":"waitingOnApproval","host":"cmux","canType":true,"typeBlocker":"ignored when typable","canInterrupt":true,"provider":"anthropic","lastActivityAt":"2026-10-24T12:00:00Z","interventionId":"iv-1","preview":"Bash: npm test"},
-          {"id":"s-ollama","backend":"ollama","cwd":"~/code/llm-play","state":"thinkingHard","host":"Ghostty","canType":false,"typeBlocker":"Page can't type into Ghostty yet","canInterrupt":"yes","lastActivityAt":"bad"},
+          {"id":"s-ollama","backend":"ollama","cwd":"~/code/llm-play","state":"thinkingHard","host":"Ghostty","canType":false,"typeBlocker":"Page Studio can't type into Ghostty yet","canInterrupt":"yes","lastActivityAt":"bad"},
           {"id":"s-min"},
           {"id":""},
           {"title":"no id"},
@@ -42,7 +42,7 @@ class SessionsPlaintextTest {
         assertTrue(b.backend == AgentBackend.Other("ollama") && b.backend.badge == "OLLAMA" && b.backend.displayName == "Ollama")
         assertTrue("unknown state grouped idle", b.state == LiveSessionState.UNKNOWN && b.state.group == SessionGroup.IDLE)
         assertEquals("title from cwd", "llm-play", b.title)
-        assertTrue(!b.canType && b.blockerText == "Page can't type into Ghostty yet")
+        assertTrue(!b.canType && b.blockerText == "Page Studio can't type into Ghostty yet")
         assertTrue("non-bool canInterrupt -> false", !b.canInterrupt && !b.isStoppable)
         assertNull("bad date tolerated", b.lastActivityAt)
         assertTrue(m.title == "Session s-min" && !m.canType && m.blockerText == LiveSession.DEFAULT_BLOCKER && m.host == "unknown" && m.hostLabel == "Unknown host")

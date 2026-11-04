@@ -220,7 +220,7 @@ fun NWScanScreen(modifier: Modifier = Modifier, hint: String? = null, onPaste: (
             Text(OnboardingCopy.scanHint, style = NW.Typo.subline, color = NW.Palette.textTertiary.color, modifier = Modifier.padding(top = 6.dp))
             Spacer(Modifier.height(20.dp))
             val side = 270.dp
-            Box(Modifier.size(side).semantics(mergeDescendants = true) { contentDescription = "Camera view. Point it at the QR code in Page on your Mac." }, contentAlignment = Alignment.Center) {
+            Box(Modifier.size(side).semantics(mergeDescendants = true) { contentDescription = "Camera view. Point it at the QR code in Page Studio on your computer." }, contentAlignment = Alignment.Center) {
                 Box(Modifier.size(side - 36.dp).clip(RoundedCornerShape(22.dp)), content = camera)
                 ScanCorners(Modifier.size(side), NW.Palette.teal.color)
                 NWAnimated { t ->
@@ -294,9 +294,9 @@ private fun ConfirmCard(c: PairStepContent.Confirm) {
             Text("Pair with ${c.mac}?", style = NW.Typo.hero.copy(fontSize = 26.sp, letterSpacing = (-0.6).sp), color = NW.Palette.textPrimary.color)
             Text("Relay: ${c.host}", style = NW.Typo.monoSmall, color = NW.Palette.textTertiary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
             when {
-                c.online == true -> Line(nwIcon("checkmark.circle"), "Your Mac is connected to this relay.", NW.Palette.teal)
-                c.online == false && c.unused -> Line(Icons.Outlined.WarningAmber, "No Mac has connected to this relay with this code yet. If it's an old screenshot, or you regenerated the token on your Mac, show the pairing code on your Mac again and scan the new one.", NW.Palette.amber)
-                c.online == false -> Line(Icons.Outlined.ErrorOutline, "Your Mac isn't connected to this relay right now. That's fine — pages will arrive once it is.", NW.Palette.amber)
+                c.online == true -> Line(nwIcon("checkmark.circle"), "Your computer is connected to this relay.", NW.Palette.teal)
+                c.online == false && c.unused -> Line(Icons.Outlined.WarningAmber, "No computer has connected to this relay with this code yet. If it's an old screenshot, or you regenerated the token on your computer, show the pairing code on your computer again and scan the new one.", NW.Palette.amber)
+                c.online == false -> Line(Icons.Outlined.ErrorOutline, "Your computer isn't connected to this relay right now. That's fine — pages will arrive once it is.", NW.Palette.amber)
             }
             Text(OnboardingCopy.confirmWarning, style = NW.Typo.caption, color = NW.Palette.textTertiary.color)
         }

@@ -29,16 +29,16 @@ class NowRowBuilderTest {
 
     @Test fun `a pane Page cannot type into offers only Open on Mac and no commit`() {
         val ap = nwIv("a1", InterventionKind.APPROVAL, "[Bash] npm test", session = "s1")
-        val ghost = nwSession("s3", title = "api", host = "Ghostty", canType = false, blocker = "Page can't type into Ghostty yet")
+        val ghost = nwSession("s3", title = "api", host = "Ghostty", canType = false, blocker = "Page Studio can't type into Ghostty yet")
         val blocked = NowRowBuilder.row(ap, ghost, mac)
         assertEquals(listOf(RowAction.Kind.OPEN_ON_MAC), blocked.actions.map { it.kind })
-        assertEquals("Can't type here · Page can't type into Ghostty yet · Studio MBP", blocked.action(RowAction.Kind.OPEN_ON_MAC)?.preview)
+        assertEquals("Can't type here · Page Studio can't type into Ghostty yet · Studio MBP", blocked.action(RowAction.Kind.OPEN_ON_MAC)?.preview)
         assertNull("blocked row has no commit gesture", blocked.commit)
     }
 
     @Test fun `an Undoable row the phone cannot type into is not swipeable and nothing can begin an approve on it`() {
         val ap = nwIv("a1", InterventionKind.APPROVAL, "[Bash] npm test", session = "s1")
-        val ghost = nwSession("s3", title = "api", host = "Ghostty", canType = false, blocker = "Page can't type into Ghostty yet")
+        val ghost = nwSession("s3", title = "api", host = "Ghostty", canType = false, blocker = "Page Studio can't type into Ghostty yet")
         val blocked = NowRowBuilder.row(ap, ghost, mac)
         assertEquals("the chip stays Undoable", ChipKind.UNDOABLE, blocked.chip)
         assertFalse("but there is no swipe", blocked.canSwipeApprove)
@@ -48,7 +48,7 @@ class NowRowBuilderTest {
 
         val other = nwSession("s4", backend = "other")
         val unknown = NowRowBuilder.row(ap, other, mac)
-        assertFalse("an agent Page has no adapter for is not swipeable", unknown.canSwipeApprove)
+        assertFalse("an agent Page Studio has no adapter for is not swipeable", unknown.canSwipeApprove)
         assertFalse(app.page.android.data.ActionCoordinator.canBegin(unknown, RowAction.Kind.APPROVE))
 
         val ok = NowRowBuilder.row(ap, nwSession("s1"), mac)
@@ -74,12 +74,12 @@ class NowRowBuilderTest {
     @Test fun `a blank Mac name is never omitted from a preview`() {
         val ap = nwIv("a1", InterventionKind.APPROVAL, "[Bash] npm test", session = "s1")
         val blank = NowRowBuilder.row(ap, nwSession("s1"), "  ")
-        assertEquals("Will type 1 · Terminal › bottle-flip · your Mac", blank.action(RowAction.Kind.APPROVE)?.preview)
+        assertEquals("Will type 1 · Terminal › bottle-flip · your computer", blank.action(RowAction.Kind.APPROVE)?.preview)
     }
 
     @Test fun `every preview names the Mac and nothing ever types 2`() {
         val term = nwSession("s1")
-        val ghost = nwSession("s3", host = "Ghostty", canType = false, blocker = "Page can't type into Ghostty yet")
+        val ghost = nwSession("s3", host = "Ghostty", canType = false, blocker = "Page Studio can't type into Ghostty yet")
         val hook = nwIv("hookpre-1", InterventionKind.APPROVAL, "[Bash] ls", session = "s1")
         val hb = nwIv("hook-9", InterventionKind.APPROVAL, "[Bash] ls", session = "s1", hookBlocking = true)
         val pages = listOf(
@@ -94,7 +94,7 @@ class NowRowBuilderTest {
         for (p in pages) for (session in listOf<LiveSession?>(term, ghost, null)) {
             for (a in NowRowBuilder.row(p, session, mac).actions) {
                 val text = a.preview ?: continue
-                assertTrue("preview names the Mac: $text", text.contains(mac))
+                assertTrue("preview names the computer: $text", text.contains(mac))
                 assertFalse("never types 2: $text", text.contains("Will type 2"))
             }
         }
@@ -197,7 +197,7 @@ class NowRowBuilderTest {
         assertEquals("page", DeliveryPreview.route("unknown", "page"))
         assertNull(DeliveryPreview.route("  ", ""))
         assertEquals("Will type 1 · cmux › page · Studio MBP", DeliveryPreview.typeOne("cmux › page", "Studio MBP"))
-        assertEquals("your Mac", DeliveryPreview.macLabel("  "))
+        assertEquals("your computer", DeliveryPreview.macLabel("  "))
         assertEquals("Open in terminal to choose this", DeliveryPreview.openInTerminal)
         assertEquals("Will allow it through Claude's permission hook · M", DeliveryPreview.hookAllow("M"))
     }

@@ -28,8 +28,8 @@ enum SessionStarter {
     static let maxFolders = 40
     static let maxAge: TimeInterval = 30 * 24 * 3600
     static let maxPromptLength = 4000
-    static let disabledMessage = "Starting sessions from the phone is off — turn it on in Page on your Mac (Preferences → Macs & phones)"
-    static let unknownFolderMessage = "Page only starts sessions in folders Claude has already worked in"
+    static let disabledMessage = "Starting sessions from the phone is off — turn it on in Page Studio on your computer (Preferences → Macs & phones)"
+    static let unknownFolderMessage = "Page Studio only starts sessions in folders Claude has already worked in"
 
     // MARK: pure
 
@@ -140,7 +140,7 @@ enum SessionStarter {
     /// Blocking (the cmux CLI).
     static func start(folder: Folder, prompt: String, runner: @escaping CmuxBridge.Runner = CmuxBridge.defaultRunner) -> SessionCommandResult {
         guard let cli = CmuxBridge.cliPath(forBundlePath: nil) else {
-            return .refused(.notTypable, "Starting a session needs cmux, and it isn't installed on your Mac")
+            return .refused(.notTypable, "Starting a session needs cmux, and it isn't installed on your computer")
         }
         let client: CmuxBridge.Client
         switch CmuxBridge.connect(cliPath: cli, runner: runner) {

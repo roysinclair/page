@@ -95,7 +95,7 @@ struct WidgetStatus: Equatable {
         case .offline, .neverConnected: presence = .offline
         case .unknown: presence = .unknown
         }
-        return WidgetStatus(macName: macName ?? "Your Mac", presence: presence, needsYou: snap.pendingCount ?? 0,
+        return WidgetStatus(macName: macName ?? "Your computer", presence: presence, needsYou: snap.pendingCount ?? 0,
                             working: snap.working, live: snap.activeSessions,
                             batteryLine: snap.batteryLine, usageLine: snap.usageLine(now: now, format: format),
                             fetchedAt: now, usage: snap.usage, snapshot: snap)
@@ -126,7 +126,7 @@ struct WidgetStatus: Equatable {
     /// is offline or not checking in is never "All quiet".
     var faceHeadline: String {
         switch presence {
-        case .offline: return "Mac offline"
+        case .offline: return "Computer offline"
         case .stale: return "Not checking in"
         default: return headline
         }
@@ -143,6 +143,6 @@ struct WidgetStatus: Equatable {
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
-    static let placeholder = WidgetStatus(macName: "Your Mac", presence: .online, needsYou: 1, working: 2, live: 5,
+    static let placeholder = WidgetStatus(macName: "Your computer", presence: .online, needsYou: 1, working: 2, live: 5,
                                           batteryLine: nil, usageLine: nil, fetchedAt: Date())
 }

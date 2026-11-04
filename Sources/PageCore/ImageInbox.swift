@@ -300,9 +300,9 @@ enum ImageCheck {
     static let maxFrames = 8
 
     static let notImageMessage = "That photo isn't a JPEG or PNG"
-    static let unreadableMessage = "Page couldn't read that photo — send it again"
+    static let unreadableMessage = "Page Studio couldn't read that photo — send it again"
     static let tooLargeMessage = "That photo is too large (4096 px on its long edge at most)"
-    static let locationMessage = "Your phone sent location data with the photo, so Page didn't use it"
+    static let locationMessage = "Your phone sent location data with the photo, so Page Studio didn't use it"
 
     /// Pure. JPEG `FF D8 FF` or PNG `89 50 4E 47 0D 0A 1A 0A`; anything else is nil.
     static func sniff(_ data: Data) -> Kind? {
@@ -381,7 +381,7 @@ struct ImageStore {
     /// The per-user temporary folder.
     static let standard = ImageStore(base: FileManager.default.temporaryDirectory)
 
-    static let saveFailedMessage = "Page couldn't save the photo on your Mac"
+    static let saveFailedMessage = "Page Studio couldn't save the photo on your computer"
 
     var root: URL { base.appendingPathComponent(Self.folderName, isDirectory: true) }
 

@@ -15,8 +15,8 @@ import java.time.Instant
  */
 enum class DispatchAgent(val raw: String, val agentName: String, val note: String, val symbol: String) {
     CLAUDE("claude", "Claude", "runs claude in cmux", "sparkle"),
-    CODEX("codex", "Codex", "start it on your Mac", "hexagon"),
-    OLLAMA("ollama", "Ollama", "start it on your Mac", "cpu");
+    CODEX("codex", "Codex", "start it on your computer", "hexagon"),
+    OLLAMA("ollama", "Ollama", "start it on your computer", "cpu");
 
     /** Whether the phone can start it. */
     val canStartFromPhone: Boolean get() = this == CLAUDE
@@ -101,7 +101,7 @@ data class DispatchDraft(
     companion object {
         /** Under the button. */
         fun footer(mac: String): String =
-            "Opens a new cmux workspace on ${DeliveryPreview.macLabel(mac)} and runs claude there. Starting from the phone is off until you allow it on the Mac."
+            "Opens a new cmux workspace on ${DeliveryPreview.macLabel(mac)} and runs claude there. Starting from the phone is off until you allow it on your computer."
     }
 }
 
@@ -118,21 +118,21 @@ data class DispatchStatus(
         fun from(state: SessionDeliveryState?, startWaitExpired: Boolean): DispatchStatus? {
             if (state == null) return null
             return when (state) {
-                SessionDeliveryState.Sending -> DispatchStatus("Asking your Mac to start it…", Tone.WORKING, true)
+                SessionDeliveryState.Sending -> DispatchStatus("Asking your computer to start it…", Tone.WORKING, true)
                 is SessionDeliveryState.Typed, is SessionDeliveryState.Queued -> {
                     val detail = if (state is SessionDeliveryState.Typed) state.detail else (state as SessionDeliveryState.Queued).detail
                     if (startWaitExpired) {
-                        DispatchStatus("Started, but it hasn't shown up here yet. Look for it in Lanes, or in cmux on your Mac.", Tone.WARN, false)
+                        DispatchStatus("Started, but it hasn't shown up here yet. Look for it in Lanes, or in cmux on your computer.", Tone.WARN, false)
                     } else {
-                        DispatchStatus((detail ?: "Started") + ". Opening it here as soon as it appears. On your Mac it's a new cmux workspace.", Tone.GOOD, true)
+                        DispatchStatus((detail ?: "Started") + ". Opening it here as soon as it appears. On your computer it's a new cmux workspace.", Tone.GOOD, true)
                     }
                 }
                 is SessionDeliveryState.Refused -> DispatchStatus(state.message, Tone.PROBLEM, false)
                 is SessionDeliveryState.Failed -> DispatchStatus(state.message, Tone.PROBLEM, false)
-                SessionDeliveryState.NoAnswer -> DispatchStatus("No answer from your Mac", Tone.WARN, false)
+                SessionDeliveryState.NoAnswer -> DispatchStatus("No answer from your computer", Tone.WARN, false)
                 // A start is never held or deleted; if one is ever reported so, say it can't be confirmed.
                 is SessionDeliveryState.CheckSession -> DispatchStatus(state.message, Tone.WARN, false)
-                is SessionDeliveryState.Held, is SessionDeliveryState.Deleted -> DispatchStatus("No answer from your Mac", Tone.WARN, false)
+                is SessionDeliveryState.Held, is SessionDeliveryState.Deleted -> DispatchStatus("No answer from your computer", Tone.WARN, false)
             }
         }
     }

@@ -292,7 +292,7 @@ class PhotosTest {
         // A prompt with no page to answer it from says the same (iOS `.locked`).
         assertEquals("Answer the prompt first", PhotoOffer.evaluate(withImages, row(state = "waitingOnApproval"), RoomComposerMode.Locked("x")).disabledReason)
         // Under "Tell it instead" the row's blocker isn't said: that reply goes through the page.
-        assertNull(PhotoOffer.evaluate(withImages, row(attach = null, blocker = "Page can't send photos to Codex yet"), RoomComposerMode.TellInstead("p1")).blockerNote)
+        assertNull(PhotoOffer.evaluate(withImages, row(attach = null, blocker = "Page Studio can't send photos to Codex yet"), RoomComposerMode.TellInstead("p1")).blockerNote)
         // No composer to hang it on: ended, blocked, or only a hold on offer.
         for (mode in listOf(RoomComposerMode.Disabled("x"), RoomComposerMode.Blocked("x"), RoomComposerMode.HoldOnly)) {
             assertFalse(PhotoOffer.evaluate(withImages, row(), mode).shown)
@@ -300,8 +300,8 @@ class PhotosTest {
     }
 
     @Test fun `a Mac that stops offering photos while some are staged keeps the button, dimmed, and says so`() {
-        val gone = PhotoOffer(shown = true, disabledReason = "Your Mac can't take photos any more")
-        assertEquals("Your Mac can't take photos any more", PhotoOffer.GONE)
+        val gone = PhotoOffer(shown = true, disabledReason = "Your computer can't take photos any more")
+        assertEquals("Your computer can't take photos any more", PhotoOffer.GONE)
         // No images-v1 any more (an older Page), or no route for this row: the same line, whatever the composer is doing.
         for (mode in listOf(RoomComposerMode.NextTask, RoomComposerMode.Steer, RoomComposerMode.TellInstead("p1"))) {
             assertEquals(gone, PhotoOffer.evaluate(emptySet(), row(), mode, staged = 2))
@@ -315,18 +315,18 @@ class PhotosTest {
         assertTrue(PhotoOffer.evaluate(withImages, row(), RoomComposerMode.NextTask, staged = 2).enabled)
         // And Send says why instead of sending.
         val draft = PhotoDraft(listOf(PhotoDraftItem("a", ready())))
-        assertEquals(PhotoSend.Decision.Refuse("Your Mac can't take photos any more"), PhotoSend.decide(draft, "", gone))
+        assertEquals(PhotoSend.Decision.Refuse("Your computer can't take photos any more"), PhotoSend.decide(draft, "", gone))
     }
 
     @Test fun `path says so in one line, and a blocker is a quiet note, never a button`() {
         val path = PhotoOffer.evaluate(withImages, row(attach = "path"), RoomComposerMode.NextTask)
         assertTrue(path.enabled)
         assertEquals("Terminal can't paste photos — Claude gets the file's location and opens it itself", path.pathNote)
-        val blocked = PhotoOffer.evaluate(withImages, row(attach = null, blocker = "Page can't send photos to Codex yet"), RoomComposerMode.NextTask)
+        val blocked = PhotoOffer.evaluate(withImages, row(attach = null, blocker = "Page Studio can't send photos to Codex yet"), RoomComposerMode.NextTask)
         assertFalse(blocked.shown)
-        assertEquals("Page can't send photos to Codex yet", blocked.blockerNote)
+        assertEquals("Page Studio can't send photos to Codex yet", blocked.blockerNote)
         // Without images-v1 nothing is said about photos at all.
-        assertEquals(PhotoOffer.none, PhotoOffer.evaluate(setOf("hold-v1"), row(attach = null, blocker = "Page can't send photos to Codex yet"), RoomComposerMode.NextTask))
+        assertEquals(PhotoOffer.none, PhotoOffer.evaluate(setOf("hold-v1"), row(attach = null, blocker = "Page Studio can't send photos to Codex yet"), RoomComposerMode.NextTask))
         // An attach value this build doesn't know is no route.
         assertNull(row(attach = "teleport").attach)
     }
@@ -371,8 +371,8 @@ class PhotosTest {
         assertEquals(PhotoSend.Decision.Refuse(PhotoOffer.WAITING), PhotoSend.decide(readyDraft(), "hi", PhotoOffer(true, PhotoOffer.WAITING)))
         assertTrue(PhotoSend.decide(readyDraft(), "hi", PhotoOffer.none) is PhotoSend.Decision.Refuse)
         assertEquals(PhotoSend.Decision.Refuse("Your photos are still being prepared."), PhotoSend.decide(readyDraft(1).adding(listOf("x")).first, "", enabled))
-        val failed = readyDraft(1).adding(listOf("x")).first.with("x", PhotoStatus.Failed("Page couldn't open that photo. Try another."))
-        assertEquals(PhotoSend.Decision.Refuse("Page couldn't open that photo. Try another. Remove it to send the rest."), PhotoSend.decide(failed, "", enabled))
+        val failed = readyDraft(1).adding(listOf("x")).first.with("x", PhotoStatus.Failed("Page Relay couldn't open that photo. Try another."))
+        assertEquals(PhotoSend.Decision.Refuse("Page Relay couldn't open that photo. Try another. Remove it to send the rest."), PhotoSend.decide(failed, "", enabled))
         assertEquals(PhotoSend.Decision.Refuse(PhotoCaption.PATH_LINE), PhotoSend.decide(readyDraft(), "/tmp/a.png", enabled))
         val tooLong = PhotoSend.decide(readyDraft(), "x".repeat(8001), enabled) as PhotoSend.Decision.Refuse
         assertTrue(tooLong.why.contains("8001"))
@@ -441,9 +441,9 @@ class PhotosTest {
 
     @Test fun `the new reasons have words, and the Mac's sentence wins`() {
         assertEquals("Claude is working — send the photo when it finishes", SessionResultCopy.refusal("attach_busy", null, "Claude"))
-        assertEquals("Part of a photo didn't reach your Mac — send it again", SessionResultCopy.refusal("attachment_missing", null, "Claude"))
-        assertEquals("the Mac's words", SessionResultCopy.refusal("attachment_invalid", "the Mac's words", "Claude"))
-        assertEquals("This terminal can't take photos from Page.", SessionResultCopy.refusal("attach_unsupported", null, "Claude"))
+        assertEquals("Part of a photo didn't reach your computer — send it again", SessionResultCopy.refusal("attachment_missing", null, "Claude"))
+        assertEquals("the computer's words", SessionResultCopy.refusal("attachment_invalid", "the computer's words", "Claude"))
+        assertEquals("This terminal can't take photos from Page Relay.", SessionResultCopy.refusal("attach_unsupported", null, "Claude"))
     }
 
     @Test fun `a photo status says Sent, not Typed, and the receipt shows the upload`() {
@@ -544,12 +544,12 @@ class PhotosTest {
             """{"kind":"list","boot":"b","seq":1,"ts":1761300000000,"caps":["images-v1"],"sessions":[
                 {"id":"a","state":"idle","canType":true,"attach":"image"},
                 {"id":"b","state":"idle","canType":true,"attach":"path"},
-                {"id":"c","state":"idle","canType":true,"attachBlocker":"Page can't send photos to Codex yet"},
+                {"id":"c","state":"idle","canType":true,"attachBlocker":"Page Studio can't send photos to Codex yet"},
                 {"id":"d","state":"idle","canType":true,"attach":"carrier-pigeon"}]}""",
         )!!.update as SessionsUpdate.ListUpdate
         assertTrue("images-v1" in list.caps)
         assertEquals(listOf("image", "path", null, null), list.sessions.map { it.attach })
-        assertEquals("Page can't send photos to Codex yet", list.sessions[2].attachBlocker)
+        assertEquals("Page Studio can't send photos to Codex yet", list.sessions[2].attachBlocker)
         val r = (SessionsPlaintext.decode("""{"kind":"result","seq":1,"ts":1761300000000,"clientId":"c1","ok":false,"code":"refused","reason":"attachment_missing","missing":["img_a","img_b"]}""")!!.update as SessionsUpdate.Result).result
         assertEquals(listOf("img_a", "img_b"), r.missing)
         assertNull(r.attached)

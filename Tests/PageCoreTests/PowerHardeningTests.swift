@@ -114,7 +114,7 @@ final class RelayResendTests: XCTestCase {
         let atMac = Coordinator.pagesToResend(snaps, excludedIds: [replied.id],
                                               pausedSessionKeys: ["claude|c"], hookHeldSessionIds: ["h"],
                                               userAtMac: true)
-        XCTAssertEqual(atMac.map(\.id), [approval.id], "idle pages wait while the user is at the Mac")
+        XCTAssertEqual(atMac.map(\.id), [approval.id], "idle pages wait while the user is at your computer")
     }
 }
 

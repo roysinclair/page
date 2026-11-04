@@ -124,7 +124,7 @@ sealed interface SessionDeliveryState {
         is CheckSession -> "Check the session"
         is Refused -> "Refused"
         is Failed -> "Not sent"
-        NoAnswer -> "No answer from your Mac"
+        NoAnswer -> "No answer from your computer"
     }
 
     /** The longer explanation, when there is one. */
@@ -132,12 +132,12 @@ sealed interface SessionDeliveryState {
         Sending -> null
         is Typed -> detail ?: if (kind == SessionCommandKind.INTERRUPT) "Pressed Esc in the session." else null
         is Queued -> detail ?: "Queued — $agent reads it after the current step."
-        is Held -> if (typing) "Page is typing it into the session now." else HeldMessages.heldHeadline(detail, agent) + (note?.let { " · $it" } ?: "")
+        is Held -> if (typing) "Page Studio is typing it into the session now." else HeldMessages.heldHeadline(detail, agent) + (note?.let { " · $it" } ?: "")
         is Deleted -> detail ?: HeldMessages.DELETED_COPY
         is CheckSession -> message
         is Refused -> message
         is Failed -> message
-        NoAnswer -> "Your Mac didn't confirm this within ${RESULT_TIMEOUT.toInt()} seconds. It may still arrive; check the transcript before sending again."
+        NoAnswer -> "Your computer didn't confirm this within ${RESULT_TIMEOUT.toInt()} seconds. It may still arrive; check the transcript before sending again."
     }
 
     /** The explanation under a message bubble: only when there's something to act on or wait for. */
@@ -190,33 +190,33 @@ object SessionResultCopy {
      * `detail`.
      */
     fun refusal(reason: String?, detail: String?, agent: String, draft: String? = null): String = when (reason) {
-        "waiting" -> "$agent is showing a prompt on your Mac. Answer it from its page instead."
-        "unknown_state" -> "Page can't tell what this session is doing right now, so it didn't type anything. Try again in a moment."
-        "not_typable" -> detail ?: "Page can't type into this session's terminal."
-        "draft" -> if (draft != null) "There's “${shownDraft(draft)}” typed in the session's input box on your Mac." else "There's unsent text in the session's input box on your Mac. Clear it there, then try again."
-        "input_unverified" -> "Page couldn't see the session's input box on your Mac, so it didn't type anything. Try again in a moment."
-        "draft_changed" -> "The text in the input box changed on your Mac, so Page left it alone."
+        "waiting" -> "$agent is showing a prompt on your computer. Answer it from its page instead."
+        "unknown_state" -> "Page Studio can't tell what this session is doing right now, so it didn't type anything. Try again in a moment."
+        "not_typable" -> detail ?: "Page Studio can't type into this session's terminal."
+        "draft" -> if (draft != null) "There's “${shownDraft(draft)}” typed in the session's input box on your computer." else "There's unsent text in the session's input box on your computer. Clear it there, then try again."
+        "input_unverified" -> "Page Studio couldn't see the session's input box on your computer, so it didn't type anything. Try again in a moment."
+        "draft_changed" -> "The text in the input box changed on your computer, so Page Studio left it alone."
         "digit_while_busy" -> "Starts with a number: wait for $agent to finish, or add a word first."
         "ended" -> "This session has ended."
-        "codex_mid_turn" -> "Codex is mid-turn — Page can type once the turn ends."
-        "disabled" -> "Typing from your phone is turned off on your Mac. Turn it back on in Page's Preferences on the Mac."
-        "stale" -> "Your Mac ignored this because its clock and your phone's differ by more than 5 minutes. Check Date & Time on both."
-        "replay" -> "Your Mac already received this message."
-        "not_found" -> "This session is no longer on your Mac's list."
-        "interrupt_unsupported" -> "Page can't stop this session from here: it isn't mid-turn, or its terminal doesn't support it."
-        "question_changed" -> detail ?: "That question changed on your Mac, so nothing was pressed. Open it again to see the new one."
-        "answer_unsupported" -> detail ?: "Page can't answer this question from here. Answer it on your Mac."
-        "target_mismatch" -> detail ?: "This room doesn't match the session on your Mac any more, so nothing was typed. Close it and open the session again."
+        "codex_mid_turn" -> "Codex is mid-turn — Page Studio can type once the turn ends."
+        "disabled" -> "Typing from your phone is turned off on your computer. Turn it back on in Page Studio's settings."
+        "stale" -> "Your computer ignored this because its clock and your phone's differ by more than 5 minutes. Check Date & Time on both."
+        "replay" -> "Your computer already received this message."
+        "not_found" -> "This session is no longer on your computer's list."
+        "interrupt_unsupported" -> "Page Studio can't stop this session from here: it isn't mid-turn, or its terminal doesn't support it."
+        "question_changed" -> detail ?: "That question changed on your computer, so nothing was pressed. Open it again to see the new one."
+        "answer_unsupported" -> detail ?: "Page Studio can't answer this question from here. Answer it on your computer."
+        "target_mismatch" -> detail ?: "This room doesn't match the session on your computer any more, so nothing was typed. Close it and open the session again."
         // Photos (images-v1): the Mac's own sentence when it sent one.
         "attach_busy" -> detail ?: PhotoOffer.WORKING
-        "attachment_missing" -> detail ?: "Part of a photo didn't reach your Mac — send it again"
-        "attachment_invalid" -> detail ?: "Your Mac couldn't use the photo."
-        "attach_unsupported" -> detail ?: "This terminal can't take photos from Page."
+        "attachment_missing" -> detail ?: "Part of a photo didn't reach your computer — send it again"
+        "attachment_invalid" -> detail ?: "Your computer couldn't use the photo."
+        "attach_unsupported" -> detail ?: "This terminal can't take photos from Page Relay."
         "cancelled" -> detail ?: HeldMessages.DELETED_COPY
         "expired" -> detail ?: "Not sent — the turn didn't finish within 6 hours."
         "too_late" -> detail ?: "Too late — it was already typed."
-        "error" -> detail ?: "Something went wrong on your Mac. Try again."
-        else -> detail ?: "Your Mac didn't type this."
+        "error" -> detail ?: "Something went wrong on your computer. Try again."
+        else -> detail ?: "Your computer didn't type this."
     }
 
     /** The draft as the banner quotes it: about 40 characters, then "…". Display only; the full text is what goes back to the Mac. */
@@ -237,7 +237,7 @@ object SessionResultCopy {
     private const val DRAFT_SHOWN_CHARACTERS = 40
 
     @Suppress("UNUSED_PARAMETER")
-    fun failure(reason: String?, detail: String?): String = detail ?: "Your Mac couldn't type this into the session."
+    fun failure(reason: String?, detail: String?): String = detail ?: "Your computer couldn't type this into the session."
 }
 
 /**

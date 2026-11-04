@@ -22,7 +22,7 @@ struct NWSendChoiceControl: View {
             EmptyView()
         case .holdOnly:
             line(symbol: "clock.badge.checkmark",
-                 text: "Held on your Mac: \(agent) can't be typed to mid-turn, so Page types it when it finishes. Delete it any time before.")
+                 text: "Held on your computer: \(agent) can't be typed to mid-turn, so Page Studio types it when it finishes. Delete it any time before.")
         case .choice:
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 4) {
@@ -137,7 +137,7 @@ struct NWSendReceiptView: View {
                 if r.clearingDraft { ProgressView().controlSize(.small).tint(tone.color).frame(width: 44, height: 44) }
                 else {
                     action("Clear it and send", color: NightWatch.Palette.amber, hint: "Your message is sent again once the box is clear.") { onClearDraft(r.id) }
-                        .accessibilityLabel(Text("Clear the text in the input box on your Mac and send your message"))
+                        .accessibilityLabel(Text("Clear the text in the input box on your computer and send your message"))
                 }
             }
             if r.tone == .problem {
@@ -205,7 +205,7 @@ struct NWReplyRecoveryButton: View {
             }
             .buttonStyle(NWButtonStyle(kind: .quiet))
             .disabled(recovery.inFlight)
-            .accessibilityLabel(Text(button == .clearAndSend ? "Clear the text in the input box on your Mac and send your message"
+            .accessibilityLabel(Text(button == .clearAndSend ? "Clear the text in the input box on your computer and send your message"
                                      : "Send your message again"))
             .accessibilityHint(Text(button == .clearAndSend ? "Your message is sent again once the box is clear." : "The box is empty now."))
         }
@@ -318,7 +318,7 @@ struct NWReplyQueueBlock: View {
                 .buttonStyle(NWButtonStyle(kind: .danger))
                 .disabled(status.deleting)
                 .accessibilityHint(Text(status.layer == .relay ? "Takes the reply back from the relay so it is never typed."
-                                        : "Takes the reply back from your Mac so it is never typed."))
+                                        : "Takes the reply back from your computer so it is never typed."))
             }
         }
         .padding(14)

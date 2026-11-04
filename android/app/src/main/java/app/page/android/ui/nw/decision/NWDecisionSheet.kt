@@ -421,7 +421,7 @@ private class DecisionView(
         state.draftAction?.let { a ->
             NWReceiptAction(
                 a.label, { actions.draftAction(a.kind) }, spoken = a.spoken, enabled = a.enabled,
-                hint = if (a.kind == ReplyDraft.Action.Kind.CLEAR_AND_SEND) "Clears the text in the input box on your Mac, then sends your message." else "Sends your message again.",
+                hint = if (a.kind == ReplyDraft.Action.Kind.CLEAR_AND_SEND) "Clears the text in the input box on your computer, then sends your message." else "Sends your message again.",
             )
         }
         DeleteBlock()
@@ -442,7 +442,7 @@ private class DecisionView(
             if (layer != null) {
                 NWReceiptAction(
                     "Delete", actions.delete, tone = NW.Palette.red.mixed(NW.Palette.white, 0.2),
-                    hint = if (layer == QueuedDelete.Layer.MAC_RATE_LIMIT) "Takes this reply back from your Mac. Nothing will be typed at reset." else "Takes this reply back before your Mac reconnects. Nothing is typed.",
+                    hint = if (layer == QueuedDelete.Layer.MAC_RATE_LIMIT) "Takes this reply back from your computer. Nothing will be typed at reset." else "Takes this reply back before your computer reconnects. Nothing is typed.",
                 )
             }
         }
@@ -508,7 +508,7 @@ private class DecisionView(
             }
             row.action(RowAction.Kind.OPEN_ON_MAC) != null -> {
                 Text(
-                    if (c.screenNote != null) "Answer this one on your Mac." else (row.action(RowAction.Kind.OPEN_ON_MAC)?.preview ?: "Page can't type here. Answer this one on your Mac."),
+                    if (c.screenNote != null) "Answer this one on your computer." else (row.action(RowAction.Kind.OPEN_ON_MAC)?.preview ?: "Page Studio can't type here. Answer this one on your computer."),
                     style = NW.Typo.caption, color = NW.Palette.textSecondary.color, modifier = Modifier.fillMaxWidth(),
                 )
                 if (state.hasSession) NWButton("Open session", actions.openSession, Modifier.fillMaxWidth())

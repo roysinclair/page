@@ -73,19 +73,19 @@ sealed interface DecisionPhase {
         Open, Loading, Missing -> null
         Sending -> StatusLine("Sending…", Tone.NEUTRAL)
         is Sent -> when {
-            queued -> StatusLine("Queued · your Mac is offline. It'll be typed in when the Mac reconnects (within an hour).", Tone.WARN)
+            queued -> StatusLine("Queued · your computer is offline. It'll be typed in when the computer reconnects (within an hour).", Tone.WARN)
             slow -> StatusLine(
-                if (legacyRelay) "Sent · waiting for your Mac to confirm…"
-                else "Sent · waiting for your Mac. It hasn't confirmed this yet; if it reports a failure, or hasn't confirmed within 20 minutes, you can answer again.",
+                if (legacyRelay) "Sent · waiting for your computer to confirm…"
+                else "Sent · waiting for your computer. It hasn't confirmed this yet; if it reports a failure, or hasn't confirmed within 20 minutes, you can answer again.",
                 Tone.NEUTRAL,
             )
-            else -> StatusLine("Sent · waiting for your Mac to confirm…", Tone.NEUTRAL)
+            else -> StatusLine("Sent · waiting for your computer to confirm…", Tone.NEUTRAL)
         }
         CheckingClose -> StatusLine("This page closed · checking whether your reply landed…", Tone.NEUTRAL)
-        is Delivered -> StatusLine("Delivered · ${detail ?: "typed into the session on your Mac"}.", Tone.GOOD)
+        is Delivered -> StatusLine("Delivered · ${detail ?: "typed into the session on your computer"}.", Tone.GOOD)
         is Failed -> StatusLine(message, Tone.PROBLEM)
-        Unconfirmed -> StatusLine("Your Mac never confirmed this. If the session is still waiting, you can answer again.", Tone.WARN)
-        AlreadyReplied -> StatusLine("Already answered at the Mac", Tone.NEUTRAL)
+        Unconfirmed -> StatusLine("Your computer never confirmed this. If the session is still waiting, you can answer again.", Tone.WARN)
+        AlreadyReplied -> StatusLine("Already answered at your computer", Tone.NEUTRAL)
         is Resolved -> StatusLine("Resolved · $why", Tone.NEUTRAL)
         Retracting -> StatusLine("Deleting…", Tone.NEUTRAL)
         is Retracted -> StatusLine(if (detail == null || detail == HeldMessages.DELETED_COPY) "Deleted — not sent. Nothing was typed." else detail, Tone.NEUTRAL)

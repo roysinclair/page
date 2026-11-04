@@ -86,7 +86,7 @@ final class NWConversionTests: XCTestCase {
         XCTAssertEqual(shown.first?.buttons.map(\.title), ["Install", "Cancel"], "Return installs, Esc cancels")
         XCTAssertEqual(shown.first?.buttons.map(\.role), [.primary, .secondary])
         XCTAssertEqual(shown.first?.tone, .info)
-        XCTAssertEqual(shown.map(\.title), ["Install Page's Claude Code hooks?", "Hooks installed"])
+        XCTAssertEqual(shown.map(\.title), ["Install Page Studio's Claude Code hooks?", "Hooks installed"])
     }
 
     func testRemoveConfirmationIsTheDestructiveOneAndWarns() throws {
@@ -96,7 +96,7 @@ final class NWConversionTests: XCTestCase {
         installed.hooks.run(.install, .claude)
         let s = store(answer: 1) { shown.append($0) }
         s.hooks.run(.uninstall, .claude)
-        XCTAssertEqual(shown.last?.title, "Remove Page's Claude Code hooks?")
+        XCTAssertEqual(shown.last?.title, "Remove Page Studio's Claude Code hooks?")
         XCTAssertEqual(shown.last?.buttons.map(\.title), ["Remove", "Cancel"])
         XCTAssertEqual(shown.last?.buttons.first?.role, .destructive)
         XCTAssertEqual(shown.last?.tone, .warning)
@@ -141,7 +141,7 @@ final class NWConversionTests: XCTestCase {
         XCTAssertEqual(r.chip, .needsUpdate)
         XCTAssertEqual(r.installTitle, "Update…")
         XCTAssertTrue(r.canUninstall)
-        XCTAssertTrue(r.text.hasPrefix("An older or partial Page hook is installed ("), r.text)
+        XCTAssertTrue(r.text.hasPrefix("An older or partial Page Studio hook is installed ("), r.text)
         XCTAssertTrue(r.text.hasSuffix("Update replaces it with the current one."), r.text)
     }
 
@@ -174,7 +174,7 @@ final class NWConversionTests: XCTestCase {
         XCTAssertEqual(s.hooks.claude.text, TowerHookText.scriptMissing)
         XCTAssertFalse(s.hooks.claude.canInstall)
         XCTAssertFalse(s.hooks.claude.canUninstall, "nothing is installed, so nothing to remove")
-        XCTAssertEqual(s.hooks.preview.text, "Page's hook script wasn't found, so there's nothing to preview.")
+        XCTAssertEqual(s.hooks.preview.text, "Page Studio's hook script wasn't found, so there's nothing to preview.")
         XCTAssertFalse(s.hooks.preview.isDiff)
 
         let installed = store(located: script, answer: 0)
@@ -215,7 +215,7 @@ final class NWConversionTests: XCTestCase {
         XCTAssertEqual(shown.map(\.title), ["Nothing to remove"])
         XCTAssertEqual(shown.first?.tone, .info)
         XCTAssertEqual(shown.first?.buttons.count, 1, "a notice, not a question")
-        XCTAssertTrue(shown.first?.body.hasSuffix("/.claude/settings.json has no Page hook entries.") == true)
+        XCTAssertTrue(shown.first?.body.hasSuffix("/.claude/settings.json has no Page Studio hook entries.") == true)
     }
 
     func testCancellingUninstallLeavesTheHookInPlace() throws {
@@ -264,8 +264,8 @@ final class NWConversionTests: XCTestCase {
         try FileManager.default.createDirectory(at: home.appendingPathComponent(".claude"), withIntermediateDirectories: true)
         let plan = try HookInstaller(homeDirectory: home, scriptPath: script).planInstall(.claude)
         let spec = TowerHookText.confirmSpec(plan, action: .install, agent: .claude, path: "~/.claude/settings.json", diff: "d")
-        XCTAssertEqual(spec.title, "Install Page's Claude Code hooks?")
-        XCTAssertEqual(spec.body, "Page will change ~/.claude/settings.json as shown. The file doesn't exist yet and will be created.")
+        XCTAssertEqual(spec.title, "Install Page Studio's Claude Code hooks?")
+        XCTAssertEqual(spec.body, "Page Studio will change ~/.claude/settings.json as shown. The file doesn't exist yet and will be created.")
         XCTAssertEqual(spec.detail, .diff("d"))
         XCTAssertEqual(spec.tone, .info)
     }
@@ -274,15 +274,15 @@ final class NWConversionTests: XCTestCase {
         try writeClaude("{}\n")
         let plan = try HookInstaller(homeDirectory: home, scriptPath: script).planInstall(.claude)
         let spec = TowerHookText.confirmSpec(plan, action: .install, agent: .claude, path: "~/.claude/settings.json", diff: "d")
-        XCTAssertEqual(spec.body, "Page will change ~/.claude/settings.json as shown. The current file is saved first as settings.json.page-backup-<date> next to it.")
+        XCTAssertEqual(spec.body, "Page Studio will change ~/.claude/settings.json as shown. The current file is saved first as settings.json.page-backup-<date> next to it.")
         XCTAssertFalse(spec.body.contains("Other tools"), "install does not say so")
     }
 
     func testDoneTextForEveryActionAndAgent() {
         XCTAssertEqual(TowerHookText.doneText(action: .install, agent: .codex, backupPath: "/p"),
-                       "Now open Codex and run /hooks to trust Page's hook — Codex won't run it until you do.\n\nBackup: /p")
+                       "Now open Codex and run /hooks to trust Page Studio's hook — Codex won't run it until you do.\n\nBackup: /p")
         XCTAssertEqual(TowerHookText.doneText(action: .install, agent: .codex, backupPath: nil),
-                       "Now open Codex and run /hooks to trust Page's hook — Codex won't run it until you do.")
+                       "Now open Codex and run /hooks to trust Page Studio's hook — Codex won't run it until you do.")
         XCTAssertEqual(TowerHookText.doneText(action: .install, agent: .claude, backupPath: nil),
                        "Claude Code picks this up automatically, including sessions that are already running.")
         XCTAssertEqual(TowerHookText.doneText(action: .uninstall, agent: .claude, backupPath: "/p"), "Backup: /p")
@@ -324,7 +324,7 @@ final class NWConversionTests: XCTestCase {
         let url = URL(string: "https://r.example.workers.dev")!
         func response(_ code: Int) -> HTTPURLResponse { HTTPURLResponse(url: url, statusCode: code, httpVersion: nil, headerFields: nil)! }
         let notRelay = TowerPairingModel.healthText(base: url, data: Data("{\"ok\":\"yes\"}".utf8), response: response(200), error: nil)
-        XCTAssertEqual(notRelay.text, "⚠ Reached r.example.workers.dev, but it doesn’t look like a Page relay")
+        XCTAssertEqual(notRelay.text, "⚠ Reached r.example.workers.dev, but it doesn’t look like a Page Relay")
         XCTAssertFalse(notRelay.ok, "a string ok is not the relay's ok: true")
         let offline = NSError(domain: NSURLErrorDomain, code: -1009,
                               userInfo: [NSLocalizedDescriptionKey: "The Internet connection appears to be offline."])
@@ -349,16 +349,16 @@ final class NWConversionTests: XCTestCase {
         for m in blockedModes {
             let line = TowerCmuxModel.modeLine(status(m))
             XCTAssertEqual(line.tone, .warn, "\(m)")
-            XCTAssertTrue(line.text.contains("cmux blocks Page. Follow the steps below."), line.text)
+            XCTAssertTrue(line.text.contains("cmux blocks Page Studio. Follow the steps below."), line.text)
         }
         XCTAssertEqual(TowerCmuxModel.modeLine(status(.allowAll)).text,
-                       "Socket mode: Full open access — Page can connect (no password needed).")
+                       "Socket mode: Full open access — Page Studio can connect (no password needed).")
         XCTAssertEqual(TowerCmuxModel.modeLine(status(.password)).text,
-                       "Socket mode: Password mode — Page can connect with the password below.")
+                       "Socket mode: Password mode — Page Studio can connect with the password below.")
         XCTAssertEqual(TowerCmuxModel.modeLine(status(.automation, configured: .password)).text,
-                       "Socket mode: Automation mode — Page can connect (no password needed). (configured: Password mode)")
+                       "Socket mode: Automation mode — Page Studio can connect (no password needed). (configured: Password mode)")
         XCTAssertEqual(TowerCmuxModel.modeLine(status(.password, configured: .password)).text,
-                       "Socket mode: Password mode — Page can connect with the password below.", "no suffix when they agree")
+                       "Socket mode: Password mode — Page Studio can connect with the password below.", "no suffix when they agree")
     }
 
     private func cmuxStore(_ secrets: ConversionSecrets) -> TowerStore {
@@ -380,7 +380,7 @@ final class NWConversionTests: XCTestCase {
         XCTAssertFalse(s.cmux.canRemovePassword)
         secrets.result = .interactionRequired
         s.cmux.refreshPasswordStatus()
-        XCTAssertEqual(s.cmux.passwordStatus.text, "A password is saved, but macOS needs it saved again since Page was updated — enter it and click Save.")
+        XCTAssertEqual(s.cmux.passwordStatus.text, "A password is saved, but macOS needs it saved again since Page Studio was updated — enter it and click Save.")
         XCTAssertTrue(s.cmux.canRemovePassword)
         secrets.result = .failed(-25300)
         s.cmux.refreshPasswordStatus()

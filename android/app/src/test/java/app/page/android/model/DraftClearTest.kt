@@ -35,9 +35,9 @@ class DraftClearTest {
     }
 
     @Test fun `the copy names the draft, shortened for display only`() {
-        assertEquals("There's “0” typed in the session's input box on your Mac.", SessionResultCopy.refusal("draft", null, "Claude", "0"))
+        assertEquals("There's “0” typed in the session's input box on your computer.", SessionResultCopy.refusal("draft", null, "Claude", "0"))
         assertEquals(
-            "There's unsent text in the session's input box on your Mac. Clear it there, then try again.",
+            "There's unsent text in the session's input box on your computer. Clear it there, then try again.",
             SessionResultCopy.refusal("draft", null, "Claude"),
         )
         val long = "a".repeat(60)
@@ -48,10 +48,10 @@ class DraftClearTest {
 
     @Test fun `the two new reasons have the agreed copy`() {
         assertEquals(
-            "Page couldn't see the session's input box on your Mac, so it didn't type anything. Try again in a moment.",
+            "Page Studio couldn't see the session's input box on your computer, so it didn't type anything. Try again in a moment.",
             SessionResultCopy.refusal("input_unverified", null, "Claude"),
         )
-        assertEquals("The text in the input box changed on your Mac, so Page left it alone.", SessionResultCopy.refusal("draft_changed", null, "Claude"))
+        assertEquals("The text in the input box changed on your computer, so Page Studio left it alone.", SessionResultCopy.refusal("draft_changed", null, "Claude"))
     }
 
     @Test fun `a refusal keeps the draft only for the draft reason`() {
@@ -77,7 +77,7 @@ class DraftClearTest {
         SentSessionCommand("m1", "s", SessionCommandKind.INPUT, "hello", CMD_NOW, state, target = SessionTarget("s", "page", "Page", "~/p", "cmux", "Studio MBP", "Claude"), photos = photos)
 
     @Test fun `the banner offers Clear it and send for a text message refused with a draft`() {
-        val c = sent(SessionDeliveryState.Refused("draft", "There's “0” typed in the session's input box on your Mac.", "0"))
+        val c = sent(SessionDeliveryState.Refused("draft", "There's “0” typed in the session's input box on your computer.", "0"))
         val r = SendReceipt.build(c, "Claude", CMD_NOW)!!
         assertEquals(SendReceipt.Action.CLEAR_AND_SEND, r.action)
         assertEquals("Clear it and send", r.action!!.label)

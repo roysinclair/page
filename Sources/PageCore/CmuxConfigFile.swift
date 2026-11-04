@@ -183,11 +183,11 @@ enum CmuxConfigError: Error, Equatable {
     var message: String {
         switch self {
         case .alreadyHasAutomation:
-            return "Your cmux.json already sets automation options, so Page left it alone. Use the steps below instead."
+            return "Your cmux.json already sets automation options, so Page Studio left it alone. Use the steps below instead."
         case .unreadable:
-            return "Page couldn't read ~/.config/cmux/cmux.json safely, so it left it alone. Use the steps below instead."
+            return "Page Studio couldn't read ~/.config/cmux/cmux.json safely, so it left it alone. Use the steps below instead."
         case .writeFailed:
-            return "Page couldn't write ~/.config/cmux/cmux.json. Nothing was changed."
+            return "Page Studio couldn't write ~/.config/cmux/cmux.json. Nothing was changed."
         }
     }
 }

@@ -1070,7 +1070,7 @@ final class CodexBackend: AgentBackend, @unchecked Sendable {
         let threadId = pending?.sessionId ?? reply.sessionId ?? ""
         guard !threadId.isEmpty, let thread = lookupThread(threadId),
               let cwd = thread.cwd, !cwd.isEmpty else {
-            return .finished(.failure("Page no longer knows this Codex session — reply on the Mac"))
+            return .finished(.failure("Page Studio no longer knows this Codex session — reply on your computer"))
         }
         // A background resume is writing to this thread (possibly before its
         // first rollout line): nothing else may type into it meanwhile.
@@ -1107,16 +1107,16 @@ final class CodexBackend: AgentBackend, @unchecked Sendable {
     /// screen, and it takes letters as hotkeys ("y" approves).
     static func replyPlan(action: String?, text: String, kind: String?, summary: CodexRollout.Summary) -> ReplyPlan {
         if let kind, ["permission", "plan", "approval"].contains(kind) {
-            return .refuse("Answer Codex approval prompts on your Mac — Page can't approve them remotely yet")
+            return .refuse("Answer Codex approval prompts on your computer — Page Studio can't approve them remotely yet")
         }
         if summary.pendingRequest != nil {
-            return .refuse("Codex is waiting on a prompt — answer it on the Mac")
+            return .refuse("Codex is waiting on a prompt — answer it on your computer")
         }
         switch summary.phase {
         case .inTurn:
             return .refuse("Codex is still working — reply once the turn finishes")
         case .unknown:
-            return .refuse("Couldn't confirm Codex is waiting for input — reply on the Mac")
+            return .refuse("Couldn't confirm Codex is waiting for input — reply on your computer")
         case .completed, .aborted:
             break
         }
@@ -1172,7 +1172,7 @@ final class CodexBackend: AgentBackend, @unchecked Sendable {
             }
             guard let t = self.locked({ self.threads[threadId] }), let cwd = t.cwd, !cwd.isEmpty,
                   let path = t.path, !path.isEmpty else {
-                return completion(.refused(.notFound, "Page no longer knows this Codex session"))
+                return completion(.refused(.notFound, "Page Studio no longer knows this Codex session"))
             }
             let rollout = URL(fileURLWithPath: path)
             let summary = CodexRollout.summarizeTail(of: rollout)
@@ -1220,10 +1220,10 @@ final class CodexBackend: AgentBackend, @unchecked Sendable {
             guard let self else { return completion(.failed("Codex isn't being watched any more")) }
             guard let t = self.locked({ self.threads[threadId] }), let cwd = t.cwd, !cwd.isEmpty,
                   let path = t.path, !path.isEmpty else {
-                return completion(.refused(.notFound, "Page no longer knows this Codex session"))
+                return completion(.refused(.notFound, "Page Studio no longer knows this Codex session"))
             }
             guard !self.execGate.isThreadBusy(t.id) else {
-                return completion(.refused(.interruptUnsupported, "Page's background resume is driving this turn"))
+                return completion(.refused(.interruptUnsupported, "Page Studio's background resume is driving this turn"))
             }
             let rollout = URL(fileURLWithPath: path)
             let summary = CodexRollout.summarizeTail(of: rollout)
@@ -1249,7 +1249,7 @@ final class CodexBackend: AgentBackend, @unchecked Sendable {
                         ? .refused(.waiting, r.detail, interventionId: interventionId)
                         : .failed(r.detail)))
             case .terminalApp?:
-                completion(.refused(.interruptUnsupported, "Page can't press Esc in Terminal.app"))
+                completion(.refused(.interruptUnsupported, "Page Studio can't press Esc in Terminal.app"))
             case .unavailable(let why)?:
                 completion(.refused(.interruptUnsupported, why))
             case nil:
@@ -1607,7 +1607,7 @@ extension CodexBackend: BatteryPausable {
             switch terminal {
             case .unavailable(let why): return .skip(why)
             case .tmux, .cmux:
-                return mode == .pause ? .interrupt : .skip("local model — Page doesn't queue a summary request on battery")
+                return mode == .pause ? .interrupt : .skip("local model — Page Studio doesn't queue a summary request on battery")
             case .terminalApp:
                 return .skip("local model, and Terminal.app can't press Esc")
             }
@@ -1681,7 +1681,7 @@ extension CodexBackend: BatteryPausable {
             guard case .tty(let tty, let pid) = CodexInjector.resolveTarget(
                 cwd: CodexProcessScanner.canonicalPath(cwd), rolloutPath: path, processes: processes,
                 cwdFallback: .forSource(Self.mapSource(t.source))) else {
-                Logger.shared.log("CodexBackend: low-battery pause skipped \(id.prefix(8)) — no terminal Page can reach")
+                Logger.shared.log("CodexBackend: low-battery pause skipped \(id.prefix(8)) — no terminal Page Studio can reach")
                 continue
             }
             let terminal = CodexInjector.terminal(tty: tty, pid: pid, threadId: t.id, table: table)
@@ -1792,7 +1792,7 @@ extension CodexBackend: BatteryPausable {
         // the charger in is what triggers an automatic resume): then the
         // composer must be seen to be empty, not merely "no draft seen".
         let requireEmpty = UserPresence.isActive(within: Self.resumePresenceWindow(cfg))
-        if requireEmpty { Logger.shared.log("CodexBackend: low-battery resume — you're at the Mac, typing only into an empty composer") }
+        if requireEmpty { Logger.shared.log("CodexBackend: low-battery resume — you're at your computer, typing only into an empty composer") }
         let resumedIds: [String] = replyQueue.sync {
             let authored = BatteryPauseSupport.pageAuthoredMessages(extra: [message])
             var resumed: [String] = []

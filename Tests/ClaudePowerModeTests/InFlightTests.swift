@@ -142,10 +142,10 @@ final class InFlightTests: XCTestCase {
         XCTAssertTrue(ok.canOpen); XCTAssertTrue(ok.canType)
         XCTAssertNil(ok.openBlocker); XCTAssertNil(ok.typeBlocker); XCTAssertFalse(ok.checking)
 
-        let ghostty = InFlightActions.resolve(host: .blocked("Ghostty", "Page can't type into Ghostty yet"))
+        let ghostty = InFlightActions.resolve(host: .blocked("Ghostty", "Page Studio can't type into Ghostty yet"))
         XCTAssertTrue(ghostty.canOpen, "a terminal app can still be brought forward")
         XCTAssertFalse(ghostty.canType)
-        XCTAssertEqual(ghostty.typeBlocker, "Page can't type into Ghostty yet")
+        XCTAssertEqual(ghostty.typeBlocker, "Page Studio can't type into Ghostty yet")
 
         let background = InFlightActions.resolve(host: .blocked("background", "no terminal"))
         XCTAssertFalse(background.canOpen)
@@ -199,10 +199,10 @@ final class InFlightTests: XCTestCase {
     }
 
     func testPreviewWhenPageCannotTypeHereSaysWhy() {
-        let r = row(host: .blocked("Ghostty", "Page can't type into Ghostty yet"))
+        let r = row(host: .blocked("Ghostty", "Page Studio can't type into Ghostty yet"))
         let p = InFlightPreview.line(for: r, text: "hello", macName: "Mac")
         XCTAssertFalse(p.ok)
-        XCTAssertEqual(p.text, "Can't steer here · Page can't type into Ghostty yet")
+        XCTAssertEqual(p.text, "Can't steer here · Page Studio can't type into Ghostty yet")
     }
 
     // MARK: receipts
@@ -302,7 +302,7 @@ final class InFlightTests: XCTestCase {
     func testMenuEntriesOnePerWorkingSessionWithTitleAndAvailability() {
         let busy = LocalActivity(id: "ollama", displayName: "Ollama", kind: .server, busy: true, signal: .exact, detail: "generating")
         let rows = build([session("page", ago: 4 * 60), session("pay", ago: 60), session("bg", ago: 30)],
-                         hosts: ["sess-page": cmux, "sess-pay": .blocked("Ghostty", "Page can't type into Ghostty yet"),
+                         hosts: ["sess-page": cmux, "sess-pay": .blocked("Ghostty", "Page Studio can't type into Ghostty yet"),
                                  "sess-bg": .blocked("background", "no terminal")],
                          activity: ["sess-page": "Bash: swift test"], local: [busy])
         let entries = InFlightMenu.entries(rows)
@@ -313,7 +313,7 @@ final class InFlightTests: XCTestCase {
         XCTAssertTrue(page.openEnabled); XCTAssertTrue(page.typeEnabled)
         let pay = entries[2]
         XCTAssertTrue(pay.openEnabled); XCTAssertFalse(pay.typeEnabled)
-        XCTAssertEqual(pay.typeNote, "Page can't type into Ghostty yet")
+        XCTAssertEqual(pay.typeNote, "Page Studio can't type into Ghostty yet")
         let bg = entries[0]
         XCTAssertFalse(bg.openEnabled); XCTAssertFalse(bg.typeEnabled)
         XCTAssertNotNil(bg.openNote)

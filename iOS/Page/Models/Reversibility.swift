@@ -255,7 +255,7 @@ enum Reversibility: Int, Comparable, CaseIterable, Equatable, Hashable, Codable 
         case "Task", "Agent":
             return Verdict(level: .considered, tags: [.runsCommands], reason: "starts a subagent")
         default:
-            return Verdict(level: .considered, tags: [.runsCommands], reason: "\(name) isn't one Page can read")
+            return Verdict(level: .considered, tags: [.runsCommands], reason: "\(name) isn't one Page Studio can read")
         }
     }
 
@@ -558,7 +558,7 @@ enum Reversibility: Int, Comparable, CaseIterable, Equatable, Hashable, Codable 
         case "truncate":
             return destroy("truncate empties files")
         case "reboot", "shutdown", "halt", "poweroff":
-            return destroy("\(cmd) stops the Mac")
+            return destroy("\(cmd) stops the computer")
         case "diskutil":
             let sub = args.first?.lowercased() ?? ""
             if ["list", "info", "activity"].contains(sub) { return readOnly("disk info") }
@@ -722,7 +722,7 @@ enum Reversibility: Int, Comparable, CaseIterable, Equatable, Hashable, Codable 
         }
         // Unknown program: never undoable. Still, spot destructive text.
         if let why = matchesDestructiveText(words.joined(separator: " ")) { return destroy(why) }
-        return considered("\(cmd) isn't one Page recognises")
+        return considered("\(cmd) isn't one Page Studio recognises")
     }
 
     // MARK: helpers for verdicts
@@ -1092,7 +1092,7 @@ enum Reversibility: Int, Comparable, CaseIterable, Equatable, Hashable, Codable 
         case "date":
             if hasShort(args, "s") || args.contains(where: { $0.hasPrefix("--set") }) { return "date sets the clock" }
         case "hostname":
-            if nonFlagCount(args, valueFlags: []) > 0 { return "hostname renames the Mac" }
+            if nonFlagCount(args, valueFlags: []) > 0 { return "hostname renames the computer" }
         case "file":
             if hasShort(args, "C") || args.contains("--compile") { return "file compiles a magic file" }
         case "cloc":
@@ -1313,7 +1313,7 @@ enum Reversibility: Int, Comparable, CaseIterable, Equatable, Hashable, Codable 
                 if !f.contains("=") { _ = takeValue() }
                 note("git \(name) points git somewhere else")
             } else if !harmless.contains(f) {
-                note("git option \(f) isn't one Page recognises")
+                note("git option \(f) isn't one Page Studio recognises")
             }
         }
         guard let sub = rest.first else { return ("", [], issue) }

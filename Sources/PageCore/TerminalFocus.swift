@@ -184,7 +184,7 @@ enum TerminalFocus {
         let r = InjectionExecutor.runAppleScript(source)
         if let err = r.error {
             switch r.errorNumber {
-            case .some(-1743): return Outcome(ok: false, detail: "Allow Page to control \(app) in System Settings → Privacy & Security → Automation")
+            case .some(-1743): return Outcome(ok: false, detail: "Allow Page Studio to control \(app) in System Settings → Privacy & Security → Automation")
             case .some(-600): return Outcome(ok: false, detail: "\(app) isn't running")
             default: return activate(appNamed: app, shown: nil, note: err)
             }
@@ -200,7 +200,7 @@ enum TerminalFocus {
         guard let app = runningApp(named: name) else { return Outcome(ok: false, detail: "\(name) isn't running") }
         bringForward(app)
         if let shown { return Outcome(ok: true, detail: "Showing the \(shown)") }
-        return Outcome(ok: true, detail: "Brought \(name) forward — Page couldn't pick the exact pane")
+        return Outcome(ok: true, detail: "Brought \(name) forward — Page Studio couldn't pick the exact pane")
     }
 
     /// Brings an app to the front. Page is not the active app while its panel is

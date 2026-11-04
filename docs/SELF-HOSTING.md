@@ -21,7 +21,7 @@ of Page Studio, and none of the author's keys, ids or URLs are needed.
 
 ## What you'll end up with
 
-Three pieces, all yours. The **Mac app** (Page.app, in your menu bar) watches
+Three pieces, all yours. The **Mac app** (Page Studio.app, in your menu bar) watches
 your Claude Code and Codex sessions, keeps the Mac awake while they work, and
 sends a "page" when one needs you. The **relay** is a small Cloudflare Worker
 that you deploy to your own Cloudflare account. It holds the pages, queues
@@ -169,10 +169,10 @@ push troubleshooting.
    ./install.sh
    ```
 
-   This runs [`build.sh`](../build.sh), copies `Page.app` to `/Applications`,
+   This runs [`build.sh`](../build.sh), copies `Page Studio.app` to `/Applications`,
    and registers a LaunchAgent (`local.Page`) so Page Studio starts at login. It
    never uses sudo. To build without installing, run `./build.sh` and then
-   `open ./Page.app`.
+   `open "./Page Studio.app"`.
 
 2. **Signing.** `build.sh` signs with `CODESIGN_IDENTITY` if you set it.
    Otherwise it takes the first "Apple Development" certificate in your
@@ -479,7 +479,7 @@ Step 2, Mac app:
    forgets permissions each rebuild). Ask whether to continue or whether I want
    to create an Apple Development certificate in Xcode first.
 2. Run `./install.sh`. It must finish with a successful codesign verify and
-   Page.app in /Applications. Report any error in full.
+   Page Studio.app in /Applications. Report any error in full.
 3. Ask me to open the menu-bar Page icon, then Preferences, then Macs & phones,
    turn on "Send pages to my phone", paste the relay URL and click Test. Wait
    for me to say it passed. (Do not try to click through the Mac UI yourself.)

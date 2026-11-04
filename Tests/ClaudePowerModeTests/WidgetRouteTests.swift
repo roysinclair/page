@@ -37,7 +37,7 @@ final class WidgetRouteTests: XCTestCase {
     }
 
     func testAnotherSchemeIsRefused() {
-        for s in ["https://now", "page://now", "page-mac-dev://now", "file:///Applications/Page.app", "mailto:x@y.z"] {
+        for s in ["https://now", "page://now", "page-mac-dev://now", "file:///Applications/Page%20Studio.app", "mailto:x@y.z"] {
             XCTAssertNil(WidgetRoute.parse(url(s)), "\(s) should not be a route")
         }
     }

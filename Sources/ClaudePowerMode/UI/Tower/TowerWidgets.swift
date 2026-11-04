@@ -145,7 +145,7 @@ struct NWWidgetStatusRow: View {
     /// Pure. What to do when it is not fine.
     static func hint(_ s: WidgetRegistration.Status) -> String? {
         switch s {
-        case .notRegistered: return "Page Studio asks on every launch. If it still isn’t found, move Page.app into /Applications and open it once."
+        case .notRegistered: return "Page Studio asks on every launch. If it still isn’t found, move Page Studio.app into /Applications and open it once."
         case .elsewhere: return "Move or delete the other copy, then ask again."
         case .disabled: return "Switch Page Studio’s widgets back on there, and they appear in the gallery."
         case .unavailable(let reason):

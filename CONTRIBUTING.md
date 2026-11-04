@@ -84,7 +84,7 @@ not optional.
 swift build                    # debug build
 swift test                     # XCTest suites in Tests/ClaudePowerModeTests
 swift test --filter InjectionSafety   # all InjectionSafety* suites
-./build.sh                     # release Page.app (CONFIG, VERSION, CODESIGN_IDENTITY optional)
+./build.sh                     # release Page Studio.app (CONFIG, VERSION, CODESIGN_IDENTITY optional)
 ```
 
 - `./install.sh` builds, installs to `/Applications`, and restarts the

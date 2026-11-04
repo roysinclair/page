@@ -22,7 +22,7 @@ public enum WidgetRegistration {
     }
 
     /// Pure. `pluginkit -m -A -D -v -i <id>` output: lines like
-    /// `+    local.Page.widgets(1.0)\t<uuid>\t<date>\t/Applications/Page.app/Contents/PlugIns/PageWidgets.appex`.
+    /// `+    local.Page.widgets(1.0)\t<uuid>\t<date>\t/Applications/Page Studio.app/Contents/PlugIns/PageWidgets.appex`.
     /// The first column is the user's election (`man pluginkit`): `+` on, `-` off,
     /// `!` elected for debugger use (it is in use, so it counts as on), `=`
     /// superseded by another plug-in (another copy of Page's widgets is the one
@@ -64,7 +64,7 @@ public enum WidgetRegistration {
         }
     }
 
-    /// Pure. "~/Downloads/Page.app" for a path inside the home folder.
+    /// Pure. "~/Downloads/Page Studio.app" for a path inside the home folder.
     public static func abbreviate(_ path: String, home: String = NSHomeDirectory()) -> String {
         let trimmed = path.components(separatedBy: "/Contents/PlugIns/").first ?? path
         if trimmed == home { return "~" }

@@ -16,7 +16,7 @@ struct TowerHookSource {
 
 /// The words of the Phone approvals page, in one place and pure.
 enum TowerHookText {
-    static let scriptMissing = "Page Studio's hook script wasn't found inside Page.app — reinstall Page Studio to use phone approvals."
+    static let scriptMissing = "Page Studio's hook script wasn't found inside Page Studio.app — reinstall Page Studio to use phone approvals."
 
     /// Pure. One agent's status line.
     static func describe(_ st: HookStatus, agent: HookAgent) -> String {
@@ -329,7 +329,7 @@ struct NWPhoneApprovalsPage: View {
                             isOn: Binding(get: { model.codexStop }, set: { model.codexStop = $0 }))
                 NWDivider()
                 NWNote(text: "One-time step after installing: open Codex and run /hooks, then trust Page Studio's hooks. Codex skips new or "
-                       + "changed hooks until you do, and asks again whenever the hook command changes (e.g. after moving Page.app).")
+                       + "changed hooks until you do, and asks again whenever the hook command changes (e.g. after moving Page Studio.app).")
                     .padding(.horizontal, 16).padding(.vertical, 12)
                 if let warning = model.codexWarning {
                     NWDivider()

@@ -20,19 +20,22 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 CONFIG="${CONFIG:-release}"
-APP="Page.app"
+# The bundle folder has a space in it: quote every path built from $APP.
+APP="Page Studio.app"
 BUNDLE_NAME="Page"
 BUNDLE_ID="local.Page"
-# The product is Page Studio. The bundle folder (Page.app), the executable
-# (Contents/MacOS/Page) and the bundle id stay as they are: install.sh, the
-# LaunchAgent, the agent hooks (…/Page.app/Contents/Resources/hooks) and TCC
-# grants all point at them. Only the names macOS shows change: the menu-bar
-# app's name, Activity Monitor, System Settings ▸ Automation and the widget
-# gallery read CFBundleName / CFBundleDisplayName.
+# The product is Page Studio, and so is the bundle folder (it was Page.app;
+# install.sh moves an old install over, hooks included). The executable
+# (Contents/MacOS/Page) and the bundle id stay as they are: the LaunchAgent
+# label, the sleep watchdog's process match, the keychain item, the App Group
+# and TCC grants (keyed on the bundle id and signature, not the folder) all
+# rely on them. CFBundleName / CFBundleDisplayName give the names macOS shows:
+# the menu-bar app's name, Activity Monitor, System Settings ▸ Automation and
+# the widget gallery.
 DISPLAY_NAME="Page Studio"
 # Internal Swift target name stays `ClaudePowerMode` so we don't have to
 # rename the source tree. The executable inside the .app bundle is renamed
-# to `Page Studio` so `ps` never shows the internal target name.
+# to `Page` so `ps` never shows the internal target name.
 SWIFT_TARGET="ClaudePowerMode"
 ICONSET="Resources/AppIcon.iconset"
 ICNS="Resources/AppIcon.icns"
@@ -286,5 +289,5 @@ codesign --verify --deep --strict "$APP"
 touch "$APP"
 
 echo "==> Built $APP"
-echo "    Run with:           open ./$APP"
+echo "    Run with:           open \"./$APP\""
 echo "    Install permanently: ./install.sh"

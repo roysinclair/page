@@ -6,7 +6,7 @@ import PageWidgetSupport
 /// Telling macOS about the widgets: which bundle is asked about, which
 /// commands run, and that nothing runs for a copy that has no widgets.
 /// Fake app bundles in a temp folder and a recording runner; no real
-/// pluginkit, lsregister or Page.app is touched.
+/// pluginkit, lsregister or Page Studio.app is touched.
 final class WidgetSetupTests: XCTestCase {
     /// Records every command and answers from a fixed reply.
     private final class Recorder {
@@ -37,7 +37,7 @@ final class WidgetSetupTests: XCTestCase {
         super.tearDown()
     }
 
-    /// A fake Page.app: an Info.plist (with the group key when given) and, when asked, the widget folder.
+    /// A fake Page Studio.app: an Info.plist (with the group key when given) and, when asked, the widget folder.
     private func makeApp(group: String?, withExtension: Bool = true, name: String = "Page") throws -> Bundle {
         let app = root.appendingPathComponent("\(name)-\(UUID().uuidString).app", isDirectory: true)
         let contents = app.appendingPathComponent("Contents", isDirectory: true)

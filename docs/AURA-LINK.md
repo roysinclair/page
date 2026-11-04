@@ -18,7 +18,7 @@ Code and Codex (`AgentBackendID.aura`, wire `backend: "aura"`, intervention
 ids prefixed `aura-`).
 
 ```
- iPhone ⇄ relay Worker ⇄ Page.app (AuraBackend) ⇄ aura.sock ⇄ Page Aura (Rust) ⇄ its windows (JS)
+ iPhone ⇄ relay Worker ⇄ Page Studio.app (AuraBackend) ⇄ aura.sock ⇄ Page Aura (Rust) ⇄ its windows (JS)
 ```
 
 ## 1. Transport

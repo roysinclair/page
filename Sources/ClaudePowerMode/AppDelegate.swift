@@ -156,6 +156,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         widgets.start()
         // Widgets: tell macOS about the extension if it has not heard of it (off main; one pluginkit call).
         DispatchQueue.global(qos: .utility).async { WidgetSetup.registerIfMissing() }
+        // Hook entries still running the script inside the old Page.app (the
+        // folder before the rename) are moved to this installed copy, with a
+        // backup, as install.sh does; a no-op once nothing matches.
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let outcomes = HookBundleMigration.runForThisApp()
+            guard !outcomes.isEmpty else { return }
+            let failed = outcomes.contains { $0.error != nil }
+            let body = outcomes.map(HookBundleMigration.describe).joined(separator: "\n")
+            DispatchQueue.main.async {
+                self?.postSimpleNotification(title: failed ? "Phone approvals need attention" : "Phone approvals moved to Page Studio.app",
+                                             body: failed ? body + "\nOpen Integrations ▸ Install agent hooks… to update them." : body)
+            }
+        }
         DispatchQueue.global(qos: .background).async { Logger.pruneAuxiliaryLogs() }
     }
 

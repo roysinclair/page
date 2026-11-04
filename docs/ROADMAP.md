@@ -73,10 +73,10 @@ rather than infers.
 
 ### Phase 1: one local hub (estimated 2–4 weeks)
 
-- **Local hook socket served by Page.app.** Today the hook is a second relay
-  client: it POSTs to the Worker directly and polls. In Phase 1, Page.app
+- **Local hook socket served by Page Studio.app.** Today the hook is a second relay
+  client: it POSTs to the Worker directly and polls. In Phase 1, Page Studio.app
   serves a 0600 Unix socket, and the hook talks only to it (curl's
-  `--unix-socket` keeps the script in plain bash). Page.app then owns the
+  `--unix-socket` keeps the script in plain bash). Page Studio.app then owns the
   relay, presence and dedupe for every channel. Talking to the Worker directly
   remains a fallback for when the app isn't running.
 - **Reply inbox via `asyncRewake`.** An async `Stop`/`SessionStart` hook waits

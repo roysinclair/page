@@ -278,7 +278,7 @@ import { u, GUIDE, BLOB, GITHUB } from '../../data/site';
         <p class="label">Install</p>
         <h2 class="h2 mt-3">Build it on your own Mac.</h2>
         <p class="body mt-5">You need macOS 12 or later and the Xcode Command Line Tools (<code class="code-inline">xcode-select --install</code>). <code class="code-inline">jq</code> and <code class="code-inline">curl</code> ship with recent macOS and are used by the hooks.</p>
-        <p class="body mt-4">The installer builds Page.app, copies it to /Applications (the app keeps its file name, Page.app) and registers a LaunchAgent so Page Studio starts at login. It never uses sudo.</p>
+        <p class="body mt-4">The installer builds Page Studio.app, copies it to /Applications and registers a LaunchAgent so Page Studio starts at login. It never uses sudo. Upgrading from the older Page.app, it points your agent hooks at the new folder (backing the file up first) and then removes the old copy.</p>
         <ul class="list-dots mt-6">
           <li><strong>Signing.</strong> It uses <code class="code-inline">CODESIGN_IDENTITY</code> if set, else your first Apple Development identity, else Developer ID Application, else ad-hoc. A stable identity keeps macOS permission grants across rebuilds; ad-hoc forgets them and skips the Mac widgets.</li>
           <li><strong>Permissions.</strong> The first time Page Studio types into Terminal.app or iTerm2, macOS asks for Automation permission.</li>
@@ -298,7 +298,7 @@ import { u, GUIDE, BLOB, GITHUB } from '../../data/site';
           <div class="mt-3 c"># build, install to /Applications, start at login</div>
           <div>./install.sh</div>
           <div class="mt-3 c"># or build without installing</div>
-          <div>./build.sh &amp;&amp; open ./Page.app</div>
+          <div>./build.sh &amp;&amp; open "./Page Studio.app"</div>
         </div>
         <p class="fine mt-4">Settings live in a config file under <code class="code-inline">~/Library/Application Support/ClaudePowerMode/</code>. The project was renamed from “Claude Power Mode”, so some paths keep the old name. Each key is decoded on its own, and a bad value falls back to its default.</p>
       </div>

@@ -67,7 +67,7 @@ final class NWDialogAndPagesTests: XCTestCase {
 
     private func hookStore(answer: Int, dialogs: @escaping (NWDialogSpec) -> Void = { _ in }) -> TowerStore {
         var env = TowerEnvironment()
-        let installer = HookInstaller(homeDirectory: home, scriptPath: "/Applications/Page.app/Contents/Resources/hooks/page-notify.sh")
+        let installer = HookInstaller(homeDirectory: home, scriptPath: "/Applications/Page Studio.app/Contents/Resources/hooks/page-notify.sh")
         env.hookSource = { TowerHookSource(installer: installer, scriptPath: installer.scriptPath) }
         env.runDialog = { spec, done in dialogs(spec); done(spec.buttons.count > 1 ? answer : 0) }
         return TowerStore(config: Config(), macName: "Mac", env: env)

@@ -50,7 +50,7 @@ final class OrderedJSONTests: XCTestCase {
 
 final class HookInstallerTests: XCTestCase {
     var home: URL!
-    let script = "/Applications/Page.app/Contents/Resources/hooks/page-notify.sh"
+    let script = "/Applications/Page Studio.app/Contents/Resources/hooks/page-notify.sh"
     var installer: HookInstaller { HookInstaller(homeDirectory: home, scriptPath: script) }
 
     override func setUpWithError() throws {
@@ -268,7 +268,7 @@ final class HookInstallerTests: XCTestCase {
     }
 
     func testRefusesTranslocatedScriptPath() {
-        let bad = HookInstaller(homeDirectory: home, scriptPath: "/private/var/folders/x/AppTranslocation/ABC/d/Page.app/Contents/Resources/hooks/page-notify.sh")
+        let bad = HookInstaller(homeDirectory: home, scriptPath: "/private/var/folders/x/AppTranslocation/ABC/d/Page Studio.app/Contents/Resources/hooks/page-notify.sh")
         XCTAssertThrowsError(try bad.planInstall(.claude))
     }
 

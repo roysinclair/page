@@ -508,10 +508,10 @@ struct HookInstaller {
     /// image. Returns a reason, or nil when the path is fine to persist.
     static func unsuitableScriptReason(_ path: String) -> String? {
         if path.contains("/AppTranslocation/") {
-            return "Page Studio is running from a temporary location. Move Page.app to Applications, reopen it, then install the hooks."
+            return "Page Studio is running from a temporary location. Move Page Studio.app to Applications, reopen it, then install the hooks."
         }
         if path.hasPrefix("/Volumes/") {
-            return "Page Studio is running from a disk image. Copy Page.app to Applications first."
+            return "Page Studio is running from a disk image. Copy Page Studio.app to Applications first."
         }
         return nil
     }
@@ -868,6 +868,86 @@ struct HookInstaller {
         }
         Logger.shared.log("HookInstaller: \(plan.action.rawValue) \(plan.agent.rawValue) hooks → \(target.path)\(backupURL.map { " (backup \($0.lastPathComponent))" } ?? "")")
         return backupURL
+    }
+
+    // MARK: moving the app bundle
+
+    /// The app's bundle folder, and what it was called before the rename to
+    /// Page Studio (same bundle id; only the folder changed).
+    static let bundleFolderName = "Page Studio.app"
+    static let legacyBundleFolderName = "Page.app"
+
+    /// Pure. The hook script inside a bundle folder in `/Applications` and
+    /// `~/Applications`, the two places install.sh (or a drag) puts the app.
+    static func installedScriptPaths(bundleFolder: String, home: String) -> [String] {
+        ["/Applications", home + "/Applications"].map { $0 + "/" + bundleFolder + "/Contents/Resources/hooks/" + scriptName }
+    }
+
+    /// Pure. Where the hook script lived inside the old Page.app.
+    static func legacyScriptPaths(home: String) -> [String] {
+        installedScriptPaths(bundleFolder: legacyBundleFolderName, home: home)
+    }
+
+    /// Pure. Whether `path` is the hook script of an installed Page Studio.app
+    /// (not a build folder, a download or a disk image).
+    static func isInstalledBundleScript(_ path: String, home: String) -> Bool {
+        installedScriptPaths(bundleFolder: bundleFolderName, home: home).contains(path)
+    }
+
+    /// Pure. `command` with the script `old` swapped for `new`, keeping its
+    /// arguments; nil unless the command runs exactly `old` (quoted as Page
+    /// writes it, or bare), alone or followed by arguments.
+    static func movedCommand(_ command: String, from old: String, to new: String) -> String? {
+        for prefix in [shellQuote(old), old] where command == prefix || command.hasPrefix(prefix + " ") {
+            return shellQuote(new) + command.dropFirst(prefix.count)
+        }
+        return nil
+    }
+
+    /// Pure. Rewrites only the `command` of hook handlers that run one of
+    /// `olds` exactly; everything else, other tools' hooks included, is left
+    /// as it is. Returns the new root and how many commands changed.
+    static func movingScript(in root: OrderedJSON, from olds: [String], to new: String) -> (OrderedJSON, Int) {
+        guard var rootMembers = root.objectMembers,
+              let hi = rootMembers.lastIndex(where: { $0.key == "hooks" }),
+              var events = rootMembers[hi].value.objectMembers else { return (root, 0) }
+        var count = 0
+        for ei in events.indices {
+            guard var groups = events[ei].value.arrayValue else { continue }
+            for gi in groups.indices {
+                guard var gm = groups[gi].objectMembers, let hk = gm.lastIndex(where: { $0.key == "hooks" }),
+                      var handlers = gm[hk].value.arrayValue else { continue }
+                for h in handlers.indices {
+                    guard var hm = handlers[h].objectMembers,
+                          let ci = hm.lastIndex(where: { $0.key == "command" }),
+                          let cmd = hm[ci].value.stringValue,
+                          let moved = olds.lazy.compactMap({ movedCommand(cmd, from: $0, to: new) }).first else { continue }
+                    hm[ci].value = .str(moved)
+                    handlers[h] = .object(hm)
+                    count += 1
+                }
+                gm[hk].value = .array(handlers)
+                groups[gi] = .object(gm)
+            }
+            events[ei].value = .array(groups)
+        }
+        guard count > 0 else { return (root, 0) }
+        rootMembers[hi].value = .object(events)
+        return (.object(rootMembers), count)
+    }
+
+    /// The change that points hook entries running the script inside an old
+    /// bundle (`oldScripts`, e.g. the old Page.app) at this installer's
+    /// script. Touches nothing else: entries elsewhere, other events and
+    /// other tools' hooks stay exactly as they are. Unchanged when nothing
+    /// matches. Written with `apply`, like any other plan (backup first).
+    func planBundleMove(_ agent: HookAgent, from oldScripts: [String]) throws -> HookChangePlan {
+        if let reason = Self.unsuitableScriptReason(scriptPath) { throw HookInstallerError.scriptUnavailable(reason) }
+        let loaded = try load(agent)
+        let (moved, count) = Self.movingScript(in: loaded.root, from: oldScripts.filter { $0 != scriptPath }, to: scriptPath)
+        let newText = count > 0 ? render(moved, like: loaded.text) : loaded.text
+        return HookChangePlan(agent: agent, action: .install, fileURL: fileURL(for: agent), writeURL: loaded.writeURL,
+                              originalData: loaded.data, originalText: loaded.text, newText: newText)
     }
 
     // MARK: informational

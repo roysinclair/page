@@ -2,7 +2,7 @@
 import Foundation
 
 /// A measuring tool for "can Page answer a question dialog in this terminal?". DEBUG builds only: the
-/// whole file is compiled out of `swift build -c release`, so it can never ship in Page.app.
+/// whole file is compiled out of `swift build -c release`, so it can never ship in Page Studio.app.
 ///
 ///     .build/debug/ClaudePowerMode --probe-answer --session <id> --answers '<json>' \
 ///         [--caps arrows|plain|terminalReturn] [--tmux-socket <name>] [--dry-run]

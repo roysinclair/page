@@ -222,7 +222,7 @@ final class WidgetLargeAndPageTests: XCTestCase {
         store.env.probeWidgets = { done in done(answer) }
         store.refreshWidgets()
         XCTAssertFalse(store.widgetGuideOpen)
-        answer = .registered(path: "/Applications/Page.app/Contents/PlugIns/PageWidgets.appex")
+        answer = .registered(path: "/Applications/Page Studio.app/Contents/PlugIns/PageWidgets.appex")
         store.refreshWidgets()
         XCTAssertTrue(store.widgetGuideOpen)
         store.toggleWidgetGuide()

@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -14,17 +17,17 @@ jobs:
     name: swift build
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Show Swift version
         run: swift --version
       - name: Build (debug)
-        run: swift build -c debug
+        run: swift build -c debug --force-resolved-versions
       - name: Build (release)
-        run: swift build -c release
+        run: swift build -c release --force-resolved-versions
       - name: Unit tests
         # Pure logic + fakes only. The live injection test skips itself
         # unless PAGE_LIVE_SESSION_ID is set.
-        run: swift test
+        run: swift test --force-resolved-versions
 
   linux-build:
     name: Linux (PageCore + paged)
@@ -32,17 +35,17 @@ jobs:
     # The official Swift image: toolchain and its apt dependencies.
     container: swift:6.2-noble
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Tools the tests drive (tmux, python3)
         run: apt-get update -q && apt-get install -y -q tmux python3
       - name: Show Swift version
         run: swift --version
       - name: Build (debug)
-        run: swift build -c debug
+        run: swift build -c debug --force-resolved-versions
       - name: Build paged (release, as install-linux.sh does)
-        run: swift build -c release --product paged --static-swift-stdlib
+        run: swift build -c release --product paged --static-swift-stdlib --force-resolved-versions
       - name: Unit tests (PageCore, PageLinux)
-        run: swift test
+        run: swift test --force-resolved-versions
       - name: Script syntax
         run: bash -n install-linux.sh && bash -n hooks/page-notify.sh
 
@@ -50,7 +53,7 @@ jobs:
     name: iOS build (simulator)
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Select Xcode 26
@@ -87,8 +90,8 @@ jobs:
     name: Worker typecheck + tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           # Tests run the TypeScript sources through Node's type stripping
           # (package.json engines: >=22.18).
@@ -97,10 +100,12 @@ jobs:
           cache-dependency-path: Cloudflare/package-lock.json
       - name: Install deps
         working-directory: Cloudflare
-        run: npm ci
+        # --ignore-scripts: no dependency lifecycle script runs in CI; tsc and the tests need none.
+        run: npm ci --ignore-scripts
       - name: Type-check
         working-directory: Cloudflare
-        run: npx tsc --noEmit
+        # The locally installed compiler, never fetched on demand.
+        run: ./node_modules/.bin/tsc --noEmit
       - name: Tests
         working-directory: Cloudflare
         run: npm test
@@ -109,7 +114,7 @@ jobs:
     name: Shell + Python syntax
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: bash -n (macOS bash 3.2)
         run: |
           bash -n hooks/page-notify.sh

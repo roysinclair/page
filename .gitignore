@@ -4,7 +4,8 @@
 # Swift / SwiftPM
 .build/
 .swiftpm/
-Package.resolved
+# Package.resolved is committed (pins the Linux dependencies; see ci.yml). A macOS `swift build` or
+# `swift package resolve` deletes it because the macOS manifest has no dependencies: `git restore Package.resolved`.
 ClaudePowerMode.app/
 Page.app/
 Page Studio.app/

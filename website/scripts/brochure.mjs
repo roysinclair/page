@@ -19,7 +19,9 @@ const freePort = () =>
   });
 
 const port = await freePort();
-const server = spawn('npx', ['astro', 'preview', '--host', '127.0.0.1', '--port', String(port)], { cwd: root, stdio: 'ignore' });
+// Run Astro from the local install with this same Node binary, not `npx` resolved through PATH.
+const astroBin = path.join(root, 'node_modules', 'astro', 'astro.js');
+const server = spawn(process.execPath, [astroBin, 'preview', '--host', '127.0.0.1', '--port', String(port)], { cwd: root, stdio: 'ignore' });
 const stop = () => server.kill();
 process.on('exit', stop);
 

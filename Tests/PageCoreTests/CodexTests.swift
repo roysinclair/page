@@ -95,6 +95,19 @@ final class CodexProtocolTests: XCTestCase {
         XCTAssertEqual(result.data[1].updatedAt, 90)
         XCTAssertTrue(result.data[2].isSubAgent)
     }
+
+    /// Codex lists only its default provider's threads unless `modelProviders` is
+    /// present; an empty array means every provider (so `codex --oss` sessions show).
+    func testThreadListParamsAskForAllProvidersOnlyWhenSet() throws {
+        func keys(_ params: AppServerProtocol.ThreadListParams) throws -> [String: Any] {
+            let data = try JSONEncoder().encode(params)
+            return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        }
+        let all = try keys(AppServerProtocol.ThreadListParams(modelProviders: []))
+        XCTAssertEqual((all["modelProviders"] as? [Any])?.count, 0)
+        XCTAssertNotNil(all["modelProviders"])
+        XCTAssertNil(try keys(AppServerProtocol.ThreadListParams())["modelProviders"])
+    }
 }
 
 // MARK: - Rollout analysis

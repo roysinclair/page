@@ -75,7 +75,7 @@ class SessionRoomTest {
         val busyPlan = RoomPlan.build(RoomPlan.Inputs(busy, aura, null, ended = false, ready = true, macName = "M"))
         assertEquals(RoomComposerMode.Blocked("Page Aura is still replying"), busyPlan.mode)
 
-        val idle = LiveSession.decode(parseJson("""{"id":"aura-k3j9x","backend":"aura","title":"Quarterly numbers","state":"idle","host":"Page Aura","canType":true,"canInterrupt":false,"provider":"anthropic","attachBlocker":"Page can't send photos to Page Aura yet","preview":"Totals look right."}""")!!)!!
+        val idle = LiveSession.decode(parseJson("""{"id":"aura-k3j9x","backend":"aura","title":"Quarterly numbers","state":"idle","host":"Page Aura","canType":true,"canInterrupt":false,"provider":"anthropic","attachBlocker":"Page Studio can't send photos to Page Aura yet","preview":"Totals look right."}""")!!)!!
         assertNull(idle.attach)
         val idlePlan = RoomPlan.build(RoomPlan.Inputs(idle, aura, null, ended = false, ready = true, macName = "M"))
         assertEquals(RoomComposerMode.NextTask, idlePlan.mode)

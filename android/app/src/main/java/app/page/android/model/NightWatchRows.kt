@@ -123,7 +123,7 @@ data class RowAction(
 
 /** The delivery preview strings. Every one names the Mac, so with several Macs paired you cannot act on the wrong one. */
 object DeliveryPreview {
-    /** "your Mac" when the name is blank, so a preview never omits the Mac. */
+    /** "your computer" when the name is blank, so a preview never omits it. */
     fun macLabel(name: String): String {
         val t = Sw.trimWsNl(name)
         return if (t.isEmpty()) "your computer" else t

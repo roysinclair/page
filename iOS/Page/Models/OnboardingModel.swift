@@ -79,7 +79,7 @@ struct PairedWelcome: Equatable {
         case .notSet, .checking: action = .allowNotifications
         }
         return PairedWelcome(
-            title: "\(DeliveryPreview.macLabel(macName).replacingOccurrences(of: "your Mac", with: "Your Mac")) is paired",
+            title: "\(DeliveryPreview.macLabel(macName).replacingOccurrences(of: "your computer", with: "Your computer")) is paired",
             subtitle: subtitle(liveSessions: liveSessions, isFirstMac: isFirstMac),
             promiseTitle: "Only when you're needed", promises: promiseLines, action: action,
             skipTitle: action == .allowNotifications ? "Not now" : nil)

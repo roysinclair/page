@@ -32,7 +32,7 @@ class RepliesTest {
 
     @Test
     fun retiredVersusGone() {
-        val retiredBody = """{"error":"token_retired","why":"This pairing was replaced on your Mac — scan the new QR code"}"""
+        val retiredBody = """{"error":"token_retired","why":"This pairing was replaced on your computer — scan the new QR code"}"""
         assertEquals(ReplyOutcome.Retired("This pairing was replaced on your computer — scan the new QR code"), ReplyOutcome.from(410, retiredBody))
         assertEquals(ReplyOutcome.Gone, ReplyOutcome.from(410, """{"error":"gone","why":"prompt_closed","closeReason":"replied"}"""))
         assertEquals(ReplyOutcome.Gone, ReplyOutcome.from(410, """{"error":"gone","why":"expired"}"""))

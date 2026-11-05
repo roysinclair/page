@@ -231,7 +231,7 @@ check(!MacStatusSnapshot(macConnected: false).looksUnused, "unknown -> not flagg
 check(!MacStatusSnapshot(macConnected: true, macEverSeen: false).looksUnused, "connected -> fine")
 
 // Token retirement (shared definition: 410 token_retired anywhere, relay.retired frame).
-let retiredBody = Data(#"{"error":"token_retired","why":"This pairing was replaced on your Mac — scan the new QR code"}"#.utf8)
+let retiredBody = Data(#"{"error":"token_retired","why":"This pairing was replaced on your computer — scan the new QR code"}"#.utf8)
 check(TokenRetirement.why(status: 410, body: retiredBody) == "This pairing was replaced on your computer — scan the new QR code", "410 token_retired -> why")
 check(TokenRetirement.why(status: 410, body: Data(#"{"error":"token_retired"}"#.utf8)) == TokenRetirement.defaultWhy, "410 token_retired without why -> default")
 check(TokenRetirement.why(status: 410, body: Data(#"{"error":"token_retired","why":"   "}"#.utf8)) == TokenRetirement.defaultWhy, "blank why -> default")
@@ -3209,7 +3209,7 @@ do {
     check(RoomLens.available(.init(character: AgentCharacter.from(backend: .known(.aura), provider: "anthropic"), hasScreen: true, workflowCount: 2, canAskForChanges: true)) == [.story],
           "a chat has Story only: no screen, no changes, no workflows")
     check(auraRoom.mode == .nextTask && auraRoom.photos.mode == .hidden, "an idle chat takes a message and offers no photo button")
-    let auraJSON = #"{"id":"aura-k3j9x","backend":"aura","title":"Quarterly numbers","state":"idle","host":"Page Aura","canType":true,"canInterrupt":false,"provider":"anthropic","attachBlocker":"Page can't send photos to Page Aura yet","preview":"Totals look right."}"#
+    let auraJSON = #"{"id":"aura-k3j9x","backend":"aura","title":"Quarterly numbers","state":"idle","host":"Page Aura","canType":true,"canInterrupt":false,"provider":"anthropic","attachBlocker":"Page Studio can't send photos to Page Aura yet","preview":"Totals look right."}"#
     let auraWire = try! JSONDecoder.page().decode(LiveSession.self, from: Data(auraJSON.utf8))
     let auraWireRoom = RoomPlan.build(RoomPlan.Inputs(session: auraWire, character: AgentCharacter.from(backend: .known(.aura), provider: "anthropic"),
                                                       pageRow: nil, ended: false, ready: true, macName: "Studio MBP", caps: ["images-v1"]))
@@ -5121,7 +5121,7 @@ do {
     check(RoomPlan.build(oldMac).photos.mode == .hidden, "an old Mac (no caps): nothing offered")
 
     // The list row's two fields.
-    let rowJSON = #"{"kind":"list","seq":1,"ts":1761300000000,"caps":["images-v1"],"sessions":[{"id":"a","backend":"claude","state":"idle","canType":true,"attach":"path"},{"id":"b","backend":"codex","state":"idle","canType":true,"attachBlocker":"Page can't send photos to Codex yet"},{"id":"c","state":"idle","attach":"wormhole"}]}"#
+    let rowJSON = #"{"kind":"list","seq":1,"ts":1761300000000,"caps":["images-v1"],"sessions":[{"id":"a","backend":"claude","state":"idle","canType":true,"attach":"path"},{"id":"b","backend":"codex","state":"idle","canType":true,"attachBlocker":"Page Studio can't send photos to Codex yet"},{"id":"c","state":"idle","attach":"wormhole"}]}"#
     if let p = SessionsPlaintext.decode(Data(rowJSON.utf8)), case .list(_, let ss) = p.update {
         check(p.caps == ["images-v1"] && ss[0].attach == "path" && ss[0].attachBlocker == nil, "attach decodes")
         check(ss[1].attach == nil && ss[1].attachBlocker == "Page Studio can't send photos to Codex yet" && ss[2].attach == nil, "attachBlocker decodes; an unknown route is none")

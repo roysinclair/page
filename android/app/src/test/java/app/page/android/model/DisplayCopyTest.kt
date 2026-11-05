@@ -67,7 +67,7 @@ class DisplayCopyTest {
         assertFalse(CloseReason.description("too_late").lowercase().contains("answered"))
     }
 
-    private val retiredBody = """{"error":"token_retired","why":"This pairing was replaced on your Mac — scan the new QR code"}"""
+    private val retiredBody = """{"error":"token_retired","why":"This pairing was replaced on your computer — scan the new QR code"}"""
 
     @Test
     fun tokenRetirement() {

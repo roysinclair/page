@@ -340,6 +340,21 @@ check_leftover_hooks() {
 #  2. The old bundle is removed, but only once no hook entry still runs its
 #     script; otherwise it stays, so phone approvals keep working, and the
 #     reason is printed.
+# Make macOS pick up the widget extension we just installed. Without this,
+# chronod can keep reusing a PageWidgets process started from an older copy
+# (even a deleted one) and reject every timeline reload with "Bundle version did
+# not match", so the desktop widgets freeze on stale data. Best effort.
+refresh_widgets() {
+    local appex="$APP_DEST/Contents/PlugIns/PageWidgets.appex"
+    # The copy built inside the repo is registered too; forget it.
+    "$LSREGISTER" -u "$PWD/$APP_SRC" 2>/dev/null || true
+    [[ -d "$appex" ]] || return 0
+    "$LSREGISTER" -f "$APP_DEST" 2>/dev/null || true
+    pluginkit -a "$appex" 2>/dev/null || true
+    pkill -f "PageWidgets.appex/Contents/MacOS/PageWidgets" 2>/dev/null || true
+    killall chronod 2>/dev/null || true
+}
+
 migrate_old_bundle() {
     local old hooks_moved=1
     if ! check_leftover_hooks "${OLD_PAGE_APPS[@]}" 2>/dev/null; then
@@ -463,6 +478,7 @@ cp -R "$APP_SRC" "$APP_DEST"
 xattr -dr com.apple.quarantine "$APP_DEST" 2>/dev/null || true
 
 migrate_old_bundle
+refresh_widgets
 
 echo "==> Writing LaunchAgent at $PLIST_PATH"
 mkdir -p "$(dirname "$PLIST_PATH")"

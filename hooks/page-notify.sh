@@ -780,11 +780,22 @@ linux_idle_seconds() {
     return 0
 }
 
+# canon_uint DIGITS -> the number without leading zeros, capped at 999999999
+# (about 31 years of seconds). Keeps [[ ]] numeric tests safe: no octal surprises
+# ("08") and no 64-bit wrap-around on absurdly long values.
+canon_uint() {
+    local v="$1"
+    v=${v#"${v%%[!0]*}"}
+    v=${v:-0}
+    if (( ${#v} > 9 )); then v=999999999; fi
+    printf '%s' "$v"
+}
+
 away_threshold() {
     local v="${PAGE_HOOK_ONLY_WHEN_AWAY:-}"
     case "$v" in
         ''|*[!0-9]*) printf '%s' "$DEFAULT_AWAY_SECONDS" ;;
-        *) printf '%s' "$v" ;;
+        *) canon_uint "$v" ;;
     esac
 }
 
@@ -815,9 +826,8 @@ synthetic_input_explains_idle() {
 user_is_present() {
     local threshold idle
     threshold=$(away_threshold)
-    # Deliberately [ ] (not [[ ]]): an absurdly long PAGE_HOOK_ONLY_WHEN_AWAY makes
-    # [ ] fail where [[ ]] would silently wrap around.
-    [ "$threshold" -gt 0 ] 2>/dev/null || return 1
+    # away_threshold returns a canonical number (see canon_uint), safe for [[ ]].
+    [[ "$threshold" -gt 0 ]] || return 1
     if [[ "$PAGE_OS" = "Linux" ]] && linux_headless; then
         log "presence: no graphical session — treating as away"
         return 1
@@ -826,8 +836,8 @@ user_is_present() {
     case "$idle" in
         ''|*[!0-9]*) log "presence: HID idle time unreadable — treating as present"; return 0 ;;
     esac
-    # [ ] on purpose, see above.
-    [ "$idle" -lt "$threshold" ] || return 1
+    idle=$(canon_uint "$idle")
+    [[ "$idle" -lt "$threshold" ]] || return 1
     if synthetic_input_explains_idle "$idle"; then
         log "presence: last input ${idle}s ago was Page's own keystroke — treating as away"
         return 1
@@ -1064,8 +1074,7 @@ wait_for_reply() {
 
         # Back at the Mac? Any input since the last check means someone is
         # there to answer the dialog, which this hook may be holding back.
-        # [ ] on purpose, see user_is_present.
-        if [ "$(away_threshold)" -gt 0 ] 2>/dev/null; then
+        if [[ "$(away_threshold)" -gt 0 ]]; then
             now=$(date +%s)
             elapsed=$(( now - last_check ))
             last_check=$now

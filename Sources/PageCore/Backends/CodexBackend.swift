@@ -107,6 +107,7 @@ final class CodexBackend: AgentBackend, @unchecked Sendable {
     private var lastListError: String?
     private var readySince: Date?
     private var listSupportsSort = true
+    private var listSupportsProviders = true
     private var _hasCompletedFirstScan = false
 
     private var threads: [String: ThreadSummary] = [:]
@@ -407,16 +408,24 @@ final class CodexBackend: AgentBackend, @unchecked Sendable {
         var attempts = 0
         while pages.count < Self.maxListPages, attempts <= Self.maxListPages {
             attempts += 1
-            let sorted = locked { listSupportsSort }
+            let (sorted, allProviders) = locked { (listSupportsSort, listSupportsProviders) }
             let params = AppServerProtocol.ThreadListParams(
                 limit: Self.listPageSize,
                 cursor: cursor,
                 sortKey: sorted ? "updated_at" : nil,
-                sortDirection: sorted ? "desc" : nil
+                sortDirection: sorted ? "desc" : nil,
+                modelProviders: allProviders ? [] : nil
             )
             let page: AppServerProtocol.ThreadListResult
             do {
                 page = try await client.call(method: "thread/list", params: params)
+            } catch AppServerClient.ClientError.rpcFailed(let e) where allProviders && cursor == nil {
+                // Codex lists only its default provider's threads unless told
+                // otherwise, which hides `codex --oss` (Ollama) sessions.
+                // A server that rejects the field gets the old behaviour.
+                Logger.shared.log("CodexBackend: thread/list rejected modelProviders (rpc \(e.code)) — listing default provider only from now on")
+                locked { listSupportsProviders = false }
+                continue
             } catch AppServerClient.ClientError.rpcFailed(let e) where sorted && cursor == nil {
                 Logger.shared.log("CodexBackend: thread/list rejected sortKey (rpc \(e.code)) — listing unsorted from now on")
                 locked { listSupportsSort = false }

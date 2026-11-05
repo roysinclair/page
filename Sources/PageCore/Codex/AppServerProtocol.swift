@@ -75,12 +75,21 @@ enum AppServerProtocol {
         /// `"asc" | "desc"`. The server default is unverified, so always send
         /// it alongside `sortKey`.
         let sortDirection: String?
+        /// Provider filter. When omitted, Codex 0.142 lists only threads
+        /// recorded under its default provider, so threads started with
+        /// `codex --oss` or `ollama launch codex` (modelProvider "ollama",
+        /// "lmstudio", …) never appear. An empty array means "all
+        /// providers" (app-server schema, ThreadListParams.modelProviders).
+        /// Older servers may reject the field; the caller then drops it.
+        let modelProviders: [String]?
 
-        init(limit: Int? = 50, cursor: String? = nil, sortKey: String? = nil, sortDirection: String? = nil) {
+        init(limit: Int? = 50, cursor: String? = nil, sortKey: String? = nil, sortDirection: String? = nil,
+             modelProviders: [String]? = nil) {
             self.limit = limit
             self.cursor = cursor
             self.sortKey = sortKey
             self.sortDirection = sortDirection
+            self.modelProviders = modelProviders
         }
     }
 

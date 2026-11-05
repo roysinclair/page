@@ -81,7 +81,12 @@ if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]]; then
     echo "!! VERSION must look like 1.2.3 (got '$VERSION')" >&2
     exit 1
 fi
-BUILD_NUMBER="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
+# CFBundleVersion must only ever go up: WidgetKit compares the running widget
+# extension's version with LaunchServices' record, and a lower number than an
+# earlier install (for example a commit count after the history was rewritten)
+# makes chronod reject every timeline reload ("Bundle version did not match").
+# So use the build time (UTC, yymmddHHMM), unless BUILD_NUMBER is set.
+BUILD_NUMBER="${BUILD_NUMBER:-$(date -u +%y%m%d%H%M)}"
 GIT_DESCRIBE="$(git describe --tags --always --dirty 2>/dev/null || echo unknown)"
 echo "==> Version $VERSION (build $BUILD_NUMBER, $GIT_DESCRIBE)"
 

@@ -125,6 +125,10 @@
 # 0: exit 2 means "block" on several events and must only ever come from an
 # explicit decision.
 
+# The `10#` prefixes in the numeric [[ ]] tests below force base 10 (a leading
+# zero would otherwise read as octal, which [ never did); shellcheck does not
+# understand that and warns about the arithmetic operands.
+# shellcheck disable=SC2309
 set -uo pipefail
 umask 077
 
@@ -144,7 +148,7 @@ xdg_dir() {
         *) printf '%s' "$HOME/$2" ;;
     esac
 }
-if [ "$PAGE_OS" = "Linux" ]; then
+if [[ "$PAGE_OS" = "Linux" ]]; then
     APP_SUPPORT="$(xdg_dir "${XDG_DATA_HOME:-}" .local/share)/page"
     CONFIG_FILE="$(xdg_dir "${XDG_CONFIG_HOME:-}" .config)/page/config.json"
     DEFAULT_LOG_FILE="$(xdg_dir "${XDG_STATE_HOME:-}" .local/state)/page/page-hook.log"
@@ -188,12 +192,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
 
 AGENT="claude"
 AGENT_TIMEOUT=$DEFAULT_AGENT_TIMEOUT
-while [ $# -gt 0 ]; do
+while [[ $# -gt 0 ]]; do
     case "$1" in
         --codex)            AGENT="codex" ;;
-        --agent)            [ "${2:-}" = "codex" ] && AGENT="codex"; [ $# -gt 1 ] && shift ;;
+        --agent)            [[ "${2:-}" = "codex" ]] && AGENT="codex"; [[ $# -gt 1 ]] && shift ;;
         --agent=codex)      AGENT="codex" ;;
-        --agent-timeout)    AGENT_TIMEOUT="${2:-}"; [ $# -gt 1 ] && shift ;;
+        --agent-timeout)    AGENT_TIMEOUT="${2:-}"; [[ $# -gt 1 ]] && shift ;;
         --agent-timeout=*)  AGENT_TIMEOUT="${1#--agent-timeout=}" ;;
     esac
     shift
@@ -201,7 +205,7 @@ done
 case "$AGENT_TIMEOUT" in
     ''|*[!0-9]*) AGENT_TIMEOUT=$DEFAULT_AGENT_TIMEOUT ;;
 esac
-[ "${#AGENT_TIMEOUT}" -le 6 ] || AGENT_TIMEOUT=$DEFAULT_AGENT_TIMEOUT
+[[ "${#AGENT_TIMEOUT}" -le 6 ]] || AGENT_TIMEOUT=$DEFAULT_AGENT_TIMEOUT
 
 EVENT_JSON=""
 EVENT_NAME=""
@@ -231,7 +235,7 @@ AGENT_PID=""
 AGENT_PID_IS_PARENT=0
 
 agent_label() {
-    if [ "$AGENT" = "codex" ]; then printf 'Codex'; else printf 'Claude'; fi
+    if [[ "$AGENT" = "codex" ]]; then printf 'Codex'; else printf 'Claude'; fi
 }
 
 # ---------------------------------------------------------------------------
@@ -247,9 +251,9 @@ log() {
 
 rotate_log() {
     local size
-    [ -f "$LOG_FILE" ] || return 0
+    [[ -f "$LOG_FILE" ]] || return 0
     size=$(wc -c < "$LOG_FILE" 2>/dev/null | tr -d '[:space:]')
-    if [ -n "$size" ] && [ "$size" -gt 1048576 ] 2>/dev/null; then
+    if [[ -n "$size" ]] && [[ "$size" -gt 1048576 ]] 2>/dev/null; then
         mv -f "$LOG_FILE" "$LOG_FILE.1" 2>/dev/null
     fi
     return 0
@@ -260,11 +264,11 @@ rotate_log() {
 
 on_exit() {
     hold_end
-    if [ "$IV_OPEN" = "1" ] && [ -n "$IV_ID" ]; then
+    if [[ "$IV_OPEN" = "1" ]] && [[ -n "$IV_ID" ]]; then
         log "closing $IV_ID on exit"
         close_intervention hook_exited
     fi
-    if [ -n "$WORK_DIR" ]; then
+    if [[ -n "$WORK_DIR" ]]; then
         rm -rf "$WORK_DIR" 2>/dev/null
     fi
     exit 0
@@ -286,7 +290,7 @@ trap 'on_signal HUP' HUP
 # Nothing to say: the agent continues with its normal flow (for blocking
 # events that means its own dialog).
 quiet_exit() {
-    [ -n "${1:-}" ] && log "$1"
+    [[ -n "${1:-}" ]] && log "$1"
     exit 0
 }
 
@@ -295,7 +299,7 @@ quiet_exit() {
 fall_back() {
     local why="$1" close_reason="${2:-hook_fallback}"
     log "FALLBACK ($why) — no decision printed"
-    if [ "$FAIL_MODE" = "ask" ]; then
+    if [[ "$FAIL_MODE" = "ask" ]]; then
         close_intervention "$close_reason"
         decide_pretool_legacy "ask" "Page Studio: $why — answer here instead."
     fi
@@ -308,7 +312,7 @@ fall_back() {
 # safe fallback for every event.
 emit() {
     local json="$1"
-    [ -n "$json" ] && printf '%s\n' "$json"
+    [[ -n "$json" ]] && printf '%s\n' "$json"
     exit 0
 }
 
@@ -318,7 +322,7 @@ emit() {
 decide_permission() {
     local behavior="$1" message="${2:-}"
     log "DECIDE PermissionRequest behavior=$behavior"
-    if [ "$behavior" = "deny" ]; then
+    if [[ "$behavior" = "deny" ]]; then
         emit "$(jq -nc --arg m "$message" \
             '{hookSpecificOutput: {hookEventName: "PermissionRequest", decision: {behavior: "deny", message: $m}}}' 2>/dev/null)"
     fi
@@ -373,9 +377,9 @@ normalise_relay_url() {
 # its relayEnabled switch (the user turned paging off -> so do we).
 resolve_relay_url() {
     local raw=""
-    if [ -n "${PAGE_RELAY_URL:-}" ]; then
+    if [[ -n "${PAGE_RELAY_URL:-}" ]]; then
         raw="$PAGE_RELAY_URL"
-    elif [ -r "$CONFIG_FILE" ]; then
+    elif [[ -r "$CONFIG_FILE" ]]; then
         raw=$(jq -r 'if (.relayEnabled == true) then (.relayURL // "") else "" end' "$CONFIG_FILE" 2>/dev/null)
     fi
     raw=$(normalise_relay_url "$raw")
@@ -406,7 +410,7 @@ resolve_relay_url() {
 # `security` lookup can pop a GUI access dialog that would hang this hook.
 read_token() {
     TOKEN=""
-    if [ -r "$TOKEN_FILE" ]; then
+    if [[ -r "$TOKEN_FILE" ]]; then
         TOKEN=$(tr -d '[:space:]' < "$TOKEN_FILE" 2>/dev/null)
     fi
     # The token is spliced into a curl config line below, so anything outside
@@ -478,9 +482,9 @@ write_payload() {
 # the phone until the Worker expires it, and it often follows a lost relay.
 close_intervention() {
     local reason="$1" json file attempt=1
-    [ "$IV_OPEN" = "1" ] || return 0
+    [[ "$IV_OPEN" = "1" ]] || return 0
     IV_OPEN=0
-    [ -n "$IV_ID" ] && [ -n "$WORK_DIR" ] || return 0
+    [[ -n "$IV_ID" ]] && [[ -n "$WORK_DIR" ]] || return 0
     json=$(jq -nc --arg id "$IV_ID" --arg reason "$reason" \
         '{type: "intervention.closed", payload: {id: $id, reason: $reason}}' 2>/dev/null) || return 0
     file=$(write_payload close "$json") || return 0
@@ -490,8 +494,8 @@ close_intervention() {
         case "$RESP_CODE" in
             2??|4??) return 0 ;;              # closed, or the relay won't ever take it
         esac
-        [ "$attempt" -lt 3 ] || return 0
-        [ $(( $(date +%s) + 6 )) -lt $(( START_TS + AGENT_TIMEOUT )) ] || return 0
+        [[ "$attempt" -lt 3 ]] || return 0
+        [[ $(( $(date +%s) + 6 )) -lt $(( START_TS + AGENT_TIMEOUT )) ]] || return 0
         sleep 1
         attempt=$((attempt + 1))
     done
@@ -502,8 +506,8 @@ close_intervention() {
 # already closed elsewhere: whoever closed it reported its own outcome.
 report_delivery() {
     local success="$1" detail="$2" json file
-    [ "$IV_OPEN" = "1" ] || return 0
-    [ -n "$IV_ID" ] && [ -n "$WORK_DIR" ] || return 0
+    [[ "$IV_OPEN" = "1" ]] || return 0
+    [[ -n "$IV_ID" ]] && [[ -n "$WORK_DIR" ]] || return 0
     json=$(jq -nc --arg id "$IV_ID" --argjson ok "$success" --arg detail "$detail" \
         '{type: "reply.injected", payload: {interventionId: $id, method: "hook", success: $ok, detail: $detail}}' \
         2>/dev/null) || return 0
@@ -528,7 +532,7 @@ settle() {
 have_python() {
     local py
     py=$(command -v python3 2>/dev/null) || return 1
-    if [ "$py" = "/usr/bin/python3" ]; then
+    if [[ "$py" = "/usr/bin/python3" ]]; then
         xcode-select -p >/dev/null 2>&1 || return 1
     fi
     return 0
@@ -537,7 +541,7 @@ have_python() {
 find_extractor() {
     local candidate
     for candidate in "$SCRIPT_DIR/page-extract-context.py" "$HOME/.claude/hooks/page-extract-context.py"; do
-        if [ -f "$candidate" ] && [ -r "$candidate" ]; then
+        if [[ -f "$candidate" ]] && [[ -r "$candidate" ]]; then
             printf '%s' "$candidate"
             return 0
         fi
@@ -549,12 +553,12 @@ find_extractor() {
 # rollouts are a different (and explicitly unstable) format.
 transcript_context() {
     local transcript extractor
-    [ "$AGENT" = "claude" ] || return 0
+    [[ "$AGENT" = "claude" ]] || return 0
     transcript=$(jq -r '.transcript_path // ""' <<<"$EVENT_JSON" 2>/dev/null)
-    [ -n "$transcript" ] && [ -f "$transcript" ] && [ -r "$transcript" ] || return 0
+    [[ -n "$transcript" ]] && [[ -f "$transcript" ]] && [[ -r "$transcript" ]] || return 0
     have_python || return 0
     extractor=$(find_extractor) || return 0
-    if [ "${PAGE_CONTEXT_TOOL_OUTPUT:-}" = "1" ]; then
+    if [[ "${PAGE_CONTEXT_TOOL_OUTPUT:-}" = "1" ]]; then
         python3 -I "$extractor" --tool-output "$transcript" 2>/dev/null </dev/null
     else
         python3 -I "$extractor" "$transcript" 2>/dev/null </dev/null
@@ -576,7 +580,7 @@ redact() {
 compose_context() {
     local headline="$1" tail
     tail=$(transcript_context)
-    if [ -n "$tail" ]; then
+    if [[ -n "$tail" ]]; then
         jq -rn --arg h "$headline" --arg t "$tail" --argjson max "$CONTEXT_MAX_CHARS" \
             '($h + "\n\n— recent activity —\n" + $t) | .[0:$max]' 2>/dev/null
     else
@@ -601,9 +605,9 @@ prompt_key() {
             key=$(jq -r '(.tool_use_id // "") | if type == "string" then . else "" end' <<<"$EVENT_JSON" 2>/dev/null)
             ;;
     esac
-    if [ -z "$key" ] && [ "$AGENT" = "claude" ]; then
+    if [[ -z "$key" ]] && [[ "$AGENT" = "claude" ]]; then
         transcript=$(jq -r '(.transcript_path // "") | if type == "string" then . else "" end' <<<"$EVENT_JSON" 2>/dev/null)
-        if [ -n "$transcript" ] && [ -f "$transcript" ] && [ -r "$transcript" ]; then
+        if [[ -n "$transcript" ]] && [[ -f "$transcript" ]] && [[ -r "$transcript" ]]; then
             key=$(tail -c 262144 "$transcript" 2>/dev/null | jq -nrR '
                 def items: (.message.content // []) | if type == "array" then .[] | select(type == "object") else empty end;
                 reduce (inputs | (fromjson? // null)
@@ -628,7 +632,7 @@ prompt_key() {
     case "$key" in
         ''|*[!A-Za-z0-9_.:-]*) return 0 ;;
     esac
-    [ "${#key}" -le 200 ] || return 0
+    [[ "${#key}" -le 200 ]] || return 0
     printf '%s' "$key"
 }
 
@@ -640,7 +644,7 @@ open_intervention() {
     pkey=$(prompt_key)
     cwd=$(jq -r '.cwd // ""' <<<"$EVENT_JSON" 2>/dev/null)
     project=$(basename "${cwd:-$(agent_label)}" 2>/dev/null)
-    [ -n "$project" ] && [ "$project" != "/" ] || project="$(agent_label)"
+    [[ -n "$project" ]] && [[ "$project" != "/" ]] || project="$(agent_label)"
     json=$(jq -nc \
         --arg id "$IV_ID" \
         --arg sid "$SESSION_ID" \
@@ -678,7 +682,7 @@ make_id() {
 # and hold markers look stale). GNU syntax only as a fallback.
 file_age_seconds() {
     local mtime
-    if [ "$PAGE_OS" = "Linux" ]; then
+    if [[ "$PAGE_OS" = "Linux" ]]; then
         mtime=$(stat -c %Y "$1" 2>/dev/null) || return 1
     else
         mtime=$(/usr/bin/stat -f %m "$1" 2>/dev/null) || mtime=$(stat -c %Y "$1" 2>/dev/null) || return 1
@@ -709,7 +713,7 @@ trim() {
 # when it can't be read. `ioreg` is looked up on PATH (tests shadow it).
 # On Linux: linux_idle_seconds.
 hid_idle_seconds() {
-    if [ "$PAGE_OS" = "Linux" ]; then
+    if [[ "$PAGE_OS" = "Linux" ]]; then
         linux_idle_seconds
         return 0
     fi
@@ -734,8 +738,8 @@ linux_graphical_session() {
 # Linux: "headless" when there is no graphical session at all (a server,
 # ssh, a text console): nobody can see the agent's dialog, so it pages.
 linux_headless() {
-    [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ] || return 1
-    [ -z "$(linux_graphical_session)" ]
+    [[ -z "${DISPLAY:-}" ]] && [[ -z "${WAYLAND_DISPLAY:-}" ]] || return 1
+    [[ -z "$(linux_graphical_session)" ]]
 }
 
 # Linux idle seconds, from the first source that answers: xprintidle (X11),
@@ -743,7 +747,7 @@ linux_headless() {
 # looked up on PATH (tests shadow them). Empty when none answers.
 linux_idle_seconds() {
     local ms out sid hint since now
-    if [ -n "${DISPLAY:-}" ] && command -v xprintidle >/dev/null 2>&1; then
+    if [[ -n "${DISPLAY:-}" ]] && command -v xprintidle >/dev/null 2>&1; then
         ms=$(xprintidle 2>/dev/null | tr -d '[:space:]')
         case "$ms" in
             ''|*[!0-9]*) ;;
@@ -761,7 +765,7 @@ linux_idle_seconds() {
         esac
     fi
     sid=$(linux_graphical_session)
-    if [ -n "$sid" ]; then
+    if [[ -n "$sid" ]]; then
         hint=$(loginctl show-session "$sid" -p IdleHint --value 2>/dev/null | tr -d '[:space:]')
         since=$(loginctl show-session "$sid" -p IdleSinceHint --value 2>/dev/null | tr -d '[:space:]')
         case "$hint" in
@@ -795,13 +799,13 @@ synthetic_input_explains_idle() {
     case "$m" in
         ''|*[!0-9]*) return 1 ;;
     esac
-    [ "${#m}" -le 12 ] || return 1
+    [[ "${#m}" -le 12 ]] || return 1
     case "$1" in
         ''|*[!0-9]*) return 1 ;;
     esac
     now=$(date +%s)
     last=$(( now - $1 ))
-    [ $(( last - m )) -le "$SYNTHETIC_INPUT_TOLERANCE" ] && [ $(( m - last )) -le "$SYNTHETIC_INPUT_TOLERANCE" ]
+    [[ $(( last - m )) -le "$SYNTHETIC_INPUT_TOLERANCE" ]] && [[ $(( m - last )) -le "$SYNTHETIC_INPUT_TOLERANCE" ]]
 }
 
 # True (0) when the user has touched the Mac recently, so the dialog should
@@ -811,8 +815,10 @@ synthetic_input_explains_idle() {
 user_is_present() {
     local threshold idle
     threshold=$(away_threshold)
+    # Deliberately [ ] (not [[ ]]): an absurdly long PAGE_HOOK_ONLY_WHEN_AWAY makes
+    # [ ] fail where [[ ]] would silently wrap around.
     [ "$threshold" -gt 0 ] 2>/dev/null || return 1
-    if [ "$PAGE_OS" = "Linux" ] && linux_headless; then
+    if [[ "$PAGE_OS" = "Linux" ]] && linux_headless; then
         log "presence: no graphical session — treating as away"
         return 1
     fi
@@ -820,6 +826,7 @@ user_is_present() {
     case "$idle" in
         ''|*[!0-9]*) log "presence: HID idle time unreadable — treating as present"; return 0 ;;
     esac
+    # [ ] on purpose, see above.
     [ "$idle" -lt "$threshold" ] || return 1
     if synthetic_input_explains_idle "$idle"; then
         log "presence: last input ${idle}s ago was Page's own keystroke — treating as away"
@@ -839,7 +846,7 @@ hold_begin() {
     case "$SESSION_ID" in
         ''|unknown|.*|*[!A-Za-z0-9._-]*) return 0 ;;
     esac
-    [ "${#SESSION_ID}" -le 200 ] || return 0
+    [[ "${#SESSION_ID}" -le 200 ]] || return 0
     mkdir -p "$HOLD_DIR" 2>/dev/null || return 0
     chmod 700 "$HOLD_DIR" 2>/dev/null
     HOLD_FILE="$HOLD_DIR/$SESSION_ID.$$"
@@ -853,12 +860,12 @@ hold_begin() {
 }
 
 hold_touch() {
-    [ -n "$HOLD_FILE" ] && touch "$HOLD_FILE" 2>/dev/null
+    [[ -n "$HOLD_FILE" ]] && touch "$HOLD_FILE" 2>/dev/null
     return 0
 }
 
 hold_end() {
-    if [ -n "$HOLD_FILE" ]; then
+    if [[ -n "$HOLD_FILE" ]]; then
         rm -f "$HOLD_FILE" "$HOLD_FILE.tmp" 2>/dev/null
         HOLD_FILE=""
     fi
@@ -872,10 +879,10 @@ session_is_held() {
         ''|unknown|.*|*[!A-Za-z0-9._-]*) return 1 ;;
     esac
     for f in "$HOLD_DIR/$SESSION_ID".*; do
-        [ -f "$f" ] || continue
+        [[ -f "$f" ]] || continue
         case "$f" in *.tmp) continue ;; esac
         age=$(file_age_seconds "$f") || continue
-        [ "$age" -lt "$HOLD_FRESH_SECONDS" ] && return 0
+        [[ "$age" -lt "$HOLD_FRESH_SECONDS" ]] && return 0
     done
     return 1
 }
@@ -889,10 +896,10 @@ session_is_held() {
 find_session_file() {
     local f pid
     SESSION_FILE=""
-    [ "$AGENT" = "claude" ] || return 0
-    [ -d "$CLAUDE_SESSIONS_DIR" ] || return 0
+    [[ "$AGENT" = "claude" ]] || return 0
+    [[ -d "$CLAUDE_SESSIONS_DIR" ]] || return 0
     for f in "$CLAUDE_SESSIONS_DIR"/*.json; do
-        [ -f "$f" ] || continue
+        [[ -f "$f" ]] || continue
         pid=$(jq -r --arg sid "$SESSION_ID" 'if .sessionId == $sid then (.pid // "") else "" end' "$f" 2>/dev/null)
         case "$pid" in ''|*[!0-9]*) continue ;; esac
         if kill -0 "$pid" 2>/dev/null; then
@@ -907,10 +914,10 @@ find_session_file() {
 # Returns 0 when the prompt has clearly been resolved elsewhere.
 resolved_elsewhere() {
     local line status updated
-    [ -n "$SESSION_FILE" ] || return 1
-    if [ ! -f "$SESSION_FILE" ]; then
+    [[ -n "$SESSION_FILE" ]] || return 1
+    if [[ ! -f "$SESSION_FILE" ]]; then
         # The session exited (clean exit removes the file).
-        [ "$SAW_WAITING" = "1" ] && return 0
+        [[ "$SAW_WAITING" = "1" ]] && return 0
         return 1
     fi
     line=$(jq -r '"\(.status // "")|\(.statusUpdatedAt // "")"' "$SESSION_FILE" 2>/dev/null) || return 1
@@ -922,7 +929,7 @@ resolved_elsewhere() {
             WAITING_SINCE="$updated"
             ;;
         busy|idle)
-            if [ "$SAW_WAITING" = "1" ] && [ "$updated" != "$WAITING_SINCE" ]; then
+            if [[ "$SAW_WAITING" = "1" ]] && [[ "$updated" != "$WAITING_SINCE" ]]; then
                 return 0
             fi
             ;;
@@ -941,12 +948,12 @@ resolved_elsewhere() {
 # then AGENT_PID_IS_PARENT=1: a wrapper shell might outlive the agent, so
 # being re-parented to launchd also counts as "gone").
 find_agent_pid() {
-    if [ -n "$SESSION_PID" ]; then
+    if [[ -n "$SESSION_PID" ]]; then
         AGENT_PID="$SESSION_PID"
         return 0
     fi
     AGENT_PID=$(ancestor_matching is_agent_command) || AGENT_PID=""
-    if [ -z "$AGENT_PID" ]; then
+    if [[ -z "$AGENT_PID" ]]; then
         AGENT_PID="$PPID"
         AGENT_PID_IS_PARENT=1
     fi
@@ -955,11 +962,11 @@ find_agent_pid() {
 
 agent_alive() {
     local ppid
-    [ -n "$AGENT_PID" ] || return 0
+    [[ -n "$AGENT_PID" ]] || return 0
     kill -0 "$AGENT_PID" 2>/dev/null || return 1
-    if [ "$AGENT_PID_IS_PARENT" = "1" ]; then
+    if [[ "$AGENT_PID_IS_PARENT" = "1" ]]; then
         ppid=$(ps -o ppid= -p "$$" 2>/dev/null | tr -d '[:space:]')
-        [ "$ppid" = "1" ] && return 1
+        [[ "$ppid" = "1" ]] && return 1
     fi
     return 0
 }
@@ -967,7 +974,7 @@ agent_alive() {
 # Called with a reply in hand, before anything is reported or printed.
 ensure_can_settle() {
     agent_alive || fall_back "the agent exited before the reply arrived" agent_exited
-    if [ "$(date +%s)" -ge $(( START_TS + AGENT_TIMEOUT - SETTLE_RESERVE )) ]; then
+    if [[ "$(date +%s)" -ge $(( START_TS + AGENT_TIMEOUT - SETTLE_RESERVE )) ]]; then
         fall_back "the reply came too late to apply before the agent's ${AGENT_TIMEOUT}s hook timeout" too_late
     fi
 }
@@ -982,12 +989,12 @@ resolve_timeout() {
     case "$t" in
         ''|*[!0-9]*) t=$DEFAULT_TIMEOUT ;;
     esac
-    [ "${#t}" -le 5 ] || t=3600
-    [ "$t" -lt 5 ] && t=5
-    [ "$t" -gt 3600 ] && t=3600
+    [[ "${#t}" -le 5 ]] || t=3600
+    [[ 10#$t -lt 5 ]] && t=5
+    [[ 10#$t -gt 3600 ]] && t=3600
     budget=$(( START_TS + AGENT_TIMEOUT - AGENT_TIMEOUT_SAFETY - $(date +%s) ))
-    if [ "$t" -gt "$budget" ]; then
-        [ -n "${PAGE_HOOK_TIMEOUT:-}" ] &&
+    if [[ 10#$t -gt "$budget" ]]; then
+        [[ -n "${PAGE_HOOK_TIMEOUT:-}" ]] &&
             log "PAGE_HOOK_TIMEOUT=$PAGE_HOOK_TIMEOUT capped to ${budget}s by the agent's ${AGENT_TIMEOUT}s hook timeout"
         t=$budget
     fi
@@ -999,20 +1006,20 @@ resolve_timeout() {
 # begin_blocking KIND CONTEXT [SUBTYPE]
 begin_blocking() {
     local kind="$1" context="$2" subtype="${3:-}"
-    [ -n "$WORK_DIR" ] || fall_back "couldn't create a temp file"
+    [[ -n "$WORK_DIR" ]] || fall_back "couldn't create a temp file"
     resolve_relay_url
     # Not set up at all: behave exactly as if the hook weren't installed.
-    [ -n "$RELAY_URL" ] || quiet_exit "$EVENT_NAME: no relay configured — normal flow"
+    [[ -n "$RELAY_URL" ]] || quiet_exit "$EVENT_NAME: no relay configured — normal flow"
     if user_is_present; then
         quiet_exit "$EVENT_NAME: user is at the computer — normal flow"
     fi
-    if [ "$AGENT" = "claude" ] && [ "${PAGE_HOOK_PRINT:-}" != "1" ] && under_claude_print; then
+    if [[ "$AGENT" = "claude" ]] && [[ "${PAGE_HOOK_PRINT:-}" != "1" ]] && under_claude_print; then
         quiet_exit "$EVENT_NAME: non-interactive claude --print run — normal flow (PAGE_HOOK_PRINT=1 pages these)"
     fi
     read_token
-    [ -n "$TOKEN" ] || fall_back "no usable relay token (pair Page Studio with your phone first)"
+    [[ -n "$TOKEN" ]] || fall_back "no usable relay token (pair Page Studio with your phone first)"
     resolve_timeout
-    [ "$TIMEOUT" -ge 5 ] || fall_back "only ${TIMEOUT}s left before the agent's ${AGENT_TIMEOUT}s hook timeout"
+    [[ "$TIMEOUT" != -* && 10#$TIMEOUT -ge 5 ]] || fall_back "only ${TIMEOUT}s left before the agent's ${AGENT_TIMEOUT}s hook timeout"
 
     IV_ID=$(make_id hookpre)
     hold_begin
@@ -1042,11 +1049,11 @@ wait_for_reply() {
     log "$EVENT_NAME: waiting up to ${TIMEOUT}s for a reply"
     deadline=$(( $(date +%s) + TIMEOUT ))
     # The open may have taken a few seconds: the agent's timeout still rules.
-    [ "$deadline" -le $(( START_TS + AGENT_TIMEOUT - AGENT_TIMEOUT_SAFETY )) ] ||
+    [[ "$deadline" -le $(( START_TS + AGENT_TIMEOUT - AGENT_TIMEOUT_SAFETY )) ]] ||
         deadline=$(( START_TS + AGENT_TIMEOUT - AGENT_TIMEOUT_SAFETY ))
     failures=0
     last_check=$(date +%s)
-    while [ "$(date +%s)" -lt "$deadline" ]; do
+    while [[ "$(date +%s)" -lt "$deadline" ]]; do
         # Sleep in the background and `wait`, so INT/TERM interrupt the wait
         # immediately instead of after the sleep finishes.
         sleep "$POLL_INTERVAL" &
@@ -1057,6 +1064,7 @@ wait_for_reply() {
 
         # Back at the Mac? Any input since the last check means someone is
         # there to answer the dialog, which this hook may be holding back.
+        # [ ] on purpose, see user_is_present.
         if [ "$(away_threshold)" -gt 0 ] 2>/dev/null; then
             now=$(date +%s)
             elapsed=$(( now - last_check ))
@@ -1065,7 +1073,7 @@ wait_for_reply() {
             case "$idle" in
                 ''|*[!0-9]*) ;;
                 *)
-                    if [ "$idle" -le "$elapsed" ]; then
+                    if [[ "$idle" -le "$elapsed" ]]; then
                         if synthetic_input_explains_idle "$idle"; then
                             log "input ${idle}s ago was Page's own keystroke — still waiting"
                         else
@@ -1095,7 +1103,7 @@ wait_for_reply() {
             *)
                 failures=$((failures + 1))
                 log "poll failed http=$RESP_CODE ($failures/$MAX_POLL_FAILURES)"
-                if [ "$failures" -ge "$MAX_POLL_FAILURES" ]; then
+                if [[ "$failures" -ge "$MAX_POLL_FAILURES" ]]; then
                     fall_back "lost contact with the relay"
                 fi
                 continue
@@ -1104,10 +1112,10 @@ wait_for_reply() {
 
         item=$(jq -c --arg id "$IV_ID" 'if type == "array" then (map(select(.id == $id)) | first // empty) else empty end' \
             <<<"$RESP_BODY" 2>/dev/null)
-        if [ -n "$item" ]; then
+        if [[ -n "$item" ]]; then
             # Key on repliedAt, not repliedAction: a reply with no action
             # (typed text on an old Worker) is still a reply.
-            if [ "$(jq -r '.repliedAt // ""' <<<"$item" 2>/dev/null)" != "" ]; then
+            if [[ "$(jq -r '.repliedAt // ""' <<<"$item" 2>/dev/null)" != "" ]]; then
                 parse_reply "$item"
                 ensure_can_settle
                 return 0
@@ -1121,11 +1129,11 @@ wait_for_reply() {
         IV_OPEN=0
         split_response "$(relay_request GET '/history?limit=50' 5)"
         hist=""
-        if [ "$RESP_CODE" = "200" ]; then
+        if [[ "$RESP_CODE" = "200" ]]; then
             hist=$(jq -c --arg id "$IV_ID" 'if type == "array" then (map(select(.id == $id)) | first // empty) else empty end' \
                 <<<"$RESP_BODY" 2>/dev/null)
         fi
-        if [ -n "$hist" ] && [ "$(jq -r '.repliedAt // ""' <<<"$hist" 2>/dev/null)" != "" ]; then
+        if [[ -n "$hist" ]] && [[ "$(jq -r '.repliedAt // ""' <<<"$hist" 2>/dev/null)" != "" ]]; then
             parse_reply "$hist"
             ensure_can_settle
             return 0
@@ -1144,7 +1152,7 @@ parse_reply() {
     REPLY_TEXT=$(jq -r '(.repliedText // "") | .[0:4000]' <<<"$item" 2>/dev/null)
     REPLY_TEXT=$(trim "$REPLY_TEXT")
     # Old Workers store a null action as missing; a bare typed reply is custom.
-    if [ -z "$REPLY_ACTION" ] && [ -n "$REPLY_TEXT" ]; then
+    if [[ -z "$REPLY_ACTION" ]] && [[ -n "$REPLY_TEXT" ]]; then
         REPLY_ACTION="custom"
     fi
     log "reply id=$IV_ID action=${REPLY_ACTION:-none} text=${#REPLY_TEXT}B"
@@ -1237,10 +1245,10 @@ handle_notification() {
         auth_success|elicitation_complete|elicitation_response|agent_completed|quota_auto_resume_*|plugin_notification)
             quiet_exit "notification: $ntype — not paging" ;;
     esac
-    [ -n "$message" ] || message="Claude needs your attention"
+    [[ -n "$message" ]] || message="Claude needs your attention"
 
-    if [ -f "$DETECTOR_MARKER" ] && age=$(file_age_seconds "$DETECTOR_MARKER") &&
-        [ "$age" -lt "$DETECTOR_FRESH_SECONDS" ]; then
+    if [[ -f "$DETECTOR_MARKER" ]] && age=$(file_age_seconds "$DETECTOR_MARKER") &&
+        [[ "$age" -lt "$DETECTOR_FRESH_SECONDS" ]]; then
         quiet_exit "notification: Mac detector alive (${age}s) — it pages this itself"
     fi
     if session_is_held; then
@@ -1248,9 +1256,9 @@ handle_notification() {
     fi
 
     resolve_relay_url
-    [ -n "$RELAY_URL" ] || quiet_exit "notification: no relay configured — not paging"
+    [[ -n "$RELAY_URL" ]] || quiet_exit "notification: no relay configured — not paging"
     read_token
-    [ -n "$TOKEN" ] || quiet_exit "notification: relay token missing — not paging"
+    [[ -n "$TOKEN" ]] || quiet_exit "notification: relay token missing — not paging"
 
     kind=$(classify_notification "$ntype" "$message")
     context=$(compose_context "$message")
@@ -1282,7 +1290,7 @@ handle_permission_request() {
     esac
 
     summary=$(tool_summary | redact)
-    [ -n "$summary" ] || summary="${tool:-A tool} needs approval"
+    [[ -n "$summary" ]] || summary="${tool:-A tool} needs approval"
     context=$(compose_context "$summary")
 
     begin_blocking permission "$context"
@@ -1295,13 +1303,13 @@ handle_permission_request() {
             ;;
         deny)
             settle true "Denied — $(agent_label) won't run it"
-            if [ -n "$REPLY_TEXT" ] && [ "$(lowercase "$REPLY_TEXT")" != "deny" ]; then
+            if [[ -n "$REPLY_TEXT" ]] && [[ "$(lowercase "$REPLY_TEXT")" != "deny" ]]; then
                 decide_permission deny "The user denied this from their phone (Page Relay): $REPLY_TEXT"
             fi
             decide_permission deny "The user denied this from their phone (Page Relay)."
             ;;
         custom)
-            [ -n "$REPLY_TEXT" ] || not_a_decision "Empty reply — answer on your computer"
+            [[ -n "$REPLY_TEXT" ]] || not_a_decision "Empty reply — answer on your computer"
             settle true "Sent to $(agent_label) instead of running it"
             decide_permission deny "The user replied from their phone (Page Relay) instead of approving: $REPLY_TEXT"
             ;;
@@ -1365,7 +1373,7 @@ handle_question() {
     case "$REPLY_ACTION" in
         deny)
             settle true "Told Claude you'd rather not answer"
-            if [ -n "$REPLY_TEXT" ] && [ "$(lowercase "$REPLY_TEXT")" != "deny" ]; then
+            if [[ -n "$REPLY_TEXT" ]] && [[ "$(lowercase "$REPLY_TEXT")" != "deny" ]]; then
                 decide_pretool_deny "The user declined to answer from their phone (Page Relay): $REPLY_TEXT"
             fi
             decide_pretool_deny "The user declined to answer from their phone (Page Relay)."
@@ -1373,11 +1381,11 @@ handle_question() {
         custom|approve|carry_on)
             # Only typed text answers a question; a bare Approve / Carry on
             # doesn't say which option.
-            [ -n "$REPLY_TEXT" ] || not_a_decision "Type an answer (or a number) to reply to a question"
+            [[ -n "$REPLY_TEXT" ]] || not_a_decision "Type an answer (or a number) to reply to a question"
             answers=$(map_answers)
-            if [ -n "$answers" ]; then
+            if [[ -n "$answers" ]]; then
                 updated=$(jq -c --argjson a "$answers" '(.tool_input // {}) + {answers: $a}' <<<"$EVENT_JSON" 2>/dev/null)
-                if [ -n "$updated" ]; then
+                if [[ -n "$updated" ]]; then
                     settle true "Answered — Claude has your choice"
                     decide_pretool_allow_with_input "Answered via Page Relay" "$updated"
                 fi
@@ -1396,7 +1404,7 @@ handle_question() {
 handle_plan() {
     local context updated summary
     summary=$(tool_summary | redact)
-    [ -n "$summary" ] || summary="Claude has a plan ready for approval"
+    [[ -n "$summary" ]] || summary="Claude has a plan ready for approval"
     context=$(compose_context "$summary")
     begin_blocking permission "$context" plan
     wait_for_reply
@@ -1406,19 +1414,19 @@ handle_plan() {
             # ExitPlanMode needs `allow` with updatedInput (allow alone isn't
             # enough); echo the input Claude Code gave us (plan, planFilePath).
             updated=$(jq -c '(.tool_input // {}) | if type == "object" then . else {} end' <<<"$EVENT_JSON" 2>/dev/null)
-            [ -n "$updated" ] || fall_back "couldn't read the plan input"
+            [[ -n "$updated" ]] || fall_back "couldn't read the plan input"
             settle true "Plan approved — Claude is starting"
             decide_pretool_allow_with_input "Plan approved via Page" "$updated"
             ;;
         deny)
             settle true "Plan rejected — Claude keeps planning"
-            if [ -n "$REPLY_TEXT" ] && [ "$(lowercase "$REPLY_TEXT")" != "deny" ]; then
+            if [[ -n "$REPLY_TEXT" ]] && [[ "$(lowercase "$REPLY_TEXT")" != "deny" ]]; then
                 decide_pretool_deny "The user rejected this plan from their phone (Page Relay). Their feedback: $REPLY_TEXT"
             fi
             decide_pretool_deny "The user rejected this plan from their phone (Page Relay). Keep planning and ask what to change."
             ;;
         custom)
-            [ -n "$REPLY_TEXT" ] || not_a_decision "Empty reply — answer on your computer"
+            [[ -n "$REPLY_TEXT" ]] || not_a_decision "Empty reply — answer on your computer"
             settle true "Sent your feedback — Claude keeps planning"
             decide_pretool_deny "The user replied from their phone (Page Relay) instead of approving the plan. Their feedback: $REPLY_TEXT"
             ;;
@@ -1455,7 +1463,7 @@ handle_pretooluse_generic() {
     esac
 
     summary=$(tool_summary | redact)
-    [ -n "$summary" ] || summary="${tool:-A tool} needs approval"
+    [[ -n "$summary" ]] || summary="${tool:-A tool} needs approval"
     context=$(compose_context "$summary")
 
     begin_blocking permission "$context"
@@ -1468,13 +1476,13 @@ handle_pretooluse_generic() {
             ;;
         deny)
             settle true "Denied — Claude won't run it"
-            if [ -n "$REPLY_TEXT" ] && [ "$(lowercase "$REPLY_TEXT")" != "deny" ]; then
+            if [[ -n "$REPLY_TEXT" ]] && [[ "$(lowercase "$REPLY_TEXT")" != "deny" ]]; then
                 decide_pretool_legacy "deny" "User denied this via Page Relay: $REPLY_TEXT"
             fi
             decide_pretool_legacy "deny" "User denied this via Page."
             ;;
         custom)
-            [ -n "$REPLY_TEXT" ] || not_a_decision "Empty reply — answer on your computer"
+            [[ -n "$REPLY_TEXT" ]] || not_a_decision "Empty reply — answer on your computer"
             settle true "Sent to Claude instead of running the tool"
             decide_pretool_legacy "deny" "User replied via Page Relay: $REPLY_TEXT"
             ;;
@@ -1503,9 +1511,9 @@ handle_pretooluse() {
 # 8 levels up) whose command line TEST accepts; fails when none does.
 ancestor_matching() {
     local test_fn="$1" pid=$PPID line ppid i=0
-    while [ "$i" -lt 8 ] && [ -n "$pid" ] && [ "$pid" -gt 1 ] 2>/dev/null; do
+    while [[ "$i" -lt 8 ]] && [[ -n "$pid" ]] && [[ 10#$pid -gt 1 ]] 2>/dev/null; do
         line=$(ps -o ppid=,command= -p "$pid" 2>/dev/null) || return 1
-        [ -n "$line" ] || return 1
+        [[ -n "$line" ]] || return 1
         line="${line#"${line%%[![:space:]]*}"}"
         ppid="${line%%[[:space:]]*}"
         if "$test_fn" "${line#*[[:space:]]}"; then
@@ -1550,11 +1558,11 @@ is_claude_command() {
 PROGRAM_ARGS_START=0
 is_claude_program() {
     PROGRAM_ARGS_START=0
-    [ $# -gt 0 ] || return 1
+    [[ $# -gt 0 ]] || return 1
     case "${1##*/}" in
         claude) PROGRAM_ARGS_START=1; return 0 ;;
         node|node[0-9]*|bun|deno)
-            if [ $# -gt 1 ]; then
+            if [[ $# -gt 1 ]]; then
                 case "$2" in
                     */claude|claude|*/claude-code/cli.js|*/claude-code/cli.mjs) PROGRAM_ARGS_START=2; return 0 ;;
                 esac
@@ -1575,11 +1583,11 @@ is_agent_command() {
     set -- $1
     set +f
     is_claude_program "$@" && return 0
-    [ $# -gt 0 ] || return 1
+    [[ $# -gt 0 ]] || return 1
     case "${1##*/}" in
         codex) return 0 ;;
         node|node[0-9]*|bun|deno)
-            [ $# -gt 1 ] && { [ "${2##*/}" = "codex" ] || [ "${2##*/}" = "codex.js" ]; } && return 0
+            [[ $# -gt 1 ]] && { [[ "${2##*/}" = "codex" ]] || [[ "${2##*/}" = "codex.js" ]]; } && return 0
             ;;
     esac
     return 1
@@ -1603,7 +1611,7 @@ is_claude_print_command() {
             --) break ;;
             -p|--print|--print=*) print=0 ;;
             --permission-prompt-tool|--permission-prompt-tool=*|--input-format=stream-json) return 1 ;;
-            stream-json) [ "$prev" = "--input-format" ] && return 1 ;;
+            stream-json) [[ "$prev" = "--input-format" ]] && return 1 ;;
         esac
         prev="$word"
     done
@@ -1619,11 +1627,11 @@ is_codex_exec_command() {
     # shellcheck disable=SC2086
     set -- $1
     set +f
-    [ $# -gt 0 ] || return 1
+    [[ $# -gt 0 ]] || return 1
     case "${1##*/}" in
         codex) shift ;;
         node|node[0-9]*|bun|deno)
-            [ $# -gt 1 ] && { [ "${2##*/}" = "codex" ] || [ "${2##*/}" = "codex.js" ]; } || return 1
+            [[ $# -gt 1 ]] && { [[ "${2##*/}" = "codex" ]] || [[ "${2##*/}" = "codex.js" ]]; } || return 1
             shift 2
             ;;
         *) return 1 ;;
@@ -1632,7 +1640,7 @@ is_codex_exec_command() {
         case "$word" in
             exec|e) return 0 ;;
             -*) ;;
-            *) n=$((n + 1)); [ "$n" -gt 2 ] && return 1 ;;   # option values
+            *) n=$((n + 1)); [[ "$n" -gt 2 ]] && return 1 ;;   # option values
         esac
     done
     return 1
@@ -1645,7 +1653,7 @@ handle_codex_stop() {
     fi
     last=$(jq -r '(.last_assistant_message // "") | if type == "string" then . else "" end' <<<"$EVENT_JSON" 2>/dev/null)
     last=$(trim "$last")
-    if [ -n "$last" ]; then
+    if [[ -n "$last" ]]; then
         # The end of a reply is where the agent asks for the next step.
         context=$(jq -rn --arg t "$last" --argjson max "$CONTEXT_MAX_CHARS" \
             'if ($t | length) > $max then "…" + $t[(($t | length) - $max + 1):] else $t end' 2>/dev/null)
@@ -1669,7 +1677,7 @@ handle_codex_stop() {
             not_a_decision "That reply can't continue Codex — reply on the Mac"
             ;;
     esac
-    [ -n "$prompt" ] || not_a_decision "Empty reply — Codex stays stopped"
+    [[ -n "$prompt" ]] || not_a_decision "Empty reply — Codex stays stopped"
     settle true "Sent to Codex as your next message"
     decide_stop_continue "$prompt"
 }
@@ -1693,11 +1701,11 @@ fi
 EVENT_NAME=$(jq -r '.hook_event_name // ""' <<<"$EVENT_JSON" 2>/dev/null)
 SESSION_ID=$(jq -r '.session_id // ""' <<<"$EVENT_JSON" 2>/dev/null)
 # The Worker requires a non-empty sessionId.
-[ -n "$SESSION_ID" ] || SESSION_ID="unknown"
+[[ -n "$SESSION_ID" ]] || SESSION_ID="unknown"
 log "==== $EVENT_NAME agent=$AGENT session=${SESSION_ID:0:8} ===="
 
 # Tools that start agents in the background can opt out of Page entirely.
-if [ "${PAGE_HOOK_SKIP:-}" = "1" ]; then
+if [[ "${PAGE_HOOK_SKIP:-}" = "1" ]]; then
     quiet_exit "PAGE_HOOK_SKIP=1 — hook inactive for this run"
 fi
 
@@ -1705,7 +1713,7 @@ WORK_DIR=$(mktemp -d "${TMPDIR:-/tmp}/page-hook.XXXXXX" 2>/dev/null) || WORK_DIR
 
 case "$AGENT:$EVENT_NAME" in
     claude:Notification)
-        [ -n "$WORK_DIR" ] || quiet_exit "notification: no temp dir — not paging"
+        [[ -n "$WORK_DIR" ]] || quiet_exit "notification: no temp dir — not paging"
         handle_notification
         ;;
     *:PermissionRequest)

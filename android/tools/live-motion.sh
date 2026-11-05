@@ -24,7 +24,7 @@ seconds=20
 reduce=0
 lanes=false
 script=full
-while [ $# -gt 0 ]; do
+while [[ $# -gt 0 ]]; do
   case "$1" in
     --seconds) seconds="$2"; shift ;;
     --reduce) reduce=1 ;;
@@ -38,15 +38,15 @@ done
 out="${out:-$android/build/motion-live}"
 mkdir -p "$out"
 serial="${ANDROID_SERIAL:-emulator-5560}"  # never "the first emulator": emulator-5554 is the PagePixel window
-[ -n "$serial" ] || { echo "no emulator running" >&2; exit 1; }
+[[ -n "$serial" ]] || { echo "no emulator running" >&2; exit 1; }
 export ANDROID_SERIAL="$serial"
 
 old_anim=""
-cleanup() { if [ -n "$old_anim" ]; then "$adb" shell settings put global animator_duration_scale "$old_anim" >/dev/null 2>&1 || true; fi; }
+cleanup() { if [[ -n "$old_anim" ]]; then "$adb" shell settings put global animator_duration_scale "$old_anim" >/dev/null 2>&1 || true; fi; }
 trap cleanup EXIT
-if [ "$reduce" = 1 ]; then
+if [[ "$reduce" = 1 ]]; then
   old_anim="$("$adb" shell settings get global animator_duration_scale | tr -d '\r')"
-  [ "$old_anim" = null ] && old_anim=1.0
+  [[ "$old_anim" = null ]] && old_anim=1.0
   "$adb" shell settings put global animator_duration_scale 0
 fi
 
@@ -57,7 +57,7 @@ fi
 rec=$!
 sleep 1
 "$adb" shell am start -n "$pkg/app.page.android.MainActivity" --ez page_demo true --ez page_live_motion true --ez page_live_lanes "$lanes" --es page_live_script "$script" >/dev/null
-if [ "$script" = arrivals ]; then
+if [[ "$script" = arrivals ]]; then
   # Seconds after launch (the app takes about 2 s to come up, the script starts with it).
   sleep 7; "$adb" shell input swipe 540 1000 540 1000 3000 &   # a finger on the stream while the second page arrives
   sleep 5; "$adb" shell input tap 540 262                       # the "New" pill

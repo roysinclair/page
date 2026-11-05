@@ -19,7 +19,7 @@ dest="${1:-$here/../app/src/test/resources/reversibility-golden.tsv}"
 awk '/let rvTable: \[\(String, Reversibility\)\] = \[/{p=1} /for \(ctx, want\) in rvTable/{p=0} p' "$tests" > "$out/rvtable.swift"
 # The hook sweep: from `let hookCommands` through the closing of the nested loops.
 awk '/let hookCommands = /{p=1} p{print} p&&/^    \} \} \} \}$/{exit}' "$tests" > "$out/hooks.swift"
-test -s "$out/rvtable.swift" && test -s "$out/hooks.swift"
+[[ -s "$out/rvtable.swift" ]] && [[ -s "$out/hooks.swift" ]]
 
 python3 -I - "$here/reversibility-golden/driver.swift" "$out" <<'PY'
 import sys

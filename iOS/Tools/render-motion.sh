@@ -17,7 +17,7 @@ here="$(cd "$(dirname "$0")" && pwd)"
 ios="$(cd "$here/.." && pwd)"
 out="${1:-${TMPDIR:-/tmp}/page-render/motion/ios}"
 build=1
-[ "${2:-}" = "--no-build" ] && build=0
+[[ "${2:-}" = "--no-build" ]] && build=0
 mkdir -p "$out/frames"
 
 udid="$(xcrun simctl list devices -j | python3 -I -c '
@@ -27,15 +27,15 @@ for devs in json.load(sys.stdin)["devices"].values():
         if d["name"] == "Page Render" and d.get("isAvailable", True):
             print(d["udid"]); raise SystemExit
 ')"
-[ -n "$udid" ] || { echo "No 'Page Render' simulator: run iOS/Tools/render-screens.sh once first."; exit 3; }
+[[ -n "$udid" ]] || { echo "No 'Page Render' simulator: run iOS/Tools/render-screens.sh once first."; exit 3; }
 xcrun simctl bootstatus "$udid" -b >/dev/null 2>&1 || xcrun simctl boot "$udid" || true
 
-if [ "$build" = 1 ]; then
+if [[ "$build" = 1 ]]; then
   xcodebuild -project "$ios/Page.xcodeproj" -scheme Page -sdk iphonesimulator \
     -destination "platform=iOS Simulator,id=$udid" -derivedDataPath "$ios/build/DerivedData" build | tail -2
 fi
 app="$ios/build/DerivedData/Build/Products/Debug-iphonesimulator/Page.app"
-[ -d "$app" ] || { echo "Built app not found at $app"; exit 5; }
+[[ -d "$app" ]] || { echo "Built app not found at $app"; exit 5; }
 bundle="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")"
 xcrun simctl install "$udid" "$app"
 xcrun simctl ui "$udid" appearance dark || true
@@ -65,7 +65,7 @@ frames=(
 )
 for f in "${frames[@]}"; do
   # ONLY=<regex> re-captures just the matching frames.
-  if [ -n "${ONLY:-}" ] && ! [[ "$f" =~ $ONLY ]]; then continue; fi
+  if [[ -n "${ONLY:-}" ]] && ! [[ "$f" =~ $ONLY ]]; then continue; fi
   screen="${f%@*}"; t="${f#*@}"
   xcrun simctl terminate "$udid" "$bundle" >/dev/null 2>&1 || true
   xcrun simctl launch "$udid" "$bundle" -NWRender "$screen" -NWTime "$t" -NWGlow off >/dev/null

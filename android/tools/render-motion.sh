@@ -32,7 +32,7 @@ noblur=0
 reduce=0
 reduce_harness=0
 avd="PageParity"
-while [ $# -gt 0 ]; do
+while [[ $# -gt 0 ]]; do
   case "$1" in
     --no-build) build=0 ;;
     --canvas) canvas=1 ;;
@@ -54,7 +54,7 @@ mkdir -p "$out/frames"
 started=0
 serial="${ANDROID_SERIAL:-emulator-5560}"
 [[ "$serial" == emulator-* ]] || { echo "ANDROID_SERIAL must name an emulator" >&2; exit 2; }
-[ "$serial" != emulator-5554 ] || { echo "emulator-5554 is the PagePixel window; render on a headless emulator" >&2; exit 2; }
+[[ "$serial" != emulator-5554 ]] || { echo "emulator-5554 is the PagePixel window; render on a headless emulator" >&2; exit 2; }
 if ! "$adb" devices | grep -q "^$serial[[:space:]]*device$"; then
   "$emulator" -avd "$avd" -read-only -port "${serial#emulator-}" -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect >/dev/null 2>&1 &
   started=1
@@ -66,27 +66,27 @@ if ! "$adb" devices | grep -q "^$serial[[:space:]]*device$"; then
 fi
 export ANDROID_SERIAL="$serial"
 for _ in $(seq 1 120); do
-  [ "$("$adb" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ] && break
+  [[ "$("$adb" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ]] && break
   sleep 2
 done
 
 old_anim=""
 cleanup() {
-  if [ -n "$old_anim" ]; then "$adb" shell settings put global animator_duration_scale "$old_anim" >/dev/null 2>&1 || true; fi
-  if [ "$started" = 1 ]; then "$adb" -s "$serial" emu kill >/dev/null 2>&1 || true; fi
+  if [[ -n "$old_anim" ]]; then "$adb" shell settings put global animator_duration_scale "$old_anim" >/dev/null 2>&1 || true; fi
+  if [[ "$started" = 1 ]]; then "$adb" -s "$serial" emu kill >/dev/null 2>&1 || true; fi
 }
 trap cleanup EXIT
 
 # 2. Build and install.
-if [ "$build" = 1 ]; then
+if [[ "$build" = 1 ]]; then
   (cd "$android" && ./gradlew --offline -q assembleDebug) || { echo "gradle assembleDebug failed" >&2; exit 1; }
   "$adb" install -r "$android/app/build/outputs/apk/debug/app-debug.apk" >/dev/null
 fi
 
 # 3. Remove animations, when asked.
-if [ "$reduce" = 1 ]; then
+if [[ "$reduce" = 1 ]]; then
   old_anim="$("$adb" shell settings get global animator_duration_scale | tr -d '\r')"
-  [ "$old_anim" = null ] && old_anim=1.0
+  [[ "$old_anim" = null ]] && old_anim=1.0
   "$adb" shell settings put global animator_duration_scale 0
 fi
 
@@ -114,12 +114,12 @@ done
 failed=0
 for f in "${frames[@]}"; do
   # ONLY=<regex> re-captures just the matching frames.
-  if [ -n "${ONLY:-}" ] && ! [[ "$f" =~ $ONLY ]]; then continue; fi
+  if [[ -n "${ONLY:-}" ]] && ! [[ "$f" =~ $ONLY ]]; then continue; fi
   screen="${f%@*}"; t="${f#*@}"
   "$adb" shell am force-stop "$pkg" >/dev/null
   "$adb" shell am start -S -W -n "$pkg/app.page.android.MainActivity" --ez page_demo true --es page_render "$screen" \
-    --es page_glow off --ef page_time "$t" --ez page_canvas "$([ "$canvas" = 1 ] && echo true || echo false)" \
-    --ez page_noblur "$([ "$noblur" = 1 ] && echo true || echo false)" --ez page_reduce "$([ "$reduce_harness" = 1 ] && echo true || echo false)" >/dev/null
+    --es page_glow off --ef page_time "$t" --ez page_canvas "$([[ "$canvas" = 1 ]] && echo true || echo false)" \
+    --ez page_noblur "$([[ "$noblur" = 1 ]] && echo true || echo false)" --ez page_reduce "$([[ "$reduce_harness" = 1 ]] && echo true || echo false)" >/dev/null
   sleep 2.5
   top="$("$adb" shell dumpsys activity activities | grep -m1 topResumedActivity || true)"
   if [[ "$top" != *"$pkg/"* ]]; then
@@ -133,4 +133,4 @@ done
 "$adb" shell am force-stop "$pkg" >/dev/null
 
 python3 -I "$here/motion-sheets.py" "$out"
-[ "$failed" = 0 ] || { echo "$failed frame(s) did not render" >&2; exit 1; }
+[[ "$failed" = 0 ]] || { echo "$failed frame(s) did not render" >&2; exit 1; }

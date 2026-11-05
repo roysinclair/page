@@ -36,21 +36,21 @@ for arg in "$@"; do
     esac
 done
 
-if [ "$(id -u)" = "0" ]; then
+if [[ "$(id -u)" = "0" ]]; then
     echo "!! Run this as the user whose agents Page Studio should watch, not as root." >&2
     echo "   (Running as root installs into /root and watches root's sessions.)" >&2
-    [ "${PAGE_ALLOW_ROOT:-}" = "1" ] || exit 1
+    [[ "${PAGE_ALLOW_ROOT:-}" = "1" ]] || exit 1
 fi
 
 have_systemd_user() {
     command -v systemctl >/dev/null 2>&1 && systemctl --user show-environment >/dev/null 2>&1
 }
 
-if [ "$MODE" = "uninstall" ]; then
+if [[ "$MODE" = "uninstall" ]]; then
     if have_systemd_user; then
         systemctl --user disable --now paged.service >/dev/null 2>&1 || true
     fi
-    [ -x "$BIN_DIR/paged" ] && "$BIN_DIR/paged" stop >/dev/null 2>&1 || true
+    [[ -x "$BIN_DIR/paged" ]] && "$BIN_DIR/paged" stop >/dev/null 2>&1 || true
     rm -f "$UNIT" "$BIN_DIR/paged"
     rm -rf "$HOOK_DIR"
     have_systemd_user && systemctl --user daemon-reload || true
@@ -85,7 +85,7 @@ install -m 0755 hooks/page-notify.sh "$HOOK_DIR/page-notify.sh"
 install -m 0644 hooks/page-extract-context.py "$HOOK_DIR/page-extract-context.py"
 echo "==> Hook scripts in $HOOK_DIR"
 
-if [ "$SERVICE" = "1" ]; then
+if [[ "$SERVICE" = "1" ]]; then
     if ! have_systemd_user; then
         echo "note: no systemd user session here; skipping the service. Start it with: paged start" >&2
     else

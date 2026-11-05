@@ -17,17 +17,17 @@ here="$(cd "$(dirname "$0")" && pwd)"
 ios="$(cd "$here/.." && pwd)"
 default_out="${TMPDIR:-/tmp}/page-render/ios-renders"
 out="${1:-$default_out}"
-[ $# -gt 0 ] && shift || true
+[[ $# -gt 0 ]] && shift || true
 
 glows=()
 screens=()
 mode=glow
 for a in "$@"; do
-  if [ "$a" = "--" ]; then mode=screen; continue; fi
-  if [ "$mode" = glow ]; then glows+=("$a"); else screens+=("$a"); fi
+  if [[ "$a" = "--" ]]; then mode=screen; continue; fi
+  if [[ "$mode" = glow ]]; then glows+=("$a"); else screens+=("$a"); fi
 done
-[ ${#glows[@]} -gt 0 ] || glows=(off)
-if [ ${#screens[@]} -eq 0 ]; then
+[[ ${#glows[@]} -gt 0 ]] || glows=(off)
+if [[ ${#screens[@]} -eq 0 ]]; then
   # One list: RenderHarness.screens in Services/RenderHarness.swift.
   while IFS= read -r name; do screens+=("$name"); done < <(python3 -I - "$ios/Page/Services/RenderHarness.swift" <<'PY'
 import re, sys
@@ -48,7 +48,7 @@ import json, sys
 rt = [r for r in json.load(sys.stdin)["runtimes"] if r.get("isAvailable") and r["identifier"].startswith("com.apple.CoreSimulator.SimRuntime.iOS")]
 print(sorted(rt, key=lambda r: r["version"])[-1]["identifier"] if rt else "")
 ')"
-if [ -z "$runtime" ]; then
+if [[ -z "$runtime" ]]; then
   echo "No iOS Simulator runtime is installed (Xcode > Settings > Components may still be downloading one)."
   echo "Build-check only; skipping the screenshots."
   xcodebuild -project "$ios/Page.xcodeproj" -scheme Page -sdk iphonesimulator \
@@ -80,7 +80,7 @@ for r in json.load(sys.stdin)["runtimes"]:
 ' "$1"
 }
 picked="$(pick_type "$runtime")"
-[ -n "$picked" ] || { echo "Runtime $runtime has no iPhone device type."; exit 4; }
+[[ -n "$picked" ]] || { echo "Runtime $runtime has no iPhone device type."; exit 4; }
 devtype="${picked%%|*}"; devname="${picked#*|}"
 udid="$(xcrun simctl list devices -j | python3 -I -c '
 import json, sys
@@ -90,7 +90,7 @@ for devs in json.load(sys.stdin)["devices"].values():
         if d["name"] == name and d.get("isAvailable", True):
             print(d["udid"]); raise SystemExit
 ' "$sim_name")"
-if [ -z "$udid" ]; then
+if [[ -z "$udid" ]]; then
   udid="$(xcrun simctl create "$sim_name" "$devtype" "$runtime")"
   echo "Created simulator $sim_name ($udid) as $devname"
 fi
@@ -100,7 +100,7 @@ for devs in json.load(sys.stdin)["devices"].values():
     for d in devs:
         if d["udid"] == sys.argv[1]: print(d.get("deviceTypeIdentifier", "").split(".")[-1].replace("-", " "))
 ' "$udid")"
-if [ "$actual" != "iPhone 15 Pro" ]; then
+if [[ "$actual" != "iPhone 15 Pro" ]]; then
   echo "WARNING: rendering on '$actual', not an iPhone 15 Pro (this runtime offers '$devname')."
   echo "         Sizes and positions will differ from the boards; compare layout, not pixels."
 fi
@@ -110,7 +110,7 @@ xcrun simctl bootstatus "$udid" -b >/dev/null 2>&1 || xcrun simctl boot "$udid" 
 xcodebuild -project "$ios/Page.xcodeproj" -scheme Page -sdk iphonesimulator \
   -destination "platform=iOS Simulator,id=$udid" -derivedDataPath "$ios/build/DerivedData" build | tail -3
 app="$ios/build/DerivedData/Build/Products/Debug-iphonesimulator/Page.app"
-[ -d "$app" ] || { echo "Built app not found at $app"; exit 5; }
+[[ -d "$app" ]] || { echo "Built app not found at $app"; exit 5; }
 bundle="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")"
 xcrun simctl install "$udid" "$app"
 

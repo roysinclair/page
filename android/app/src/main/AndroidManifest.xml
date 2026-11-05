@@ -26,6 +26,7 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.Page"
+        android:usesCleartextTraffic="false"
         tools:targetApi="35">
 
         <activity
@@ -103,8 +104,7 @@
 
         <receiver
             android:name=".notify.BootReceiver"
-            android:exported="true"
-            tools:ignore="ExportedReceiver">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />

@@ -1,0 +1,42 @@
+name: SonarCloud
+
+# Analyses the repository with the SonarCloud scanner (project roysinclair_page).
+# Needs the repository secret SONAR_TOKEN; without it (a fork's pull request, or the
+# secret not added yet) every step is skipped and the run still succeeds.
+# Once this scan is running, turn off Automatic Analysis for the project in SonarCloud
+# (Administration > Analysis Method), because SonarCloud refuses to run both.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  sonarcloud:
+    name: SonarCloud scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      # A job-level copy of the secret: the `secrets` context is not available in `if:`.
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - name: SONAR_TOKEN not set, skipping
+        if: env.SONAR_TOKEN == ''
+        run: echo "SONAR_TOKEN is not available to this run; SonarCloud scan skipped."
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        if: env.SONAR_TOKEN != ''
+        with:
+          # Full history: SonarCloud needs it for blame data and new-code detection.
+          fetch-depth: 0
+      - name: SonarCloud scan
+        if: env.SONAR_TOKEN != ''
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0

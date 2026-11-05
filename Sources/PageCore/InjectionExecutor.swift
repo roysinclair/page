@@ -1390,7 +1390,7 @@ enum InjectionExecutor {
                 // No paste route, and `do script` adds a Return (dropped while a photo loads).
                 return fail("terminal_app cannot paste", pasteUnsupportedMessage("Terminal"))
             case .text(let s):
-                let r = runTerminalCommand(tty: tty, body: "do script \(ProcessRunner.appleScriptQuote(flattenLines(s))) in t\nreturn \"ok\"")
+                let r = runTerminalCommand(tty: tty, body: terminalDoScriptBody(flattenLines(s)))
                 guard r.ok else { return fail(r.output, partialDetail(sentSomething, r.detail)) }
                 sentSomething = true
                 // `do script` already pressed Return.
@@ -1406,7 +1406,7 @@ enum InjectionExecutor {
                     return fail("no 'N. No' option on screen",
                                 "Terminal.app can't press Esc — deny this one at the Mac, or use tmux or iTerm2")
                 }
-                let r = runTerminalCommand(tty: tty, body: "do script \"\(digit)\" in t\nreturn \"ok\"")
+                let r = runTerminalCommand(tty: tty, body: terminalDoScriptBody(String(digit)))
                 guard r.ok else { return fail(r.output, r.detail) }
                 sentSomething = true
             case .pause(let t):
@@ -1445,7 +1445,19 @@ enum InjectionExecutor {
 
     /// Runs `body` with `t` bound to the Terminal tab whose tty is `tty`.
     private static func runTerminalCommand(tty: String, body: String) -> (ok: Bool, output: String, detail: String) {
-        let script = """
+        interpretAppleScript(runAppleScript(terminalCommandScript(tty: tty, body: body)), app: "Terminal")
+    }
+
+    /// Pure. A `runTerminalCommand` body that types `text` into tab `t`.
+    static func terminalDoScriptBody(_ text: String) -> String {
+        "do script \(ProcessRunner.appleScriptQuote(text)) in t\nreturn \"ok\""
+    }
+
+    /// Pure. The Terminal.app script behind `runTerminalCommand`. `tty` is
+    /// quoted here; `body` is AppleScript the caller built, so any value it
+    /// embeds must already be quoted with `ProcessRunner.appleScriptQuote`.
+    static func terminalCommandScript(tty: String, body: String) -> String {
+        """
         with timeout of 10 seconds
             tell application id "com.apple.Terminal"
                 repeat with w in windows
@@ -1463,7 +1475,6 @@ enum InjectionExecutor {
         end timeout
         return "no_match"
         """
-        return interpretAppleScript(runAppleScript(script), app: "Terminal")
     }
 
     // MARK: iTerm2 transport
@@ -1504,27 +1515,7 @@ enum InjectionExecutor {
                 }
                 continue
             }
-            let script = """
-            with timeout of 10 seconds
-                tell application id "com.googlecode.iterm2"
-                    repeat with w in windows
-                        repeat with tb in tabs of w
-                            repeat with s in sessions of tb
-                                set sTTY to ""
-                                try
-                                    set sTTY to (tty of s as string)
-                                end try
-                                if sTTY is \(ProcessRunner.appleScriptQuote(tty)) then
-                                    tell s to write text \(payload) newline NO
-                                    return "ok"
-                                end if
-                            end repeat
-                        end repeat
-                    end repeat
-                end tell
-            end timeout
-            return "no_match"
-            """
+            let script = iTermWriteScript(tty: tty, payload: payload)
             let r = interpretAppleScript(runAppleScript(script), app: "iTerm2")
             guard r.ok else { return fail(r.output, partialDetail(sentSomething, r.detail)) }
             sentSomething = true
@@ -1535,9 +1526,43 @@ enum InjectionExecutor {
         return InjectionResult(method: .iTermAppleScript, success: true, output: "ok \(tty)")
     }
 
+    /// Pure. Writes `payload` (an AppleScript expression the caller built
+    /// from `ProcessRunner.appleScriptQuote` and `character id` terms) to the
+    /// iTerm2 session whose tty is `tty`, which is quoted here.
+    static func iTermWriteScript(tty: String, payload: String) -> String {
+        """
+        with timeout of 10 seconds
+            tell application id "com.googlecode.iterm2"
+                repeat with w in windows
+                    repeat with tb in tabs of w
+                        repeat with s in sessions of tb
+                            set sTTY to ""
+                            try
+                                set sTTY to (tty of s as string)
+                            end try
+                            if sTTY is \(ProcessRunner.appleScriptQuote(tty)) then
+                                tell s to write text \(payload) newline NO
+                                return "ok"
+                            end if
+                        end repeat
+                    end repeat
+                end repeat
+            end tell
+        end timeout
+        return "no_match"
+        """
+    }
+
     /// Visible text of the iTerm2 session whose tty is `tty`, or nil.
     static func iTermContents(tty: String) -> String? {
-        let script = """
+        let script = iTermContentsScript(tty: tty)
+        let r = interpretAppleScript(runAppleScript(script), app: "iTerm2")
+        return r.ok ? String(r.output.dropFirst(3)) : nil
+    }
+
+    /// Pure. Reads the visible text of the iTerm2 session whose tty is `tty`.
+    static func iTermContentsScript(tty: String) -> String {
+        """
         with timeout of 10 seconds
             tell application id "com.googlecode.iterm2"
                 repeat with w in windows
@@ -1557,8 +1582,6 @@ enum InjectionExecutor {
         end timeout
         return "no_match"
         """
-        let r = interpretAppleScript(runAppleScript(script), app: "iTerm2")
-        return r.ok ? String(r.output.dropFirst(3)) : nil
     }
 
     // MARK: cmux transport

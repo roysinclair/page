@@ -40,7 +40,7 @@ final class ProcFSTests: XCTestCase {
         XCTAssertEqual(ProcFS.ttyName(device: 1025), "tty1")
         XCTAssertEqual(ProcFS.ttyName(device: 1024 + 64), "ttyS0")
         XCTAssertNil(ProcFS.ttyName(device: 0))
-        XCTAssertNil(ProcFS.ttyName(device: 8 << 8), "a disk major is no terminal")
+        XCTAssertNil(ProcFS.ttyName(device: 0x0800), "a disk major is no terminal") // major 8 (sd), minor 0: 8 << 8
     }
 
     func testForegroundStateFromStat() throws {

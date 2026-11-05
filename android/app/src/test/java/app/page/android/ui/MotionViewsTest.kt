@@ -92,7 +92,7 @@ class MotionViewsTest {
         val story = LanesPowerStory(false, log, listOf("c", "b", "a"))
         assertNotNull("a confirmed star relights", story.relights["a"])
         assertNull("an unconfirmed star stays dim", story.relights["c"])
-        assertTrue("one by one", (story.relights["b"]!! - story.relights["a"]!!) >= DawnModel.stagger - 1e-9)
+        assertTrue("one by one", (story.relights.getValue("b") - story.relights.getValue("a")) >= DawnModel.stagger - 1e-9)
         assertTrue("the dawn is playing", near(story.dawnElapsed(at(21.0), null)!!, 1.0, 1e-3) && story.isMoving(at(21.0), null))
         val light = story.skyLight(at(20.6), null)
         assertNotNull("the gold sweep is drawn", light.dawn)

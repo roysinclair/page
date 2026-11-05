@@ -245,5 +245,5 @@ function base64url(input: string): string {
 function base64urlBytes(bytes: Uint8Array): string {
   let s = "";
   for (const b of bytes) s += String.fromCharCode(b);
-  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/={1,2}$/, "");
 }

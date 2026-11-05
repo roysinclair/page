@@ -1512,7 +1512,7 @@ function canonicalTimes(iv: Intervention): Intervention {
   const out = { ...iv };
   for (const field of ["openedAt", "closedAt", "repliedAt"] as const) {
     const v = out[field];
-    const ms = typeof v === "string" ? Date.parse(v) : NaN;
+    const ms = typeof v === "string" ? Date.parse(v) : Number.NaN;
     if (Number.isFinite(ms)) out[field] = isoSeconds(ms);
   }
   return out;

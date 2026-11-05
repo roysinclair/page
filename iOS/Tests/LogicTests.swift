@@ -2394,8 +2394,10 @@ do {
     check(SkyModel.projectName(cwd: "~", fallback: "fb") == "~", "home reads ~, as on your computer")
     check(StableHash.fnv1a("") == 0xcbf29ce484222325, "fnv1a of empty")
     check(StableHash.fnv1a("a") == 0xaf63dc4c8601ec8c, "fnv1a of a")
-    check(StableHash.unit("page", salt: 2) == StableHash.unit("page", salt: 2) && (0..<1).contains(StableHash.unit("page", salt: 2)), "unit is repeatable and in 0..<1")
-    check(ProjectHue(key: "~/projects/page") == ProjectHue(key: "~/projects/page"), "project hue is stable")
+    let unitFirst = StableHash.unit("page", salt: 2)
+    check(unitFirst == StableHash.unit("page", salt: 2) && (0..<1).contains(unitFirst), "unit is repeatable and in 0..<1")
+    let hueFirst = ProjectHue(key: "~/projects/page")
+    check(hueFirst == ProjectHue(key: "~/projects/page"), "project hue is stable")
     check(!ProjectHue.allCases.contains { [0xF59E0B, 0xFBBF24, 0xFFB020, 0xF5A524].contains($0.hex) }, "no project hue is amber")
 
     let needs = nwSession("n1", title: "needs", state: "waitingOnApproval", cwd: "~/a/needs", interventionId: "x1")

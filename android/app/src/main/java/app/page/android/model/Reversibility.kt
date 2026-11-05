@@ -1335,7 +1335,11 @@ enum class Reversibility(val raw: Int) {
                     "y" -> {
                         if (i >= n) return false
                         val d = c[i]; i += 1
-                        if (!(skipDelimited(d, false) && skipDelimited(d, false))) return false
+                        // `y/src/dst/`: the same delimiter closes `src` and then `dst`, so
+                        // the two calls are identical on purpose (each consumes one part).
+                        val skippedSource = skipDelimited(d, false)
+                        val skippedDest = skippedSource && skipDelimited(d, false)
+                        if (!skippedDest) return false
                         if (!endOfCommand()) return false
                     }
                     "s" -> {

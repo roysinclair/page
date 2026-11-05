@@ -171,7 +171,7 @@ class NowMotionTest {
         assertTrue(book.observe(s, running, nwNow).isEmpty())
         val kept = book.observe(s, ended, nwNow.plusMillis(500))
         assertEquals(mapOf("w1" to setOf("wf_b")), kept)
-        val card = InFlightCard.build(s[0], ended["w1"]!!, now = nwNow, ended = kept["w1"]!!)
+        val card = InFlightCard.build(s[0], ended.getValue("w1"), now = nwNow, ended = kept.getValue("w1"))
         assertEquals(listOf("wf_a", "wf_b"), card.workflows.map { it.key })
         assertEquals(FlightLineStatus.DONE, card.workflows[1].status)
         // Spoken words and the heading count what still runs.
@@ -181,7 +181,7 @@ class NowMotionTest {
         assertEquals(mapOf("w1" to setOf("wf_b")), book.observe(s, ended, nwNow.plusMillis(2_400)))
         assertTrue(book.observe(s, ended, nwNow.plusMillis(2_600)).isEmpty())
         assertTrue(book.observe(s, ended, nwNow.plusMillis(3_000)).isEmpty())
-        assertEquals(listOf("wf_a"), InFlightCard.build(s[0], ended["w1"]!!, now = nwNow).workflows.map { it.key })
+        assertEquals(listOf("wf_a"), InFlightCard.build(s[0], ended.getValue("w1"), now = nwNow).workflows.map { it.key })
     }
 
     @Test fun `a line that vanishes, a stalled run and an old finished run are never kept`() {
@@ -190,7 +190,7 @@ class NowMotionTest {
         book.observe(s, mapOf("w1" to listOf(run("wf_a", "Review", "running", 3, 5), run("wf_b", "Docs", "running", 1, 4))), nwNow)
         val after = mapOf("w1" to listOf(run("wf_a", "Review", "stalled", 3, 5), run("wf_old", "Old", "completed", 2, 2)))
         assertTrue(book.observe(s, after, nwNow.plusSeconds(1)).isEmpty())
-        assertTrue(InFlightCard.build(s[0], after["w1"]!!, now = nwNow).workflows.isEmpty())
+        assertTrue(InFlightCard.build(s[0], after.getValue("w1"), now = nwNow).workflows.isEmpty())
     }
 
     @Test fun `the last run ending keeps the card on its runs, never a stale summary of the same name`() {
@@ -199,16 +199,16 @@ class NowMotionTest {
         book.observe(s, mapOf("w1" to listOf(run("wf_b", "Docs", "running", 1, 4))), nwNow)
         val after = mapOf("w1" to listOf(run("wf_b", "Docs", "completed", 4, 4)))
         val kept = book.observe(s, after, nwNow.plusSeconds(1))
-        val card = InFlightCard.build(s[0], after["w1"]!!, now = nwNow, ended = kept["w1"]!!)
+        val card = InFlightCard.build(s[0], after.getValue("w1"), now = nwNow, ended = kept.getValue("w1"))
         assertEquals(listOf("wf_b"), card.workflows.map { it.key })
         assertNull("nothing runs", card.workflowHeading)
         // After the grace the summary of the run that just ended is stale (the list has not caught up yet): it never
         // brings the finished workflow back as running, while a summary of another workflow still shows.
-        assertTrue(InFlightCard.build(s[0], after["w1"]!!, now = nwNow).workflows.isEmpty())
+        assertTrue(InFlightCard.build(s[0], after.getValue("w1"), now = nwNow).workflows.isEmpty())
         val other = session(workflows = listOf(WorkflowBrief("Docs", null, 1, 4, "running"), WorkflowBrief("Lint", null, 1, 2, "running")))
-        assertEquals(listOf("Lint"), InFlightCard.build(other, after["w1"]!!, now = nwNow).workflows.map { it.key })
+        assertEquals(listOf("Lint"), InFlightCard.build(other, after.getValue("w1"), now = nwNow).workflows.map { it.key })
         // Long after it ended, a summary of the same name is a new run of it.
-        assertEquals(listOf("Docs"), InFlightCard.build(s[0], after["w1"]!!, now = nwNow.plusSeconds(600)).workflows.map { it.key })
+        assertEquals(listOf("Docs"), InFlightCard.build(s[0], after.getValue("w1"), now = nwNow.plusSeconds(600)).workflows.map { it.key })
     }
 
     @Test fun `summaries are keyed by name, a repeated name numbered`() {
@@ -233,7 +233,7 @@ class NowMotionTest {
         assertTrue(t0.ends.isEmpty())
         assertEquals(listOf("wf_a", "wf_b"), t0.slots["w1"])
         // Each line sweeps in from its first look.
-        assertNear("sweeping", m.arcEntrance(0.5, 0.25, 1, NowMotion.Place.CARD), m.line(t0, t0.section.rows[0], t0.lines["w1"]!![1], 1, NowMotion.Place.CARD, 0.5, false).value)
+        assertNear("sweeping", m.arcEntrance(0.5, 0.25, 1, NowMotion.Place.CARD), m.line(t0, t0.section.rows[0], t0.lines.getValue("w1")[1], 1, NowMotion.Place.CARD, 0.5, false).value)
 
         // b ends DONE at 2.0, and the Mac now lists it after the running one: it keeps its slot.
         val doneB = run("wf_b", "Docs", "completed", 4, 4)
@@ -241,7 +241,7 @@ class NowMotionTest {
         assertEquals(setOf("w1|wf_b"), t1.ends.keys)
         assertEquals("page: Docs finished", m.said(t1, 2.1))
         assertEquals(listOf("wf_a", "wf_b"), m.drawn(t1, "w1", 2.5, false).map { it.key })
-        val ghost = m.line(t1, t1.section.rows[0], doneB.let { t1.ends["w1|wf_b"]!!.line }, 1, NowMotion.Place.CARD, 3.5, false)
+        val ghost = m.line(t1, t1.section.rows[0], doneB.let { t1.ends.getValue("w1|wf_b").line }, 1, NowMotion.Place.CARD, 3.5, false)
         assertNear("closed", 1.0, ghost.value)
         // The ghost plays on after the card's grace has dropped the line, then goes.
         val t2 = m.observe(t1, section("w1" to listOf(a)), 2.4, books)
@@ -276,7 +276,7 @@ class NowMotionTest {
         val t0 = m.start(section("w1" to listOf(run("wf_a", "Review", "running", 3, 5))), 0.0, books)
         val t1 = m.observe(t0, section("w1" to listOf(run("wf_a", "Review", "running", 4, 5))), 2.0, books)
         val row = t1.section.rows[0]
-        val l = t1.lines["w1"]!![0]
+        val l = t1.lines.getValue("w1")[0]
         val f = m.line(t1, row, l, 0, NowMotion.Place.CARD, 2.0, false)
         assertNear("springs from the old", 0.6, f.value)
         assertNotNull(f.flare)
@@ -284,7 +284,7 @@ class NowMotionTest {
         assertNull(m.line(t1, row, l, 0, NowMotion.Place.CARD, 3.0, false).flare)
         // A second look in the same process (a tab switch) shows the value at once.
         val back = m.start(section("w1" to listOf(run("wf_a", "Review", "running", 4, 5))), 10.0, books)
-        assertNear("at once", 0.8, m.line(back, back.section.rows[0], back.lines["w1"]!![0], 0, NowMotion.Place.CARD, 10.0, false).value)
+        assertNear("at once", 0.8, m.line(back, back.section.rows[0], back.lines.getValue("w1")[0], 0, NowMotion.Place.CARD, 10.0, false).value)
         assertTrue("no rise either", back.cardsIn.values.all { it < 10.0 })
         // Reduce Motion: the fraction at once, no loops.
         val r = m.line(t1, row, l, 0, NowMotion.Place.CARD, 2.0, true)
@@ -369,7 +369,7 @@ class NowMotionTest {
 
     @Test fun `a marker glides to a new place, drifts with the clock unanimated, and flashes as it reaches now`() {
         val t0 = m.runwayStart(listOf(marker("a", 0.2), marker("b", 0.5)), 0.0)
-        assertNear("pops as the line reaches it", m.runwayReach(0.2), t0.pops["a"]!!)
+        assertNear("pops as the line reaches it", m.runwayReach(0.2), t0.pops.getValue("a"))
         // The clock's drift: drawn at once, no glide, nothing to wait for.
         val drift = m.runwayObserve(t0, listOf(marker("a", 0.1995), marker("b", 0.4995)), 2.0)
         assertTrue(drift.glides.isEmpty())
@@ -383,8 +383,8 @@ class NowMotionTest {
         // a reaches now (it was at the NOW dot) and flashes; b goes far out (the Mac went on power) and only fades.
         val near = m.runwayObserve(jump, listOf(marker("a", 0.004), marker("b", 0.4)), 5.0)
         val gone = m.runwayObserve(near, emptyList(), 6.0)
-        assertTrue(gone.gone["a"]!!.reached)
-        assertFalse(gone.gone["b"]!!.reached)
+        assertTrue(gone.gone.getValue("a").reached)
+        assertFalse(gone.gone.getValue("b").reached)
         assertNear("flash peaks", 1.0, m.markerLeave(0.3, true).flash)
         assertNear("gone after the flash", 0.0, m.markerLeave(m.markerFlash, true).opacity)
         assertNear("a fade has no flash", 0.0, m.markerLeave(0.1, false).flash)
@@ -393,13 +393,13 @@ class NowMotionTest {
         // The next of its kind under the same id (a reset that came round): the old one flashes at now, the new one pops, never a glide across.
         val at = m.runwayObserve(t0, listOf(marker("a", 0.001), marker("b", 0.5)), 2.0)
         val next = m.runwayObserve(at, listOf(marker("a", 0.8).copy(at = nwNow.plusSeconds(5 * 3600)), marker("b", 0.5)), 3.0)
-        assertTrue(next.gone["a"]!!.reached)
+        assertTrue(next.gone.getValue("a").reached)
         assertNull("no glide", next.glides["a"])
         assertNear("pops there", 0.8, m.markerPlace(next, "a", 3.0)!!)
-        assertNear("pops now", 3.0, next.pops["a"]!!)
+        assertNear("pops now", 3.0, next.pops.getValue("a"))
         // A newcomer pops in when it comes.
         val back = m.runwayObserve(gone, listOf(marker("c", 0.3)), 7.0)
-        assertNear("c pops now", 7.0, back.pops["c"]!!)
+        assertNear("c pops now", 7.0, back.pops.getValue("c"))
         assertNear("c small", 0.6, m.marker(back, back.markers[0], 7.0).scale)
         // Reduce Motion: a jump is drawn at once, a newcomer fades in, nothing pops.
         val r = m.runwayObserve(t0, listOf(marker("a", 0.2), marker("b", 0.3), marker("c", 0.6)), 2.0, reduce = true)

@@ -42,7 +42,7 @@ export class FakeStorage {
   }
 
   async list({ prefix = "", limit, reverse = false } = {}) {
-    let ks = [...this.map.keys()].filter(k => k.startsWith(prefix)).sort();
+    let ks = [...this.map.keys()].filter(k => k.startsWith(prefix)).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
     if (reverse) ks.reverse();
     if (limit !== undefined) ks = ks.slice(0, limit);
     return new Map(ks.map(k => [k, structuredClone(this.map.get(k))]));
@@ -53,7 +53,7 @@ export class FakeStorage {
   async deleteAlarm() { this.alarm = null; }
 
   keysWithPrefix(prefix) {
-    return [...this.map.keys()].filter(k => k.startsWith(prefix)).sort();
+    return [...this.map.keys()].filter(k => k.startsWith(prefix)).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
   }
 }
 

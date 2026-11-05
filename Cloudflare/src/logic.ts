@@ -310,7 +310,7 @@ export function normalizeIntervention(
   const kind: InterventionKind =
     typeof raw.kind === "string" && KINDS.has(raw.kind) ? raw.kind as InterventionKind : "question";
   const context = truncate(coerceString(raw.context), MAX_CONTEXT_LENGTH, true);
-  const parsedOpened = typeof raw.openedAt === "string" ? Date.parse(raw.openedAt) : NaN;
+  const parsedOpened = typeof raw.openedAt === "string" ? Date.parse(raw.openedAt) : Number.NaN;
   // Re-emitted in canonical form (UTC, whole seconds) so phones decode it
   // and string order matches time order.
   const openedAt = isoSeconds(Number.isFinite(parsedOpened) ? parsedOpened : nowMs);
@@ -437,7 +437,7 @@ export function decideReply(ctx: ReplyContext): ReplyDecision {
     // The blocking hook has already decided and exited.
     if (isHookBlocking(closed)) return gone("hook_finished");
     if (closed.closeReason === "superseded") return gone("superseded");
-    const closedMs = closed.closedAt ? Date.parse(closed.closedAt) : NaN;
+    const closedMs = closed.closedAt ? Date.parse(closed.closedAt) : Number.NaN;
     if (!Number.isFinite(closedMs) || now - closedMs > CLOSED_REPLY_WINDOW_MS) return gone("expired");
     if (action !== null && DECISION_ACTIONS.has(action)) return gone("prompt_closed");
     if (ctx.currentIdForSession) return gone("session_moved_on");
@@ -678,7 +678,7 @@ export function selectStaleForSync(pending: PendingRecord[], sync: ParsedSync, n
     if (sync.openIds.has(iv.id)) continue;
     if (isHookOwnedId(iv.id) || isHookBlocking(iv)) continue;
     if (now - receivedAt < SYNC_OPEN_GRACE_MS) continue;
-    const repliedMs = iv.repliedAt ? Date.parse(iv.repliedAt) : NaN;
+    const repliedMs = iv.repliedAt ? Date.parse(iv.repliedAt) : Number.NaN;
     if (Number.isFinite(repliedMs) && now - repliedMs < SYNC_REPLY_GRACE_MS) continue;
     if (iv.repliedAt && iv.deliveryStatus === "pending") {
       const fwdMs = Date.parse(iv.deliveryForwardedAt ?? iv.repliedAt);

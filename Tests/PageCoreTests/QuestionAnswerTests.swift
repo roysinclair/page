@@ -76,7 +76,7 @@ final class FakeQuestionDialog {
                 out.append("\(mark)   \(hasTabBar && asked.questions.count == 1 ? "Submit" : "Next")")
             case .chat:
                 out.append(String(repeating: "─", count: 40))
-                out.append("\(mark)\(n + (q.multi ? 2 : 2)). Chat about this")
+                out.append("\(mark)\(n + 2). Chat about this")
             }
         }
         out.append("Enter to select · Tab/Arrow keys to navigate · Esc to cancel")

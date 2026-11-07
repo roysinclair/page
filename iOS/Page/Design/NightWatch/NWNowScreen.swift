@@ -115,14 +115,22 @@ struct NWNowScreen: View {
             ScrollView {
                 VStack(spacing: 16) {
                     horizon(inset: inset)
+                    // Information stays in the sky: the Runway is read, not acted on.
+                    sky
+                    // What needs you, and what is working, sit on the desk below it.
                     VStack(spacing: 16) { stream(inset: inset) }
                         .padding(.horizontal, NightWatch.Space.gutter)
+                        .padding(.top, 14)
+                        .padding(.bottom, 136)
+                        .frame(maxWidth: .infinity)
+                        // The desk runs on past the end, so a bounce at the bottom shows more desk, not sky.
+                        .background(alignment: .top) { NWDesk(light: deskLight).padding(.bottom, -900) }
                         // Cards below a new arrival make room on its spring; nothing above moves.
                         .animation(reduceMotion ? nil : .spring(response: ApproachModel.response, dampingFraction: ApproachModel.damping),
                                    value: NWStreamSpring(rows: rowIds, horizon: horizonHeight))
                         // The New pill comes and goes (the cards below make room); a row change keeps the spring above.
                         .animation(queuedAnimation, value: data.queuedNew > 0)
-                    Spacer().frame(height: 120)
+                        .padding(.top, 6)
                 }
                 .coordinateSpace(name: nwStreamSpace)
             }
@@ -275,19 +283,40 @@ struct NWNowScreen: View {
         .accessibilityHint(Text("Opens the Tower"))
     }
 
+    // MARK: Sky and desk
+
+    /// The Runway, as an instrument in the sky: faint glass, no light of its own.
+    @ViewBuilder private var sky: some View {
+        // With the Mac out of reach the Runway would be a stale promise, so it steps aside.
+        if data.problem?.kind != .macAsleep {
+            NWNowRunway(model: data.model.runway, motion: motion, breathPeriod: runwayBreath)
+                .padding(6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(NWSkyGlass(radius: 24))
+                .contentShape(Rectangle())
+                .onTapGesture(perform: actions.tapRunway)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint(Text("Opens the Tower at Budget"))
+                .padding(.horizontal, NightWatch.Space.gutter)
+        }
+    }
+
+    /// The light along the desk's edge: the mood's colour.
+    private var deskLight: NightWatch.RGBA {
+        if let p = data.problem { return p.tone == .slate ? NightWatch.RGBA(hex: 0x6B7894) : NightWatch.Palette.amber }
+        switch data.model.mood {
+        case .needsYou: return NightWatch.Palette.amber
+        case .working: return NightWatch.Palette.teal
+        case .dusk: return NightWatch.Palette.violet
+        case .quiet: return NightWatch.Palette.teal.mixed(with: NightWatch.Palette.sky, 0.5)
+        }
+    }
+
     // MARK: Stream
 
     @ViewBuilder private func stream(inset: CGFloat) -> some View {
         if let p = data.problem { NWProblemCard(problem: p, onAction: actions.problem) }
         ForEach(data.banners.filter { b in !(data.problem?.replacesBanners.contains(b.id) ?? false) }) { b in NWBannerCard(banner: b, onAction: actions.banner) }
-        // With the Mac out of reach the Runway would be a stale promise, so it steps aside.
-        if data.problem?.kind != .macAsleep {
-            NWGlassCard(radius: 24, padding: 6) { NWNowRunway(model: data.model.runway, motion: motion, breathPeriod: runwayBreath) }
-                .contentShape(Rectangle())
-                .onTapGesture(perform: actions.tapRunway)
-                .accessibilityAddTraits(.isButton)
-                .accessibilityHint(Text("Opens the Tower at Budget"))
-        }
         if let b = data.brief, !b.hasUrgent {
             // Nothing in Decide or Look: the Brief opens straight under the Runway.
             NWBriefCard(brief: b, expanded: data.briefExpanded || quiet, onToggle: actions.toggleBrief,

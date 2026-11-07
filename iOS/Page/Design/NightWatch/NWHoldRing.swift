@@ -202,6 +202,8 @@ struct NWHoldButton: View {
     /// What follows the hold.
     var symbol = "faceid"
     var fixedProgress: Double? = nil
+    /// On the Irreversible jewel: a white rim, so the red button stands off the red card.
+    var onJewel = false
     var onComplete: () -> Void
 
     var body: some View {
@@ -209,14 +211,15 @@ struct NWHoldButton: View {
             // Warmest as it starts, settling into the red as it fills.
             let tone = NightWatch.Palette.red.mixed(with: NightWatch.Palette.amber, 0.35 * (1 - HoldRingSpec.warmth(progress: p)))
             let shape = RoundedRectangle(cornerRadius: NightWatch.Radius.button, style: .continuous)
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 Image(systemName: symbol)
-                    .font(.system(size: 20, weight: .regular))
-                    .frame(width: 24, height: 24)
+                    .font(.system(size: 18, weight: .regular))
+                    .frame(width: 22, height: 22)
                 Text(label)
                     .font(NightWatch.Typo.button)
-                    .lineLimit(1).minimumScaleFactor(0.8)
+                    .lineLimit(1).minimumScaleFactor(0.75)
             }
+            .padding(.horizontal, 12)
             .foregroundColor(NightWatch.Palette.onBright.color)
             .frame(maxWidth: .infinity, minHeight: 52)
             .background(
@@ -228,6 +231,8 @@ struct NWHoldButton: View {
                         }
                     }
                     .clipShape(shape))
+            .overlay(shape.strokeBorder(Color.white.opacity(onJewel ? 0.55 : 0), lineWidth: 1))
+            .shadow(color: Color.black.opacity(onJewel ? 0.35 : 0), radius: 6, x: 0, y: 3)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(label))

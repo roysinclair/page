@@ -105,9 +105,29 @@ fun NWNavBar(
     onPulseTap: () -> Unit = {},
     onPulseHold: () -> Unit = {},
 ) {
-    Box(modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.navigationBars).padding(start = 16.dp, end = 16.dp, bottom = NW.capsuleGap)) {
+    Box(
+        modifier.fillMaxWidth()
+            // Android has no backdrop blur, so a stream that passes under the capsule is faded out first: the page's own colour,
+            // clear at the top to 85% at the bottom edge over about 90 dp, so rows reach the capsule cleanly and never collide with its
+            // labels. Drawn behind (it takes no touches), from the screen's bottom edge, under the system bar as well.
+            .drawBehind {
+                // 90 dp of fade above the capsule's own top edge less its 68 dp, plus the system bar below: the clear top reaches
+                // only about 22 dp above the capsule, so it never washes the buttons of the card above it.
+                val h = size.height + NavScrim.above.toPx()
+                val bg = NW.Palette.background
+                drawRect(
+                    Brush.verticalGradient(
+                        0f to bg.opacity(0.0).color, 1f to bg.opacity(NavScrim.alpha).color, startY = size.height - h, endY = size.height,
+                    ),
+                    topLeft = Offset(0f, size.height - h), size = androidx.compose.ui.geometry.Size(size.width, h),
+                )
+            }
+            .windowInsetsPadding(WindowInsets.navigationBars).padding(start = 16.dp, end = 16.dp, bottom = NW.capsuleGap),
+    ) {
         Row(
-            Modifier.fillMaxWidth().height(NW.capsuleHeight).nwChromeGlass().padding(horizontal = 6.dp),
+            // The capsule's body is denser on Android (#04060A at 80%, not the 34% that blur makes readable on iOS): the lit rim
+            // and the bubble are the same.
+            Modifier.fillMaxWidth().height(NW.capsuleHeight).nwChromeGlass(tint = NavScrim.body).padding(horizontal = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             NavSide(NWDestination.NOW, "Now", decideCount, NW.Palette.amber, selection, onSelect, Modifier.weight(1f))
@@ -115,6 +135,14 @@ fun NWNavBar(
             NavSide(NWDestination.LANES, "Lanes", workingCount, NW.Palette.teal, selection, onSelect, Modifier.weight(1f))
         }
     }
+}
+
+/** The Android-only parts of the nav capsule: its denser body and the fade behind it. */
+private object NavScrim {
+    /** How far the fade rises above the capsule's top edge (the whole fade is about 90 dp from the capsule's foot). */
+    val above = 22.dp
+    const val alpha = 0.85
+    val body = Rgba.hex(0x04060A, 0.8)
 }
 
 @Composable

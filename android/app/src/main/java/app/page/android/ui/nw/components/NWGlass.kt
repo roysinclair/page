@@ -441,7 +441,10 @@ fun Modifier.nwHueBand(jewel: NWJewel, radius: Dp = NW.Radius.card): Modifier = 
  * (12%, radius 280) from the top centre; a white 13% lip fading over 70; a horizon line; a black 70% shadow, radius 26,
  * rising up 6 over what is above. Draw it behind the stream, with the shadow free to leave the bounds.
  */
-fun Modifier.nwDesk(light: Rgba, radius: Dp = NW.Radius.desk): Modifier = this.drawBehind {
+fun Modifier.nwDesk(light: Rgba, radius: Dp = NW.Radius.desk): Modifier = this.drawBehind { drawDesk(light, radius) }
+
+/** The desk drawn into this scope's whole size ([nwDesk]); wrap it in `inset(top = ...)` to draw it from a line down the scope. */
+fun DrawScope.drawDesk(light: Rgba, radius: Dp = NW.Radius.desk) {
     val r = radius.toPx()
     val w = size.width
     val shape = Path().apply {

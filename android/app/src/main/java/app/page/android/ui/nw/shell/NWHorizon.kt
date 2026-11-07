@@ -1,6 +1,16 @@
 package app.page.android.ui.nw.shell
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
+import app.page.android.ui.nw.theme.Rgba
+import kotlin.math.exp
+import kotlin.math.pow
+import kotlin.math.sin
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -284,6 +294,8 @@ fun NWHorizon(
                         ),
                     ),
                 )
+                // The watch's own scene, in the sky's colours of the moment (so it falls to dusk and rises to dawn with them).
+                NWNightScene(pal, HorizonGeometry.pulseY(height, topInset), Modifier.fillMaxSize())
                 // Over the fade, so the line holds at full strength (it is all a paused sky shows).
                 NWHorizonBand(band, Modifier.offset(y = bandY - 6.dp))
             }
@@ -363,3 +375,96 @@ private fun glow(m: PulseModel, exhale: Double?, t: Double): Double {
         PulseModel.Mode.WAITING -> 1.0
     }
 }
+
+/**
+ * The Night Watch scene under the aurora (iOS `NWNightScene`): two ranges of mountains, the far one hazed and rimmed with the
+ * sky's light, the near one dark, their peaks to the sides so the pulse hangs over the valley between them; and a still lake
+ * below that mirrors the near range, with a thread of light along the waterline. Drawn from the sky's own colours, so it follows
+ * the mood and the hour; it holds no words. Each range is ONE path: down the left edge, along the crest, down the right edge.
+ * No blur (it redraws with the aurora): the far crest is three strokes of different widths. Still under Reduce Motion with the sky.
+ */
+@Composable
+fun NWNightScene(palette: AuroraPalette, orbY: Dp, modifier: Modifier = Modifier) {
+    Canvas(modifier.clearAndSetSemantics {}) {
+        val w = size.width
+        val h = size.height
+        val d = density
+        // The land takes the top of the sky, darkened: cool at night and by day, warm when something needs you.
+        val light = palette.c1
+        val deep = palette.skyTop.mixed(NW.Palette.backgroundDeep, 0.55)
+        val glow = max(0.45, palette.intensity).toFloat()
+        val room = max(60f * d, h * 0.82f - orbY.toPx())
+        val water = orbY.toPx() + room
+        val farAmp = min(64f * d, room * 0.55f)
+        val nearAmp = min(40f * d, room * 0.32f)
+
+        fun range(peaks: List<Triple<Double, Double, Double>>, base: Float, amp: Float, grain: Double): List<Offset> =
+            (0..96).map { i ->
+                val u = i / 96.0
+                var y = peaks.sumOf { (c, wd, ht) -> ht * exp(-((u - c) / wd).pow(2)) }
+                y = min(1.1, y) + 0.035 * sin(u * 41 + grain) + 0.02 * sin(u * 97 + grain * 2)
+                Offset(w * u.toFloat(), base - amp * y.toFloat())
+            }
+
+        /** One subpath: down the left edge, along the crest, down the right edge. */
+        fun land(top: List<Offset>, down: Float): Path = Path().apply {
+            moveTo(0f, down)
+            for (p in top) lineTo(p.x, p.y)
+            lineTo(w, down)
+            close()
+        }
+
+        fun crest(pts: List<Offset>): Path = Path().apply {
+            moveTo(pts[0].x, pts[0].y)
+            for (i in 1 until pts.size) lineTo(pts[i].x, pts[i].y)
+        }
+
+        val farTop = range(FAR, water - 6f * d, farAmp, 1.3)
+        val nearTop = range(NEAR, water + 2f * d, nearAmp, 4.1)
+        val nearColour = deep.mixed(Rgba(0.0, 0.0, 0.0), 0.5)
+
+        // Far range: hazed by the aurora, lighter at the crest, its rim catching the sky's light.
+        drawPath(
+            land(farTop, water + d),
+            Brush.verticalGradient(listOf(deep.mixed(light, 0.2).color, deep.mixed(light, 0.05).color), startY = water - farAmp, endY = water),
+        )
+        // The rim: a wide faint stroke under a fine bright one (no blur: this redraws with the aurora).
+        val farCrest = crest(farTop)
+        drawPath(farCrest, light.opacity(0.12 * glow).color, style = Stroke(5f * d))
+        drawPath(farCrest, light.opacity(0.16 * glow).color, style = Stroke(2.4f * d))
+        drawPath(farCrest, light.opacity(0.26 * glow).color, style = Stroke(0.8f * d))
+        // Near range: dark, in front.
+        drawPath(land(nearTop, water + d), nearColour.color)
+        drawPath(crest(nearTop), light.opacity(0.1 * glow).color, style = Stroke(0.8f * d))
+
+        // The lake, holding a little of the sky's colour; into the page's own colour at the Horizon's foot, so a bright daytime sky leaves no seam.
+        val lakeH = max(0f, h - water)
+        drawRect(
+            Brush.verticalGradient(listOf(deep.mixed(light, 0.12).color, NW.Palette.backgroundDeep.color), startY = water, endY = h),
+            topLeft = Offset(0f, water), size = Size(w, lakeH),
+        )
+        // The near range, mirrored in the still water and fading with depth.
+        clipRect(0f, water, w, h) {
+            val mirrored = nearTop.map { Offset(it.x, water + (water - it.y) * 0.8f) }
+            drawPath(
+                land(mirrored, water),
+                Brush.verticalGradient(listOf(nearColour.opacity(0.85).color, nearColour.opacity(0.0).color), startY = water, endY = water + nearAmp * 0.8f),
+            )
+        }
+        // The waterline: a thread of light where the sky meets the lake.
+        drawRect(
+            Brush.horizontalGradient(listOf(light.opacity(0.0).color, light.opacity(0.38 * glow).color, light.opacity(0.0).color), startX = w * 0.1f, endX = w * 0.9f),
+            topLeft = Offset(0f, water - 0.5f * d), size = Size(w, d),
+        )
+    }
+}
+
+/** A range as a few smooth peaks: (centre 0...1, width, height 0...1). */
+private val FAR = listOf(
+    Triple(0.04, 0.09, 0.62), Triple(0.2, 0.11, 1.0), Triple(0.36, 0.07, 0.6), Triple(0.5, 0.1, 0.34),
+    Triple(0.66, 0.08, 0.66), Triple(0.82, 0.12, 0.95), Triple(0.98, 0.08, 0.7),
+)
+private val NEAR = listOf(
+    Triple(0.0, 0.16, 0.95), Triple(0.18, 0.08, 0.55), Triple(0.34, 0.1, 0.3),
+    Triple(0.72, 0.09, 0.45), Triple(0.9, 0.12, 0.85), Triple(1.04, 0.1, 0.7),
+)

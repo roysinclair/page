@@ -235,9 +235,14 @@ struct NWHoldButton: View {
                                 .frame(width: geo.size.width * CGFloat(MotionCurve.clamp01(p)))
                         }
                     }
+                    .overlay(LinearGradient(stops: [.init(color: Color.white.opacity(0.28), location: 0),
+                                                    .init(color: Color.white.opacity(0), location: 0.55)],
+                                            startPoint: .top, endPoint: .bottom))
                     .clipShape(shape))
-            .overlay(shape.strokeBorder(Color.white.opacity(onJewel ? 0.55 : 0), lineWidth: 1))
-            .shadow(color: Color.black.opacity(onJewel ? 0.35 : 0), radius: 6, x: 0, y: 3)
+            .overlay(shape.strokeBorder(LinearGradient(colors: [Color.white.opacity(onJewel ? 0.7 : 0.45), Color.white.opacity(onJewel ? 0.2 : 0.05)],
+                                                       startPoint: .top, endPoint: .bottom), lineWidth: 1))
+            // It stands on a red glow: the one commit that cannot be taken back.
+            .shadow(color: NightWatch.Palette.red.opacity(0.5).color, radius: 12, x: 0, y: 6)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(label))

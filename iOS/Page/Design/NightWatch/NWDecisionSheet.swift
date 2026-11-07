@@ -735,7 +735,7 @@ private struct NWDecisionComposer: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(previewParts.lead).nwLabel()
+                Text(SectionTitle.words(previewParts.lead)).font(NightWatch.Typo.captionStrong).foregroundColor(NightWatch.Palette.textTertiary.color)
                 Spacer()
                 if sending {
                     HStack(spacing: 6) {

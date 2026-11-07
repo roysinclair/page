@@ -24,6 +24,15 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.drawscope.inset
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import app.page.android.model.DeskLight
+import app.page.android.ui.nw.components.drawDesk
+import app.page.android.ui.nw.components.nwInstrumentGlass
+import app.page.android.ui.nw.components.nwRecede
+import app.page.android.ui.nw.theme.Rgba
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -98,6 +107,7 @@ import app.page.android.ui.nw.components.rememberRunwayMotion
 import app.page.android.ui.nw.components.rememberNowChange
 import app.page.android.ui.nw.components.rememberNowClock
 import app.page.android.ui.nw.components.NWSectionHeader
+import app.page.android.ui.nw.components.symbol
 import app.page.android.ui.nw.components.NWTipCallout
 import app.page.android.ui.nw.components.NWTonightCard
 import app.page.android.ui.nw.components.color
@@ -274,6 +284,12 @@ fun NowScreen(modifier: Modifier = Modifier) {
             if (spec?.scrollTop != null) listState.scrollToItem(i, -with(density) { (topInset + 12.dp).roundToPx() }) else listState.scrollToItem(i, -250)
         }
     }
+    // The desk the stream sits on: its edge rises behind the Runway's lower half (the lift), where information ends and work begins.
+    val hasRunway = problem?.kind != ProblemState.Kind.MAC_ASLEEP
+    val deskLift = if (hasRunway) 58.dp else 0.dp
+    val deskAnchor = if (hasRunway) "runway" else "horizon"
+    val deskLight = Rgba.hex(DeskLight.colour(m.mood, problem?.let { if (it.tone == ProblemState.Tone.SLATE) DeskLight.ProblemTone.SLATE else DeskLight.ProblemTone.AMBER }))
+    val streamTop = remember { floatArrayOf(0f) }
     PullToRefreshBox(
         isRefreshing = refreshing,
         onRefresh = {
@@ -287,9 +303,21 @@ fun NowScreen(modifier: Modifier = Modifier) {
         },
         modifier = modifier.fillMaxSize(),
     ) {
+        androidx.compose.runtime.CompositionLocalProvider(LocalStreamRecede provides remember(listState) { StreamRecede(listState) { streamTop[0] } }) {
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize().pointerInput(Unit) {
+            modifier = Modifier.fillMaxSize().onGloballyPositioned { streamTop[0] = it.positionInRoot().y }.drawBehind {
+                // One desk behind the whole stream, from its edge down past the end (a stretch at the bottom shows more desk, not sky).
+                val info = listState.layoutInfo.visibleItemsInfo
+                val anchor = info.firstOrNull { it.key == deskAnchor }
+                val top = when {
+                    anchor != null -> anchor.offset + anchor.size + 16.dp.toPx() - deskLift.toPx()
+                    // Scrolled past it: the desk fills the screen, its corners above the top.
+                    info.isNotEmpty() && info.first().index > keys.indexOf(deskAnchor) -> -48.dp.toPx()
+                    else -> return@drawBehind
+                }
+                if (top < size.height) inset(0f, maxOf(top, -48.dp.toPx()), 0f, 0f) { drawDesk(deskLight) }
+            }.pointerInput(Unit) {
                 awaitPointerEventScope {
                     while (true) {
                         val e = awaitPointerEvent(PointerEventPass.Initial)
@@ -297,7 +325,7 @@ fun NowScreen(modifier: Modifier = Modifier) {
                     }
                 }
             },
-            contentPadding = PaddingValues(bottom = 132.dp), verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(bottom = 136.dp), verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             fun addItem(key: String, fade: Boolean, content: @Composable LazyItemScope.(Modifier) -> Unit) {
                 keys.add(key)
@@ -349,21 +377,23 @@ fun NowScreen(modifier: Modifier = Modifier) {
                     }
                 }
             }
+            // The sky: the Runway as an instrument in faint glass, above the desk (it is read, not acted on). With the Mac out of reach
+            // it would be a stale promise, so it steps aside.
+            if (hasRunway) add("runway", pad {
+                Box(
+                    Modifier.fillMaxWidth().nwInstrumentGlass(deskLight).clip(RoundedCornerShape(24.dp))
+                        .clickable(role = Role.Button, onClickLabel = "Opens the Tower at Budget") { AppRouter.openTower(TowerSection.BUDGET) }
+                        .padding(6.dp),
+                ) {
+                    // The NOW dot breathes with the pulse while agents work, never at dusk.
+                    NWRunwayBar(m.runway, motion = rememberRunwayMotion(m.runway, breathing = m.workingCount > 0 && !m.paused, period = screen.pulse.breathPeriod), instrument = true)
+                }
+            })
             problem?.let { p -> add("problem", pad { NWProblemCard(p, onAction = { a -> problemAction(a) }) }) }
             for (b in screen.banners) {
                 if (problem?.replacesBanners?.contains(b.id) == true) continue
                 add("banner-${b.id}", pad { NWBannerCard(b, onAction = { a -> bannerAction(a, context) }) })
             }
-            // With the Mac out of reach the Runway would be a stale promise, so it steps aside.
-            if (problem?.kind != ProblemState.Kind.MAC_ASLEEP) add("runway", pad {
-                NWGlassCard(
-                    Modifier.clickable(role = Role.Button, onClickLabel = "Opens the Tower at Budget") { AppRouter.openTower(TowerSection.BUDGET) },
-                    radius = 24.dp, padding = PaddingValues(6.dp),
-                ) {
-                    // The NOW dot breathes with the pulse while agents work, never at dusk.
-                    NWRunwayBar(m.runway, motion = rememberRunwayMotion(m.runway, breathing = m.workingCount > 0 && !m.paused, period = screen.pulse.breathPeriod))
-                }
-            })
             val brief = screen.brief
             if (brief != null && !brief.hasUrgent) add("brief", pad {
                 NWBriefCard(brief, briefExpanded || quiet, { briefExpanded = !briefExpanded }, { AwayStore.dismissBrief(); briefExpanded = false }, { briefExpanded = false; jumpTo("section-review") })
@@ -383,10 +413,10 @@ fun NowScreen(modifier: Modifier = Modifier) {
             for ((section, list) in sections) {
                 // In flight sits between what needs you and what has finished.
                 if (section == NowRow.Section.REVIEW) inFlight()
-                add("section-${section.title.lowercase()}", pad { NWSectionHeader(section.title.lowercase().replaceFirstChar { it.uppercase() }, section.color, count = list.count { it.id !in ghosts }) })
+                add("section-${section.title.lowercase()}", pad { NWSectionHeader(section.title.lowercase().replaceFirstChar { it.uppercase() }, section.color, count = list.count { it.id !in ghosts }, symbol = section.symbol) })
                 for (row in list) {
                     val key = "row-${row.id}"
-                    add(key, pad {
+                    add(key) { im -> Box(im.nwRecede(listState, key).padding(horizontal = NW.Space.gutter)) {
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             val card: @Composable () -> Unit = { RowCard(row, now, statusOf(row), actionsOf(row), answerable, spec) }
                             if (row.id in ghosts) {
@@ -407,7 +437,7 @@ fun NowScreen(modifier: Modifier = Modifier) {
                                 ) { NWTipCallout(tip.tip.text(biometry), symbol = tip.tip.symbol, onDismiss = { TipStore.retire(tip.tip) }) }
                             }
                         }
-                    })
+                    } }
                 }
                 // The Brief sits after Decide and Look when something needs you.
                 if (brief != null && brief.hasUrgent && section == lastUrgent) add("brief", pad {
@@ -421,6 +451,7 @@ fun NowScreen(modifier: Modifier = Modifier) {
             m.receiptLine?.let { line -> addItem("receipt", true, pad { QueuedReceipt(line, m.receiptFailed, receiptAt) }) }
             if (quiet && problem == null) add("tonight", pad { NWTonightCard(m.rings) })
             add("settled", pad { NWSettledList(screen.settled, Modifier.padding(top = 6.dp), onSeeAll = AppRouter::openHistory, now = screen.now) })
+        }
         }
         // The stream scrolls under the status bar: a soft scrim keeps the clock readable once the Horizon has gone.
         if (listState.firstVisibleItemIndex > 0) {

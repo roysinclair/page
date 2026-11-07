@@ -54,8 +54,8 @@ object NW {
         val backgroundDeep = Rgba.hex(0x04060A)
 
         /** Card / row fills. */
-        val surface = Rgba.hex(0x14161C)
-        val surfaceRaised = Rgba.hex(0x1B1E25)
+        val surface = Rgba.hex(0x131722)
+        val surfaceRaised = Rgba.hex(0x1A1F2C)
         val inset = Rgba.hex(0x0A0C11)
         val hairline = Rgba(1.0, 1.0, 1.0, 0.08)
 
@@ -79,6 +79,13 @@ object NW {
         /** The tint of a glass card's optional glow (see `CardGlow`). */
         val glass = Rgba.hex(0x5FD0C8)
 
+        /**
+         * The tint of the chrome's glass (the nav capsule, the Mac chip, close buttons, room tabs): a light smoke of the
+         * page's night, so what is under it shows and white labels still hold over the brightest sky of the day.
+         * Android has no Liquid Glass: this is a translucent fill, a lit rim and [NWGlassBubble], drawn by `nwChromeGlass`.
+         */
+        val chromeGlass = Rgba.hex(0x04060A, 0.34)
+
         /** Star white: the pulse when everything is quiet. */
         val star = Rgba.hex(0xFFF6E0)
 
@@ -90,8 +97,11 @@ object NW {
     object Typo {
         private val monoFamily = FontFamily.Monospace
 
-        /** "2 need you": the Horizon sentence. */
-        val hero = TextStyle(fontSize = 32.sp, lineHeight = 36.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.4).sp)
+        /** "2 need you": the Horizon sentence (iOS largeTitle, rounded, bold; Rounded becomes Bold on Android). */
+        val hero = TextStyle(fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.4).sp)
+
+        /** A Decision sheet's ask: one step under the Horizon's. */
+        val sheetTitle = TextStyle(fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold)
 
         /** A card title: "Delete every Dev build?". */
         val headline = TextStyle(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold)
@@ -99,11 +109,23 @@ object NW {
         val subline = TextStyle(fontSize = 16.sp, lineHeight = 22.sp, fontWeight = FontWeight.Normal)
         val body = TextStyle(fontSize = 15.sp, lineHeight = 21.sp, fontWeight = FontWeight.Normal)
         val bodyStrong = TextStyle(fontSize = 15.sp, lineHeight = 21.sp, fontWeight = FontWeight.SemiBold)
-        val button = TextStyle(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold)
+        val button = TextStyle(fontSize = 16.sp, lineHeight = 21.sp, fontWeight = FontWeight.SemiBold)
         val caption = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Normal)
         val captionStrong = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold)
 
-        /** Commands and session names. */
+        /** A section of the stream: "Decide", "In flight". */
+        val section = TextStyle(fontSize = 20.sp, lineHeight = 25.sp, fontWeight = FontWeight.Bold)
+
+        /** A project or session name. Names are words, not code. */
+        val name = TextStyle(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold)
+        val nameLarge = TextStyle(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold)
+
+        /** What a session is doing now: "Running swift build". */
+        val activity = TextStyle(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold)
+        val meta = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Normal)
+        val metaSmall = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Normal)
+
+        /** Commands, paths, the delivery preview and diff stats: the only things in monospace. */
         val mono = TextStyle(fontSize = 16.sp, lineHeight = 22.sp, fontFamily = monoFamily, fontWeight = FontWeight.SemiBold)
         val monoBody = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontFamily = monoFamily, fontWeight = FontWeight.Normal)
         val monoSmall = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontFamily = monoFamily, fontWeight = FontWeight.Medium)
@@ -132,13 +154,21 @@ object NW {
         val card = 22.dp
         val row = 18.dp
         val inset = 14.dp
-        val button = 16.dp
+        val button = 13.dp
         val chip = 6.dp
         val capsule = 32.dp
+
+        /** The top corners of the desk the Now stream sits on. */
+        val desk = 32.dp
     }
 
-    /** Minimum height of a Night Watch button (iOS 52 pt; Android's touch target floor is 48 dp). */
-    val buttonHeight = 52.dp
+    /** Height of a Night Watch button and of the nav capsule's pulse hold (the v5 spec's 44; iOS minHeight 44). */
+    val buttonHeight = 44.dp
+
+    /** The floating nav capsule's height (iOS 60), its pulse button (50) and the room it leaves above the system bar. */
+    val capsuleHeight = 60.dp
+    val capsulePulse = 50.dp
+    val capsuleGap = 8.dp
 }
 
 // MARK: - aurora

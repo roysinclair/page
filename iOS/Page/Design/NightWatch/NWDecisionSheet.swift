@@ -87,13 +87,34 @@ struct DecisionScreenActions {
     var tipShown: (NWTip) -> Void = { _ in }
 }
 
-/// The sheet's own surface: near-black, tinted by the card's class, with the
-/// top corners rounded. No glow, ever: this is a plain fill.
+/// The sheet's own surface: the card's deeper level. Its class's jewel (the
+/// Decide card's colour) lights the top, behind who is asking and the ask,
+/// and fades into a neutral raised navy where the detail and the controls
+/// sit; a lit lip runs along the top edge. No glow, ever: these are fills.
 struct NWDecisionBackground: View {
     var tint: NightWatch.RGBA?
+    /// How far down the jewel reaches before it has faded.
+    static let bandHeight: CGFloat = 330
+
     var body: some View {
-        UnevenRoundedRectangle(topLeadingRadius: 34, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 34, style: .continuous)
-            .fill((tint.map { NightWatch.Palette.surface.mixed(with: $0.opacity(1), 0.10) } ?? NightWatch.Palette.surface).color)
+        let shape = UnevenRoundedRectangle(topLeadingRadius: 34, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 34, style: .continuous)
+        let jewel = NWJewel.of(tint)
+        ZStack(alignment: .top) {
+            shape.fill(NightWatch.Palette.surface.color)
+            if tint != nil {
+                LinearGradient(stops: [.init(color: jewel.top.color, location: 0),
+                                       .init(color: jewel.bottom.color, location: 0.55),
+                                       .init(color: jewel.bottom.opacity(0).color, location: 1)],
+                               startPoint: .top, endPoint: .bottom)
+                    .frame(height: Self.bandHeight)
+                RadialGradient(colors: [jewel.light.opacity(jewel.lightStrength).color, jewel.light.opacity(0).color],
+                               center: .topLeading, startRadius: 0, endRadius: 320)
+                    .frame(height: Self.bandHeight)
+            }
+            shape.strokeBorder(LinearGradient(colors: [Color.white.opacity(0.3), Color.white.opacity(0)], startPoint: .top, endPoint: .center),
+                               lineWidth: 1)
+        }
+        .clipShape(shape)
     }
 }
 
@@ -262,7 +283,8 @@ struct NWDecisionScreen: View {
                 .frame(maxWidth: .infinity)
                 .accessibilityHidden(true)
             HStack(spacing: 10) {
-                NWChip(kind: c.chip, pill: true)
+                NWIconTile(symbol: c.chip.symbol, jewel: .of(row.tint), size: 36, glass: true)
+                NWChip(kind: c.chip, pill: true, onJewel: row.tint != nil)
                 Spacer(minLength: 0)
                 Button(action: actions.close) {
                     Image(systemName: "xmark").font(.system(.footnote, weight: .bold))
@@ -276,17 +298,17 @@ struct NWDecisionScreen: View {
                 .accessibilityLabel(Text("Close"))
             }
             Text("\(c.project) · \(c.agent) · \(row.waitingText(now: state.now))")
-                .font(NightWatch.Typo.caption)
-                .foregroundColor(NightWatch.Palette.textTertiary.color)
+                .font(NightWatch.Typo.captionStrong)
+                .foregroundColor(Color.white.opacity(row.tint != nil ? 0.88 : 0.6))
                 .lineLimit(2)
                 .offset(y: -6)
             Text(c.headline)
-                .font(NightWatch.Typo.hero).kerning(NightWatch.Typo.heroTracking)
+                .font(NightWatch.Typo.sheetTitle).kerning(NightWatch.Typo.heroTracking)
                 .foregroundColor(NightWatch.Palette.textPrimary.color)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             if let blurb = c.blurb {
-                Text(blurb).font(NightWatch.Typo.subline).foregroundColor(NightWatch.Palette.textSecondary.color)
+                Text(blurb).font(NightWatch.Typo.subline).foregroundColor(Color.white.opacity(row.tint != nil ? 0.9 : 0.7))
             }
         }
     }
@@ -351,15 +373,16 @@ struct NWDecisionScreen: View {
                 if !c.tags.isEmpty {
                     HStack(spacing: 6) {
                         ForEach(c.tags, id: \.rawValue) { t in
-                            Text(t.rawValue).font(NightWatch.Typo.monoMicro)
-                                .foregroundColor(NightWatch.Palette.textSecondary.color)
-                                .padding(.horizontal, 8).padding(.vertical, 4)
-                                .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(Color.white.opacity(0.07)))
+                            Text(t.rawValue).font(NightWatch.Typo.captionStrong)
+                                .foregroundColor(NightWatch.Palette.textPrimary.opacity(0.9).color)
+                                .padding(.horizontal, 9).padding(.vertical, 4)
+                                .background(Capsule().fill(Color.white.opacity(0.09))
+                                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.12), lineWidth: 1)))
                         }
                     }
                 }
                 if !c.reason.isEmpty {
-                    (Text("WHY  ").font(NightWatch.Typo.label).foregroundColor(NightWatch.Palette.textQuiet.color)
+                    (Text("Why  ").font(NightWatch.Typo.captionStrong).foregroundColor(NightWatch.Palette.textTertiary.color)
                         + Text(c.reason).font(NightWatch.Typo.caption).foregroundColor(NightWatch.Palette.textSecondary.color))
                 }
                 if let u = c.undoNote { Text(u).font(NightWatch.Typo.caption).foregroundColor(NightWatch.Palette.textTertiary.color) }
@@ -374,7 +397,7 @@ struct NWDecisionScreen: View {
     @ViewBuilder private var optionsBlock: some View {
         if c.options.count >= 2 {
             VStack(alignment: .leading, spacing: 8) {
-                Text("THE PROMPT OFFERS").nwLabel()
+                Text("The prompt offers").font(NightWatch.Typo.captionStrong).foregroundColor(NightWatch.Palette.textTertiary.color)
                 ForEach(c.options) { o in
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
                         Text("\(o.number)").font(NightWatch.Typo.monoSmall).foregroundColor(NightWatch.Palette.textQuiet.color).frame(width: 14)
@@ -619,7 +642,7 @@ struct NWDecisionScreen: View {
         .padding(.bottom, 12)
         // Solid under the field (content scrolls beneath it), with a short fade above, in the sheet's own colour.
         .background(alignment: .top) {
-            let ground = (row.tint.map { NightWatch.Palette.surface.mixed(with: $0.opacity(1), 0.10) } ?? NightWatch.Palette.surface)
+            let ground = NightWatch.Palette.surface
             ZStack(alignment: .top) {
                 ground.color.ignoresSafeArea(edges: .bottom)
                 LinearGradient(colors: [ground.opacity(0).color, ground.color], startPoint: .top, endPoint: .bottom)
@@ -712,7 +735,7 @@ private struct NWDecisionComposer: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(previewParts.lead).nwLabel()
+                Text(SectionTitle.words(previewParts.lead)).font(NightWatch.Typo.captionStrong).foregroundColor(NightWatch.Palette.textTertiary.color)
                 Spacer()
                 if sending {
                     HStack(spacing: 6) {

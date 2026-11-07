@@ -40,8 +40,8 @@ enum NightWatch {
         static let background = RGBA(hex: 0x05070D)
         static let backgroundDeep = RGBA(hex: 0x04060A)
         /// Card / row fills.
-        static let surface = RGBA(hex: 0x14161C)
-        static let surfaceRaised = RGBA(hex: 0x1B1E25)
+        static let surface = RGBA(hex: 0x131722)
+        static let surfaceRaised = RGBA(hex: 0x1A1F2C)
         static let inset = RGBA(hex: 0x0A0C11)
         static let hairline = RGBA(1, 1, 1, 0.08)
 
@@ -71,14 +71,16 @@ enum NightWatch {
 
     enum Typo {
         /// "2 need you": the Horizon sentence.
-        static let hero = Font.system(.title, design: .default, weight: .bold)
+        static let hero = Font.system(.largeTitle, design: .rounded, weight: .bold)
+        /// A Decision sheet's ask: one step under the Horizon's.
+        static let sheetTitle = Font.system(.title, design: .rounded, weight: .bold)
         /// A card title: "Delete every Dev build?".
         static let headline = Font.system(.title3, design: .default, weight: .bold)
         static let title = Font.system(.headline, design: .default, weight: .semibold)
         static let subline = Font.system(.subheadline, design: .default, weight: .regular)
         static let body = Font.system(.subheadline, design: .default, weight: .regular)
         static let bodyStrong = Font.system(.subheadline, design: .default, weight: .semibold)
-        static let button = Font.system(.body, design: .default, weight: .semibold)
+        static let button = Font.system(.callout, design: .default, weight: .semibold)
         static let caption = Font.system(.caption, design: .default, weight: .regular)
         static let captionStrong = Font.system(.caption, design: .default, weight: .semibold)
         /// Commands and session names.
@@ -86,6 +88,15 @@ enum NightWatch {
         static let monoBody = Font.system(.footnote, design: .monospaced, weight: .regular)
         static let monoSmall = Font.system(.caption, design: .monospaced, weight: .medium)
         static let monoMicro = Font.system(.caption2, design: .monospaced, weight: .medium)
+        /// A section of the stream: "Decide", "In flight".
+        static let section = Font.system(.title3, design: .default, weight: .bold)
+        /// A project or session name. Names are words, not code, so they are in SF Pro.
+        static let name = Font.system(.subheadline, design: .default, weight: .semibold)
+        static let nameLarge = Font.system(.headline, design: .default, weight: .semibold)
+        /// What a session is doing now: "Running swift build".
+        static let activity = Font.system(.subheadline, design: .default, weight: .semibold)
+        static let meta = Font.system(.footnote, design: .default, weight: .regular)
+        static let metaSmall = Font.system(.caption, design: .default, weight: .regular)
         /// Small all-caps tracked label: IRREVERSIBLE, DECIDE.
         static let label = Font.system(.caption2, design: .default, weight: .heavy)
         static let labelLarge = Font.system(.footnote, design: .default, weight: .bold)
@@ -110,7 +121,7 @@ enum NightWatch {
         static let card: CGFloat = 22
         static let row: CGFloat = 18
         static let inset: CGFloat = 14
-        static let button: CGFloat = 16
+        static let button: CGFloat = 13
         static let chip: CGFloat = 6
         static let capsule: CGFloat = 32
     }

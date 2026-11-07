@@ -202,23 +202,31 @@ struct NWHoldButton: View {
     /// What follows the hold.
     var symbol = "faceid"
     var fixedProgress: Double? = nil
+    /// On the Irreversible jewel: a white rim, so the red button stands off the red card.
+    var onJewel = false
     var onComplete: () -> Void
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         NWHoldSurface(spec: .irreversible, fixedProgress: fixedProgress, onComplete: onComplete) { p in
             // Warmest as it starts, settling into the red as it fills.
             let tone = NightWatch.Palette.red.mixed(with: NightWatch.Palette.amber, 0.35 * (1 - HoldRingSpec.warmth(progress: p)))
             let shape = RoundedRectangle(cornerRadius: NightWatch.Radius.button, style: .continuous)
-            HStack(spacing: 10) {
-                Image(systemName: symbol)
-                    .font(.system(size: 20, weight: .regular))
-                    .frame(width: 24, height: 24)
+            HStack(spacing: 8) {
+                // At large text the words need the room: the glyph steps aside, and they may take two lines.
+                if typeSize < .xxLarge {
+                    Image(systemName: symbol)
+                        .font(.system(size: 18, weight: .regular))
+                        .frame(width: 22, height: 22)
+                }
                 Text(label)
                     .font(NightWatch.Typo.button)
-                    .lineLimit(1).minimumScaleFactor(0.8)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(typeSize < .xxLarge ? 1 : 2).minimumScaleFactor(0.75)
             }
+            .padding(.horizontal, 12)
             .foregroundColor(NightWatch.Palette.onBright.color)
-            .frame(maxWidth: .infinity, minHeight: 52)
+            .frame(maxWidth: .infinity, minHeight: 44)
             .background(
                 NightWatch.Palette.red.color
                     .overlay(alignment: .leading) {
@@ -227,7 +235,14 @@ struct NWHoldButton: View {
                                 .frame(width: geo.size.width * CGFloat(MotionCurve.clamp01(p)))
                         }
                     }
+                    .overlay(LinearGradient(stops: [.init(color: Color.white.opacity(0.28), location: 0),
+                                                    .init(color: Color.white.opacity(0), location: 0.55)],
+                                            startPoint: .top, endPoint: .bottom))
                     .clipShape(shape))
+            .overlay(shape.strokeBorder(LinearGradient(colors: [Color.white.opacity(onJewel ? 0.7 : 0.45), Color.white.opacity(onJewel ? 0.2 : 0.05)],
+                                                       startPoint: .top, endPoint: .bottom), lineWidth: 1))
+            // It stands on a red glow: the one commit that cannot be taken back.
+            .shadow(color: NightWatch.Palette.red.opacity(0.5).color, radius: 12, x: 0, y: 6)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(label))

@@ -57,6 +57,14 @@ import app.page.android.model.StartFolder
 import app.page.android.ui.nw.components.NWButton
 import app.page.android.ui.nw.components.NWButtonKind
 import app.page.android.ui.nw.components.NWGlassCard
+import app.page.android.ui.nw.components.NWIconTile
+import app.page.android.ui.nw.components.NWJewel
+import app.page.android.ui.nw.components.drawSoftGlow
+import app.page.android.ui.nw.components.nwJewelSurface
+import app.page.android.ui.nw.components.strokeBorder
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Brush
 import app.page.android.ui.nw.components.NWRunwayBar
 import app.page.android.ui.nw.components.NWTextField
 import app.page.android.ui.nw.components.color
@@ -110,25 +118,31 @@ fun NWDispatchScreen(data: DispatchScreenData, actions: DispatchScreenActions, d
     }
 }
 
+/** A form's label: a small tile of a jewel and the word, as a section is marked on Now. (iOS NWFormLabel.) */
 @Composable
-private fun Label(text: String) { Text(text, style = NW.Typo.label, color = NW.Palette.textQuiet.color) }
+private fun FormLabel(symbol: String, title: String, jewel: NWJewel) {
+    Row(Modifier.semantics(mergeDescendants = true) { heading() }, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        NWIconTile(symbol, jewel, size = 24.dp)
+        Text(title, style = NW.Typo.bodyStrong, color = NW.Palette.textPrimary.color)
+    }
+}
 
 @Composable
 private fun Form(data: DispatchScreenData, actions: DispatchScreenActions, draft: DispatchDraft, onDraft: (DispatchDraft) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Label("WHERE")
+            FormLabel("folder.fill", "Where", NWJewel.sky)
             if (data.folders.size > 7) NWTextField(draft.search, { onDraft(draft.copy(search = it)) }, "Search folders", Modifier.fillMaxWidth(), maxLines = 1)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 for (f in draft.visibleFolders(data.folders, data.now)) FolderChip(f, draft.selectedPath == f.path) { onDraft(draft.copy(selectedPath = f.path)) }
             }
         }
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Label("WHO")
+            FormLabel("person.fill", "Who", NWJewel.amber)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { for (a in DispatchAgent.entries) AgentCard(a, draft.agent == a, Modifier.weight(1f)) { onDraft(draft.copy(agent = a)) } }
         }
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Label("WHAT")
+            FormLabel("text.bubble.fill", "What", NWJewel.violet)
             val shape = RoundedCornerShape(16.dp)
             Column(Modifier.fillMaxWidth().clip(shape).background(Color.White.copy(alpha = 0.05f)).border(1.dp, Color.White.copy(alpha = 0.08f), shape).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Box(Modifier.heightIn(min = 72.dp)) {
@@ -148,7 +162,7 @@ private fun Form(data: DispatchScreenData, actions: DispatchScreenActions, draft
             }
         }
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Label("WHEN")
+            FormLabel("clock.fill", "When", NWJewel.teal)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("Now", style = NW.Typo.bodyStrong, color = NW.Palette.textPrimary.color, modifier = Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.12f)).padding(horizontal = 18.dp, vertical = 10.dp))
                 Text("Starting later isn't available yet", style = NW.Typo.caption, color = NW.Palette.textQuiet.color)
@@ -169,15 +183,27 @@ private fun Form(data: DispatchScreenData, actions: DispatchScreenActions, draft
 
 @Composable
 private fun FolderChip(f: DispatchFolder, on: Boolean, onClick: () -> Unit) {
+    // The chosen folder is a capsule of its project's jewel (lift 0.5); the others are lit glass.
     Row(
-        Modifier.heightIn(min = 48.dp).clip(CircleShape).background(if (on) NW.Palette.teal.opacity(0.14).color else Color.White.copy(alpha = 0.05f))
-            .border(if (on) 1.5.dp else 1.dp, if (on) NW.Palette.teal.opacity(0.7).color else Color.White.copy(alpha = 0.10f), CircleShape)
+        Modifier.heightIn(min = 48.dp)
+            .drawBehind {
+                val r = size.height / 2
+                if (!on) {
+                    drawRoundRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.09f), Color.White.copy(alpha = 0.04f))), cornerRadius = CornerRadius(r))
+                    strokeBorder(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.18f), Color.White.copy(alpha = 0.05f))), r)
+                }
+            }
+            .then(if (on) Modifier.nwJewelSurface(NWJewel.of(f.hue), radius = 24.dp, lift = 0.5) else Modifier)
+            .clip(CircleShape)
             .clickable(role = Role.RadioButton, onClick = onClick).padding(horizontal = 14.dp)
             .semantics { selected = on; contentDescription = f.name + (f.lastUsed?.let { ", used $it" } ?: "") },
         horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(9.dp).clip(CircleShape).background(f.hue.color.color))
-        Text(f.name, style = NW.Typo.mono, color = NW.Palette.textPrimary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Box(
+            Modifier.size(9.dp).drawBehind { drawSoftGlow(f.hue.color.opacity(0.8).color, blur = 3.dp.toPx(), corner = size.minDimension / 2) }
+                .clip(CircleShape).background(f.hue.color.color),
+        )
+        Text(f.name, style = NW.Typo.name, color = NW.Palette.textPrimary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

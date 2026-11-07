@@ -363,6 +363,8 @@ enum RenderFixtures {
         if ["now-flight", "now-flight-old", "now-flight-jump"].contains(screen) { d.scrollToId = HeaderJump.sectionId }
         if screen == "now-flight-two" { d.scrollTo = "inflight-sess-p3" }
         if screen == "now-inflight-long", let last = d.inFlight.rows.last { d.scrollTo = "inflight-\(last.id)" }
+        // `-NWScrollId section-look`: frame any part of the stream (a section, "row-<id>"), for a review of its look.
+        if let id = UserDefaults.standard.string(forKey: "NWScrollId") { d.scrollTo = nil; d.scrollToId = id }
         if screen == "now-brief" { d.brief = brief(urgent: true); d.briefExpanded = false }
         if screen == "now-brief-quiet" { d.brief = brief(urgent: false); d.briefExpanded = true }
         if screen == "now-arming" {

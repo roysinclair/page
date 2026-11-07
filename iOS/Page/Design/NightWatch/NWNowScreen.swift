@@ -115,14 +115,20 @@ struct NWNowScreen: View {
             ScrollView {
                 VStack(spacing: 16) {
                     horizon(inset: inset)
+                    // Information stays in the sky: the Runway is read, not acted on.
+                    sky
+                    // What needs you, and what is working, sit on the desk below it.
                     VStack(spacing: 16) { stream(inset: inset) }
                         .padding(.horizontal, NightWatch.Space.gutter)
+                        .padding(.bottom, 136)
+                        .frame(maxWidth: .infinity)
+                        // The desk runs on past the end, so a bounce at the bottom shows more desk, not sky.
+                        .background(alignment: .top) { NWDesk(light: deskLight).padding(.top, -deskLift).padding(.bottom, -900) }
                         // Cards below a new arrival make room on its spring; nothing above moves.
                         .animation(reduceMotion ? nil : .spring(response: ApproachModel.response, dampingFraction: ApproachModel.damping),
                                    value: NWStreamSpring(rows: rowIds, horizon: horizonHeight))
                         // The New pill comes and goes (the cards below make room); a row change keeps the spring above.
                         .animation(queuedAnimation, value: data.queuedNew > 0)
-                    Spacer().frame(height: 120)
                 }
                 .coordinateSpace(name: nwStreamSpace)
             }
@@ -275,19 +281,39 @@ struct NWNowScreen: View {
         .accessibilityHint(Text("Opens the Tower"))
     }
 
+    // MARK: Sky and desk
+
+    /// The Runway, as an instrument in the sky: faint glass, no light of its own.
+    @ViewBuilder private var sky: some View {
+        // With the Mac out of reach the Runway would be a stale promise, so it steps aside.
+        if data.problem?.kind != .macAsleep {
+            NWNowRunway(model: data.model.runway, motion: motion, breathPeriod: runwayBreath)
+                .padding(6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(NWInstrumentGlass(light: deskLight))
+                .contentShape(Rectangle())
+                .onTapGesture(perform: actions.tapRunway)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint(Text("Opens the Tower at Budget"))
+                .padding(.horizontal, NightWatch.Space.gutter)
+                // Above the desk, which rises behind its lower half: the lift.
+                .zIndex(1)
+        }
+    }
+
+    /// How far the desk's edge rises behind the Runway (none when the Runway steps aside).
+    private var deskLift: CGFloat { data.problem?.kind == .macAsleep ? 0 : 58 }
+
+    /// The light along the desk's edge: the mood's colour.
+    private var deskLight: NightWatch.RGBA {
+        NightWatch.RGBA(hex: DeskLight.colour(mood: data.model.mood, problem: data.problem.map { $0.tone == .slate ? .slate : .amber }))
+    }
+
     // MARK: Stream
 
     @ViewBuilder private func stream(inset: CGFloat) -> some View {
         if let p = data.problem { NWProblemCard(problem: p, onAction: actions.problem) }
         ForEach(data.banners.filter { b in !(data.problem?.replacesBanners.contains(b.id) ?? false) }) { b in NWBannerCard(banner: b, onAction: actions.banner) }
-        // With the Mac out of reach the Runway would be a stale promise, so it steps aside.
-        if data.problem?.kind != .macAsleep {
-            NWGlassCard(radius: 24, padding: 6) { NWNowRunway(model: data.model.runway, motion: motion, breathPeriod: runwayBreath) }
-                .contentShape(Rectangle())
-                .onTapGesture(perform: actions.tapRunway)
-                .accessibilityAddTraits(.isButton)
-                .accessibilityHint(Text("Opens the Tower at Budget"))
-        }
         if let b = data.brief, !b.hasUrgent {
             // Nothing in Decide or Look: the Brief opens straight under the Runway.
             NWBriefCard(brief: b, expanded: data.briefExpanded || quiet, onToggle: actions.toggleBrief,
@@ -300,11 +326,12 @@ struct NWNowScreen: View {
         ForEach(sections, id: \.0) { section, rows in
             // In flight sits between what needs you and what has finished.
             if section == .review { inFlight }
-            NWSectionHeader(title: section.title, count: rows.filter { !data.ghosts.contains($0.id) }.count, color: section.color)
+            NWSectionHeader(title: section.title, count: rows.filter { !data.ghosts.contains($0.id) }.count, color: section.color, symbol: section.symbol)
                 .id("section-\(section.title.lowercased())")
                 .offset(y: push(below: rows.first.flatMap { order.firstIndex(of: $0.id) }.map { $0 - 1 }))
             ForEach(rows) { row in
                 arriving(row, inset: inset)
+                    .nwRecedes()
                     .id("row-\(row.id)")
                     .offset(y: push(below: order.firstIndex(of: row.id).map { $0 - 1 }))
                     // The approach draws an arrival itself; a departure has already folded or simply fades.
@@ -530,7 +557,7 @@ struct NWNowRunway: View {
         let now = motion.pinned ?? Date().timeIntervalSinceReferenceDate
         NWWorkflowClock(origin: 0, until: breathPeriod != nil && !rm ? .infinity : settles, pinned: motion.pinned,
                         fps: now < settles ? 30 : 20, holding: !visible) { t in
-            NWRunwayBar(model: model, frame: NowMotion.runway(s, model, at: t, breathPeriod: breathPeriod, reduceMotion: rm))
+            NWRunwayBar(model: model, frame: NowMotion.runway(s, model, at: t, breathPeriod: breathPeriod, reduceMotion: rm), instrument: true)
                 // Its motion is its own: a row arriving in the same update (the stream's spring) never animates it too.
                 .transaction { $0.animation = nil }
         }

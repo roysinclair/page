@@ -1,6 +1,19 @@
 package app.page.android.ui.nw.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.text.font.FontWeight
+import app.page.android.model.clearFraction
+import app.page.android.ui.nw.theme.Rgba
+import kotlin.math.min
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -149,8 +162,13 @@ private class RunwayHolder {
     var track: NowMotion.RunwayTrack? = null
 }
 
+/**
+ * [instrument] is Now's Runway (iOS `instrumentBody`): a thick lit track, the markers pinned with their words in chips above
+ * it, the hours marked below. The widgets and Dispatch keep the plain line.
+ */
 @Composable
-fun NWRunwayBar(model: RunwayModel, modifier: Modifier = Modifier, motion: RunwayMotion? = null) {
+fun NWRunwayBar(model: RunwayModel, modifier: Modifier = Modifier, motion: RunwayMotion? = null, instrument: Boolean = false) {
+    if (instrument) { NWRunwayInstrument(model, modifier, motion); return }
     // Labels are sp text: rows and widths follow the system font scale so they never overprint.
     val fs = androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceIn(1f, 2f)
     val labelRow = 16.dp * fs
@@ -245,6 +263,155 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.tick(tone: app.page
     val tw = 3.dp.toPx() * scale
     val th = 16.dp.toPx() * scale
     drawRoundRect(tone.opacity(opacity.toDouble()).color, topLeft = Offset(x - tw / 2, y - th / 2), size = Size(tw, th), cornerRadius = CornerRadius(tw / 2))
+}
+
+// MARK: - Now's instrument
+
+/**
+ * Now's Runway as an instrument (iOS `NWRunwayBar.instrumentBody`). The track is 8 dp high: teal running to sky up to the first
+ * deadline ([clearFraction]) and amber (55% fading to 18%) after it, lit from above and glowing, drawing in from the NOW dot.
+ * Each marker is a 12 dp dot with a white centre, a pin up to a chip of its tone (16% fill, 40% rim, semibold 11 sp) in one of
+ * its lanes (22 dp each, growing with the text size), flipped to the pin's left past 0.66. Below the track: hour ticks 1h to 5h
+ * (5h gives way to "on AC") and NOW. Every motion of the plain line is kept: the line drawing, the pops, the glides, the
+ * flash of a marker whose time came, the breathing NOW dot.
+ */
+@Composable
+private fun NWRunwayInstrument(model: RunwayModel, modifier: Modifier, motion: RunwayMotion?) {
+    val fs = androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceIn(1f, 2f)
+    val chipRow = 22.dp * fs
+    val chipHeight = 18.dp * fs
+    val inset = 22.dp
+    val track = 8.dp
+    val markers = motion?.track?.markers ?: model.markers
+    val lanes = (markers.maxOfOrNull { it.lane } ?: 0) + 1
+    val lineY = 4.dp + chipRow * lanes + 10.dp
+    val clear = model.clearFraction.toFloat()
+    val labelsY = lineY + track / 2 + 9.dp
+    val total = lineY + 4.dp + 14.dp + 16.dp * fs
+    val hours = if (model.onAC) 5 else 6
+    val small = NW.Typo.metaSmall.copy(fontSize = 11.sp, lineHeight = 14.sp, fontFeatureSettings = "tnum")
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = runwaySpoken(model) }) {
+        val w = maxWidth - inset * 2
+        Box(Modifier.fillMaxWidth().height(total)) {
+            Canvas(Modifier.fillMaxWidth().height(total)) {
+                val now = motion?.clock?.value ?: 0.0
+                val y = lineY.toPx()
+                val x0 = inset.toPx()
+                val ww = w.toPx()
+                val th = track.toPx()
+                val drawn = motion?.let { NowMotion.runwayLine(now - it.track.drawnAt, it.reduce).toFloat() } ?: 1f
+                val tealAt = ww * clear
+                // The track, drawing in from the NOW dot (the mask is a little wider than the track, so the glow's end is not cut hard).
+                clipRect(left = x0, top = 0f, right = x0 + (ww + 12.dp.toPx()) * min(1f, drawn), bottom = size.height) {
+                    drawRoundRect(Color.White.copy(alpha = 0.07f), Offset(x0, y - th / 2), Size(ww, th), CornerRadius(th / 2))
+                    if (clear < 1f) {
+                        val ax = x0 + tealAt - th
+                        drawRoundRect(
+                            Brush.horizontalGradient(listOf(NW.Palette.amber.opacity(0.55).color, NW.Palette.amber.opacity(0.18).color), startX = ax, endX = ax + ww * (1 - clear) + th),
+                            Offset(ax, y - th / 2), Size(ww * (1 - clear) + th, th), CornerRadius(th / 2),
+                        )
+                    }
+                    val tw = maxOf(th, tealAt)
+                    drawSoftGlow(NW.Palette.teal.opacity(0.65).color, blur = 6.dp.toPx(), corner = th / 2, topLeft = Offset(x0, y - th / 2), shapeSize = Size(tw, th))
+                    drawRoundRect(
+                        Brush.horizontalGradient(listOf(NW.Palette.teal.color, NW.Palette.sky.color), startX = x0, endX = x0 + tw),
+                        Offset(x0, y - th / 2), Size(tw, th), CornerRadius(th / 2),
+                    )
+                    // Light along the track's top.
+                    val capsule = androidx.compose.ui.graphics.Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(x0, y - th / 2, x0 + ww, y + th / 2, CornerRadius(th / 2))) }
+                    clipPath(capsule) {
+                        drawRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.35f), Color.White.copy(alpha = 0f)), startY = y - th / 2, endY = y), Offset(x0, y - th / 2), Size(ww, th / 2))
+                    }
+                }
+                // The hours' ticks, under the track.
+                for (h in 1 until hours) {
+                    val x = x0 + ww * h / 6
+                    drawRect(Color.White.copy(alpha = 0.22f * drawn), Offset(x - 0.5.dp.toPx(), y + th / 2 + 3.dp.toPx()), Size(1.dp.toPx(), 5.dp.toPx()))
+                }
+                for (m in markers) {
+                    val f = motion?.let { NowMotion.marker(it.track, m, now, it.reduce) } ?: NowMotion.MarkerFrame(m.fraction, 1.0, 1.0)
+                    if (f.opacity <= 0.001) continue
+                    val x = x0 + f.fraction.toFloat() * ww
+                    val laneY = (4.dp + chipRow * minOf(m.lane, lanes - 1)).toPx()
+                    val tone = m.tone.color
+                    val pinTop = laneY + chipHeight.toPx()
+                    // The pin, from its chip down to the track.
+                    if (y > pinTop) drawRect(
+                        Brush.verticalGradient(listOf(tone.opacity(0.9 * f.opacity).color, tone.opacity(0.35 * f.opacity).color), startY = pinTop, endY = y),
+                        Offset(x - 0.75.dp.toPx(), pinTop), Size(1.5.dp.toPx(), y - pinTop),
+                    )
+                    // Its dot on the track: glowing, a white centre.
+                    val k = f.scale.toFloat()
+                    val gr = 11.dp.toPx() * k
+                    drawCircle(Brush.radialGradient(listOf(tone.opacity(0.8 * f.opacity).color, Color.Transparent), center = Offset(x, y), radius = gr), gr, Offset(x, y))
+                    drawCircle(tone.opacity(f.opacity).color, 6.dp.toPx() * k, Offset(x, y))
+                    drawCircle(Color.White.copy(alpha = (0.9 * f.opacity).toFloat()), 2.dp.toPx() * k, Offset(x, y))
+                }
+                // A marker whose time came flashes once at the NOW end as it fades; any other only fades where it was.
+                motion?.track?.gone?.values?.forEach { g ->
+                    val l = NowMotion.markerLeave(now - g.at, g.reached, motion.reduce)
+                    val x = x0 + g.fraction.toFloat() * ww
+                    if (l.flash > 0.001) {
+                        val glow = NowMotion.flashGlow(l.flash)
+                        val r = 8.dp.toPx() * glow.scale.toFloat()
+                        drawCircle(Brush.radialGradient(listOf(g.marker.tone.color.opacity(glow.opacity).color, Color.Transparent), center = Offset(x, y), radius = r), r, Offset(x, y))
+                    }
+                    if (l.opacity > 0.001) drawCircle(g.marker.tone.color.opacity(l.opacity).color, 6.dp.toPx(), Offset(x, y))
+                }
+                // Now: its halo breathes with the pulse while agents work.
+                val b = if (motion?.breathing == true) NowMotion.nowDot(now, motion.period) else 0.0
+                drawCircle(
+                    Color.White.copy(alpha = (WorkflowMotion.haloFrom + (WorkflowMotion.haloTo - WorkflowMotion.haloFrom) * b).toFloat()),
+                    radius = 9.dp.toPx() * 1.2f * (1 + WorkflowMotion.breathScale * b).toFloat(), center = Offset(x0, y),
+                )
+                drawCircle(Color.White, radius = 7.2.dp.toPx(), center = Offset(x0, y))
+            }
+            // The hours' words.
+            for (h in 1 until hours) {
+                Text(
+                    "${h}h", style = small.copy(fontWeight = FontWeight.Medium), color = NW.Palette.textQuiet.color, textAlign = TextAlign.Center, maxLines = 1, softWrap = false,
+                    modifier = Modifier.width(30.dp).offset(x = inset + w * h / 6 - 15.dp, y = labelsY)
+                        .graphicsLayer { alpha = motion?.let { NowMotion.runwayLine(it.clock.value - it.track.drawnAt, it.reduce).toFloat() } ?: 1f },
+                )
+            }
+            // Each marker's words, in a chip of its tone beside the pin (to its left near the end). Placed as laid out, so a glide moves it without recomposing.
+            for (m in markers) {
+                val lane = minOf(m.lane, lanes - 1)
+                val tone = m.tone.color
+                Text(
+                    m.label, style = small.copy(fontWeight = FontWeight.SemiBold), color = m.tone.color.mixed(Rgba(1.0, 1.0, 1.0), 0.15).color, maxLines = 1, softWrap = false,
+                    modifier = Modifier
+                        .layout { meas, c ->
+                            val p = meas.measure(c.copy(minWidth = 0, maxWidth = androidx.compose.ui.unit.Constraints.Infinity))
+                            layout(p.width, p.height) {
+                                val place = motion?.let { NowMotion.markerPlace(it.track, m.id, it.clock.value) } ?: m.fraction
+                                val x = inset.roundToPx() + (w.roundToPx() * place).toInt()
+                                val left = if (place > 0.66) x + 6.dp.roundToPx() - p.width else x - 6.dp.roundToPx()
+                                p.placeWithLayer(left, (4.dp + chipRow * lane).roundToPx()) {
+                                    if (motion != null) alpha = NowMotion.marker(motion.track, m, motion.clock.value, motion.reduce).opacity.toFloat()
+                                }
+                            }
+                        }
+                        .height(chipHeight)
+                        .clip(CircleShape)
+                        .background(tone.opacity(0.16).color)
+                        .border(1.dp, tone.opacity(0.4).color, CircleShape)
+                        .padding(horizontal = 7.dp)
+                        .wrapContentHeight(),
+                )
+            }
+            Text("NOW", style = NW.Typo.label.copy(letterSpacing = 0.8.sp), color = NW.Palette.textSecondary.color, modifier = Modifier.offset(x = inset - 8.dp, y = labelsY))
+            if (model.onAC) {
+                Row(
+                    Modifier.width(70.dp).offset(x = inset + w - 70.dp, y = labelsY),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End, verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(nwIcon("bolt.fill"), null, tint = NW.Palette.teal.color, modifier = Modifier.size(11.dp))
+                    Text("on AC", style = small.copy(fontWeight = FontWeight.SemiBold), color = NW.Palette.teal.color)
+                }
+            }
+        }
+    }
 }
 
 /** What TalkBack reads. */

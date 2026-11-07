@@ -5828,5 +5828,91 @@ do {
           && after.look.headline == "3 need you" && after.scene.arrivals["h0"] == base + 2 && after.scene.badges.bumps[0] == base + 2, "change: everything at 2.0 s, nothing before")
 }
 
+// MARK: - Night Watch v5 depth
+// The depth table (NightWatchDepth.swift): the jewels and their white-text
+// contrast, the chip and hue mappings, where the runway stops being clear, the
+// section and chip words, and the desk's light.
+do {
+    func white(_ c: UInt32) -> Double { Contrast.ratio(0xFFFFFF, c) }
+
+    // Contrast basics.
+    check(abs(Contrast.ratio(0xFFFFFF, 0x000000) - 21) < 0.01, "contrast: white on black is 21:1")
+    check(Contrast.ratio(0x0D7A72, 0x0D7A72) == 1, "contrast: a colour against itself is 1:1")
+    check(abs(Contrast.luminance(0xFFFFFF) - 1) < 1e-9, "contrast: white's luminance is 1")
+    check(Contrast.luminance(0x000000) == 0, "contrast: black's luminance is 0")
+    check(Contrast.ratio(0x0D7A72, 0xF5B14C) == Contrast.ratio(0xF5B14C, 0x0D7A72), "contrast: the ratio is symmetric")
+    check(Contrast.mix(0x1D62AE, 0x7CC8FF, 0) == 0x1D62AE, "contrast: mix at 0 is the first colour")
+    check(Contrast.mix(0x1D62AE, 0x7CC8FF, 1) == 0x7CC8FF, "contrast: mix at 1 is the second colour")
+    check(Contrast.mix(0x000000, 0xFFFFFF, 0.5) == 0x808080, "contrast: mix half way from black to white is 0x808080")
+    check(Contrast.white(alpha: 1, over: 0x123456) == 0xFFFFFF, "contrast: full white over anything is white")
+
+    // Every jewel: white text holds 4.5:1 on its top, bottom and lit corner.
+    check(JewelTone.allCases.count == 9, "jewels: there are nine tones")
+    for tone in JewelTone.allCases {
+        let r = tone.ramp
+        for (name, c) in [("top", r.top), ("bottom", r.bottom), ("lit corner", r.litCorner)] {
+            check(white(c) >= 4.5, "jewel \(tone) \(name): white text is \(white(c)):1, under 4.5:1")
+        }
+        check(Contrast.luminance(r.bottom) < Contrast.luminance(r.top), "jewel \(tone): the bottom is darker than the top")
+        check((0.0...0.35).contains(r.lightStrength), "jewel \(tone): light strength \(r.lightStrength) is in 0...0.35")
+    }
+
+    // Chip and hue mappings.
+    let chipMap: [(ChipKind, JewelTone)] = [
+        (.irreversible, .red), (.considered, .sky), (.undoable, .green), (.review, .teal),
+        (.looksStuck, .amber), (.question, .amber), (.forecast, .amber), (.rateLimited, .amber),
+    ]
+    check(chipMap.count == ChipKind.allCases.count, "mapping: every chip is covered")
+    for (chip, tone) in chipMap {
+        check(JewelTone(chip: chip) == tone, "mapping: chip \(chip) is \(tone)")
+    }
+    check(ChipKind.allCases.filter { JewelTone(chip: $0) == .red } == [.irreversible], "mapping: only irreversible is red")
+
+    let hueMap: [(ProjectHue, JewelTone)] = [
+        (.teal, .teal), (.sky, .sky), (.lime, .lime), (.violet, .violet), (.rose, .plum), (.white, .indigo),
+    ]
+    check(hueMap.count == ProjectHue.allCases.count, "mapping: every project hue is covered")
+    for (hue, tone) in hueMap {
+        check(JewelTone(hue: hue) == tone, "mapping: hue \(hue) is \(tone)")
+    }
+    check(ProjectHue.allCases.allSatisfy { JewelTone(hue: $0) != .red }, "mapping: no project hue is red")
+
+    // The runway stops being clear at its earliest deadline.
+    let t0 = Date(timeIntervalSinceReferenceDate: 800_000_000)
+    func marker(_ id: String, _ fraction: Double) -> RunwayMarker {
+        RunwayMarker(id: id, kind: .usageLimit, label: id, at: t0.addingTimeInterval(fraction * RunwayModel.window),
+                     fraction: fraction, tone: .amber)
+    }
+    let m1 = marker("a", 0.2), m2 = marker("b", 0.5), m3 = marker("c", 0.7)
+    let all = [m1, m2, m3]
+    check(RunwayModel(markers: all, onAC: false, clearUntil: nil).clearFraction == 1, "clear fraction: nothing stops it is 1")
+    check(RunwayModel(markers: all, onAC: false, clearUntil: m2.at).clearFraction == 0.5, "clear fraction: clear until a marker is that marker's fraction")
+    check(RunwayModel(markers: all, onAC: false, clearUntil: m1.at).clearFraction == 0.2, "clear fraction: the earliest marker's fraction")
+    check(RunwayModel(markers: all, onAC: false, clearUntil: t0.addingTimeInterval(99)).clearFraction == 0.2,
+          "clear fraction: a clear-until matching no marker is the smallest fraction")
+    check(RunwayModel(markers: [], onAC: true, clearUntil: t0).clearFraction == 1, "clear fraction: no markers is 1")
+
+    // Section titles and the clock chip's wait.
+    check(SectionTitle.words("IN FLIGHT") == "In flight", "title: IN FLIGHT is In flight")
+    check(SectionTitle.words("NEEDS YOU") == "Needs you", "title: NEEDS YOU is Needs you")
+    check(SectionTitle.words("decide") == "Decide", "title: decide is Decide")
+    check(SectionTitle.words("") == "", "title: empty stays empty")
+    check(WaitChip.text("waiting 4m") == "4m", "chip: waiting 4m is 4m")
+    check(WaitChip.text("waiting 1h 2m") == "1h 2m", "chip: waiting 1h 2m is 1h 2m")
+    check(WaitChip.text("finished 2m") == "finished 2m", "chip: finished 2m is unchanged")
+    check(WaitChip.text("") == "", "chip: empty stays empty")
+
+    // The desk's light.
+    check(DeskLight.colour(mood: .needsYou, problem: nil) == 0xF5B14C, "desk: needs you is amber")
+    check(DeskLight.colour(mood: .working, problem: nil) == 0x5EEAD4, "desk: working is teal")
+    check(DeskLight.colour(mood: .dusk, problem: nil) == 0xA78BFA, "desk: dusk is violet")
+    check(DeskLight.colour(mood: .quiet, problem: nil) == Contrast.mix(0x5EEAD4, 0x38BDF8, 0.5), "desk: quiet is teal half way to sky")
+    check(Contrast.mix(0x5EEAD4, 0x38BDF8, 0.5) == 0x4BD4E6, "desk: the quiet night is 0x4BD4E6 by hand")
+    for mood in [NowModel.Mood.needsYou, .working, .dusk, .quiet] {
+        check(DeskLight.colour(mood: mood, problem: .slate) == 0x6B7894, "desk: a slate problem is slate whatever the mood (\(mood))")
+        check(DeskLight.colour(mood: mood, problem: .amber) == 0xF5B14C, "desk: an amber problem is amber whatever the mood (\(mood))")
+    }
+}
+
 print("passes=\(passes) failures=\(failures)")
 exit(failures == 0 ? 0 : 1)

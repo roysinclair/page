@@ -1,6 +1,10 @@
 package app.page.android.ui.nw.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
@@ -78,11 +82,13 @@ import app.page.android.ui.nw.theme.NW
 import app.page.android.ui.nw.theme.Rgba
 
 /**
- * The bottom bar: Now, the pulse, Lanes. Each side carries a badge (the Decide count in amber, the working count
- * in teal). Two places and one verb: a tap on a side switches, a horizontal drag on a side switches (Lanes lies to
- * the right of Now), a tap on the pulse button opens Dispatch, and holding the pulse is the Stop ring (see
- * [NWStopOverlay]). The Android adaptation of iOS's floating capsule (board 06): a bar along the bottom edge with
- * the label under each icon, selected side in a tinted pill, and the pulse as a rounded-square button in the middle.
+ * The floating nav capsule: Now, the pulse, Lanes (iOS NWNavCapsule). Each side carries a badge (the Decide count in
+ * amber, the working count in teal). Two places and one verb: a tap on a side switches, a horizontal drag on a side
+ * switches (Lanes lies to the right of Now), a tap on the pulse opens Dispatch, and holding the pulse is the Stop ring (see
+ * [NWStopOverlay]). 60 dp high ([NW.capsuleHeight]) and inset 16 dp from the sides, clear of the system bar, with the
+ * selected side in a [nwGlassBubble] and the pulse (50 dp) in the middle. Chrome glass: Android has no Liquid Glass, so it
+ * is translucent smoke ([NW.Palette.chromeGlass], #04060A at 34%), a lit rim and a soft shadow ([nwChromeGlass]).
+ * Everything that scrolls under it must leave [NW.capsuleHeight] + [NW.capsuleGap] + the system bar clear at its end.
  */
 @Composable
 fun NWNavBar(
@@ -99,36 +105,61 @@ fun NWNavBar(
     onPulseTap: () -> Unit = {},
     onPulseHold: () -> Unit = {},
 ) {
-    val barShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
     Box(
-        modifier
-            .fillMaxWidth()
-            .background(NW.Palette.surface.opacity(0.995).color, barShape)
-            .border(1.dp, Color.White.copy(alpha = 0.06f), barShape),
+        modifier.fillMaxWidth()
+            // Android has no backdrop blur, so a stream that passes under the capsule is faded out first: the page's own colour,
+            // clear at the top to 85% at the bottom edge over about 90 dp, so rows reach the capsule cleanly and never collide with its
+            // labels. Drawn behind (it takes no touches), from the screen's bottom edge, under the system bar as well.
+            .drawBehind {
+                // 90 dp of fade above the capsule's own top edge less its 68 dp, plus the system bar below: the clear top reaches
+                // only about 22 dp above the capsule, so it never washes the buttons of the card above it.
+                val h = size.height + NavScrim.above.toPx()
+                val bg = NW.Palette.background
+                drawRect(
+                    Brush.verticalGradient(
+                        0f to bg.opacity(0.0).color, 1f to bg.opacity(NavScrim.alpha).color, startY = size.height - h, endY = size.height,
+                    ),
+                    topLeft = Offset(0f, size.height - h), size = androidx.compose.ui.geometry.Size(size.width, h),
+                )
+            }
+            .windowInsetsPadding(WindowInsets.navigationBars).padding(start = 16.dp, end = 16.dp, bottom = NW.capsuleGap),
     ) {
         Row(
-            Modifier.windowInsetsPadding(WindowInsets.navigationBars).fillMaxWidth().height(84.dp).padding(horizontal = 8.dp),
+            // The capsule's body is denser on Android (#04060A at 80%, not the 34% that blur makes readable on iOS): the lit rim
+            // and the bubble are the same.
+            Modifier.fillMaxWidth().height(NW.capsuleHeight).nwChromeGlass(tint = NavScrim.body).padding(horizontal = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            NavSide(NWDestination.NOW, "Now", Icons.Outlined.TrackChanges, decideCount, NW.Palette.amber, selection, onSelect, Modifier.weight(1f))
-            PulseButton(workingCount, pulseWaiting, pulseLongestWait, onHeld, onPulseTap, onPulseHold, Modifier.size(88.dp, 84.dp))
-            NavSide(NWDestination.LANES, "Lanes", Icons.Outlined.StarOutline, workingCount, NW.Palette.teal, selection, onSelect, Modifier.weight(1f))
+            NavSide(NWDestination.NOW, "Now", decideCount, NW.Palette.amber, selection, onSelect, Modifier.weight(1f))
+            PulseButton(workingCount, pulseWaiting, pulseLongestWait, onHeld, onPulseTap, onPulseHold, Modifier.size(66.dp, NW.capsuleHeight))
+            NavSide(NWDestination.LANES, "Lanes", workingCount, NW.Palette.teal, selection, onSelect, Modifier.weight(1f))
         }
     }
 }
 
+/** The Android-only parts of the nav capsule: its denser body and the fade behind it. */
+private object NavScrim {
+    /** How far the fade rises above the capsule's top edge (the whole fade is about 90 dp from the capsule's foot). */
+    val above = 22.dp
+    const val alpha = 0.85
+    val body = Rgba.hex(0x04060A, 0.8)
+}
+
 @Composable
 private fun NavSide(
-    destination: NWDestination, title: String, icon: ImageVector, count: Int, badge: Rgba, selection: NWDestination,
+    destination: NWDestination, title: String, count: Int, badge: Rgba, selection: NWDestination,
     onSelect: (NWDestination) -> Unit, modifier: Modifier,
 ) {
     val on = selection == destination
+    val reduce = LocalReduceMotion.current
     val pick by rememberUpdatedState(onSelect)
     val sel by rememberUpdatedState(selection)
     val drag = remember { mutableFloatStateOf(0f) }
-    Column(
+    // The bubble comes up under the side that is chosen (it eases in; Reduce Motion cuts).
+    val bubble = animateFloatAsState(if (on) 1f else 0f, if (reduce) tween(0) else tween(220), label = "bubble")
+    Box(
         modifier
-            .heightIn(min = 64.dp)
+            .heightIn(min = 46.dp)
             .pointerDrag({ drag.floatValue += it }, {
                 val to = NWDestination.afterDrag(sel, drag.floatValue.toDouble(), 0.0)
                 if (to != sel) pick(to)
@@ -139,19 +170,17 @@ private fun NavSide(
                 selected = on
                 contentDescription = if (count > 0) "$title, $count" else title
             },
-        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
+        contentAlignment = Alignment.Center,
     ) {
-        Row(
-            Modifier.height(34.dp).clip(CircleShape).background(if (on) badge.opacity(0.16).color else Color.Transparent).padding(horizontal = 14.dp),
-            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Icon(icon, null, tint = if (on) badge.color else NW.Palette.textTertiary.color, modifier = Modifier.size(24.dp))
+        Box(Modifier.matchParentSize().graphicsLayer { alpha = bubble.value }.nwGlassBubble())
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                title, style = NW.Typo.button.copy(fontWeight = if (on) FontWeight.Bold else FontWeight.Medium),
+                // Unselected still reads over whatever shows through the glass.
+                color = if (on) NW.Palette.textPrimary.color else Color.White.copy(alpha = 0.78f),
+            )
             NavBadge(count, badge, if (destination == NWDestination.NOW) { l -> l.decide } else { l -> l.working })
         }
-        Text(
-            title, style = NW.Typo.captionStrong.copy(fontSize = 13.sp), color = if (on) NW.Palette.textPrimary.color else NW.Palette.textTertiary.color,
-            modifier = Modifier.padding(top = 3.dp),
-        )
     }
 }
 
@@ -170,24 +199,24 @@ private fun NavBadge(count: Int, tone: Rgba, pick: (NowMotion.Look) -> Int) {
     val (value, previous, visible) = shown
     if (!visible || value <= 0) return
     fun frame() = NowMotion.badge(change, clock.value, reduce)
-    val style = NW.Typo.captionStrong.copy(fontSize = 13.sp)
+    val style = NW.Typo.captionStrong.copy(fontWeight = FontWeight.Bold, fontFeatureSettings = "tnum")
     Box(
         Modifier.clearAndSetSemantics {}.graphicsLayer {
             val f = frame()
             scaleX = f.scale.toFloat()
             scaleY = f.scale.toFloat()
             alpha = f.opacity.toFloat()
-        }.clip(CircleShape).background(tone.color).padding(horizontal = 7.dp, vertical = 1.dp),
+        }.clip(CircleShape).background(tone.opacity(0.18).color).padding(horizontal = 8.dp, vertical = 3.dp),
         contentAlignment = Alignment.Center,
     ) {
         Box(Modifier.clipToBounds(), contentAlignment = Alignment.Center) {
             // The old count slides up and out as the new one comes up from below (a cross-fade under Reduce Motion).
-            if (previous != null) Text("$previous", style = style, color = NW.Palette.onBright.color, textAlign = TextAlign.Center, modifier = Modifier.graphicsLayer {
+            if (previous != null) Text("$previous", style = style, color = tone.color, textAlign = TextAlign.Center, modifier = Modifier.graphicsLayer {
                 val k = frame().roll.toFloat()
                 translationY = if (reduce) 0f else -size.height * k
                 alpha = 1 - k
             })
-            Text("$value", style = style, color = NW.Palette.onBright.color, textAlign = TextAlign.Center, modifier = Modifier.graphicsLayer {
+            Text("$value", style = style, color = tone.color, textAlign = TextAlign.Center, modifier = Modifier.graphicsLayer {
                 if (previous != null) {
                     val k = frame().roll.toFloat()
                     translationY = if (reduce) 0f else size.height * (1 - k)
@@ -209,7 +238,7 @@ private fun Modifier.pointerInputDrag(onDrag: (Float) -> Unit, onEnd: () -> Unit
         },
     )
 
-/** The pulse button: a gradient rounded square with a plus, the pulse's ripples round it, and the Stop ring over it while held. */
+/** The pulse button: a teal-to-sky disc (50 dp) with a plus in a ring that fills as the hold goes on, the pulse's ripples round it, and the Stop ring over the screen while held. */
 @Composable
 private fun PulseButton(
     working: Int, waiting: Int, longestWait: Double, onHeld: (Double?) -> Unit, onTap: () -> Unit, onHold: () -> Unit, modifier: Modifier,
@@ -225,15 +254,15 @@ private fun PulseButton(
         contentAlignment = Alignment.Center,
     ) {
         NWHoldSurface(
-            HoldRingSpec.stopAll, Modifier.size(88.dp, 84.dp), onHeld = { held.floatValue = it?.toFloat() ?: -1f; onHeld(it) },
+            HoldRingSpec.stopAll, Modifier.size(66.dp, NW.capsuleHeight), onHeld = { held.floatValue = it?.toFloat() ?: -1f; onHeld(it) },
             onComplete = onHold, onTap = onTap,
         ) { p ->
-            Box(Modifier.size(88.dp, 84.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(66.dp, NW.capsuleHeight), contentAlignment = Alignment.Center) {
                 // The pulse, here too: an amber ripple per waiting item, or the teal breath.
                 if (p == 0.0) CapsulePulse(model)
-                Canvas(Modifier.size(80.dp)) {
+                Canvas(Modifier.size(58.dp)) {
                     val c = Offset(size.width / 2, size.height / 2)
-                    val d = 76.dp.toPx()
+                    val d = 58.dp.toPx() - 4.dp.toPx()
                     val lw = 4.dp.toPx()
                     drawCircle(Color.White.copy(alpha = if (p > 0) 0.12f else 0f), radius = d / 2, center = c, style = Stroke(lw))
                     drawArc(
@@ -243,13 +272,16 @@ private fun PulseButton(
                 }
                 Box(
                     Modifier
-                        .size(64.dp)
+                        .size(NW.capsulePulse)
                         .scale((1 - 0.06 * p).toFloat())
-                        .shadow(10.dp, RoundedCornerShape(20.dp), ambientColor = NW.Palette.teal.color, spotColor = NW.Palette.sky.color)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(Brush.linearGradient(listOf(NW.Palette.teal.color, NW.Palette.sky.color))),
+                        .drawBehind {
+                            val r = size.minDimension / 2
+                            drawSoftGlow(NW.Palette.teal.opacity(0.35).color, blur = 10.dp.toPx(), dy = 4.dp.toPx(), corner = r, outsideOnly = false)
+                            drawCircle(Brush.radialGradient(listOf(NW.Palette.teal.color, NW.Palette.sky.color), center = Offset.Zero, radius = 56.dp.toPx()))
+                            strokeBorder(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.5f), Color.White.copy(alpha = 0.08f))), r)
+                        },
                     contentAlignment = Alignment.Center,
-                ) { Icon(Icons.Filled.Add, null, tint = NW.Palette.onBright.color, modifier = Modifier.size(30.dp)) }
+                ) { Icon(Icons.Filled.Add, null, tint = NW.Palette.onBright.color, modifier = Modifier.size(24.dp)) }
             }
         }
     }
@@ -262,7 +294,7 @@ private fun PulseButton(
 @Composable
 fun CapsulePulse(model: PulseModel, modifier: Modifier = Modifier) {
     NWAnimated(fps = 20.0, active = model.isAnimated) { t ->
-        Canvas(modifier.size(88.dp, 84.dp).clearAndSetSemantics {}) {
+        Canvas(modifier.size(66.dp, NW.capsuleHeight).clearAndSetSemantics {}) {
             val c = Offset(size.width / 2, size.height / 2)
             val lw = 1.5.dp.toPx()
             for (r in model.ripples(t)) {

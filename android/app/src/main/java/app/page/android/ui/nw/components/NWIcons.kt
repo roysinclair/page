@@ -6,6 +6,29 @@ import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.automirrored.outlined.Undo
 import androidx.compose.material.icons.filled.StopCircle
 import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Flight
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PanTool
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.Verified
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.ChatBubble
+import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.ChevronRight
@@ -150,5 +173,31 @@ fun nwIcon(symbol: String): ImageVector = when (symbol) {
     "checkmark.seal" -> Icons.Outlined.Verified
     "exclamationmark.triangle" -> Icons.Outlined.WarningAmber
     "chevron.right" -> Icons.Outlined.ChevronRight
+    // The v5 glyphs (jewel tiles, section headers, facts): the filled forms, as iOS draws them.
+    "hand.raised.fill" -> Icons.Filled.PanTool
+    "eye.fill" -> Icons.Filled.Visibility
+    "checkmark.seal.fill" -> Icons.Filled.Verified
+    "airplane" -> Icons.Filled.Flight
+    "clock.fill", "clock" -> Icons.Filled.Schedule
+    "square.stack.3d.up.fill" -> Icons.Filled.Layers
+    "heart.fill" -> Icons.Filled.Favorite
+    "paperplane.fill" -> Icons.Filled.Send
+    "circle.dotted" -> Icons.Outlined.RadioButtonUnchecked
+    "calendar" -> Icons.Outlined.CalendarToday
+    "bolt.fill" -> Icons.Filled.Bolt
+    "checkmark" -> Icons.Filled.Check
+    "gauge.with.needle.fill" -> Icons.Filled.Speed
+    "bell.fill" -> Icons.Filled.Notifications
+    "hand.tap.fill" -> Icons.Filled.TouchApp
+    "square.grid.2x2.fill" -> Icons.Filled.GridView
+    "lock.fill" -> Icons.Filled.Lock
+    "paintpalette.fill" -> Icons.Filled.Palette
+    "info.circle.fill" -> Icons.Filled.Info
+    "person.fill" -> Icons.Filled.Person
+    "folder.fill" -> Icons.Filled.Folder
+    "text.bubble.fill" -> Icons.Filled.ChatBubble
+    "list.bullet" -> Icons.AutoMirrored.Outlined.FormatListBulleted
+    "circle.fill" -> Icons.Filled.Circle
+    "chevron.right.2" -> Icons.AutoMirrored.Outlined.ArrowForward
     else -> Icons.Outlined.Circle
 }

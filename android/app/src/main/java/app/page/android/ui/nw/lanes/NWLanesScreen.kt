@@ -36,7 +36,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -61,19 +65,25 @@ import app.page.android.model.LanesModel
 import app.page.android.model.NowModel
 import app.page.android.model.NowBanner
 import app.page.android.model.SessionAvailabilityCopy
+import app.page.android.model.SectionTitle
 import app.page.android.model.SkyModel
 import app.page.android.model.StarState
 import app.page.android.model.StripCell
 import app.page.android.ui.nw.components.NWAnimated
 import app.page.android.ui.nw.components.NWBannerCard
 import app.page.android.ui.nw.components.NWDawnLight
-import app.page.android.ui.nw.components.NWGlassCard
+import app.page.android.ui.nw.components.NWGlassEdgeLight
+import app.page.android.ui.nw.components.NWJewel
+import app.page.android.ui.nw.components.nwGlass
+import app.page.android.ui.nw.components.nwHueBand
+import app.page.android.ui.nw.components.strokeBorder
 import app.page.android.ui.nw.components.NWHorizonBand
 import app.page.android.ui.nw.components.NWLivingAurora
 import app.page.android.ui.nw.components.NWStarGlyph
 import app.page.android.ui.nw.components.color
 import app.page.android.ui.nw.shell.NWCappedFontScale
 import app.page.android.ui.nw.theme.AuroraPalette
+import app.page.android.ui.nw.theme.LocalCardGlow
 import app.page.android.ui.nw.theme.LocalDaypart
 import app.page.android.ui.nw.theme.LocalFixedNow
 import app.page.android.ui.nw.theme.LocalFixedPhase
@@ -118,7 +128,7 @@ fun NWLanesScreen(data: LanesScreenData, actions: LanesScreenActions, modifier: 
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val power = rememberPower(data)
     // How far above the bottom of the screen the horizon of a pause sits: clear of the bar.
-    val lift = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 84.dp + 8.dp
+    val lift = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + NW.capsuleHeight + NW.capsuleGap + 8.dp
     BoxWithConstraints(modifier.fillMaxSize()) {
         val bandY = maxHeight - lift
         LanesAurora(data, power, top)
@@ -334,18 +344,48 @@ private fun LanesBody(data: LanesScreenData, actions: LanesScreenActions, power:
     }
 }
 
+/**
+ * A project: its band in the project's own jewel (ember while one of its sessions needs you or looks stuck), its star in a
+ * glass tile, its name, an urgent pill in words and how many sessions; its lanes beneath, on a body faintly of its colour
+ * (`surfaceRaised` mixed 30% toward the jewel's bottom, never an alpha tint). The same card as a session on Now. (iOS NWLanesScreen.group.)
+ */
 @Composable
 private fun Group(g: LaneGroup, actions: LanesScreenActions, power: PowerContext) {
-    val head: Rgba = if (g.urgentState == StarState.NEEDS_YOU || g.urgentState == StarState.STUCK) NW.Palette.amber else g.hue.color
-    NWGlassCard(padding = PaddingValues(0.dp)) {
-        Row(Modifier.fillMaxWidth().height(40.dp).clip(RoundedCornerShape(topStart = NW.Radius.card, topEnd = NW.Radius.card)).background(head.opacity(0.10).color).padding(horizontal = 16.dp).semantics { heading() }, horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(8.dp).clip(CircleShape).background(head.color))
-            Text(g.name.uppercase(), style = NW.Typo.labelLarge, color = head.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    val urgent = g.urgentState == StarState.NEEDS_YOU || g.urgentState == StarState.STUCK
+    val jewel = if (urgent) NWJewel.amber else NWJewel.of(g.hue)
+    val body = NW.Palette.surfaceRaised.mixed(NWJewel.of(g.hue).bottom, 0.3)
+    val corner = NW.Radius.card
+    Box(Modifier.fillMaxWidth().nwGlass(corner, fill = body, glow = LocalCardGlow.current)) {
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(corner))) {
+            Row(
+                Modifier.fillMaxWidth().height(54.dp).nwHueBand(jewel, corner).padding(horizontal = 14.dp)
+                    .semantics(mergeDescendants = true) { heading() },
+                horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    Modifier.size(34.dp).drawBehind {
+                        val r = 10.dp.toPx()
+                        drawRoundRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.18f), Color.White.copy(alpha = 0.05f))), cornerRadius = CornerRadius(r))
+                        strokeBorder(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.4f), Color.White.copy(alpha = 0.06f))), r)
+                    },
+                    contentAlignment = Alignment.Center,
+                ) { NWStarGlyph(g.rows.firstOrNull()?.seed ?: 0uL, jewel.light, size = 24.dp) }
+                Text(g.name, style = NW.Typo.nameLarge, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                if (urgent) Text(
+                    SectionTitle.words(g.urgentState.label), style = NW.Typo.captionStrong, color = Color.White, maxLines = 1,
+                    modifier = Modifier.clip(CircleShape).background(Color.Black.copy(alpha = 0.28f)).padding(horizontal = 8.dp, vertical = 3.dp),
+                )
+                Box(
+                    Modifier.heightIn(min = 24.dp).widthIn(min = 24.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.18f)).padding(horizontal = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) { Text("${g.rows.size}", style = NW.Typo.meta.copy(fontWeight = FontWeight.ExtraBold, fontFeatureSettings = "tnum"), color = Color.White, maxLines = 1) }
+            }
+            g.rows.forEachIndexed { i, r ->
+                if (i > 0) Box(Modifier.fillMaxWidth().padding(start = 56.dp).height(1.dp).background(Color.White.copy(alpha = 0.06f)))
+                LaneRowView(r, actions, power)
+            }
         }
-        for (r in g.rows) {
-            Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.06f)))
-            LaneRowView(r, actions, power)
-        }
+        NWGlassEdgeLight(corner, Modifier.matchParentSize())
     }
 }
 
@@ -368,8 +408,8 @@ private fun LaneRowView(r: LaneRow, actions: LanesScreenActions, power: PowerCon
             }
         }
         Column(Modifier.width(100.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(r.title, style = NW.Typo.mono, color = NW.Palette.textPrimary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(r.state.label, style = NW.Typo.label, color = r.state.color.color, maxLines = 1)
+            Text(r.title, style = NW.Typo.name, color = NW.Palette.textPrimary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(SectionTitle.words(r.state.label), style = NW.Typo.captionStrong, color = r.state.color.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         ActivityStrip(r.strip, Modifier.weight(1f).height(30.dp))
     }

@@ -16,9 +16,13 @@ struct NWSettledList: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
+            Rectangle().fill(LinearGradient(colors: [Color.white.opacity(0), Color.white.opacity(0.10), Color.white.opacity(0)],
+                                            startPoint: .leading, endPoint: .trailing))
+                .frame(height: 1).padding(.bottom, 8).accessibilityHidden(true)
             HStack {
-                Text("SETTLED").font(NightWatch.Typo.labelLarge).kerning(1.2)
-                    .foregroundColor(NightWatch.Palette.textTertiary.color)
+                // Settled is only told: a quiet header, below a rule that closes the work above.
+                Text("Settled").font(NightWatch.Typo.title)
+                    .foregroundColor(NightWatch.Palette.textSecondary.color)
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
                 if let onSeeAll {
@@ -53,11 +57,11 @@ struct NWSettledList: View {
             }
             ForEach(log.days) { day in
                 HStack(spacing: 10) {
-                    Circle().fill(NightWatch.Palette.textQuiet.color).frame(width: 7, height: 7)
+                    NWSoftTile(symbol: "calendar", tint: NightWatch.RGBA(hex: 0x94A3B8), size: 26)
                     Text(day.headline).lineLimit(2)
                 }
-                .font(NightWatch.Typo.monoSmall)
-                .foregroundColor(NightWatch.Palette.textSecondary.color)
+                .font(NightWatch.Typo.meta)
+                .foregroundColor(NightWatch.Palette.textTertiary.color)
                 .accessibilityElement(children: .combine)
             }
         }
@@ -71,7 +75,7 @@ struct NWSettledList: View {
     private func todayLine(_ line: SettledLine, gap: CGFloat, arriving r: NowMotion.Receipt?) -> some View {
         let status = [line.age, line.status].compactMap { $0 }.joined(separator: " · ")
         return HStack(spacing: 10) {
-            Circle().fill(color(line.tone).color).frame(width: 7, height: 7)
+            NWSoftTile(symbol: symbol(line.tone), tint: color(line.tone), size: 26)
             Text(line.text).lineLimit(1)
             Spacer(minLength: 4)
             Group {
@@ -81,11 +85,12 @@ struct NWSettledList: View {
                     Text(status)
                 }
             }
+            .font(NightWatch.Typo.metaSmall.monospacedDigit())
             .foregroundColor(NightWatch.Palette.textTertiary.color).lineLimit(1)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(status))
         }
-        .font(NightWatch.Typo.monoSmall)
+        .font(NightWatch.Typo.meta)
         .foregroundColor(NightWatch.Palette.textSecondary.color)
         .opacity(now.map { NowMotion.settledOpacity(ageMinutes: $0.timeIntervalSince(line.at) / 60) } ?? 1)
         .accessibilityElement(children: .combine)
@@ -95,11 +100,19 @@ struct NWSettledList: View {
         .opacity(r?.opacity ?? 1)
     }
 
+    private func symbol(_ t: SettledLine.Tone) -> String {
+        switch t {
+        case .approved: return "checkmark"
+        case .sent: return "paperplane.fill"
+        case .neutral: return "circle.dotted"
+        }
+    }
+
     private func color(_ t: SettledLine.Tone) -> NightWatch.RGBA {
         switch t {
         case .approved: return NightWatch.Palette.green
         case .sent: return NightWatch.Palette.sky
-        case .neutral: return NightWatch.Palette.textQuiet
+        case .neutral: return NightWatch.RGBA(hex: 0x94A3B8)
         }
     }
 }

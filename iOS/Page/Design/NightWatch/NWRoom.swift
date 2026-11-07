@@ -249,7 +249,7 @@ struct NWSessionRoom: View {
             NWAgentGlyph(character: data.character, size: 38)
             VStack(alignment: .leading, spacing: 2) {
                 Text(data.session.title)
-                    .font(.system(.title3, design: .monospaced, weight: .semibold))
+                    .font(.system(.title3, design: .rounded, weight: .bold))
                     .foregroundColor(NightWatch.Palette.textPrimary.color)
                     .lineLimit(1).minimumScaleFactor(0.7)
                 Text(data.subtitle)
@@ -341,7 +341,7 @@ struct NWSessionRoom: View {
                         .font(.system(style, weight: .semibold)).hidden()
                         .overlay(Text(l.title)
                             .font(.system(style, weight: on ? .semibold : .medium))
-                            .foregroundColor((on ? NightWatch.Palette.textPrimary : NightWatch.Palette.textTertiary).color))
+                            .foregroundColor((on ? NightWatch.Palette.textPrimary : NightWatch.RGBA(1, 1, 1, 0.78)).color))
                         .lineLimit(1).fixedSize()
                     if let n = data.badges[l] {
                         Text("\(n)").font(.system(.caption2, weight: .bold))
@@ -353,7 +353,7 @@ struct NWSessionRoom: View {
                 }
                 .padding(.horizontal, equal ? 8 : 12)
                 .frame(maxWidth: equal ? .infinity : nil, minHeight: 44)
-                .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(on ? Color.white.opacity(0.13) : .clear))
+                .background { if on { NWGlassBubble(radius: 18) } }
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

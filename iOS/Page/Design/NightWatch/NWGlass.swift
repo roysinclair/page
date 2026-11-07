@@ -38,8 +38,9 @@ struct NWGlassBackground: View {
         let top = fill.mixed(with: NightWatch.RGBA(1, 1, 1, fill.a), 0.045)
         ZStack {
             shape.fill(LinearGradient(colors: [top.color, fill.color], startPoint: .top, endPoint: .bottom))
+            // A tint's own alpha is its strength (a session turning stuck fades its amber in).
             if let tint {
-                shape.fill(RadialGradient(colors: [tint.opacity(0.13).color, tint.opacity(0).color],
+                shape.fill(RadialGradient(colors: [tint.opacity(0.13 * tint.a).color, tint.opacity(0).color],
                                           center: .top, startRadius: 0, endRadius: 260))
             }
             if glow.isOn { NWCardGlowLight(radius: radius, glow: glow) }
@@ -51,7 +52,7 @@ struct NWGlassBackground: View {
                             .init(color: Color.white.opacity(0.04), location: 1)],
                     startPoint: .top, endPoint: .bottom), lineWidth: 1)
                 if let tint {
-                    shape.strokeBorder(LinearGradient(colors: [tint.opacity(0.62).color, tint.opacity(0.22).color],
+                    shape.strokeBorder(LinearGradient(colors: [tint.opacity(0.62 * tint.a).color, tint.opacity(0.22 * tint.a).color],
                                                       startPoint: .top, endPoint: .bottom), lineWidth: 1)
                 }
                 if glow.isOn {
@@ -62,7 +63,7 @@ struct NWGlassBackground: View {
             }
         }
         .shadow(color: Color.black.opacity(raised ? 0.5 : 0), radius: 16, x: 0, y: 10)
-        .shadow(color: (tint ?? NightWatch.RGBA(0, 0, 0)).opacity(raised ? (tint == nil ? 0.35 : 0.16) : 0).color,
+        .shadow(color: (tint ?? NightWatch.RGBA(0, 0, 0)).opacity(raised ? (tint.map { 0.16 * $0.a } ?? 0.35) : 0).color,
                 radius: tint == nil ? 2 : 18, x: 0, y: tint == nil ? 1 : 8)
     }
 }

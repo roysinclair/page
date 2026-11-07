@@ -1,6 +1,11 @@
 package app.page.android.ui.nw.components
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.graphicsLayer
+import app.page.android.model.SectionTitle
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -140,6 +145,14 @@ val NowRow.Section.color: Rgba
         NowRow.Section.REVIEW -> NW.Palette.teal
     }
 
+/** The glyph of a section's header tile (the iPhone's SF symbols, [nwIcon]). */
+val NowRow.Section.symbol: String
+    get() = when (this) {
+        NowRow.Section.DECIDE -> "hand.raised.fill"
+        NowRow.Section.LOOK -> "eye.fill"
+        NowRow.Section.REVIEW -> "checkmark.seal.fill"
+    }
+
 /** The card's own colour for its state (red for Irreversible, amber for Look, teal for a finished turn). */
 val NowRow.tint: Rgba
     get() = when (chip) {
@@ -154,14 +167,20 @@ val NowRow.tint: Rgba
 
 /**
  * The small all-caps label on a row. [pill] adds a tinted capsule with the class icon (as on the Decide cards);
- * without it, plain tracked text.
+ * without it, plain tracked text. [onJewel] is for a chip on a jewel ([nwJewelSurface]): white on a dark pill (black 26%, a
+ * white 16% rim), which holds on any of them.
  */
 @Composable
-fun NWChip(kind: ChipKind, modifier: Modifier = Modifier, pill: Boolean = false) {
-    val c = kind.color
+fun NWChip(kind: ChipKind, modifier: Modifier = Modifier, pill: Boolean = false, onJewel: Boolean = false) {
+    val c = if (onJewel) Rgba(1.0, 1.0, 1.0) else kind.color
+    val capsule = if (onJewel) Color.Black.copy(alpha = 0.26f) else kind.color.opacity(0.16).color
     Row(
         modifier
-            .then(if (pill) Modifier.clip(CircleShape).background(c.opacity(0.16).color).padding(horizontal = 9.dp, vertical = 5.dp) else Modifier)
+            .then(
+                if (pill) Modifier.clip(CircleShape).background(capsule).then(if (onJewel) Modifier.border(1.dp, Color.White.copy(alpha = 0.16f), CircleShape) else Modifier)
+                    .padding(horizontal = 9.dp, vertical = 5.dp)
+                else Modifier,
+            )
             .clearAndSetSemantics { contentDescription = kind.title.lowercase().replaceFirstChar { it.uppercase() } },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(5.dp),
@@ -173,12 +192,19 @@ fun NWChip(kind: ChipKind, modifier: Modifier = Modifier, pill: Boolean = false)
 
 // MARK: - Buttons
 
-enum class NWButtonKind { QUIET, BRIGHT, AMBER, DANGER }
+/**
+ * The kinds of [NWButton]. [WHITE] and [GLASS] are for a jewel ([nwJewelSurface]): the primary in white, the other in clear
+ * glass, so neither fights the jewel's colour. [SOFT] is the primary of something that is only working, not waiting on you
+ * (Steer on an In flight card): teal words on a faint teal fill, so it never outshines a button on a card that needs you.
+ */
+enum class NWButtonKind { QUIET, BRIGHT, AMBER, DANGER, WHITE, GLASS, SOFT }
 
 /**
- * A Night Watch button, always a word: quiet slate (Deny, Steer), bright teal-to-sky (Looks good), amber (Steer
- * on a stuck card) or red-tinted (the Irreversible approve). A 52 dp minimum height, so the touch target is
- * generous.
+ * A Night Watch button, always a word: quiet slate (Deny, Steer), bright teal-to-sky (Looks good), amber (Steer on a
+ * stuck card), red-tinted (the Irreversible approve), white or glass (on a jewel) or soft (Steer on an In flight card). 44 dp
+ * high, corner 13. A button you can see is a button: a body lit from above (a sheen over its top 55% and a bright top
+ * edge), standing off the card on a glow of its own colour (drawn, not elevated: [drawSoftGlow]), and sinking a little
+ * under the finger (scale 0.97, 4% darker, 120 ms).
  */
 @Composable
 fun NWButton(
@@ -188,37 +214,65 @@ fun NWButton(
     val shape = RoundedCornerShape(NW.Radius.button)
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
-    val p = NW.Palette
-    val fg = when (kind) { NWButtonKind.QUIET, NWButtonKind.DANGER -> p.textPrimary; NWButtonKind.BRIGHT, NWButtonKind.AMBER -> p.onBright }
-    val border = when (kind) {
-        NWButtonKind.QUIET -> p.hairline
-        NWButtonKind.BRIGHT -> p.teal.opacity(0.4)
-        NWButtonKind.AMBER -> p.yellow.opacity(0.5)
-        NWButtonKind.DANGER -> p.red.opacity(0.45)
-    }
-    val bg: Brush = when (kind) {
-        NWButtonKind.QUIET -> Brush.linearGradient(listOf(Color.White.copy(alpha = 0.07f), Color.White.copy(alpha = 0.07f)))
-        NWButtonKind.BRIGHT -> Brush.horizontalGradient(listOf(p.teal.color, p.sky.color))
-        NWButtonKind.AMBER -> Brush.horizontalGradient(listOf(p.yellow.color, p.amber.color))
-        NWButtonKind.DANGER -> Brush.linearGradient(listOf(p.red.opacity(0.14).color, p.red.opacity(0.14).color))
-    }
+    val press = animateFloatAsState(if (pressed) 1f else 0f, tween(120), label = "press")
+    val look = remember(kind) { ButtonLook.of(kind) }
     Row(
         modifier
             .heightIn(min = NW.buttonHeight)
-            .alpha((if (!enabled) 0.45f else if (pressed) 0.8f else 1f) * alpha)
+            .graphicsLayer {
+                val k = 1f - 0.03f * press.value
+                scaleX = k
+                scaleY = k
+                this.alpha = (if (!enabled) 0.45f else 1f) * alpha
+            }
+            .drawBehind {
+                val r = NW.Radius.button.toPx()
+                // A translucent body keeps its glow outside itself, or the glow would tint the fill.
+                val p = press.value
+                drawSoftGlow(look.glow, blur = (12f - 8f * p).dp.toPx(), dy = (6f - 4f * p).dp.toPx(), corner = r, outsideOnly = look.translucent)
+                drawRoundRect(look.body(), cornerRadius = CornerRadius(r))
+                drawRoundRect(Brush.verticalGradient(0f to Color.White.copy(alpha = look.sheen), 0.55f to Color.White.copy(alpha = 0f)), cornerRadius = CornerRadius(r))
+                strokeBorder(Brush.verticalGradient(listOf(look.rimTop, look.border)), r)
+            }
+            .drawWithContent {
+                drawContent()
+                if (press.value > 0f) drawRoundRect(Color.Black.copy(alpha = 0.04f * press.value), cornerRadius = CornerRadius(NW.Radius.button.toPx()))
+            }
             .clip(shape)
-            .background(bg)
-            .border(BorderStroke(1.dp, border.color), shape)
             .clickable(interactionSource = source, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
         if (leading != null) {
-            Icon(leading, null, tint = fg.color, modifier = Modifier.size(20.dp))
+            Icon(leading, null, tint = look.foreground, modifier = Modifier.size(20.dp))
             Box(Modifier.width(8.dp))
         }
-        Text(text, style = NW.Typo.button, color = fg.color, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+        Text(text, style = NW.Typo.button, color = look.foreground, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+    }
+}
+
+/** What each [NWButtonKind] looks like: iOS NWButtonStyle's tables, value for value. */
+private class ButtonLook(
+    val foreground: Color, val border: Color, val rimTop: Color, val sheen: Float, val glow: Color, val translucent: Boolean,
+    val body: () -> Brush,
+) {
+    companion object {
+        private fun white(a: Float) = Color.White.copy(alpha = a)
+        fun of(kind: NWButtonKind): ButtonLook {
+            val p = NW.Palette
+            fun v(a: Color, b: Color) = { Brush.verticalGradient(listOf(a, b)) }
+            fun h(a: Color, b: Color) = { Brush.horizontalGradient(listOf(a, b)) }
+            return when (kind) {
+                NWButtonKind.QUIET -> ButtonLook(p.textPrimary.color, p.hairline.color, white(0.22f), 0.1f, Color.Black.copy(alpha = 0.35f), true, v(white(0.12f), white(0.06f)))
+                NWButtonKind.BRIGHT -> ButtonLook(p.onBright.color, p.teal.opacity(0.4).color, white(0.6f), 0.3f, p.teal.opacity(0.45).color, false, h(p.teal.color, p.sky.color))
+                NWButtonKind.AMBER -> ButtonLook(p.onBright.color, p.yellow.opacity(0.5).color, white(0.6f), 0.3f, p.amber.opacity(0.45).color, false, h(p.yellow.color, p.amber.color))
+                NWButtonKind.DANGER -> ButtonLook(p.textPrimary.color, p.red.opacity(0.45).color, p.red.opacity(0.6).color, 0.06f, Color.Transparent, true, v(p.red.opacity(0.14).color, p.red.opacity(0.14).color))
+                NWButtonKind.WHITE -> ButtonLook(p.onBright.color, white(0.9f), white(1f), 0f, white(0.22f), false, v(Color.White, Rgba.hex(0xE8EDF5).color))
+                NWButtonKind.GLASS -> ButtonLook(p.textPrimary.color, white(0.24f), white(0.34f), 0.1f, Color.Black.copy(alpha = 0.35f), true, v(Color.Black.copy(alpha = 0.14f), Color.Black.copy(alpha = 0.3f)))
+                NWButtonKind.SOFT -> ButtonLook(p.teal.color, p.teal.opacity(0.32).color, p.teal.opacity(0.6).color, 0.1f, p.teal.opacity(0.16).color, true, v(p.teal.opacity(0.16).color, p.teal.opacity(0.07).color))
+            }
+        }
     }
 }
 
@@ -373,17 +427,55 @@ fun NWRingsList(rings: List<RingStat>, modifier: Modifier = Modifier) {
 
 // MARK: - Section header, tip, chips on Now
 
-/** "Decide 2" and a hairline. The words are the section's own; colour says whether it needs you (amber) or is done (teal). */
+/**
+ * "Decide (2)": a title in words ([SectionTitle.words]) with the section's glyph in a 30 dp icon tile ([symbol]), and the
+ * count in a filled [NWCountBadge] of its [color]. Room above it (20 dp), so each section reads as its own group. Settled,
+ * which is only told, passes [quiet]: a quieter title, no glyph, no badge. [trailing] sits at the end ("Lanes ›").
+ */
 @Composable
-fun NWSectionHeader(title: String, color: Rgba, modifier: Modifier = Modifier, count: Int? = null) {
+fun NWSectionHeader(
+    title: String, color: Rgba, modifier: Modifier = Modifier, count: Int? = null, symbol: String? = null, quiet: Boolean = false,
+    trailing: (@Composable () -> Unit)? = null,
+) {
     Row(
-        modifier.fillMaxWidth().semantics(mergeDescendants = true) { heading() },
+        modifier.fillMaxWidth().padding(top = if (quiet) 4.dp else 20.dp).semantics(mergeDescendants = true) { heading() },
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text(title, style = NW.Typo.title.copy(fontSize = 20.sp), color = color.color)
-        if (count != null) Text("$count", style = NW.Typo.labelLarge, color = NW.Palette.textTertiary.color)
-        Box(Modifier.weight(1f).height(1.dp).background(Color.White.copy(alpha = 0.08f)))
+        if (symbol != null && !quiet) NWIconTile(symbol, NWJewel.of(color), size = 30.dp)
+        Text(
+            SectionTitle.words(title), style = if (quiet) NW.Typo.title else NW.Typo.section,
+            color = (if (quiet) NW.Palette.textSecondary else NW.Palette.textPrimary).color,
+        )
+        if (count != null && !quiet) NWCountBadge(count, color)
+        Box(Modifier.weight(1f))
+        trailing?.invoke()
+    }
+}
+
+/** A section's count: a glossy pill of its colour (colour+30% white to colour, dark ink, a white 45% top stroke), glowing a little (colour 55%, radius 6). */
+@Composable
+fun NWCountBadge(count: Int, color: Rgba, modifier: Modifier = Modifier) = NWCountBadge("$count", color, modifier)
+
+@Composable
+fun NWCountBadge(text: String, color: Rgba, modifier: Modifier = Modifier) {
+    Box(
+        modifier
+            .heightIn(min = 24.dp)
+            .widthIn(min = 24.dp)
+            .drawBehind {
+                val r = size.height / 2
+                drawSoftGlow(color.opacity(0.55).color, blur = 6.dp.toPx(), dy = 2.dp.toPx(), corner = r)
+                drawRoundRect(Brush.verticalGradient(listOf(color.mixed(Rgba(1.0, 1.0, 1.0), 0.3).color, color.color)), cornerRadius = CornerRadius(r))
+                strokeBorder(Brush.verticalGradient(0f to Color.White.copy(alpha = 0.45f), 0.5f to Color.White.copy(alpha = 0f)), r)
+            }
+            .padding(horizontal = 8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text, style = NW.Typo.meta.copy(fontWeight = FontWeight.ExtraBold, fontFeatureSettings = "tnum"), color = NW.Palette.onBright.color,
+            maxLines = 1, softWrap = false,
+        )
     }
 }
 

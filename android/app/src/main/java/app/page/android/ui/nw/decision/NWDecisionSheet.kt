@@ -53,6 +53,18 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.foundation.shape.CircleShape
+import app.page.android.ui.nw.components.NWIconTile
+import app.page.android.ui.nw.components.NWJewel
+import app.page.android.ui.nw.theme.Rgba
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -96,6 +108,7 @@ import app.page.android.ui.nw.components.NWTextField
 import app.page.android.ui.nw.components.NWTipCallout
 import app.page.android.ui.nw.components.NWTurnChip
 import app.page.android.ui.nw.components.color
+import app.page.android.ui.nw.components.symbol
 import app.page.android.ui.nw.components.tint
 import app.page.android.ui.nw.room.YesNoChip
 import app.page.android.ui.nw.theme.NW
@@ -169,9 +182,50 @@ class DecisionScreenActions(
     val draftAction: (ReplyDraft.Action.Kind) -> Unit = {},
 )
 
-/** The sheet's own surface tint: near-black, tinted by the card's class. (iOS NWDecisionBackground.) */
-fun decisionBackground(row: NowRow?): Color =
-    (row?.tint?.let { NW.Palette.surface.mixed(it.opacity(1.0), 0.10) } ?: NW.Palette.surface).color
+/**
+ * The sheet's own ground: plain `surface`, never tinted by a hue mixed into the grey. The class's colour is a jewel that
+ * lights the top ([Modifier.nwDecisionBand], drawn by [NWDecisionScreen] itself); the composer's ground and the fade above
+ * it are this plain colour. (iOS NWDecisionBackground.) [row] stays for callers.
+ */
+@Suppress("UNUSED_PARAMETER")
+fun decisionBackground(row: NowRow?): Color = NW.Palette.surface.color
+
+/** How far down the class's jewel reaches before it has faded. (iOS NWDecisionBackground.bandHeight.) */
+private val DecisionBandHeight = 330.dp
+
+/** The sheet's top corner (the sheet host's), for the lip. */
+private val DecisionSheetCorner = 28.dp
+
+/**
+ * The Decision sheet's background above `surface`: its class's jewel fills the top 330, `top` to `bottom` at 55% and then to
+ * transparent, with a radial light from the top leading corner (radius 320) and a white lip along the top edge (white 30%
+ * fading to nothing by the middle). Nothing when the page has no class ([tint] null). Fills only, no glow. (iOS NWDecisionBackground.)
+ */
+private fun Modifier.nwDecisionBand(tint: Rgba?): Modifier = this.drawBehind {
+    val r = DecisionSheetCorner.toPx()
+    val shape = Path().apply {
+        addRoundRect(RoundRect(0f, 0f, size.width, size.height, topLeftCornerRadius = CornerRadius(r), topRightCornerRadius = CornerRadius(r), bottomLeftCornerRadius = CornerRadius.Zero, bottomRightCornerRadius = CornerRadius.Zero))
+    }
+    if (tint != null) {
+        val jewel = NWJewel.of(tint)
+        val band = DecisionBandHeight.toPx().coerceAtMost(size.height)
+        clipPath(shape) {
+            drawRect(
+                Brush.verticalGradient(0f to jewel.top.color, 0.55f to jewel.bottom.color, 1f to jewel.bottom.opacity(0.0).color, startY = 0f, endY = band),
+                size = Size(size.width, band),
+            )
+            drawRect(
+                Brush.radialGradient(listOf(jewel.light.opacity(jewel.lightStrength).color, jewel.light.opacity(0.0).color), center = Offset.Zero, radius = 320.dp.toPx()),
+                size = Size(size.width, band),
+            )
+        }
+    }
+    val hair = 1.dp.toPx()
+    val inset = Path().apply {
+        addRoundRect(RoundRect(hair / 2, hair / 2, size.width - hair / 2, size.height, topLeftCornerRadius = CornerRadius(r - hair / 2), topRightCornerRadius = CornerRadius(r - hair / 2), bottomLeftCornerRadius = CornerRadius.Zero, bottomRightCornerRadius = CornerRadius.Zero))
+    }
+    drawPath(inset, Brush.verticalGradient(0f to Color.White.copy(alpha = 0.3f), 0.5f to Color.White.copy(alpha = 0f), startY = 0f, endY = size.height), style = Stroke(hair))
+}
 
 /**
  * The Decision sheet's content: who is asking, the ask in full, why it is the class it is, the delivery preview
@@ -194,7 +248,7 @@ fun NWDecisionScreen(
     val c = state.content
     val row = state.row
     val fontScale = LocalDensity.current.fontScale
-    BoxWithConstraints(modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier.fillMaxSize().nwDecisionBand(state.row.tint)) {
         // The answer picker is as tall as a screenful: it flows with the rest instead of being pinned.
         val pinned = maxHeight >= 580.dp && fontScale <= 1.6f && !(state.ask != null && c.chip == ChipKind.QUESTION)
         val v = DecisionView(state, actions, draft, onDraft, composerOpen, onComposerOpen)
@@ -281,7 +335,10 @@ private class DecisionView(
     private fun Header() {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                NWChip(c.chip, pill = true)
+                val onJewel = row.tint != null
+                NWIconTile(c.chip.symbol, NWJewel.of(row.tint), size = 36.dp, glass = true)
+                Spacer(Modifier.width(10.dp))
+                NWChip(c.chip, pill = true, onJewel = onJewel)
                 Spacer(Modifier.weight(1f))
                 Row(
                     Modifier.size(48.dp).clip(RoundedCornerShape(24.dp)).clickable(role = Role.Button, onClickLabel = "Close", onClick = actions.close),
@@ -289,11 +346,12 @@ private class DecisionView(
                 ) { Icon(Icons.Outlined.Close, "Close", tint = NW.Palette.textSecondary.color, modifier = Modifier.size(18.dp)) }
             }
             Text(
-                "${c.project} · ${c.agent} · ${row.waitingText(state.now)}", style = NW.Typo.caption, color = NW.Palette.textTertiary.color, maxLines = 2,
+                "${c.project} · ${c.agent} · ${row.waitingText(state.now)}", style = NW.Typo.captionStrong,
+                color = Color.White.copy(alpha = if (row.tint != null) 0.88f else 0.6f), maxLines = 2,
                 modifier = Modifier.offset(y = (-6).dp),
             )
-            Text(c.headline, style = NW.Typo.hero, color = NW.Palette.textPrimary.color, modifier = Modifier.semantics { heading() })
-            c.blurb?.let { Text(it, style = NW.Typo.subline, color = NW.Palette.textSecondary.color) }
+            Text(c.headline, style = NW.Typo.sheetTitle.copy(letterSpacing = NW.Typo.hero.letterSpacing), color = NW.Palette.textPrimary.color, modifier = Modifier.semantics { heading() })
+            c.blurb?.let { Text(it, style = NW.Typo.subline, color = Color.White.copy(alpha = if (row.tint != null) 0.9f else 0.7f)) }
         }
     }
 
@@ -347,15 +405,15 @@ private class DecisionView(
             if (c.tags.isNotEmpty()) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     for (t in c.tags) Text(
-                        t.raw, style = NW.Typo.monoMicro, color = NW.Palette.textSecondary.color,
-                        modifier = Modifier.clip(RoundedCornerShape(7.dp)).background(Color.White.copy(alpha = 0.07f)).padding(horizontal = 8.dp, vertical = 4.dp),
+                        t.raw, style = NW.Typo.captionStrong, color = NW.Palette.textPrimary.opacity(0.9).color,
+                        modifier = Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.09f)).border(1.dp, Color.White.copy(alpha = 0.12f), CircleShape).padding(horizontal = 9.dp, vertical = 4.dp),
                     )
                 }
             }
             if (c.reason.isNotEmpty()) {
                 Text(
                     buildAnnotatedString {
-                        withStyle(SpanStyle(color = NW.Palette.textQuiet.color, fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold, letterSpacing = androidx.compose.ui.unit.TextUnit(1f, androidx.compose.ui.unit.TextUnitType.Sp))) { append("WHY  ") }
+                        withStyle(SpanStyle(color = NW.Palette.textTertiary.color, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)) { append("Why  ") }
                         append(c.reason)
                     },
                     style = NW.Typo.caption, color = NW.Palette.textSecondary.color,
@@ -373,7 +431,7 @@ private class DecisionView(
     private fun OptionsBlock() {
         if (c.options.size < 2) return
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("THE PROMPT OFFERS", style = NW.Typo.label, color = NW.Palette.textQuiet.color)
+            Text("The prompt offers", style = NW.Typo.captionStrong, color = NW.Palette.textTertiary.color)
             for (o in c.options) {
                 Row(Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}, horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Top) {
                     Text("${o.number}", style = NW.Typo.monoSmall, color = NW.Palette.textQuiet.color, modifier = Modifier.width(14.dp))
@@ -619,7 +677,7 @@ private class DecisionView(
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (q != null) YesNoRow(q)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text((row.action(RowAction.Kind.TELL_INSTEAD)?.preview?.split(" · ")?.firstOrNull() ?: "Your message").uppercase(), style = NW.Typo.label, color = NW.Palette.textQuiet.color, modifier = Modifier.weight(1f))
+                Text((row.action(RowAction.Kind.TELL_INSTEAD)?.preview?.split(" · ")?.firstOrNull() ?: "Your message"), style = NW.Typo.captionStrong, color = NW.Palette.textTertiary.color, modifier = Modifier.weight(1f))
                 if (!alwaysOpen) Text(
                     "Cancel", style = NW.Typo.captionStrong, color = NW.Palette.textSecondary.color,
                     modifier = Modifier.heightIn(min = 48.dp).clickable(role = Role.Button) { onComposerOpen(false); onDraft("") }.padding(horizontal = 8.dp).wrapCenter(),

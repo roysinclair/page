@@ -63,6 +63,8 @@ import app.page.android.model.TowerPower
 import app.page.android.model.TowerSection
 import app.page.android.model.UsageGauge
 import app.page.android.ui.nw.components.NWGlassCard
+import app.page.android.ui.nw.components.NWIconTile
+import app.page.android.ui.nw.components.NWJewel
 import app.page.android.ui.nw.components.NWRing
 import app.page.android.ui.nw.components.NWSegmented
 import app.page.android.ui.nw.components.NWSwitch
@@ -145,7 +147,7 @@ fun NWTowerScreen(data: TowerScreenData, actions: TowerScreenActions, modifier: 
 private fun Header(data: TowerScreenData, actions: TowerScreenActions) {
     Row(Modifier.fillMaxWidth().padding(top = 14.dp), verticalAlignment = Alignment.Top) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("THE TOWER", style = NW.Typo.labelLarge.copy(letterSpacing = 2.sp), color = NW.Palette.teal.color)
+            Text("The Tower", style = NW.Typo.captionStrong, color = NW.Palette.teal.color)
             Text(DeliveryPreview.macLabel(data.macName), style = NW.Typo.hero.copy(fontSize = 34.sp, letterSpacing = (-0.8).sp), color = NW.Palette.textPrimary.color, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.semantics { heading() })
             data.macLine?.let { Text(it, style = NW.Typo.caption, color = NW.Palette.textTertiary.color) }
         }
@@ -155,10 +157,37 @@ private fun Header(data: TowerScreenData, actions: TowerScreenActions) {
     }
 }
 
+/** A Tower section's tile: a glyph and a jewel, so each part of the Tower is marked as Now's sections are. (iOS TowerSection.symbol / .jewel.) */
+internal val TowerSection.symbol: String
+    get() = when (this) {
+        TowerSection.POWER -> "bolt.fill"
+        TowerSection.BUDGET -> "gauge.with.needle.fill"
+        TowerSection.MACS -> "laptopcomputer"
+        TowerSection.ATTENTION -> "bell.fill"
+        TowerSection.GESTURES -> "hand.tap.fill"
+        TowerSection.TERMINALS -> "terminal.fill"
+        TowerSection.PAIRING -> "lock.fill"
+        TowerSection.APPEARANCE -> "paintpalette.fill"
+        TowerSection.ABOUT -> "info.circle.fill"
+    }
+
+internal val TowerSection.jewel: NWJewel
+    get() = when (this) {
+        TowerSection.POWER -> NWJewel.green
+        TowerSection.BUDGET, TowerSection.PAIRING -> NWJewel.teal
+        TowerSection.MACS -> NWJewel.sky
+        TowerSection.ATTENTION -> NWJewel.amber
+        TowerSection.GESTURES, TowerSection.APPEARANCE -> NWJewel.violet
+        TowerSection.TERMINALS, TowerSection.ABOUT -> NWJewel.indigo
+    }
+
 @Composable
 private fun Section(s: TowerSection, onOffset: (Int) -> Unit, content: @Composable () -> Unit) {
     Column(Modifier.onGloballyPositioned { onOffset(it.positionInParent().y.toInt()) }, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(s.title.uppercase(), style = NW.Typo.labelLarge.copy(letterSpacing = 1.4.sp), color = NW.Palette.textTertiary.color, modifier = Modifier.semantics { heading() })
+        Row(Modifier.padding(top = 6.dp).semantics(mergeDescendants = true) { heading() }, horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            NWIconTile(s.symbol, s.jewel, size = 28.dp)
+            Text(s.title, style = NW.Typo.title, color = NW.Palette.textPrimary.color)
+        }
         content()
     }
 }

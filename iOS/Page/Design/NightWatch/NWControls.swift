@@ -80,7 +80,7 @@ struct NWButtonStyle: ButtonStyle {
         return configuration.label
             .font(NightWatch.Typo.button)
             .foregroundColor(foreground.color)
-            .frame(maxWidth: .infinity, minHeight: 52)
+            .frame(maxWidth: .infinity, minHeight: 44)
             .background(ZStack {
                 background
                 shape.fill(LinearGradient(stops: [.init(color: Color.white.opacity(sheen), location: 0),

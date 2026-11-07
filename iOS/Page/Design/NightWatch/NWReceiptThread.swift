@@ -70,7 +70,7 @@ struct NWReceiptThreadView: View {
                 }
             }
             .padding(.horizontal, 14).padding(.vertical, 10)
-            .frame(maxWidth: .infinity, minHeight: 52)
+            .frame(maxWidth: .infinity, minHeight: 44)
             .background(RoundedRectangle(cornerRadius: NightWatch.Radius.button, style: .continuous)
                 .fill(tone.opacity(arming ? 0.06 : 0.07).color))
             .overlay(RoundedRectangle(cornerRadius: NightWatch.Radius.button, style: .continuous)

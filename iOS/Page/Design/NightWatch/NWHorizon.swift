@@ -234,6 +234,9 @@ struct NWHorizon: View {
                                    .init(color: NightWatch.Palette.backgroundDeep.opacity(0.85).color, location: 0.88),
                                    .init(color: NightWatch.Palette.backgroundDeep.color, location: 1)],
                            startPoint: .top, endPoint: .bottom)
+            // The watch's own scene, in the sky's colours of the moment (so it falls to dusk and
+            // rises to dawn with them): mountains against the aurora, a still lake below.
+            NWNightScene(palette: pal, orbY: topInset + 38 + orbSize / 2)
             // Over the fade, so the line holds at full strength (it is all a paused sky shows).
             NWHorizonBand(opacity: band)
                 .offset(y: bandY - 6)
@@ -277,5 +280,87 @@ struct NWHorizon: View {
         case .working: return 0.85 + 0.15 * pulseModel.breath(at: t) + 0.5 * swell
         case .waiting: return 1
         }
+    }
+}
+
+
+/// The Night Watch scene under the aurora: two ranges of mountains, the far
+/// one hazed and rimmed with the sky's light, the near one dark, their peaks
+/// to the sides so the pulse hangs over the valley between them; and a still
+/// lake below that mirrors the near range, with a thread of light along the
+/// waterline. Drawn from the sky's own colours, so it follows the mood and the
+/// hour; still (the aurora above it moves), and it holds no words.
+struct NWNightScene: View {
+    var palette: NightWatch.AuroraPalette
+    /// The pulse's centre, from the top of the Horizon.
+    var orbY: CGFloat
+
+    /// A range as a few smooth peaks: (centre 0...1, width, height 0...1).
+    private static let far: [(Double, Double, Double)] = [(0.04, 0.09, 0.62), (0.2, 0.11, 1.0), (0.36, 0.07, 0.6), (0.5, 0.1, 0.34),
+                                                          (0.66, 0.08, 0.66), (0.82, 0.12, 0.95), (0.98, 0.08, 0.7)]
+    private static let near: [(Double, Double, Double)] = [(0.0, 0.16, 0.95), (0.18, 0.08, 0.55), (0.34, 0.1, 0.3),
+                                                           (0.72, 0.09, 0.45), (0.9, 0.12, 0.85), (1.04, 0.1, 0.7)]
+
+    var body: some View {
+        Canvas { ctx, size in
+            let w = size.width, h = size.height
+            let light = palette.c1, deep = palette.skyBottom
+            let glow = max(0.45, palette.intensity)
+            let room = max(60, h * 0.82 - orbY)
+            let water = orbY + room
+            let farAmp = min(64, room * 0.55), nearAmp = min(40, room * 0.32)
+
+            func range(_ peaks: [(Double, Double, Double)], base: CGFloat, amp: CGFloat, grain: Double) -> [CGPoint] {
+                (0...96).map { i in
+                    let u = Double(i) / 96
+                    var y = peaks.reduce(0.0) { $0 + $1.2 * exp(-pow((u - $1.0) / $1.1, 2)) }
+                    y = min(1.1, y) + 0.035 * sin(u * 41 + grain) + 0.02 * sin(u * 97 + grain * 2)
+                    return CGPoint(x: w * CGFloat(u), y: base - amp * CGFloat(y))
+                }
+            }
+            func land(_ top: [CGPoint], down to: CGFloat) -> Path {
+                var p = Path()
+                p.move(to: CGPoint(x: 0, y: to)); p.addLines(top); p.addLine(to: CGPoint(x: w, y: to)); p.closeSubpath()
+                return p
+            }
+            func crestLine(_ pts: [CGPoint]) -> Path { var p = Path(); p.addLines(pts); return p }
+
+            let farTop = range(Self.far, base: water - 6, amp: farAmp, grain: 1.3)
+            let nearTop = range(Self.near, base: water + 2, amp: nearAmp, grain: 4.1)
+            let nearColour = deep.mixed(with: NightWatch.RGBA(0, 0, 0), 0.5)
+
+            // Far range: hazed by the aurora, lighter at the crest, its rim catching the sky's light.
+            ctx.fill(land(farTop, down: water + 1), with: .linearGradient(
+                Gradient(colors: [deep.mixed(with: light, 0.2).color, deep.mixed(with: light, 0.05).color]),
+                startPoint: CGPoint(x: 0, y: water - farAmp), endPoint: CGPoint(x: 0, y: water)))
+            ctx.drawLayer { l in
+                l.addFilter(.blur(radius: 3))
+                l.stroke(crestLine(farTop), with: .color(light.opacity(0.32 * glow).color), lineWidth: 2.5)
+            }
+            ctx.stroke(crestLine(farTop), with: .color(light.opacity(0.24 * glow).color), lineWidth: 0.8)
+            // Near range: dark, in front.
+            ctx.fill(land(nearTop, down: water + 1), with: .color(nearColour.color))
+            ctx.stroke(crestLine(nearTop), with: .color(light.opacity(0.1 * glow).color), lineWidth: 0.8)
+
+            // The lake, holding a little of the sky's colour.
+            let lake = CGRect(x: 0, y: water, width: w, height: max(0, h - water))
+            ctx.fill(Path(lake), with: .linearGradient(
+                Gradient(colors: [deep.mixed(with: light, 0.12).color, deep.color]),
+                startPoint: CGPoint(x: 0, y: water), endPoint: CGPoint(x: 0, y: min(h, water + 90))))
+            // The near range, mirrored in the still water and fading with depth.
+            ctx.drawLayer { l in
+                l.clip(to: Path(lake))
+                let mirrored = nearTop.map { CGPoint(x: $0.x, y: water + (water - $0.y) * 0.8) }
+                l.fill(land(mirrored, down: water), with: .linearGradient(
+                    Gradient(colors: [nearColour.opacity(0.85).color, nearColour.opacity(0).color]),
+                    startPoint: CGPoint(x: 0, y: water), endPoint: CGPoint(x: 0, y: water + nearAmp * 0.8)))
+            }
+            // The waterline: a thread of light where the sky meets the lake.
+            ctx.fill(Path(CGRect(x: 0, y: water - 0.5, width: w, height: 1)), with: .linearGradient(
+                Gradient(colors: [light.opacity(0).color, light.opacity(0.38 * glow).color, light.opacity(0).color]),
+                startPoint: CGPoint(x: w * 0.1, y: water), endPoint: CGPoint(x: w * 0.9, y: water)))
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }

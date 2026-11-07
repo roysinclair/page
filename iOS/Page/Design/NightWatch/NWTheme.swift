@@ -78,7 +78,7 @@ enum NightWatch {
         static let subline = Font.system(.subheadline, design: .default, weight: .regular)
         static let body = Font.system(.subheadline, design: .default, weight: .regular)
         static let bodyStrong = Font.system(.subheadline, design: .default, weight: .semibold)
-        static let button = Font.system(.body, design: .default, weight: .semibold)
+        static let button = Font.system(.callout, design: .default, weight: .semibold)
         static let caption = Font.system(.caption, design: .default, weight: .regular)
         static let captionStrong = Font.system(.caption, design: .default, weight: .semibold)
         /// Commands and session names.
@@ -119,7 +119,7 @@ enum NightWatch {
         static let card: CGFloat = 22
         static let row: CGFloat = 18
         static let inset: CGFloat = 14
-        static let button: CGFloat = 16
+        static let button: CGFloat = 13
         static let chip: CGFloat = 6
         static let capsule: CGFloat = 32
     }

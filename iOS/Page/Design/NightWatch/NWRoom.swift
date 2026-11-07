@@ -353,7 +353,7 @@ struct NWSessionRoom: View {
                 }
                 .padding(.horizontal, equal ? 8 : 12)
                 .frame(maxWidth: equal ? .infinity : nil, minHeight: 44)
-                .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(on ? Color.white.opacity(0.13) : .clear))
+                .background { if on { NWGlassBubble(radius: 18) } }
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

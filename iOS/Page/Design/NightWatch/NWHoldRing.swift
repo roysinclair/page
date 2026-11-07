@@ -226,7 +226,7 @@ struct NWHoldButton: View {
             }
             .padding(.horizontal, 12)
             .foregroundColor(NightWatch.Palette.onBright.color)
-            .frame(maxWidth: .infinity, minHeight: 52)
+            .frame(maxWidth: .infinity, minHeight: 44)
             .background(
                 NightWatch.Palette.red.color
                     .overlay(alignment: .leading) {

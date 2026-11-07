@@ -258,7 +258,7 @@ struct NWArmedReply: View {
                     Spacer(minLength: 0)
                     Text("Cancel").font(NightWatch.Typo.captionStrong).foregroundColor(NightWatch.Palette.amber.color)
                 }
-                .padding(.horizontal, 14).padding(.vertical, 8).frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                .padding(.horizontal, 14).padding(.vertical, 6).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .background(RoundedRectangle(cornerRadius: NightWatch.Radius.button, style: .continuous).fill(NightWatch.Palette.amber.opacity(0.12).color))
                 .overlay(RoundedRectangle(cornerRadius: NightWatch.Radius.button, style: .continuous)
                     .strokeBorder(NightWatch.Palette.amber.opacity(0.4).color, lineWidth: 1))

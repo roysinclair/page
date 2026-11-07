@@ -23,6 +23,7 @@ struct NWNavCapsule: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.nwReduceMotion) private var forcedReduceMotion
     @Environment(\.nwChromeGlassOn) private var glass
+    @Namespace private var bubble
     @Environment(\.nwMotion) private var pin
     @Environment(\.nwNowScript) private var script
     /// When each badge's count last went from one number to another (`NowMotion.BadgeScene`).
@@ -46,8 +47,8 @@ struct NWNavCapsule: View {
                 pulse
                 side(.lanes, "Lanes", workingCount, NightWatch.Palette.teal, badge: 1)
             }
-            .padding(.horizontal, 8)
-            .frame(height: 68)
+            .padding(.horizontal, 6)
+            .frame(height: 60)
             // Not interactive: the pulse in the middle is a hold, and its ring is the feedback.
             .nwChromeGlass(in: RoundedRectangle(cornerRadius: NightWatch.Radius.capsule, style: .continuous), interactive: false) {
                 NWGlassBackground(radius: NightWatch.Radius.capsule, fill: NightWatch.Palette.surface.opacity(0.94))
@@ -74,14 +75,14 @@ struct NWNavCapsule: View {
                 if p == 0 { NWCapsulePulse(model: PulseModel(working: workingCount, waiting: pulseWaiting ?? decideCount,
                                                           longestWait: pulseLongestWait)) }
                 // The ring around the button fills as the hold goes on.
-                Circle().stroke(Color.white.opacity(p > 0 ? 0.12 : 0), lineWidth: 4).frame(width: 64, height: 64)
+                Circle().stroke(Color.white.opacity(p > 0 ? 0.12 : 0), lineWidth: 4).frame(width: 58, height: 58)
                 Circle().trim(from: 0, to: CGFloat(p))
                     .stroke(NightWatch.Palette.amber.mixed(with: NightWatch.Palette.red, HoldRingSpec.warmth(progress: p)).color,
                             style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .rotationEffect(.degrees(-90)).frame(width: 64, height: 64)
-                Image(systemName: "plus").font(.system(size: 24, weight: .regular))
+                    .rotationEffect(.degrees(-90)).frame(width: 58, height: 58)
+                Image(systemName: "plus").font(.system(size: 21, weight: .medium))
                     .foregroundColor(NightWatch.Palette.onBright.color)
-                    .frame(width: 56, height: 56)
+                    .frame(width: 50, height: 50)
                     // Teal glass, running to sky at the lower edge as the fill does.
                     .background {
                         if glass {
@@ -96,9 +97,9 @@ struct NWNavCapsule: View {
                     }
                     .scaleEffect(1 - 0.06 * p)
             }
-            .frame(width: 72, height: 68)
+            .frame(width: 66, height: 60)
         }
-        .frame(width: 72, height: 68)
+        .frame(width: 66, height: 60)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Start new work"))
         .accessibilityHint(Text("Hold for 10 seconds to stop everything"))
@@ -116,7 +117,7 @@ struct NWNavCapsule: View {
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) { selection = d }
         } label: {
             HStack(spacing: 8) {
-                Text(title).font(.system(.body, weight: on ? .bold : .medium))
+                Text(title).font(.system(.callout, weight: on ? .bold : .medium))
                     .foregroundColor((on ? NightWatch.Palette.textPrimary : NightWatch.Palette.textTertiary).color)
                 if count > 0 {
                     NWWorkflowClock(origin: 0, until: m.scene.settlesAt(i, reduceMotion: calm), pinned: m.pinned) { t in
@@ -132,8 +133,10 @@ struct NWNavCapsule: View {
             }
             .animation(calm ? .easeOut(duration: WorkflowMotion.reducedFade)
                        : .spring(response: NowMotion.badgeResponse, dampingFraction: NowMotion.badgeDamping), value: count)
-            .frame(maxWidth: .infinity, minHeight: 52)
-            .background(Capsule().fill(on ? Color.white.opacity(0.08) : Color.clear))
+            .frame(maxWidth: .infinity, minHeight: 46)
+            .background {
+                if on { NWGlassBubble().matchedGeometryEffect(id: "selected", in: bubble) }
+            }
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)

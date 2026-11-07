@@ -157,6 +157,7 @@ struct NWInFlightSection: View {
             ForEach(Array(section.rows.enumerated()), id: \.element.id) { i, row in
                 NWInFlightCardView(row: row, index: i, extra: section.isExpanded && i >= InFlightSection.collapsedLimit, motion: m,
                                    onOpen: { onOpen(row.id, $0) })
+                    .nwRecedes()
                     .id("row-inflight-\(row.id)")
                     // Arriving is the card's own rise; leaving, a fade as the cards below close up.
                     .transition(.asymmetric(insertion: .identity, removal: .opacity))

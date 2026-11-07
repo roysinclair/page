@@ -337,6 +337,7 @@ struct NWNowScreen: View {
                 .offset(y: push(below: rows.first.flatMap { order.firstIndex(of: $0.id) }.map { $0 - 1 }))
             ForEach(rows) { row in
                 arriving(row, inset: inset)
+                    .nwRecedes()
                     .id("row-\(row.id)")
                     .offset(y: push(below: order.firstIndex(of: row.id).map { $0 - 1 }))
                     // The approach draws an arrival itself; a departure has already folded or simply fades.

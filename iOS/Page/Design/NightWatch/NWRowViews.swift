@@ -147,7 +147,7 @@ struct NWOutcomeStrip: View {
                     .foregroundColor(NightWatch.Palette.textSecondary.color)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 14).frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+            .padding(.horizontal, 14).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .background(RoundedRectangle(cornerRadius: NightWatch.Radius.button, style: .continuous).fill(Color.white.opacity(0.06)))
             .accessibilityElement(children: .combine)
         case .delivered(let detail):
@@ -177,7 +177,7 @@ struct NWOutcomeStrip: View {
                 Spacer(minLength: 0)
                 Text("Cancel").font(NightWatch.Typo.captionStrong).foregroundColor(NightWatch.Palette.amber.color)
             }
-            .padding(.horizontal, 14).padding(.vertical, 8).frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+            .padding(.horizontal, 14).padding(.vertical, 6).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .background(RoundedRectangle(cornerRadius: NightWatch.Radius.button, style: .continuous).fill(NightWatch.Palette.amber.opacity(0.12).color))
             .overlay(RoundedRectangle(cornerRadius: NightWatch.Radius.button, style: .continuous)
                 .strokeBorder(NightWatch.Palette.amber.opacity(0.4).color, lineWidth: 1))
@@ -460,7 +460,7 @@ struct NWLookCard: View {
                 if outcome == .none, let steer = row.action(.tellInstead) {
                     Button(steer.label, action: onSteer)
                         .buttonStyle(NWButtonStyle(kind: .amber))
-                        .frame(width: 92)
+                        .frame(width: 84)
                 }
             }
             .contentShape(Rectangle())

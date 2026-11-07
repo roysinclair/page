@@ -389,6 +389,28 @@ struct NWInstrumentGlass: View {
     }
 }
 
+/// Depth while scrolling: a card leaving the top of the stream recedes into the
+/// sky, a little smaller and dimmer, and comes forward again as it returns.
+/// Only at the top edge, so nothing under the nav capsule is ever distorted;
+/// still with Reduce Motion.
+struct NWRecede: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.nwReduceMotion) private var forcedReduceMotion
+
+    func body(content: Content) -> some View {
+        content.scrollTransition(topLeading: .interactive, bottomTrailing: .identity) { c, phase in
+            let still = reduceMotion || forcedReduceMotion || phase.isIdentity
+            return c.scaleEffect(still ? 1 : 0.94, anchor: .bottom)
+                .opacity(still ? 1 : 0.55)
+        }
+    }
+}
+
+extension View {
+    /// See `NWRecede`.
+    func nwRecedes() -> some View { modifier(NWRecede()) }
+}
+
 /// The page background: the night sky's darkness with a whisper of violet at
 /// the top. There is deliberately no light at the bottom: any glow comes
 /// from the Card glow setting, on the cards themselves.
@@ -412,10 +434,10 @@ struct NWBackdrop: View {
 /// Reduce Transparency on, each piece draws exactly today's surface instead.
 /// Every `glassEffect` in the app is in this file, behind that one gate.
 extension NightWatch.Palette {
-    /// The tint of the chrome's glass: the page's own near-black, deep enough
-    /// that white labels hold over the brightest sky of the day (the
-    /// afternoon, and needs-you's amber at full strength).
-    static let chromeGlass = NightWatch.RGBA(hex: 0x04060A, alpha: 0.6)
+    /// The tint of the chrome's glass: a light smoke of the page's night, so the
+    /// glass itself shows (what is under it, bent at its edges, its rim lit) and
+    /// white labels still hold over the brightest sky of the day.
+    static let chromeGlass = NightWatch.RGBA(hex: 0x04060A, alpha: 0.24)
 }
 
 private struct NWLiquidGlassKey: EnvironmentKey {
@@ -466,6 +488,21 @@ struct NWChromeGlass<S: Shape, Fallback: View>: ViewModifier {
         #else
         content.background(fallback)
         #endif
+    }
+}
+
+/// The selected place in a bar of glass (the nav capsule's side, the room's
+/// lens): a brighter bubble of glass inside it, lit along its top edge.
+struct NWGlassBubble: View {
+    var radius: CGFloat? = nil
+
+    var body: some View {
+        let shape = radius.map { AnyShape(RoundedRectangle(cornerRadius: $0, style: .continuous)) } ?? AnyShape(Capsule())
+        ZStack {
+            shape.fill(LinearGradient(colors: [Color.white.opacity(0.2), Color.white.opacity(0.08)], startPoint: .top, endPoint: .bottom))
+            shape.stroke(LinearGradient(colors: [Color.white.opacity(0.42), Color.white.opacity(0.06)], startPoint: .top, endPoint: .bottom), lineWidth: 1)
+        }
+        .shadow(color: Color.black.opacity(0.25), radius: 6, x: 0, y: 3)
     }
 }
 

@@ -3,6 +3,33 @@
 package app.page.android.ui.nw.now
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.unit.sp
+import app.page.android.ui.nw.components.NWCountBadge
+import app.page.android.ui.nw.components.NWGlassEdgeLight
+import app.page.android.ui.nw.components.NWIconTile
+import app.page.android.ui.nw.components.NWJewel
+import app.page.android.ui.nw.components.NWSoftTile
+import app.page.android.ui.nw.components.nwGlass
+import app.page.android.ui.nw.components.nwHueBand
+import app.page.android.ui.nw.components.nwJewelSurface
+import app.page.android.ui.nw.components.strokeBorder
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -123,16 +150,21 @@ fun NWInFlightSection(
     val spoken = said?.takeIf { !covered && track.saidAt != hushed.at }
     Box(modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // "In flight 2": the section's glyph in a tile, the title in words, the count in a badge, and the way to Lanes.
             Row(
-                Modifier.fillMaxWidth().heightIn(min = 44.dp).clickable(role = Role.Button, onClickLabel = "Goes to Lanes", onClick = onHeader).semantics(mergeDescendants = true) {
+                Modifier.fillMaxWidth().padding(top = 20.dp).heightIn(min = 44.dp).clickable(role = Role.Button, onClickLabel = "Goes to Lanes", onClick = onHeader).semantics(mergeDescendants = true) {
                     heading(); contentDescription = "In flight, ${shown.total}"
                 },
                 horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("IN FLIGHT", style = NW.Typo.labelLarge, color = NW.Palette.teal.color)
-                RollingText("${shown.total}", NW.Typo.labelLarge, NW.Palette.textTertiary.color, reduce)
-                Box(Modifier.weight(1f).height(1.dp).background(Color.White.copy(alpha = 0.08f)))
-                Icon(Icons.Outlined.ChevronRight, null, tint = NW.Palette.textTertiary.color, modifier = Modifier.size(16.dp))
+                NWIconTile("airplane", NWJewel.teal, size = 30.dp)
+                Text("In flight", style = NW.Typo.section, color = NW.Palette.textPrimary.color)
+                RollingBadge(shown.total, NW.Palette.teal, reduce)
+                Box(Modifier.weight(1f))
+                Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Lanes", style = NW.Typo.captionStrong, color = NW.Palette.textSecondary.color)
+                    Icon(Icons.Outlined.ChevronRight, null, tint = NW.Palette.textSecondary.color, modifier = Modifier.size(14.dp))
+                }
             }
             if (shown.showsStrip) NWInFlightStrip(motion, Modifier.layoutFullBleed(), onOpen = { onOpen(it, RoomEntry.STORY) })
             for ((row, leaving) in cards) key(row.id) {
@@ -142,7 +174,9 @@ fun NWInFlightSection(
             }
             if (shown.isCapped) {
                 Box(
-                    Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.06f))
+                    Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(CircleShape)
+                        .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.10f), Color.White.copy(alpha = 0.04f))))
+                        .border(1.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.18f), Color.White.copy(alpha = 0.03f))), CircleShape)
                         .clickable(role = Role.Button, onClickLabel = if (shown.isExpanded) "Shows only the first few" else "Shows every working session", onClick = onToggle),
                     contentAlignment = Alignment.Center,
                 ) { Text(if (shown.isExpanded) "Show fewer" else shown.showAllLabel, style = NW.Typo.captionStrong, color = NW.Palette.teal.color) }
@@ -168,7 +202,8 @@ private fun Modifier.layoutFullBleed(): Modifier = this.then(
 fun NWInFlightStrip(motion: FlightMotion, modifier: Modifier = Modifier, onOpen: (String) -> Unit = {}) {
     val track = motion.track
     val tiles by remember(track, motion.reduce) { derivedStateOf(structuralEqualityPolicy()) { NowMotion.stripTiles(track, motion.now, motion.reduce) } }
-    Row(modifier.horizontalScroll(rememberScrollState()).padding(horizontal = NW.Space.gutter), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    // The doors stand on their own glow: the scroll's cross-axis clip allows 30 dp, and the 4 dp here keeps their tops from being cut.
+    Row(modifier.horizontalScroll(rememberScrollState()).padding(horizontal = NW.Space.gutter, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         tiles.forEachIndexed { i, (r, leaving) ->
             key(r.id) {
                 val m = if (leaving != null) Modifier.flightLeave(motion, leaving, across = true).clearAndSetSemantics {} else Modifier.flightRise(motion, track.tilesIn[r.id])
@@ -178,6 +213,11 @@ fun NWInFlightStrip(motion: FlightMotion, modifier: Modifier = Modifier, onOpen:
     }
 }
 
+/**
+ * A door: the session's project jewel (lift 0.7), crossing to amber as it turns stuck, with its name, what it is doing, its
+ * progress or health in a black 28% pill and the time, all in white. Its emblem is the session's own star with a flare (two fine
+ * rays and a radial glow) at the bottom trailing corner, running off the edge, clipped to the door.
+ */
 @Composable
 private fun StripTile(r: InFlightRow, index: Int, motion: FlightMotion, modifier: Modifier, onClick: () -> Unit) {
     val time = r.card.turn?.removePrefix("working ") ?: r.age?.let { "$it ago" }
@@ -186,32 +226,69 @@ private fun StripTile(r: InFlightRow, index: Int, motion: FlightMotion, modifier
     val flow by remember(track, r.id, motion.reduce) { derivedStateOf { NowMotion.tileLine(track, r.id, motion.now, motion.reduce) } }
     val attention = r.card.health.needsAttention
     val amber by remember(track, r.id, motion.reduce) { derivedStateOf { stepped(NowMotion.rowAmber(track, r, motion.now, motion.reduce)) } }
-    NWGlassCard(
-        modifier.width(212.dp).clickable(role = Role.Button, onClickLabel = "Opens the session", onClick = onClick).semantics(mergeDescendants = true) { contentDescription = r.spoken },
-        radius = NW.Radius.row, padding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 10.dp),
-        tint = if (amber <= 0.0) null else NW.Palette.amber.mixed(NW.Palette.surface, 1 - amber),
+    val jewel = NWJewel.of(r.hue).crossing(NWJewel.amber, amber)
+    val glowColour = jewel.light
+    val shape = RoundedCornerShape(NW.Radius.row)
+    val white = Color.White
+    Box(
+        modifier.width(212.dp).height(96.dp).nwJewelSurface(jewel, NW.Radius.row, lift = 0.7).clip(shape)
+            .clickable(role = Role.Button, onClickLabel = "Opens the session", onClick = onClick).semantics(mergeDescendants = true) { contentDescription = r.spoken },
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(contentAlignment = Alignment.Center) {
-                FlightStar(r.seed, r.hue.color, NowMotion.live(r, motion.reduce), motion.clock, size = 30.dp, index = index)
-                flow?.let { l -> if (l.fraction != null) key(l.key) { FlightRing(motion, r, l, index) } }
-            }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(r.project, style = NW.Typo.monoSmall, color = NW.Palette.textPrimary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(r.card.now, style = NW.Typo.monoMicro, color = NW.Palette.textTertiary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    val label = r.card.health.label
-                    val l = flow
-                    val word = l?.let { if (motion.reduce) null else NowMotion.endedWord(it.status) }
-                    if (attention && label != null) Text(label, style = NW.Typo.monoMicro, color = NW.Palette.amber.color, maxLines = 1)
-                    else if (l != null && (word != null || l.progress != null)) {
-                        RollingText(word ?: l.progress!!.replace(" agents", ""), NW.Typo.monoMicro, (if (l.status == FlightLineStatus.FAILED || l.status == FlightLineStatus.STOPPED) NW.Palette.amber else NW.Palette.teal).color, motion.reduce)
+        // Its emblem: the session's own star, large, glowing, and running off the corner.
+        Box(Modifier.matchParentSize().clipToBounds(), contentAlignment = Alignment.BottomEnd) {
+            Box(
+                Modifier.size(104.dp).offset(30.dp, 30.dp).drawBehind {
+                    val c = center
+                    drawCircle(Brush.radialGradient(listOf(glowColour.opacity(0.55).color, glowColour.opacity(0.0).color), center = c, radius = 52.dp.toPx()), 52.dp.toPx(), c)
+                    // The flare: two fine rays crossing at the star.
+                    val ray = Brush.horizontalGradient(listOf(Color.Transparent, white.copy(alpha = 0.85f), Color.Transparent), startX = c.x - 42.dp.toPx(), endX = c.x + 42.dp.toPx())
+                    val th = 1.6.dp.toPx()
+                    drawRoundRect(ray, Offset(c.x - 42.dp.toPx(), c.y - th / 2), androidx.compose.ui.geometry.Size(84.dp.toPx(), th), androidx.compose.ui.geometry.CornerRadius(th / 2))
+                    rotate(90f, c) {
+                        drawRoundRect(ray, Offset(c.x - 42.dp.toPx(), c.y - th / 2), androidx.compose.ui.geometry.Size(84.dp.toPx(), th), androidx.compose.ui.geometry.CornerRadius(th / 2))
                     }
-                    if (time != null) Text(time, style = NW.Typo.monoMicro, color = NW.Palette.textQuiet.color, maxLines = 1)
+                },
+                contentAlignment = Alignment.Center,
+            ) {
+                FlightStar(r.seed, glowColour, NowMotion.live(r, motion.reduce), motion.clock, size = 34.dp, index = index)
+                flow?.let { l -> if (l.fraction != null) key(l.key) { FlightRing(motion, r, l, index, size = 52.dp, lineWidth = 3.dp) } }
+            }
+        }
+        Column(Modifier.fillMaxSize().padding(start = 14.dp, top = 12.dp, bottom = 12.dp, end = 50.dp)) {
+            Text(r.project, style = NW.Typo.name, color = white, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(r.card.now, style = NW.Typo.metaSmall, color = white.copy(alpha = 0.9f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Box(Modifier.weight(1f))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                val label = r.card.health.label
+                val l = flow
+                val word = l?.let { if (motion.reduce) null else NowMotion.endedWord(it.status) }
+                val pill = Modifier.clip(CircleShape).background(Color.Black.copy(alpha = 0.28f)).padding(horizontal = 7.dp, vertical = 2.dp)
+                if (attention && label != null) Text(label, style = NW.Typo.captionStrong, color = white, maxLines = 1, modifier = pill)
+                else if (l != null && (word != null || l.progress != null)) {
+                    RollingText(word ?: l.progress!!.replace(" agents", ""), NW.Typo.captionStrong.copy(fontFeatureSettings = "tnum"), white, motion.reduce, pill)
                 }
+                if (time != null) Text(time, style = NW.Typo.caption.copy(fontFeatureSettings = "tnum"), color = white.copy(alpha = 0.85f), maxLines = 1)
             }
         }
     }
+}
+
+/** A jewel part-way to [other] ([t] 0 is this one): a door turning stuck crosses to amber as one surface, so its glow is never cut by a layer. */
+private fun NWJewel.crossing(other: NWJewel, t: Double): NWJewel =
+    if (t <= 0.0) this else if (t >= 1.0) other
+    else NWJewel(top.mixed(other.top, t), bottom.mixed(other.bottom, t), light.mixed(other.light, t), lightStrength + (other.lightStrength - lightStrength) * t)
+
+/** The section's count in its badge, rolling to a new number as the old slides up and out (a cross-fade under Reduce Motion). */
+@Composable
+private fun RollingBadge(count: Int, color: Rgba, reduce: Boolean) {
+    AnimatedContent(
+        count,
+        transitionSpec = {
+            if (reduce) fadeIn(tween(200)) togetherWith fadeOut(tween(200))
+            else (slideInVertically(tween(350)) { it } + fadeIn(tween(350))) togetherWith (slideOutVertically(tween(250)) { -it } + fadeOut(tween(250)))
+        },
+        label = "badge",
+    ) { n -> NWCountBadge(n, color) }
 }
 
 /** A cross-fade's share in twentieths, so a tint fading recomposes a few times and never while it holds. */
@@ -230,68 +307,84 @@ fun NWInFlightCardView(row: InFlightRow, modifier: Modifier = Modifier, motion: 
     val reduce = motion.reduce
     // The health tint cross-fades (0.5 s) when it turns.
     val amber by remember(track, row.id, reduce) { derivedStateOf { stepped(NowMotion.rowAmber(track, row, motion.now, reduce)) } }
-    val tint = if (amber >= 1.0) NW.Palette.amber else if (amber <= 0.0) NW.Palette.teal else NW.Palette.teal.mixed(NW.Palette.amber, amber)
     val lines by remember(track, row.id, reduce) { derivedStateOf(structuralEqualityPolicy()) { NowMotion.drawn(track, row.id, motion.now, reduce) } }
     var menu by remember { mutableStateOf(false) }
-    NWGlassCard(
-        modifier.semantics {
-            customActions = buildList {
-                add(CustomAccessibilityAction("Open") { onOpen(RoomEntry.SCREEN); true })
-                add(CustomAccessibilityAction("Steer") { onOpen(RoomEntry.TYPE); true })
-                if (row.canStop) add(CustomAccessibilityAction("Stop") { onOpen(RoomEntry.STOP); true })
+    val jewel = NWJewel.of(row.hue).crossing(NWJewel.amber, amber)
+    val glow = app.page.android.ui.nw.theme.LocalCardGlow.current
+    // The body carries its project's colour, faintly (surfaceRaised mixed 30% toward the project's deep colour), so band and body read as one card.
+    val body = NW.Palette.surfaceRaised.mixed(NWJewel.of(row.hue).bottom, 0.3)
+    Box(
+        modifier.nwRecedeInStream().fillMaxWidth()
+            .semantics {
+                customActions = buildList {
+                    add(CustomAccessibilityAction("Open") { onOpen(RoomEntry.SCREEN); true })
+                    add(CustomAccessibilityAction("Steer") { onOpen(RoomEntry.TYPE); true })
+                    if (row.canStop) add(CustomAccessibilityAction("Stop") { onOpen(RoomEntry.STOP); true })
+                }
             }
-        },
-        tint = tint,
+            .nwGlass(NW.Radius.card, fill = body, tint = if (amber > 0.01) NW.Palette.amber.opacity(amber) else null, glow = glow),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Column {
             Box {
                 Column(
                     Modifier.fillMaxWidth().combinedClickable(role = Role.Button, onClickLabel = "Opens the session", onLongClickLabel = "Open, Steer or Stop", onLongClick = { menu = true }, onClick = { onOpen(RoomEntry.STORY) })
                         .semantics(mergeDescendants = true) { contentDescription = row.spoken },
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    // Who and where.
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) { FlightStar(row.seed, row.hue.color, NowMotion.live(row, reduce), motion.clock, size = 30.dp) }
+                    // The band: the star in a glass tile, the project and where it runs, on its project's jewel (ember once it is stuck), bled to the card's edges.
+                    Row(
+                        Modifier.fillMaxWidth().nwHueBand(jewel).padding(start = NW.Space.lg, end = NW.Space.lg, top = NW.Space.lg, bottom = 14.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(
+                            Modifier.size(44.dp).drawBehind {
+                                val r = 13.dp.toPx()
+                                drawRoundRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.18f), Color.White.copy(alpha = 0.05f))), cornerRadius = androidx.compose.ui.geometry.CornerRadius(r))
+                                strokeBorder(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.4f), Color.White.copy(alpha = 0.06f))), r)
+                            },
+                            contentAlignment = Alignment.Center,
+                        ) { FlightStar(row.seed, jewel.light, NowMotion.live(row, reduce), motion.clock, size = 32.dp) }
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Text(row.project, style = NW.Typo.mono, color = NW.Palette.textPrimary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(listOfNotNull(row.character, row.route ?: row.host, card.model).joinToString(" · "), style = NW.Typo.caption, color = NW.Palette.textTertiary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(row.project, style = NW.Typo.nameLarge, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(listOfNotNull(row.character, row.route ?: row.host, card.model).joinToString(" · "), style = NW.Typo.caption, color = Color.White.copy(alpha = 0.88f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         val h = card.health.label
                         if (card.health.needsAttention && h != null) Text(
-                            h.uppercase(), style = NW.Typo.label, color = NW.Palette.amber.color, maxLines = 1,
-                            modifier = Modifier.clip(CircleShape).background(NW.Palette.amber.opacity(0.14).color).padding(horizontal = 8.dp, vertical = 4.dp),
+                            h.uppercase(), style = NW.Typo.label, color = Color.White, maxLines = 1,
+                            modifier = Modifier.clip(CircleShape).background(Color.Black.copy(alpha = 0.28f)).padding(horizontal = 8.dp, vertical = 4.dp),
                         )
                     }
-                    Fact("NOW") { NowSteps(row, motion) }
-                    card.timeText?.let { t -> Fact("TIME") { TimeText(t) } }
-                    if (lines.isNotEmpty()) {
-                        // With only a ghost left, the whole fact folds away with it.
-                        val last = lines.singleOrNull()?.takeIf { it.status != FlightLineStatus.RUNNING }
-                        Box(if (last != null) Modifier.flightFold(motion, row, last) else Modifier) {
-                            Fact("WORKFLOWS") {
-                                Column {
-                                    WorkflowHeading(card.workflowHeading, reduce)
-                                    // Each line's gap above it folds away with it (as on iOS), so nothing jumps when a ghost goes.
-                                    lines.forEachIndexed { i, w ->
-                                        key(w.key) { WorkflowLine(row, w, i, motion, (if (last == null) Modifier.flightFold(motion, row, w) else Modifier).padding(top = 8.dp)) }
+                    // The facts lead with a tile that says what each is, so no label stands over them.
+                    Column(Modifier.padding(start = NW.Space.lg, end = NW.Space.lg, top = 14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Fact("NOW") { NowSteps(row, motion) }
+                        card.timeText?.let { t -> Fact("TIME") { TimeText(t) } }
+                        if (lines.isNotEmpty()) {
+                            // With only a ghost left, the whole fact folds away with it.
+                            val last = lines.singleOrNull()?.takeIf { it.status != FlightLineStatus.RUNNING }
+                            Box(if (last != null) Modifier.flightFold(motion, row, last) else Modifier) {
+                                Fact("WORKFLOWS") {
+                                    Column {
+                                        WorkflowHeading(card.workflowHeading, reduce)
+                                        // Each line's gap above it folds away with it (as on iOS), so nothing jumps when a ghost goes.
+                                        lines.forEachIndexed { i, w ->
+                                            key(w.key) { WorkflowLine(row, w, i, motion, (if (last == null) Modifier.flightFold(motion, row, w) else Modifier).padding(top = 8.dp)) }
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                    Fact("HEALTH") {
                         val hc: Rgba = when (card.health) {
                             FlightHealth.NORMAL -> NW.Palette.green
                             FlightHealth.LONG_RUNNING -> NW.Palette.sky
                             FlightHealth.STUCK, FlightHealth.RATE_LIMITED -> NW.Palette.amber
                         }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            FlightHealthDot(card.health, hc, motion)
-                            Text(
-                                card.healthLine ?: "Normal", style = NW.Typo.monoMicro, maxLines = 3, overflow = TextOverflow.Ellipsis,
-                                color = (if (card.health.needsAttention) NW.Palette.amber else NW.Palette.textSecondary).color,
-                            )
+                        Fact("HEALTH", tint = if (card.health.needsAttention) NW.Palette.amber else hc) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                FlightHealthDot(card.health, hc, motion)
+                                Text(
+                                    card.healthLine ?: "Normal", style = NW.Typo.meta, maxLines = 3, overflow = TextOverflow.Ellipsis,
+                                    color = (if (card.health.needsAttention) NW.Palette.amber else NW.Palette.textSecondary).color,
+                                )
+                            }
                         }
                     }
                 }
@@ -301,12 +394,14 @@ fun NWInFlightCardView(row: InFlightRow, modifier: Modifier = Modifier, motion: 
                     if (row.canStop) DropdownMenuItem({ Text("Stop…") }, { menu = false; onOpen(RoomEntry.STOP) })
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().padding(start = NW.Space.lg, end = NW.Space.lg, top = 14.dp, bottom = NW.Space.lg)) {
                 // A terminal Page cannot mirror or type into is dimmed, not hidden: it still opens the room, which says why.
+                // Working, not waiting on you: its buttons stay quiet beside a card that needs you.
                 EntryButton(RoomEntry.SCREEN, row.canMirror, NWButtonKind.QUIET, Modifier.weight(1f)) { onOpen(RoomEntry.SCREEN) }
-                EntryButton(RoomEntry.TYPE, row.canType, NWButtonKind.BRIGHT, Modifier.weight(1f)) { onOpen(RoomEntry.TYPE) }
+                EntryButton(RoomEntry.TYPE, row.canType, NWButtonKind.SOFT, Modifier.weight(1f)) { onOpen(RoomEntry.TYPE) }
             }
         }
+        NWGlassEdgeLight(NW.Radius.card, Modifier.matchParentSize())
     }
 }
 
@@ -319,7 +414,7 @@ fun NWInFlightCardView(row: InFlightRow, modifier: Modifier = Modifier, motion: 
 private fun TimeText(text: String) {
     val change = rememberNowChange(text)
     val clock = rememberNowClock(change.at?.plus(NowMotion.wordsLast(LocalReduceMotion.current)))
-    NWRollingWords(AnnotatedString(text), change, clock, NW.Typo.monoSmall, NW.Palette.textPrimary.color, textAlign = TextAlign.Start, maxLines = 2)
+    NWRollingWords(AnnotatedString(text), change, clock, NW.Typo.meta.copy(fontFeatureSettings = "tnum"), NW.Palette.textPrimary.color, textAlign = TextAlign.Start, maxLines = 2)
 }
 
 /** "2 workflows running", rolling to each new count; the last count while the last line closes. */
@@ -337,8 +432,8 @@ private fun WorkflowLine(row: InFlightRow, w: FlightWorkflowLine, index: Int, mo
     val amber = w.status == FlightLineStatus.FAILED || w.status == FlightLineStatus.STOPPED
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.Top) {
-            Text(if (ended != null) listOfNotNull(w.name, w.phase).joinToString(" · ") + " · " else w.lead, style = NW.Typo.monoMicro, color = NW.Palette.textSecondary.color, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-            (ended ?: w.progress)?.let { RollingText(it, NW.Typo.monoMicro, (if (amber && ended != null) NW.Palette.amber else NW.Palette.textSecondary).color, motion.reduce) }
+            Text(if (ended != null) listOfNotNull(w.name, w.phase).joinToString(" · ") + " · " else w.lead, style = NW.Typo.metaSmall.copy(fontFeatureSettings = "tnum"), color = NW.Palette.textSecondary.color, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+            (ended ?: w.progress)?.let { RollingText(it, NW.Typo.metaSmall.copy(fontFeatureSettings = "tnum"), (if (amber && ended != null) NW.Palette.amber else NW.Palette.textSecondary).color, motion.reduce) }
         }
         if (w.fraction != null) FlightBar(motion, row, w, index)
     }
@@ -357,7 +452,7 @@ private fun NowSteps(row: InFlightRow, motion: FlightMotion) {
     val change by remember(track, row.id, reduce) { derivedStateOf { NowMotion.step(track, row.id, motion.now, reduce)?.first } }
     val pitch = remember { mutableFloatStateOf(0f) }
     val gap = with(LocalDensity.current) { 6.dp.toPx() }
-    val style = NW.Typo.monoSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+    val style = NW.Typo.activity
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box {
             val s = change
@@ -414,7 +509,7 @@ private fun NowSteps(row: InFlightRow, motion: FlightMotion) {
 private fun PreviousStep(step: String, i: Int, modifier: Modifier) {
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(5.dp).clip(CircleShape).background(NW.Palette.textQuiet.opacity((1 - 0.22 * i).coerceAtLeast(0.2)).color))
-        Text(step, style = NW.Typo.monoMicro, color = NW.Palette.textTertiary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(step, style = NW.Typo.metaSmall.copy(fontSize = 11.sp), color = NW.Palette.textTertiary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -427,11 +522,50 @@ private fun EntryButton(entry: RoomEntry, enabled: Boolean, kind: NWButtonKind, 
     }
 }
 
-/** A small caps label, and its content under it (stacked like the Mac's card, so a long step or a health line gets the card's whole width). */
+/**
+ * A fact, led by a soft tile that says what it is (what it is doing, how long, its workflows, how it is doing), so no label stands
+ * over it. [tint] is the tile's colour; the tile is not read (the words are).
+ */
 @Composable
-private fun Fact(title: String, content: @Composable () -> Unit) {
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(title, style = NW.Typo.label, color = NW.Palette.textTertiary.color, maxLines = 1)
-        content()
+private fun Fact(title: String, tint: Rgba? = null, content: @Composable () -> Unit) {
+    val (symbol, colour) = when (title) {
+        "NOW" -> "waveform" to NW.Palette.teal
+        "TIME" -> "clock.fill" to NW.Palette.sky
+        "WORKFLOWS" -> "square.stack.3d.up.fill" to NW.Palette.violet
+        else -> "heart.fill" to (tint ?: NW.Palette.green)
+    }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+        NWSoftTile(symbol, colour, size = 30.dp)
+        Box(Modifier.weight(1f).padding(top = 5.dp)) { content() }
+    }
+}
+
+/** What a card in the In flight section needs to recede with the stream: its scroll, and where the stream's top is in the window. Set by the Now screen. */
+class StreamRecede(val state: androidx.compose.foundation.lazy.LazyListState, val top: () -> Float)
+
+val LocalStreamRecede = androidx.compose.runtime.staticCompositionLocalOf<StreamRecede?> { null }
+
+/**
+ * [app.page.android.ui.nw.components.nwRecede] for a card that sits inside a bigger item (the In flight cards are one item of
+ * the stream): the card leaving the top scales to 0.94 (anchored at its bottom) and fades to 0.55 as it goes, and comes forward on
+ * return; still under Reduce Motion. Its place is read as the layer is drawn, so a scroll recomposes nothing.
+ */
+@Composable
+fun Modifier.nwRecedeInStream(): Modifier {
+    val stream = LocalStreamRecede.current ?: return this
+    if (LocalReduceMotion.current) return this
+    val at = remember { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(1) }
+    return this.onGloballyPositioned { at[0] = it }.graphicsLayer {
+        stream.state.layoutInfo
+        val c = at[0] ?: return@graphicsLayer
+        if (!c.isAttached || size.height <= 0f) return@graphicsLayer
+        val gone = stream.top() - c.positionInRoot().y
+        if (gone <= 0f) return@graphicsLayer
+        val p = (gone / size.height).coerceIn(0f, 1f)
+        transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
+        val k = 1f - 0.06f * p
+        scaleX = k
+        scaleY = k
+        alpha = 1f - 0.45f * p
     }
 }

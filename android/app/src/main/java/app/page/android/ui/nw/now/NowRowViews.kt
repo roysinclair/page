@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -62,6 +63,7 @@ import app.page.android.model.PendingAction
 import app.page.android.model.ReceiptThreadInput
 import app.page.android.model.RowAction
 import app.page.android.model.TurnSummaryChips
+import app.page.android.model.WaitChip
 import app.page.android.model.plusSeconds
 import app.page.android.model.waitingText
 import app.page.android.ui.nw.components.NWArmRing
@@ -70,6 +72,10 @@ import app.page.android.ui.nw.components.NWButtonKind
 import app.page.android.ui.nw.components.NWChip
 import app.page.android.ui.nw.components.NWGlassCard
 import app.page.android.ui.nw.components.NWHoldButton
+import app.page.android.ui.nw.components.NWIconTile
+import app.page.android.ui.nw.components.NWJewel
+import app.page.android.ui.nw.components.nwJewelSurface
+import app.page.android.ui.nw.components.strokeBorder
 import app.page.android.ui.nw.components.NWReceiptAction
 import app.page.android.ui.nw.components.NWReceiptLine
 import app.page.android.ui.nw.components.NWReceiptThreadView
@@ -115,25 +121,43 @@ class RowActions(
     val cancel: () -> Unit = {},
 )
 
+/**
+ * The top line of a card on a jewel: the class chip (white on black 26%), the project in words, and the wait in a clock chip (the clock
+ * says "waiting", so the chip holds the time alone: [WaitChip.text]).
+ */
 @Composable
 private fun CardTopLine(row: NowRow, now: Instant) {
     val large = LocalDensity.current.fontScale > 1.3f
     val age = row.waitingText(now)
+    val name = NW.Typo.name
+    val white = Color.White.copy(alpha = 0.92f)
     if (large) {
         // At large font sizes the chip gets its own line so the project is never squeezed out by the age.
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            NWChip(row.chip, pill = true)
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(row.projectName, style = NW.Typo.monoSmall, color = NW.Palette.textSecondary.color, maxLines = 2, modifier = Modifier.weight(1f))
-                Text(age, style = NW.Typo.caption, color = NW.Palette.textTertiary.color, maxLines = 1)
+            NWChip(row.chip, pill = true, onJewel = true)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(row.projectName, style = name, color = white, maxLines = 2, modifier = Modifier.weight(1f))
+                WaitClock(age)
             }
         }
     } else {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            NWChip(row.chip, pill = true)
-            Text(row.projectName, style = NW.Typo.monoSmall, color = NW.Palette.textSecondary.color, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-            Text(age, style = NW.Typo.caption, color = NW.Palette.textTertiary.color, maxLines = 1)
+            NWChip(row.chip, pill = true, onJewel = true)
+            Text(row.projectName, style = name, color = white, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            WaitClock(age)
         }
+    }
+}
+
+/** The wait on a jewel: a clock and the time, in a black 22% capsule. */
+@Composable
+private fun WaitClock(age: String) {
+    Row(
+        Modifier.clip(CircleShape).background(Color.Black.copy(alpha = 0.22f)).padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Icon(nwIcon("clock"), null, tint = Color.White.copy(alpha = 0.95f), modifier = Modifier.size(12.dp))
+        Text(WaitChip.text(age), style = NW.Typo.captionStrong.copy(fontFeatureSettings = "tnum"), color = Color.White.copy(alpha = 0.95f), maxLines = 1)
     }
 }
 
@@ -162,7 +186,7 @@ fun NWOutcomeStrip(status: RowStatus, now: Instant, onCancel: () -> Unit, modifi
         CardOutcome.None -> Unit
         is CardOutcome.Arming -> status.pending?.let { p -> ArmingStrip(p, now, onCancel, modifier) }
         CardOutcome.Sending -> Row(
-            modifier.fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(NW.Radius.button)).background(Color.White.copy(alpha = 0.06f)).padding(horizontal = 14.dp)
+            modifier.fillMaxWidth().heightIn(min = NW.buttonHeight).clip(RoundedCornerShape(NW.Radius.button)).background(Color.White.copy(alpha = 0.06f)).padding(horizontal = 14.dp)
                 .semantics(mergeDescendants = true) {},
             horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -185,9 +209,9 @@ private fun ArmingStrip(p: PendingAction, now: Instant, onCancel: () -> Unit, mo
     val progress = (phase as? PendingAction.Phase.Arming)?.progress ?: 1.0
     val shape = RoundedCornerShape(NW.Radius.button)
     Row(
-        modifier.fillMaxWidth().heightIn(min = 52.dp).clip(shape).background(NW.Palette.amber.opacity(0.12).color, shape)
+        modifier.fillMaxWidth().heightIn(min = NW.buttonHeight).clip(shape).background(NW.Palette.amber.opacity(0.12).color, shape)
             .clickable(role = Role.Button, onClickLabel = "Cancel", onClick = onCancel)
-            .padding(horizontal = 14.dp, vertical = 8.dp)
+            .padding(horizontal = 14.dp, vertical = 6.dp)
             .semantics { contentDescription = "Sending, tap to cancel" },
         horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -219,26 +243,31 @@ fun NWDecideCard(row: NowRow, now: Instant, status: RowStatus, actions: RowActio
             }
         }
     }
-    NWGlassCard(modifier, tint = row.tint) {
-        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    val jewel = NWJewel.of(row.tint)
+    // The jewel: the one loud thing on the page, standing 1.25 off it on a glow of its own light.
+    Box(modifier.fillMaxWidth().nwJewelSurface(jewel, lift = 1.25)) {
+        Column(Modifier.padding(NW.Space.lg), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Column(
                 Modifier.fillMaxWidth().clickable(role = Role.Button, onClickLabel = "Opens the decision", onClick = actions.open).semantics { customActions = a11y },
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 CardTopLine(row, now)
-                Text(row.headline, style = NW.Typo.headline, color = NW.Palette.textPrimary.color)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    NWIconTile(row.chip.symbol, jewel, size = 44.dp, glass = true)
+                    Text(row.headline, style = NW.Typo.headline, color = NW.Palette.textPrimary.color, modifier = Modifier.weight(1f))
+                }
                 CommandBox(row, irreversible)
             }
             when {
                 busy -> NWOutcomeStrip(status, now, actions.cancel)
                 row.action(RowAction.Kind.DENY) != null -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                    NWButton(row.action(RowAction.Kind.DENY)!!.label, actions.deny, Modifier.weight(1f))
+                    NWButton(row.action(RowAction.Kind.DENY)!!.label, actions.deny, Modifier.weight(1f), kind = NWButtonKind.GLASS)
                     row.action(RowAction.Kind.APPROVE)?.let { approve ->
-                        if (irreversible) NWHoldButton(actions.holdComplete, Modifier.weight(1.3f), fixedProgress = fixedHold)
-                        else NWButton(approve.label, actions.approve, Modifier.weight(1f), kind = NWButtonKind.BRIGHT)
+                        if (irreversible) NWHoldButton(actions.holdComplete, Modifier.weight(1.3f), fixedProgress = fixedHold, onJewel = true)
+                        else NWButton(approve.label, actions.approve, Modifier.weight(1f), kind = NWButtonKind.WHITE)
                     }
                 }
-                row.action(RowAction.Kind.OPEN_ON_MAC) != null -> NWButton("Open on your computer", actions.open, Modifier.fillMaxWidth())
+                row.action(RowAction.Kind.OPEN_ON_MAC) != null -> NWButton("Open on your computer", actions.open, Modifier.fillMaxWidth(), kind = NWButtonKind.GLASS)
             }
         }
     }
@@ -247,7 +276,13 @@ fun NWDecideCard(row: NowRow, now: Instant, status: RowStatus, actions: RowActio
 @Composable
 private fun CommandBox(row: NowRow, irreversible: Boolean) {
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(NW.Radius.inset)).background(NW.Palette.inset.opacity(0.85).color).padding(12.dp),
+        // A well cut into the jewel: darker, with its shadow along the top edge.
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(NW.Radius.inset)).background(NW.Palette.inset.opacity(0.72).color)
+            .drawWithContent {
+                drawContent()
+                strokeBorder(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.5f), Color.White.copy(alpha = 0.10f))), NW.Radius.inset.toPx())
+            }
+            .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -257,29 +292,31 @@ private fun CommandBox(row: NowRow, irreversible: Boolean) {
                 maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
             )
         }
-        row.focusPreview?.let { Text(it, style = NW.Typo.monoMicro, color = NW.Palette.textTertiary.color) }
+        row.focusPreview?.let { Text(it, style = NW.Typo.monoMicro, color = Color.White.copy(alpha = 0.62f)) }
     }
 }
 
 /** A question: the agent is waiting for words, not a yes or no. The answer is written in the sheet (Esc, then your message, then Return). */
 @Composable
 fun NWQuestionCard(row: NowRow, now: Instant, answerable: Boolean, onOpen: () -> Unit, modifier: Modifier = Modifier) {
-    NWGlassCard(modifier.clickable(role = Role.Button, onClickLabel = "Opens the question", onClick = onOpen), tint = row.tint) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    val jewel = NWJewel.of(row.tint)
+    Box(modifier.fillMaxWidth().nwJewelSurface(jewel, lift = 1.25).clip(RoundedCornerShape(NW.Radius.card)).clickable(role = Role.Button, onClickLabel = "Opens the question", onClick = onOpen)) {
+        Column(Modifier.padding(NW.Space.lg), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             CardTopLine(row, now)
-            Text(row.summary, style = NW.Typo.title, color = NW.Palette.textPrimary.color, maxLines = 3, overflow = TextOverflow.Ellipsis)
-            row.focusPreview?.let { Text(it, style = NW.Typo.monoMicro, color = NW.Palette.textTertiary.color) }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                NWIconTile(row.chip.symbol, jewel, size = 44.dp, glass = true)
+                Text(row.summary, style = NW.Typo.title, color = NW.Palette.textPrimary.color, maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            }
+            row.focusPreview?.let { Text(it, style = NW.Typo.monoMicro, color = Color.White.copy(alpha = 0.92f)) }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                Text(
-                    if (answerable) "Answer" else (row.action(RowAction.Kind.TELL_INSTEAD)?.label ?: "Open"), style = NW.Typo.button, color = NW.Palette.onBright.color,
-                    modifier = Modifier.heightIn(min = 48.dp).clip(CircleShape).background(Brush.horizontalGradient(listOf(NW.Palette.yellow.color, NW.Palette.amber.color))).padding(horizontal = 22.dp).wrapContentCenter(),
-                )
+                // A white capsule: the primary on a jewel.
+                Box(Modifier.heightIn(min = NW.buttonHeight).clip(CircleShape).background(Color.White).padding(horizontal = 22.dp), contentAlignment = Alignment.Center) {
+                    Text(if (answerable) "Answer" else (row.action(RowAction.Kind.TELL_INSTEAD)?.label ?: "Open"), style = NW.Typo.button, color = NW.Palette.onBright.color)
+                }
             }
         }
     }
 }
-
-private fun Modifier.wrapContentCenter(): Modifier = this.then(Modifier.padding(vertical = 12.dp))
 
 /**
  * An Undoable row: swipe right to approve. The Approve affordance sits behind the row and is revealed as it
@@ -308,7 +345,7 @@ fun NWUndoableRow(row: NowRow, now: Instant, status: RowStatus, actions: RowActi
     val shape = RoundedCornerShape(NW.Radius.row)
     if (status.outcome != CardOutcome.None) {
         Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            NWGlassCard(radius = NW.Radius.row, padding = PaddingValues(0.dp)) { UndoableBody(row) }
+            Box(Modifier.fillMaxWidth().nwJewelSurface(NWJewel.green, NW.Radius.row)) { UndoableBody(row) }
             NWOutcomeStrip(status, now, actions.cancel)
         }
         return
@@ -333,9 +370,9 @@ fun NWUndoableRow(row: NowRow, now: Instant, status: RowStatus, actions: RowActi
             }
         }
         Box(
-            Modifier.offset { IntOffset(x.roundToInt(), 0) }
-                // Opaque, so the Approve well never shows through the row.
-                .clip(shape).background(NW.Palette.surface.color)
+            // Opaque (a jewel), so the Approve well never shows through the row; its glow is not clipped.
+            Modifier.offset { IntOffset(x.roundToInt(), 0) }.nwJewelSurface(NWJewel.green, NW.Radius.row)
+                .clip(shape)
                 .clickable(role = Role.Button, onClickLabel = "Opens the decision", onClick = actions.open)
                 .pointerInput(row.canSwipeApprove) {
                     if (!row.canSwipeApprove) return@pointerInput
@@ -357,7 +394,7 @@ fun NWUndoableRow(row: NowRow, now: Instant, status: RowStatus, actions: RowActi
                     )
                 },
         ) {
-            NWGlassCard(radius = NW.Radius.row, padding = PaddingValues(0.dp)) { UndoableBody(row) }
+            UndoableBody(row)
         }
     }
 }
@@ -365,12 +402,15 @@ fun NWUndoableRow(row: NowRow, now: Instant, status: RowStatus, actions: RowActi
 @Composable
 private fun UndoableBody(row: NowRow) {
     Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(NW.Palette.green.opacity(0.14).color), contentAlignment = Alignment.Center) {
-            Icon(nwIcon("terminal"), null, tint = NW.Palette.green.color, modifier = Modifier.size(22.dp))
-        }
+        NWIconTile("terminal.fill", NWJewel.green, size = 44.dp, glass = true)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(row.summary, style = NW.Typo.mono, color = NW.Palette.textPrimary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text("${row.projectName} · undoable · swipe to run", style = NW.Typo.caption, color = NW.Palette.textTertiary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(row.summary, style = NW.Typo.mono, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
+                val c = Color.White.copy(alpha = 0.92f)
+                Text("${row.projectName} · undoable", style = NW.Typo.captionStrong, color = c, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                Icon(nwIcon("chevron.right.2"), null, tint = c, modifier = Modifier.size(12.dp))
+                Text("swipe to run", style = NW.Typo.captionStrong, color = c, maxLines = 1)
+            }
         }
     }
 }
@@ -380,7 +420,7 @@ private fun UndoableBody(row: NowRow) {
 fun NWLookCard(row: NowRow, now: Instant, status: RowStatus, actions: RowActions, modifier: Modifier = Modifier) {
     val busy = status.outcome != CardOutcome.None
     val steer = row.action(RowAction.Kind.TELL_INSTEAD)
-    NWGlassCard(modifier, tint = NW.Palette.amber, padding = PaddingValues(NW.Space.md)) {
+    NowRaisedCard(modifier, tint = NW.Palette.amber, padding = PaddingValues(NW.Space.md)) {
         Column(
             Modifier.semantics {
                 customActions = buildList {
@@ -391,14 +431,12 @@ fun NWLookCard(row: NowRow, now: Instant, status: RowStatus, actions: RowActions
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(Modifier.fillMaxWidth().clickable(role = Role.Button, onClickLabel = "Open", onClick = actions.open), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(NW.Palette.amber.opacity(0.14).color), contentAlignment = Alignment.Center) {
-                    Icon(nwIcon(row.chip.symbol), null, tint = NW.Palette.amber.color, modifier = Modifier.size(24.dp))
-                }
+                NWIconTile(row.chip.symbol, NWJewel.amber, size = 48.dp)
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(row.headline, style = NW.Typo.title, color = NW.Palette.textPrimary.color, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Text("${row.summary} · ${row.waitingText(now)}", style = NW.Typo.caption, color = NW.Palette.textSecondary.color, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
-                if (!busy && steer != null) NWButton(steer.label, actions.steer, Modifier.width(96.dp), kind = NWButtonKind.AMBER)
+                if (!busy && steer != null) NWButton(steer.label, actions.steer, Modifier.width(84.dp), kind = NWButtonKind.AMBER)
             }
             if (busy) NWOutcomeStrip(status, now, actions.cancel)
         }
@@ -413,7 +451,7 @@ private val reviewChips = OneShotBook()
 fun NWReviewCard(row: NowRow, now: Instant, status: RowStatus, actions: RowActions, modifier: Modifier = Modifier) {
     val busy = status.outcome != CardOutcome.None
     val steer = row.action(RowAction.Kind.TELL_INSTEAD)
-    NWGlassCard(modifier, tint = NW.Palette.teal) {
+    NowRaisedCard(modifier, tint = NW.Palette.teal) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Column(
                 Modifier.fillMaxWidth().clickable(role = Role.Button, onClickLabel = "Opens the finished turn", onClick = actions.open).semantics {
@@ -426,9 +464,10 @@ fun NWReviewCard(row: NowRow, now: Instant, status: RowStatus, actions: RowActio
                 },
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(row.projectName, style = NW.Typo.mono, color = NW.Palette.textPrimary.color, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                    Text(row.waitingText(now), style = NW.Typo.caption, color = NW.Palette.textTertiary.color, maxLines = 1)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    NWIconTile("checkmark.seal.fill", NWJewel.teal, size = 36.dp)
+                    Text(row.projectName, style = NW.Typo.nameLarge, color = NW.Palette.textPrimary.color, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    Text(row.waitingText(now), style = NW.Typo.caption.copy(fontFeatureSettings = "tnum"), color = NW.Palette.textTertiary.color, maxLines = 1)
                 }
                 val chips = TurnSummaryChips.parse(row.summary)
                 if (chips.isEmpty()) {

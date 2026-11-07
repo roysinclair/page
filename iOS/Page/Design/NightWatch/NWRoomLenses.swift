@@ -635,7 +635,7 @@ struct NWRoomWorkflowsLens: View {
                 let frame = WorkflowMotion.frame(scene, at: t, reduceMotion: reduceMotion)
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .center) {
-                        Text(run.name).font(.system(.title3, design: .monospaced, weight: .semibold))
+                        Text(run.name).font(.system(.title3, weight: .semibold))
                             .foregroundColor(NightWatch.Palette.textPrimary.color).lineLimit(2)
                         Spacer(minLength: 8)
                         // RUNNING cross-fades to DONE or FAILED.
@@ -702,7 +702,7 @@ struct NWRoomWorkflowsLens: View {
                     Button { runId = r.id } label: {
                         HStack(spacing: 6) {
                             Circle().fill((r.isRunning ? NightWatch.Palette.teal : NightWatch.Palette.textTertiary).color).frame(width: 8, height: 8)
-                            Text(r.name).font(NightWatch.Typo.monoSmall).lineLimit(1)
+                            Text(r.name).font(NightWatch.Typo.captionStrong).lineLimit(1)
                         }
                         .foregroundColor((on ? NightWatch.Palette.textPrimary : NightWatch.Palette.textSecondary).color)
                         .padding(.horizontal, 14).frame(minHeight: 40)
@@ -719,7 +719,7 @@ struct NWRoomWorkflowsLens: View {
         let c: NightWatch.RGBA = o.isRunning ? NightWatch.Palette.teal : (o.status == "failed" || o.status == "stalled" ? NightWatch.Palette.amber : NightWatch.Palette.textSecondary)
         return HStack(spacing: 6) {
             NWBreathingDot(color: c, size: 8, breath: o.isRunning ? breath : nil)
-            Text(o.statusLabel.uppercased()).font(NightWatch.Typo.label).kerning(1)
+            Text(SectionTitle.words(o.statusLabel)).font(NightWatch.Typo.captionStrong)
         }
         .foregroundColor(c.color).padding(.horizontal, 12).frame(minHeight: 34)
         .background(Capsule().fill(c.opacity(0.14).color))
@@ -748,7 +748,8 @@ struct NWRoomWorkflowsLens: View {
         return VStack(alignment: .leading, spacing: 10) {
             ForEach(Array(groups.enumerated()), id: \.element.title) { gi, g in
                 let lead = WorkflowMotion.row(t, index: firsts[gi], reduceMotion: reduceMotion)
-                Text("\(g.title.uppercased()) · \(g.agents.count)").nwLabel().padding(.top, 4)
+                Text("\(SectionTitle.words(g.title)) · \(g.agents.count)").font(NightWatch.Typo.captionStrong)
+                    .foregroundColor(NightWatch.Palette.textTertiary.color).padding(.top, 4)
                     .offset(y: CGFloat(lead.offset)).opacity(lead.opacity)
                 VStack(spacing: 0) {
                     ForEach(Array(g.agents.enumerated()), id: \.element.id) { i, a in
@@ -925,8 +926,8 @@ struct NWAgentRoomScreen: View {
                 NWWorkflowClock(origin: origin, until: live ? .infinity : 0, pinned: pinned) { t in
                     NWBreathingDot(color: c, size: 8, breath: live ? WorkflowMotion.breath(t) : nil)
                 }
-                Text(state == .running ? "RUNNING" : (state == .done ? "DONE" : (state == .failed ? "FAILED" : "STOPPED")))
-                    .font(NightWatch.Typo.label).kerning(1)
+                Text(state == .running ? "Running" : (state == .done ? "Done" : (state == .failed ? "Failed" : "Stopped")))
+                    .font(NightWatch.Typo.captionStrong)
             }
             .foregroundColor(c.color).padding(.horizontal, 12).frame(minHeight: 34)
             .background(Capsule().fill(c.opacity(0.14).color))
@@ -937,7 +938,7 @@ struct NWAgentRoomScreen: View {
 
     private func taskCard(_ task: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("TASK FROM THE WORKFLOW").font(NightWatch.Typo.label).kerning(1.2).foregroundColor(NightWatch.Palette.violet.color)
+            Text("Task from the workflow").font(NightWatch.Typo.captionStrong).foregroundColor(NightWatch.Palette.violet.color)
             Text(task).font(.system(.body)).foregroundColor(NightWatch.Palette.textPrimary.color).fixedSize(horizontal: false, vertical: true)
                 .textSelectionIfAvailable()
         }
@@ -974,7 +975,7 @@ struct NWAgentRoomScreen: View {
         case .user(let entry, _):
             // A later instruction the workflow gave this agent.
             VStack(alignment: .leading, spacing: 4) {
-                Text("FROM THE WORKFLOW").font(NightWatch.Typo.label).kerning(1.2).foregroundColor(NightWatch.Palette.violet.color)
+                Text("From the workflow").font(NightWatch.Typo.captionStrong).foregroundColor(NightWatch.Palette.violet.color)
                 Text(entry.text).font(NightWatch.Typo.body).foregroundColor(NightWatch.Palette.textSecondary.color)
                     .fixedSize(horizontal: false, vertical: true).textSelectionIfAvailable()
             }

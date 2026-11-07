@@ -94,7 +94,7 @@ private struct NWCardTopLine: View {
             Spacer(minLength: 4)
             Text(row.waitingText(now: now))
                 .font(NightWatch.Typo.captionStrong.monospacedDigit())
-                .foregroundColor(onJewel ? Color.white.opacity(0.85) : NightWatch.Palette.textTertiary.color)
+                .foregroundColor(onJewel ? Color.white.opacity(0.92) : NightWatch.Palette.textTertiary.color)
                 .lineLimit(1)
         }
     }
@@ -290,7 +290,7 @@ struct NWQuestionCard: View {
                     .multilineTextAlignment(.leading)
                     .lineLimit(3)
                 if let p = row.focusPreview {
-                    Text(p).font(NightWatch.Typo.monoMicro).foregroundColor(Color.white.opacity(0.7))
+                    Text(p).font(NightWatch.Typo.monoMicro).foregroundColor(Color.white.opacity(0.92))
                         .multilineTextAlignment(.leading)
                 }
                 HStack {
@@ -412,7 +412,7 @@ struct NWUndoableRow: View {
                     Text("swipe to run")
                 }
                 .font(NightWatch.Typo.captionStrong)
-                .foregroundColor(Color.white.opacity(0.8)).lineLimit(1)
+                .foregroundColor(Color.white.opacity(0.92)).lineLimit(1)
             }
             Spacer(minLength: 0)
         }

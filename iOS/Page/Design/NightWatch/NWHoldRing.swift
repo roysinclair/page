@@ -205,6 +205,7 @@ struct NWHoldButton: View {
     /// On the Irreversible jewel: a white rim, so the red button stands off the red card.
     var onJewel = false
     var onComplete: () -> Void
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         NWHoldSurface(spec: .irreversible, fixedProgress: fixedProgress, onComplete: onComplete) { p in
@@ -212,12 +213,16 @@ struct NWHoldButton: View {
             let tone = NightWatch.Palette.red.mixed(with: NightWatch.Palette.amber, 0.35 * (1 - HoldRingSpec.warmth(progress: p)))
             let shape = RoundedRectangle(cornerRadius: NightWatch.Radius.button, style: .continuous)
             HStack(spacing: 8) {
-                Image(systemName: symbol)
-                    .font(.system(size: 18, weight: .regular))
-                    .frame(width: 22, height: 22)
+                // At large text the words need the room: the glyph steps aside, and they may take two lines.
+                if typeSize < .xxLarge {
+                    Image(systemName: symbol)
+                        .font(.system(size: 18, weight: .regular))
+                        .frame(width: 22, height: 22)
+                }
                 Text(label)
                     .font(NightWatch.Typo.button)
-                    .lineLimit(1).minimumScaleFactor(0.75)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(typeSize < .xxLarge ? 1 : 2).minimumScaleFactor(0.75)
             }
             .padding(.horizontal, 12)
             .foregroundColor(NightWatch.Palette.onBright.color)

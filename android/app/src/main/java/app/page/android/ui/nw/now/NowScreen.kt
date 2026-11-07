@@ -98,6 +98,7 @@ import app.page.android.ui.nw.components.rememberRunwayMotion
 import app.page.android.ui.nw.components.rememberNowChange
 import app.page.android.ui.nw.components.rememberNowClock
 import app.page.android.ui.nw.components.NWSectionHeader
+import app.page.android.ui.nw.components.symbol
 import app.page.android.ui.nw.components.NWTipCallout
 import app.page.android.ui.nw.components.NWTonightCard
 import app.page.android.ui.nw.components.color
@@ -383,7 +384,7 @@ fun NowScreen(modifier: Modifier = Modifier) {
             for ((section, list) in sections) {
                 // In flight sits between what needs you and what has finished.
                 if (section == NowRow.Section.REVIEW) inFlight()
-                add("section-${section.title.lowercase()}", pad { NWSectionHeader(section.title.lowercase().replaceFirstChar { it.uppercase() }, section.color, count = list.count { it.id !in ghosts }) })
+                add("section-${section.title.lowercase()}", pad { NWSectionHeader(section.title.lowercase().replaceFirstChar { it.uppercase() }, section.color, count = list.count { it.id !in ghosts }, symbol = section.symbol) })
                 for (row in list) {
                     val key = "row-${row.id}"
                     add(key, pad {

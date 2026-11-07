@@ -4,6 +4,11 @@
 #
 #   android/tools/screens.sh [out-dir] [options] [-- screen ...]
 #
+# A screen is a harness screen name, or `name@id` to frame any part of the Now stream by its id (the iOS harness's
+# `-NWScrollId`): `now@section-look` renders `now` scrolled to the Look section and is saved as `now--section-look.png`.
+# Ids are the stream's own keys: `section-decide`, `section-look`, `section-review`, `section-in flight` (quote it:
+# the space is kept), `row-<id>`, `runway`, `settled`.
+#
 #   --glow off|subtle|full   Card glow to render with; repeatable (default: off). With more than one, each
 #                            screen is captured once per glow and the file name carries the glow.
 #   --font-scale 1.3         The system font scale to render at (restored afterwards). Default: leave as is.
@@ -113,11 +118,18 @@ failed=0
 # 4. One cold start per screen, so the aurora frame and every fixture repeat.
 for glow in "${glows[@]}"; do
   for s in "${screens[@]}"; do
-    name="$s"
-    [[ ${#glows[@]} -gt 1 ]] && name="$s-$glow"
+    screen="${s%%@*}"
+    scroll_id=""
+    [[ "$s" == *@* ]] && scroll_id="${s#*@}"
+    name="$screen"
+    [[ -n "$scroll_id" ]] && name="$screen--${scroll_id// /-}"
+    [[ ${#glows[@]} -gt 1 ]] && name="$name-$glow"
     [[ -n "$font_scale" ]] && name="$name@${font_scale}x"
     "$adb" shell am force-stop "$pkg" >/dev/null
-    "$adb" shell am start -S -W -n "$pkg/app.page.android.MainActivity" --ez page_demo true --es page_render "$s" --es page_glow "$glow" --ef page_time "$phase" >/dev/null
+    # adb joins its arguments and the device's shell splits them again, so an id with a space is quoted for that shell.
+    scroll_args=()
+    [[ -n "$scroll_id" ]] && scroll_args=(--es page_scroll_id "'$scroll_id'")
+    "$adb" shell am start -S -W -n "$pkg/app.page.android.MainActivity" --ez page_demo true --es page_render "$screen" --es page_glow "$glow" --ef page_time "$phase" ${scroll_args[@]+"${scroll_args[@]}"} >/dev/null
     sleep 2.5
     # A crashed screen leaves the launcher or another app in front: never save that under the screen's name.
     top="$("$adb" shell dumpsys activity activities | grep -m1 topResumedActivity || true)"

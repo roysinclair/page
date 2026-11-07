@@ -118,7 +118,7 @@ fun NWLanesScreen(data: LanesScreenData, actions: LanesScreenActions, modifier: 
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val power = rememberPower(data)
     // How far above the bottom of the screen the horizon of a pause sits: clear of the bar.
-    val lift = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 84.dp + 8.dp
+    val lift = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + NW.capsuleHeight + NW.capsuleGap + 8.dp
     BoxWithConstraints(modifier.fillMaxSize()) {
         val bandY = maxHeight - lift
         LanesAurora(data, power, top)

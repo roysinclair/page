@@ -317,14 +317,15 @@ fun NWReceiptLine(text: String, modifier: Modifier = Modifier, failed: Boolean =
     ) {
         Icon(if (failed) Icons.Outlined.ErrorOutline else Icons.Outlined.CheckBox, null, tint = tone.opacity(0.95).color, modifier = Modifier.size(18.dp))
         if (!crossfade) {
-            Text(text, style = NW.Typo.monoMicro, color = tone.opacity(0.95).color, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            // Proof in words, as iOS has it: not a terminal log line.
+            Text(text, style = NW.Typo.captionStrong, color = tone.opacity(0.95).color, maxLines = 2, overflow = TextOverflow.Ellipsis)
         } else {
             val ms = ((if (LocalReduceMotion.current) WorkflowMotion.reducedFade else WorkflowMotion.crossFade) * 1000).toInt()
             androidx.compose.animation.AnimatedContent(
                 text, transitionSpec = { androidx.compose.animation.fadeIn(tween(ms)) togetherWith androidx.compose.animation.fadeOut(tween(ms)) }, label = "receipt",
             ) { t ->
                 Text(
-                    t, style = NW.Typo.monoMicro, color = tone.opacity(0.95).color, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    t, style = NW.Typo.captionStrong, color = tone.opacity(0.95).color, maxLines = 2, overflow = TextOverflow.Ellipsis,
                     modifier = if (t != text) Modifier.clearAndSetSemantics {} else Modifier,
                 )
             }

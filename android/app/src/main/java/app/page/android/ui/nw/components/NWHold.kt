@@ -288,7 +288,7 @@ private fun Burst(b: HoldRingSpec.Companion.Burst, size: Dp) {
  */
 @Composable
 fun NWHoldButton(
-    onComplete: () -> Unit, modifier: Modifier = Modifier, label: String = "Hold", fixedProgress: Double? = null, onTap: (() -> Unit)? = null,
+    onComplete: () -> Unit, modifier: Modifier = Modifier, label: String = "Hold to approve", fixedProgress: Double? = null, onTap: (() -> Unit)? = null,
     onJewel: Boolean = false,
 ) {
     val shape = RoundedCornerShape(NW.Radius.button)

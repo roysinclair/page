@@ -207,6 +207,7 @@ Every kind also has:
 - **Tower:** sections get 28 icon tiles (power `bolt.fill` green, budget teal, Macs sky, attention amber, gestures and appearance violet, terminals and about indigo, widgets plum, pairing teal). The "The Tower" kicker is in words.
 - **Dispatch:** Where, Who, What and When are 24 tiles with the word. The chosen folder is a capsule of its project jewel; the others are lit glass.
 - **Room:** the title is title3, rounded, bold. Steps read "5 steps" with a soft tile. Story dividers are in words. The tabs are chrome glass with the selected one in a bubble.
+- **Workflows lens and composer label (both platforms):** in words. Running / Done / Failed / Stopped, "Task from the workflow", group and status labels, run names, and the Decision composer's label. Monospace stays for counts, paths and the terminal.
 
 ## 5. Android
 
@@ -218,9 +219,14 @@ These are decisions, not options.
   - `Modifier.blur` and `RenderEffect` only work from API 31.
   - So draw each jewel, door and button glow in `drawBehind` as a radial or softened shape in the glow colour, offset down. Do not use elevation for lift.
 - **No Liquid Glass.**
-  - Chrome is a translucent smoke: `#04060A` at 34% over what is under it, a lit rim (white 30% → 6%) and the glass bubble.
-  - Where `RenderEffect` exists (31+), a backdrop blur is allowed but not required.
-  - Say so in the PR.
+  - Chrome is smoke with a lit rim (white 30% → 6%) and the glass bubble.
+  - Smoke without a blur lets rows show through, so the nav capsule is `#04060A` at **80%**, with a fade scrim behind it: the page colour, from clear 22 dp above the capsule to 85% at the screen edge.
+  - Other chrome keeps 34%.
+  - The selected-side bubble fades in rather than sliding.
+- **Shapes:**
+  - Continuous corners are circular arcs.
+  - The Decision sheet's top corner is the sheet host's 28 (iOS 34).
+  - The chosen Dispatch folder is 48 high (radius 24) to keep its touch target.
 - **The night scene** is a `Canvas` with one `Path` per range and no per-frame blur.
 - **Haptics and motion** stay as they are.
 
@@ -235,7 +241,12 @@ These are decisions, not options.
 - Mono is only for code.
 - Reduce Motion stills `NWRecede` and the scene.
 
-## 7. Not in v5
+## 7. Measured
+
+- **iOS:** every glass label measured is 5.8:1 or better at night and in the afternoon sky (the Mac chip, the nav capsule's labels, the room's tabs).
+- **Android:** white text on the doors, bands and jewels samples at 6.2 to 12.2:1.
+
+## 8. Not in v5
 
 - The Mac app (`Sources/ClaudePowerMode`) and the widgets keep v4 tokens for now.
 - Real-device checks of scroll smoothness and battery are still to be done.

@@ -97,7 +97,7 @@ struct NWDispatchScreen: View {
     private var form: some View {
         VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("WHERE").nwLabel()
+                NWFormLabel(symbol: "folder.fill", title: "Where", jewel: .sky)
                 if data.folders.count > 7 {
                     TextField("Search folders", text: $draft.search)
                         .font(NightWatch.Typo.body).foregroundColor(NightWatch.Palette.textPrimary.color)
@@ -109,11 +109,11 @@ struct NWDispatchScreen: View {
                 }
             }
             VStack(alignment: .leading, spacing: 12) {
-                Text("WHO").nwLabel()
+                NWFormLabel(symbol: "person.fill", title: "Who", jewel: .amber)
                 HStack(spacing: 10) { ForEach(DispatchAgent.allCases) { agentCard($0) } }
             }
             VStack(alignment: .leading, spacing: 12) {
-                Text("WHAT").nwLabel()
+                NWFormLabel(symbol: "text.bubble.fill", title: "What", jewel: .violet)
                 VStack(alignment: .leading, spacing: 10) {
                     TextField("What should Claude do? (optional)", text: $draft.prompt, axis: .vertical)
                         .lineLimit(3...8)
@@ -133,7 +133,7 @@ struct NWDispatchScreen: View {
                 .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.white.opacity(0.08), lineWidth: 1))
             }
             VStack(alignment: .leading, spacing: 12) {
-                Text("WHEN").nwLabel()
+                NWFormLabel(symbol: "clock.fill", title: "When", jewel: .teal)
                 HStack(spacing: 10) {
                     Text("Now").font(NightWatch.Typo.bodyStrong).foregroundColor(NightWatch.Palette.textPrimary.color)
                         .padding(.horizontal, 18).frame(height: 40)
@@ -167,11 +167,17 @@ struct NWDispatchScreen: View {
         return Button { draft.selectedPath = f.path } label: {
             HStack(spacing: 8) {
                 Circle().fill(f.hue.color.color).frame(width: 9, height: 9)
-                Text(f.name).font(NightWatch.Typo.mono).foregroundColor(NightWatch.Palette.textPrimary.color).lineLimit(1)
+                    .shadow(color: f.hue.color.opacity(0.8).color, radius: 3)
+                Text(f.name).font(NightWatch.Typo.name).foregroundColor(NightWatch.Palette.textPrimary.color).lineLimit(1)
             }
             .padding(.horizontal, 14).frame(minHeight: 44)
-            .background(Capsule().fill(on ? NightWatch.Palette.teal.opacity(0.14).color : Color.white.opacity(0.05)))
-            .overlay(Capsule().strokeBorder(on ? NightWatch.Palette.teal.opacity(0.7).color : Color.white.opacity(0.10), lineWidth: on ? 1.5 : 1))
+            .background {
+                if on { NWJewelSurface(jewel: .of(f.hue), radius: 22, lift: 0.5) }
+                else {
+                    Capsule().fill(LinearGradient(colors: [Color.white.opacity(0.09), Color.white.opacity(0.04)], startPoint: .top, endPoint: .bottom))
+                        .overlay(Capsule().strokeBorder(LinearGradient(colors: [Color.white.opacity(0.18), Color.white.opacity(0.05)], startPoint: .top, endPoint: .bottom), lineWidth: 1))
+                }
+            }
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(f.name + (f.lastUsed.map { ", used \($0)" } ?? "")))
@@ -221,5 +227,22 @@ struct NWDispatchScreen: View {
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading)
         .background(NWGlassBackground(radius: NightWatch.Radius.card, tint: NightWatch.Palette.amber))
+    }
+}
+
+
+/// A form's label: a small tile of a jewel and the word, as a section is marked on Now.
+struct NWFormLabel: View {
+    var symbol: String
+    var title: String
+    var jewel: NWJewel
+
+    var body: some View {
+        HStack(spacing: 8) {
+            NWIconTile(symbol: symbol, jewel: jewel, size: 24)
+            Text(title).font(NightWatch.Typo.bodyStrong).foregroundColor(NightWatch.Palette.textPrimary.color)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
     }
 }

@@ -268,23 +268,43 @@ struct NWLanesScreen: View {
         .refreshable { await actions.refresh() }
     }
 
+    /// A project: its band in the project's own jewel (ember while one of its sessions needs you or
+    /// looks stuck), its star in a glass tile, its name and how many sessions; its lanes beneath, on a
+    /// body faintly of its colour. The same card as a session on Now.
     private func group(_ g: LaneGroup, relights: [String: TimeInterval]) -> some View {
-        let head: NightWatch.RGBA = g.urgentState == .needsYou || g.urgentState == .stuck ? NightWatch.Palette.amber : g.hue.color
+        let urgent = g.urgentState == .needsYou || g.urgentState == .stuck
+        let jewel = urgent ? NWJewel.amber : NWJewel.of(g.hue)
         return VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Circle().fill(head.color).frame(width: 8, height: 8)
-                Text(g.name.uppercased()).font(NightWatch.Typo.labelLarge).kerning(1.2).foregroundColor(head.color).lineLimit(1)
+            HStack(spacing: 12) {
+                NWStarGlyph(seed: g.rows.first?.seed ?? 0, color: jewel.light, size: 24)
+                    .frame(width: 34, height: 34)
+                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(LinearGradient(colors: [Color.white.opacity(0.18), Color.white.opacity(0.05)], startPoint: .top, endPoint: .bottom))
+                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(LinearGradient(colors: [Color.white.opacity(0.4), Color.white.opacity(0.06)], startPoint: .top, endPoint: .bottom), lineWidth: 1)))
+                Text(g.name).font(NightWatch.Typo.nameLarge).foregroundColor(.white).lineLimit(1)
                 Spacer(minLength: 0)
+                if urgent {
+                    Text(NWSectionHeader.words(g.urgentState.label)).font(NightWatch.Typo.captionStrong).foregroundColor(.white)
+                        .padding(.horizontal, 8).padding(.vertical, 3)
+                        .background(Capsule().fill(Color.black.opacity(0.28)))
+                }
+                Text("\(g.rows.count)").font(.system(.footnote, weight: .heavy)).monospacedDigit()
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8).frame(minWidth: 24, minHeight: 24)
+                    .background(Capsule().fill(Color.white.opacity(0.18)))
             }
-            .padding(.horizontal, 16).frame(height: 40)
-            .background(head.opacity(0.10).color)
+            .padding(.horizontal, 14).frame(height: 54)
+            .background(NWHueBand(jewel: jewel))
+            .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isHeader)
-            ForEach(g.rows) { r in
-                Rectangle().fill(Color.white.opacity(0.06)).frame(height: 1)
+            ForEach(Array(g.rows.enumerated()), id: \.element.id) { i, r in
+                if i > 0 { Rectangle().fill(Color.white.opacity(0.06)).frame(height: 1).padding(.leading, 56) }
                 laneRow(r, relights: relights)
             }
         }
-        .background(NWGlassBackground(radius: NightWatch.Radius.card))
+        .background(NWGlassBackground(radius: NightWatch.Radius.card,
+                                      fill: NightWatch.Palette.surfaceRaised.mixed(with: NWJewel.of(g.hue).bottom, 0.3)))
         .clipShape(RoundedRectangle(cornerRadius: NightWatch.Radius.card, style: .continuous))
         .overlay(NWGlassRim(radius: NightWatch.Radius.card, withGlow: false))
     }
@@ -299,8 +319,9 @@ struct NWLanesScreen: View {
                         .scaleEffect(light.scale)
                 }
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(r.title).font(NightWatch.Typo.mono).foregroundColor(NightWatch.Palette.textPrimary.color).lineLimit(1)
-                    Text(r.state.label).font(NightWatch.Typo.label).kerning(0.8).foregroundColor(r.state.color.color)
+                    Text(r.title).font(NightWatch.Typo.name).foregroundColor(NightWatch.Palette.textPrimary.color).lineLimit(1)
+                    Text(NWSectionHeader.words(r.state.label)).font(NightWatch.Typo.captionStrong).foregroundColor(r.state.color.color)
+                        .lineLimit(1)
                 }
                 .frame(width: 100, alignment: .leading)
                 NWActivityStrip(cells: r.strip)

@@ -94,7 +94,7 @@ struct NWTowerScreen: View {
     private var header: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("THE TOWER").font(NightWatch.Typo.labelLarge).kerning(2).foregroundColor(NightWatch.Palette.teal.color)
+                Text("The Tower").font(NightWatch.Typo.captionStrong).foregroundColor(NightWatch.Palette.teal.color)
                 Text(DeliveryPreview.macLabel(data.macName)).font(.system(size: 34, weight: .bold)).kerning(-0.8)
                     .foregroundColor(NightWatch.Palette.textPrimary.color).lineLimit(1).minimumScaleFactor(0.7)
                     .accessibilityAddTraits(.isHeader)
@@ -114,8 +114,13 @@ struct NWTowerScreen: View {
 
     private func section<C: View>(_ s: TowerSection, @ViewBuilder _ content: () -> C) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(s.title.uppercased()).font(NightWatch.Typo.labelLarge).kerning(1.4).foregroundColor(NightWatch.Palette.textTertiary.color)
-                .accessibilityAddTraits(.isHeader)
+            HStack(spacing: 10) {
+                NWIconTile(symbol: s.symbol, jewel: s.jewel, size: 28)
+                Text(s.title).font(NightWatch.Typo.title).foregroundColor(NightWatch.Palette.textPrimary.color)
+            }
+            .padding(.top, 6)
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isHeader)
             content()
         }
         .id(s.rawValue)
@@ -419,5 +424,36 @@ struct NWTowerScreen: View {
         .frame(minHeight: 64)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
+    }
+}
+
+
+extension TowerSection {
+    /// Its tile: a glyph and a jewel, so each part of the Tower is marked as Now's sections are.
+    var symbol: String {
+        switch self {
+        case .power: return "bolt.fill"
+        case .budget: return "gauge.with.needle.fill"
+        case .macs: return "laptopcomputer"
+        case .attention: return "bell.fill"
+        case .gestures: return "hand.tap.fill"
+        case .terminals: return "terminal.fill"
+        case .widgets: return "square.grid.2x2.fill"
+        case .pairing: return "lock.fill"
+        case .appearance: return "paintpalette.fill"
+        case .about: return "info.circle.fill"
+        }
+    }
+
+    var jewel: NWJewel {
+        switch self {
+        case .power: return .green
+        case .budget, .pairing: return .teal
+        case .macs: return .sky
+        case .attention: return .amber
+        case .gestures, .appearance: return .violet
+        case .terminals, .about: return .indigo
+        case .widgets: return .plum
+        }
     }
 }

@@ -118,6 +118,7 @@
 		9E044298FBDE9E33F6979E6C /* ApproachModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FA3465EB1D26680DFE5699 /* ApproachModel.swift */; };
 		9E195037BF780C8070E33382 /* MacPresenceCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95D3096C55784C4807D8592D /* MacPresenceCopy.swift */; };
 		9F1E5DEFC4714C12AAEECA00 /* Daypart.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0C502D8412C02AE669D8298 /* Daypart.swift */; };
+		9FFDE9ECC7BC53CF4F33DE09 /* NightWatchDepth.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FDAA2F9E1F2C1111AF6A2D /* NightWatchDepth.swift */; };
 		A18B5CED40485F51FE1F25D0 /* DispatchModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 811FCA35639BE15A50449CFF /* DispatchModel.swift */; };
 		A451B6AAAA2DA96007C27F07 /* SessionRoom.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB8DB987081303E7E57F635 /* SessionRoom.swift */; };
 		A4806154B483216206E3842F /* RenderHarnessStage3.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89E80633A09CB0F64FA70C1F /* RenderHarnessStage3.swift */; };
@@ -165,6 +166,7 @@
 		D6CA5054513A6DF3E6A5CDFB /* SharedWidgetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B587A02CEE72845414D065 /* SharedWidgetStore.swift */; };
 		D7EF0F27083B6B7590D49731 /* NWShaders.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAE6F0137C10936A45D68AC5 /* NWShaders.swift */; };
 		D812AF33C1BBC2DD8420D4A5 /* BiometricGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5CACB53FCB55623D9E957E3 /* BiometricGate.swift */; };
+		DBA4E22E7A73F85DCD1A1361 /* NightWatchDepth.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4FDAA2F9E1F2C1111AF6A2D /* NightWatchDepth.swift */; };
 		DCAFE96E04BB3C2E96B81ACE /* StopPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBE02CBE7023D073A2EA82B8 /* StopPlan.swift */; };
 		DDC805C97580CDC17C6CF5B1 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3058E7826B1DAFBB9A6FE336 /* SessionStore.swift */; };
 		DF7FA4CA7028D62407A3CE26 /* DuskDawn.swift in Sources */ = {isa = PBXBuildFile; fileRef = 216AA84E1E6BAFDC091C70D2 /* DuskDawn.swift */; };
@@ -341,6 +343,7 @@
 		EB7D1709B1B78FC7FB324050 /* NWQueued.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NWQueued.swift; sourceTree = "<group>"; };
 		F0C502D8412C02AE669D8298 /* Daypart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Daypart.swift; sourceTree = "<group>"; };
 		F41B2833B3E04A3AE80138E8 /* RenderHarnessAnswers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderHarnessAnswers.swift; sourceTree = "<group>"; };
+		F4FDAA2F9E1F2C1111AF6A2D /* NightWatchDepth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightWatchDepth.swift; sourceTree = "<group>"; };
 		F61B6077B0EF7C8C17F1AE07 /* Page-Push.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Page-Push.entitlements"; sourceTree = "<group>"; };
 		F754302419F4AA59E9078870 /* ReturnBrief.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReturnBrief.swift; sourceTree = "<group>"; };
 		F7E098C1C1F466A3E7D33A79 /* NWNowScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NWNowScreen.swift; sourceTree = "<group>"; };
@@ -530,6 +533,7 @@
 				95D3096C55784C4807D8592D /* MacPresenceCopy.swift */,
 				BB058B1C09FE4D498FCFDE16 /* MotionCurves.swift */,
 				EB47B7774DE2A2B1F4BDD887 /* NavigationModel.swift */,
+				F4FDAA2F9E1F2C1111AF6A2D /* NightWatchDepth.swift */,
 				8961FA819AD15B0C672F6A67 /* NightWatchNow.swift */,
 				E929747C5BF57EA5E695619F /* NightWatchRows.swift */,
 				4F67E4F21F4AB8C27797449A /* NowBanners.swift */,
@@ -691,6 +695,7 @@
 				BE814B857C650333F03DEFEF /* NWTheme.swift in Sources */,
 				C3EDE21DDE4D718C7B3F25B0 /* NWWidgetFaces.swift in Sources */,
 				2718286C3E3D5EC97E44A8DB /* NavigationModel.swift in Sources */,
+				9FFDE9ECC7BC53CF4F33DE09 /* NightWatchDepth.swift in Sources */,
 				F69A60554B20C37F6633F8D3 /* NightWatchNow.swift in Sources */,
 				E97906AA552FFEFB803A546E /* NightWatchRows.swift in Sources */,
 				A9FAFE26E2C3D9E12B4C1534 /* NowBanners.swift in Sources */,
@@ -803,6 +808,7 @@
 				3B901D3853CC92D72FB60F97 /* NWTowerWidgets.swift in Sources */,
 				F7B4C3F7BB2FD26A437C0C93 /* NWWidgetFaces.swift in Sources */,
 				00D47F53E252CAD3BC55B352 /* NavigationModel.swift in Sources */,
+				DBA4E22E7A73F85DCD1A1361 /* NightWatchDepth.swift in Sources */,
 				FBDFE3B97809EF2FF31326E2 /* NightWatchNow.swift in Sources */,
 				765148183DD545E275DEE471 /* NightWatchRoot.swift in Sources */,
 				54F3A015891F60D13EE5F1CE /* NightWatchRows.swift in Sources */,

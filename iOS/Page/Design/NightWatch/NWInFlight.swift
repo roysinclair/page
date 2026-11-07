@@ -188,13 +188,21 @@ struct NWInFlightSection: View {
 
     private var header: some View {
         Button(action: onHeader) {
-            HStack(spacing: 8) {
-                Text("IN FLIGHT").font(NightWatch.Typo.labelLarge).kerning(1.2).foregroundColor(NightWatch.Palette.teal.color)
-                Text("\(section.total)").font(NightWatch.Typo.labelLarge).foregroundColor(NightWatch.Palette.textTertiary.color)
+            HStack(alignment: .center, spacing: 8) {
+                Text("In flight").font(NightWatch.Typo.section).foregroundColor(NightWatch.Palette.textPrimary.color)
+                Text("\(section.total)").font(.system(.footnote, weight: .heavy)).monospacedDigit()
+                    .foregroundColor(NightWatch.Palette.onBright.color)
                     .nwRolls(Double(section.total), reduceMotion: reduceMotion)
-                Rectangle().fill(Color.white.opacity(0.08)).frame(height: 1)
-                Image(systemName: "chevron.right").font(.system(.caption2, weight: .bold)).foregroundColor(NightWatch.Palette.textTertiary.color)
+                    .padding(.horizontal, 7).frame(minWidth: 22, minHeight: 22)
+                    .background(Capsule().fill(NightWatch.Palette.teal.color))
+                Spacer(minLength: 0)
+                HStack(spacing: 3) {
+                    Text("Lanes")
+                    Image(systemName: "chevron.right").font(.system(.caption2, weight: .bold))
+                }
+                .font(NightWatch.Typo.captionStrong).foregroundColor(NightWatch.Palette.textSecondary.color)
             }
+            .padding(.top, 12)
             .frame(minHeight: 28)
             .contentShape(Rectangle())
         }
@@ -247,25 +255,25 @@ struct NWInFlightStrip: View {
                 if let line, flow?.fraction != nil { NWFlightRing(frame: line, size: 34, lineWidth: 2).opacity(line.fold) }
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text(r.project).font(NightWatch.Typo.monoSmall).foregroundColor(NightWatch.Palette.textPrimary.color).lineLimit(1)
-                Text(r.card.now).font(NightWatch.Typo.monoMicro).foregroundColor(NightWatch.Palette.textTertiary.color).lineLimit(1)
+                Text(r.project).font(NightWatch.Typo.name).foregroundColor(NightWatch.Palette.textPrimary.color).lineLimit(1)
+                Text(r.card.now).font(NightWatch.Typo.metaSmall).foregroundColor(NightWatch.Palette.textSecondary.color).lineLimit(1)
                 HStack(spacing: 6) {
                     if r.card.health.needsAttention, let h = r.card.health.label {
-                        Text(h).font(NightWatch.Typo.monoMicro).foregroundColor(NightWatch.Palette.amber.color)
+                        Text(h).font(NightWatch.Typo.captionStrong).foregroundColor(NightWatch.Palette.amber.color)
                     } else if let flow, let p = flow.progress {
                         ZStack(alignment: .leading) {
-                            Text(p.replacingOccurrences(of: " agents", with: "")).font(NightWatch.Typo.monoMicro)
+                            Text(p.replacingOccurrences(of: " agents", with: "")).font(NightWatch.Typo.captionStrong.monospacedDigit())
                                 .foregroundColor(NightWatch.Palette.teal.mixed(with: NightWatch.Palette.amber, closing == nil ? 0 : line?.amber ?? 0).color)
                                 .nwRolls(p, reduceMotion: rm)
                                 .opacity(1 - (line?.check ?? 0))
                             if let line, line.check > 0 {
-                                Text("✓ done").font(NightWatch.Typo.monoMicro).foregroundColor(NightWatch.Palette.teal.color).opacity(line.check)
+                                Text("✓ done").font(NightWatch.Typo.captionStrong).foregroundColor(NightWatch.Palette.teal.color).opacity(line.check)
                             }
                         }
                         .opacity(closing == nil ? 1 : line?.fold ?? 1)
                     }
                     if let time {
-                        Text(time).font(NightWatch.Typo.monoMicro).foregroundColor(NightWatch.Palette.textQuiet.color).nwRolls(time, reduceMotion: rm)
+                        Text(time).font(NightWatch.Typo.caption.monospacedDigit()).foregroundColor(NightWatch.Palette.textTertiary.color).nwRolls(time, reduceMotion: rm)
                     }
                 }
             }
@@ -282,12 +290,13 @@ struct NWInFlightStrip: View {
         .accessibilityAddTraits(.isButton)
     }
 
-    /// The tile's glass, its amber tint crossing in (and out) as the session turns stuck.
+    /// The tile's glass, raised; its amber rim crossing in (and out) as the session turns stuck.
     private func tileBackground(amber: Double) -> some View {
-        let fill = NightWatch.Palette.surface.opacity(0.85)
         let shape = RoundedRectangle(cornerRadius: NightWatch.Radius.row, style: .continuous)
-        return NWGlassBackground(radius: NightWatch.Radius.row, fill: fill.mixed(with: NightWatch.Palette.amber.opacity(0.85), 0.13 * amber))
-            .overlay(shape.strokeBorder(NightWatch.Palette.amber.opacity(0.32 * amber).color, lineWidth: 1).opacity(amber > 0 ? 1 : 0))
+        return NWGlassBackground(radius: NightWatch.Radius.row, fill: NightWatch.Palette.surfaceRaised)
+            .overlay(shape.strokeBorder(LinearGradient(colors: [NightWatch.Palette.amber.opacity(0.75 * amber).color,
+                                                                NightWatch.Palette.amber.opacity(0.25 * amber).color],
+                                                       startPoint: .top, endPoint: .bottom), lineWidth: 1).opacity(amber > 0 ? 1 : 0))
     }
 }
 
@@ -344,11 +353,13 @@ struct NWInFlightCardView: View {
             .accessibilityHint(Text("Opens the session"))
             HStack(spacing: 10) {
                 button(.screen, enabled: row.canMirror, kind: .quiet)
-                button(.type, enabled: row.canType, kind: .bright)
+                // Working, not waiting on you: its buttons stay quiet beside a card that needs you.
+                button(.type, enabled: row.canType, kind: .soft)
             }
         }
         .padding(NightWatch.Space.lg)
-        .background(NWGlassBackground(radius: NightWatch.Radius.card, tint: NightWatch.Palette.teal.mixed(with: NightWatch.Palette.amber, f.amber)))
+        .background(NWGlassBackground(radius: NightWatch.Radius.card, fill: NightWatch.Palette.surfaceRaised,
+                                      tint: f.amber > 0.01 ? NightWatch.Palette.amber.opacity(f.amber) : nil))
         .contextMenu {
             Button { onOpen(.screen) } label: { Label("Open", systemImage: "display") }
             Button { onOpen(.type) } label: { Label("Steer", systemImage: "arrow.turn.down.right") }
@@ -370,7 +381,7 @@ struct NWInFlightCardView: View {
             NWStarGlyph(seed: row.seed, color: row.hue.color, size: 30, glow: f.star?.glow).scaleEffect(CGFloat(f.star?.scale ?? 1))
                 .frame(width: 36, height: 36)
             VStack(alignment: .leading, spacing: 3) {
-                Text(row.project).font(NightWatch.Typo.mono).foregroundColor(NightWatch.Palette.textPrimary.color).lineLimit(1)
+                Text(row.project).font(NightWatch.Typo.nameLarge).foregroundColor(NightWatch.Palette.textPrimary.color).lineLimit(1)
                 Text(whoWhere).font(NightWatch.Typo.caption).foregroundColor(NightWatch.Palette.textTertiary.color).lineLimit(1)
             }
             Spacer(minLength: 4)
@@ -405,7 +416,7 @@ struct NWInFlightCardView: View {
     }
 
     private func nowText(_ s: String) -> some View {
-        Text(s).font(NightWatch.Typo.monoSmall.weight(.semibold))
+        Text(s).font(NightWatch.Typo.activity)
             .foregroundColor(NightWatch.Palette.textPrimary.color)
             .lineLimit(3).fixedSize(horizontal: false, vertical: true)
     }
@@ -439,7 +450,7 @@ struct NWInFlightCardView: View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Circle().fill(NightWatch.Palette.textQuiet.opacity(max(0, 1 - 0.22 * Double(i))).color).frame(width: 5, height: 5)
                 .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 1 }
-            Text(s).font(NightWatch.Typo.monoMicro).foregroundColor(NightWatch.Palette.textTertiary.color)
+            Text(s).font(.system(.caption2, design: .default, weight: .regular)).foregroundColor(NightWatch.Palette.textTertiary.color)
                 .lineLimit(1)
         }
     }
@@ -486,13 +497,13 @@ struct NWInFlightCardView: View {
         return VStack(alignment: .leading, spacing: 4) {
             ZStack(alignment: .topLeading) {
                 (Text(w.progress == nil ? lead : lead + sep) + Text(w.progress ?? "").foregroundColor(color.opacity(color.a * (1 - f.check)).color))
-                    .font(NightWatch.Typo.monoMicro)
+                    .font(NightWatch.Typo.metaSmall.monospacedDigit())
                     .foregroundColor(color.color)
                     .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                     .nwRolls(w.text, reduceMotion: reduceMotion)
                 if f.check > 0 {
                     (Text(lead + sep).foregroundColor(.clear) + Text("✓ done").foregroundColor(NightWatch.Palette.teal.opacity(f.check).color))
-                        .font(NightWatch.Typo.monoMicro)
+                        .font(NightWatch.Typo.metaSmall.monospacedDigit())
                         .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                         .accessibilityHidden(true)
                 }
@@ -505,7 +516,7 @@ struct NWInFlightCardView: View {
         HStack(spacing: 8) {
             NWFlightDot(color: healthColor.mixed(with: NightWatch.Palette.amber, f.amber), dot: f.dot)
             Text(card.healthLine ?? "Normal")
-                .font(NightWatch.Typo.monoMicro).foregroundColor(card.health.needsAttention ? NightWatch.Palette.amber.color : NightWatch.Palette.textSecondary.color)
+                .font(NightWatch.Typo.meta).foregroundColor(card.health.needsAttention ? NightWatch.Palette.amber.color : NightWatch.Palette.textSecondary.color)
                 .lineLimit(3).fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -516,15 +527,15 @@ struct NWInFlightCardView: View {
     }
 
     private func text(_ s: String, _ c: NightWatch.RGBA) -> some View {
-        Text(s).font(NightWatch.Typo.monoSmall).foregroundColor(c.color).lineLimit(2)
+        Text(s).font(NightWatch.Typo.meta.monospacedDigit()).foregroundColor(c.color).lineLimit(2)
     }
 
     /// A small caps label, and its content under it (stacked like the Mac's
     /// card, so a long step or a health line gets the card's whole width).
     private func fact<V: View>(_ title: String, @ViewBuilder _ content: () -> V) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(NightWatch.Typo.label).kerning(NightWatch.Typo.labelTracking)
-                .foregroundColor(NightWatch.Palette.textTertiary.color)
+            Text(title).font(.system(.caption2, weight: .semibold)).kerning(0.6)
+                .foregroundColor(NightWatch.Palette.textQuiet.color)
                 .lineLimit(1)
             content()
         }

@@ -35,6 +35,8 @@ extension ChipKind {
 struct NWChip: View {
     var kind: ChipKind
     var pill = false
+    /// On a jewel (`NWJewelSurface`): white on a dark pill, which holds on any of them.
+    var onJewel = false
 
     var body: some View {
         HStack(spacing: 5) {
@@ -45,10 +47,11 @@ struct NWChip: View {
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
         }
-        .foregroundColor(kind.color.color)
+        .foregroundColor(onJewel ? Color.white : kind.color.color)
         .padding(.horizontal, pill ? 9 : 0)
         .padding(.vertical, pill ? 5 : 0)
-        .background(pill ? AnyView(Capsule().fill(kind.color.opacity(0.16).color)) : AnyView(EmptyView()))
+        .background(pill ? AnyView(Capsule().fill(onJewel ? Color.black.opacity(0.26) : kind.color.opacity(0.16).color)
+            .overlay(Capsule().strokeBorder(Color.white.opacity(onJewel ? 0.16 : 0), lineWidth: 1))) : AnyView(EmptyView()))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(kind.title.capitalized))
     }
@@ -60,7 +63,12 @@ struct NWChip: View {
 /// (Looks good), amber (Steer on a stuck card) or red-tinted (the Irreversible
 /// approve). Fixed 52 pt minimum height, so the touch target is generous.
 struct NWButtonStyle: ButtonStyle {
-    enum Kind { case quiet, bright, amber, danger }
+    /// `white` and `glass` are for a jewel (`NWJewelSurface`): the primary in
+    /// white, the other one in clear glass, so neither fights the jewel's colour.
+    /// `soft` is the primary of something that is only working, not waiting on
+    /// you (Steer on an In flight card): teal words on a faint teal fill, so it
+    /// never outshines a button on a card that needs you.
+    enum Kind { case quiet, bright, amber, danger, white, glass, soft }
     var kind: Kind = .quiet
 
     func makeBody(configuration: Configuration) -> some View {
@@ -77,9 +85,10 @@ struct NWButtonStyle: ButtonStyle {
 
     private var foreground: NightWatch.RGBA {
         switch kind {
-        case .quiet: return NightWatch.Palette.textPrimary
-        case .bright, .amber: return NightWatch.Palette.onBright
+        case .quiet, .glass: return NightWatch.Palette.textPrimary
+        case .bright, .amber, .white: return NightWatch.Palette.onBright
         case .danger: return NightWatch.Palette.textPrimary
+        case .soft: return NightWatch.Palette.teal
         }
     }
 
@@ -89,6 +98,9 @@ struct NWButtonStyle: ButtonStyle {
         case .bright: return NightWatch.Palette.teal.opacity(0.4)
         case .amber: return NightWatch.Palette.yellow.opacity(0.5)
         case .danger: return NightWatch.Palette.red.opacity(0.45)
+        case .white: return NightWatch.RGBA(1, 1, 1, 0.9)
+        case .glass: return NightWatch.RGBA(1, 1, 1, 0.24)
+        case .soft: return NightWatch.Palette.teal.opacity(0.32)
         }
     }
 
@@ -102,6 +114,9 @@ struct NWButtonStyle: ButtonStyle {
             return AnyView(LinearGradient(colors: [NightWatch.Palette.yellow.color, NightWatch.Palette.amber.color],
                                           startPoint: .leading, endPoint: .trailing))
         case .danger: return AnyView(NightWatch.Palette.red.opacity(0.14).color)
+        case .white: return AnyView(LinearGradient(colors: [Color.white, NightWatch.RGBA(hex: 0xE8EDF5).color], startPoint: .top, endPoint: .bottom))
+        case .glass: return AnyView(Color.black.opacity(0.2))
+        case .soft: return AnyView(NightWatch.Palette.teal.opacity(0.1).color)
         }
     }
 }
@@ -146,7 +161,7 @@ struct NWReceiptLine: View {
             Image(systemName: failed ? "exclamationmark.square" : "checkmark.square")
                 .font(.system(.footnote, weight: .medium))
             Text(text)
-                .font(NightWatch.Typo.monoMicro)
+                .font(NightWatch.Typo.captionStrong.monospacedDigit())
                 .lineLimit(2)
                 .truncationMode(.tail)
         }

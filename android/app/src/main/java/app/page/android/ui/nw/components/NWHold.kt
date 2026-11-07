@@ -36,7 +36,11 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -277,11 +281,18 @@ private fun Burst(b: HoldRingSpec.Companion.Burst, size: Dp) {
 /**
  * "Hold to approve" as a button on a card: a small ring fills beside the label while the finger stays down (an
  * Irreversible approve is 1.2 s, then the fingerprint / face / screen lock). A tap does nothing but say how to
- * use it.
+ * use it. Red, lit from above (a 28% gloss over the top 55%), standing on a red glow (50%, radius 12, down 6; drawn, so
+ * it needs no API 28 shadow): the one commit that cannot be taken back. [onJewel] is for the Irreversible jewel: a white
+ * rim (70% to 20%), so the red button stands off the red card. At the largest text sizes (a font scale of 1.2 or more,
+ * iOS's xxLarge) the glyph steps aside and the words may take two lines.
  */
 @Composable
-fun NWHoldButton(onComplete: () -> Unit, modifier: Modifier = Modifier, label: String = "Hold", fixedProgress: Double? = null, onTap: (() -> Unit)? = null) {
+fun NWHoldButton(
+    onComplete: () -> Unit, modifier: Modifier = Modifier, label: String = "Hold", fixedProgress: Double? = null, onTap: (() -> Unit)? = null,
+    onJewel: Boolean = false,
+) {
     val shape = RoundedCornerShape(NW.Radius.button)
+    val large = LocalDensity.current.fontScale >= 1.2f
     NWHoldSurface(
         HoldRingSpec.irreversible,
         modifier.fillMaxWidth().semantics {
@@ -297,15 +308,28 @@ fun NWHoldButton(onComplete: () -> Unit, modifier: Modifier = Modifier, label: S
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = NW.buttonHeight)
+                .drawBehind {
+                    val r = NW.Radius.button.toPx()
+                    drawSoftGlow(NW.Palette.red.opacity(0.5).color, blur = 12.dp.toPx(), dy = 6.dp.toPx(), corner = r)
+                    drawRoundRect(NW.Palette.red.color, cornerRadius = CornerRadius(r))
+                    if (p > 0) {
+                        val outline = androidx.compose.ui.graphics.Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(0f, 0f, size.width, size.height, CornerRadius(r))) }
+                        clipPath(outline) { drawRect(tone.opacity(0.85).color, size = androidx.compose.ui.geometry.Size(size.width * p.toFloat().coerceIn(0f, 1f), size.height)) }
+                    }
+                    drawRoundRect(Brush.verticalGradient(0f to Color.White.copy(alpha = 0.28f), 0.55f to Color.White.copy(alpha = 0f)), cornerRadius = CornerRadius(r))
+                    strokeBorder(Brush.verticalGradient(listOf(Color.White.copy(alpha = if (onJewel) 0.7f else 0.45f), Color.White.copy(alpha = if (onJewel) 0.2f else 0.05f))), r)
+                }
                 .clip(shape)
-                .background(NW.Palette.red.color, shape)
-                .drawBehind { if (p > 0) drawRect(tone.opacity(0.85).color, size = androidx.compose.ui.geometry.Size(size.width * p.toFloat(), size.height)) }
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 12.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Icon(Icons.Outlined.Fingerprint, null, tint = NW.Palette.onBright.color, modifier = Modifier.size(24.dp))
-                Text(label, style = NW.Typo.button, color = NW.Palette.onBright.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // At large text the words need the room: the glyph steps aside, and they may take two lines.
+                if (!large) Icon(Icons.Outlined.Fingerprint, null, tint = NW.Palette.onBright.color, modifier = Modifier.size(22.dp))
+                Text(
+                    label, style = NW.Typo.button, color = NW.Palette.onBright.color, maxLines = if (large) 2 else 1, overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                )
             }
         }
     }

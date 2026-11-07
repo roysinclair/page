@@ -118,7 +118,8 @@ struct NWNavCapsule: View {
         } label: {
             HStack(spacing: 8) {
                 Text(title).font(.system(.callout, weight: on ? .bold : .medium))
-                    .foregroundColor((on ? NightWatch.Palette.textPrimary : NightWatch.Palette.textTertiary).color)
+                    // Unselected still reads over whatever shows through the glass.
+                    .foregroundColor((on ? NightWatch.Palette.textPrimary : NightWatch.RGBA(1, 1, 1, 0.78)).color)
                 if count > 0 {
                     NWWorkflowClock(origin: 0, until: m.scene.settlesAt(i, reduceMotion: calm), pinned: m.pinned) { t in
                         Text("\(count)").font(.system(.caption, weight: .bold))

@@ -304,7 +304,8 @@ struct NWNightScene: View {
     var body: some View {
         Canvas { ctx, size in
             let w = size.width, h = size.height
-            let light = palette.c1, deep = palette.skyBottom
+            // The land takes the top of the sky, darkened: cool at night and by day, warm when something needs you.
+            let light = palette.c1, deep = palette.skyTop.mixed(with: NightWatch.Palette.backgroundDeep, 0.55)
             let glow = max(0.45, palette.intensity)
             let room = max(60, h * 0.82 - orbY)
             let water = orbY + room
@@ -319,8 +320,12 @@ struct NWNightScene: View {
                 }
             }
             func land(_ top: [CGPoint], down to: CGFloat) -> Path {
+                // One subpath: down the left edge, along the crest, down the right edge (`addLines` would start a new one).
                 var p = Path()
-                p.move(to: CGPoint(x: 0, y: to)); p.addLines(top); p.addLine(to: CGPoint(x: w, y: to)); p.closeSubpath()
+                p.move(to: CGPoint(x: 0, y: to))
+                for pt in top { p.addLine(to: pt) }
+                p.addLine(to: CGPoint(x: w, y: to))
+                p.closeSubpath()
                 return p
             }
             func crestLine(_ pts: [CGPoint]) -> Path { var p = Path(); p.addLines(pts); return p }
@@ -333,11 +338,10 @@ struct NWNightScene: View {
             ctx.fill(land(farTop, down: water + 1), with: .linearGradient(
                 Gradient(colors: [deep.mixed(with: light, 0.2).color, deep.mixed(with: light, 0.05).color]),
                 startPoint: CGPoint(x: 0, y: water - farAmp), endPoint: CGPoint(x: 0, y: water)))
-            ctx.drawLayer { l in
-                l.addFilter(.blur(radius: 3))
-                l.stroke(crestLine(farTop), with: .color(light.opacity(0.32 * glow).color), lineWidth: 2.5)
-            }
-            ctx.stroke(crestLine(farTop), with: .color(light.opacity(0.24 * glow).color), lineWidth: 0.8)
+            // The rim: a wide faint stroke under a fine bright one (no blur: this redraws with the aurora).
+            ctx.stroke(crestLine(farTop), with: .color(light.opacity(0.12 * glow).color), lineWidth: 5)
+            ctx.stroke(crestLine(farTop), with: .color(light.opacity(0.16 * glow).color), lineWidth: 2.4)
+            ctx.stroke(crestLine(farTop), with: .color(light.opacity(0.26 * glow).color), lineWidth: 0.8)
             // Near range: dark, in front.
             ctx.fill(land(nearTop, down: water + 1), with: .color(nearColour.color))
             ctx.stroke(crestLine(nearTop), with: .color(light.opacity(0.1 * glow).color), lineWidth: 0.8)
@@ -345,8 +349,9 @@ struct NWNightScene: View {
             // The lake, holding a little of the sky's colour.
             let lake = CGRect(x: 0, y: water, width: w, height: max(0, h - water))
             ctx.fill(Path(lake), with: .linearGradient(
-                Gradient(colors: [deep.mixed(with: light, 0.12).color, deep.color]),
-                startPoint: CGPoint(x: 0, y: water), endPoint: CGPoint(x: 0, y: min(h, water + 90))))
+                // Into the page's own colour at the Horizon's foot, so a bright daytime sky leaves no seam.
+                Gradient(colors: [deep.mixed(with: light, 0.12).color, NightWatch.Palette.backgroundDeep.color]),
+                startPoint: CGPoint(x: 0, y: water), endPoint: CGPoint(x: 0, y: h)))
             // The near range, mirrored in the still water and fading with depth.
             ctx.drawLayer { l in
                 l.clip(to: Path(lake))

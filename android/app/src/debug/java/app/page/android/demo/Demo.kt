@@ -46,11 +46,14 @@ import kotlinx.coroutines.launch
  * Scriptable (android/tools/screens.sh does this for every screen in [screens]):
  * `adb shell am start -S -W -n app.page.android.debug/app.page.android.MainActivity --ez page_demo true
  *   --es page_render <screen> [--es page_glow off|subtle|full] [--ef page_time <seconds>] [--ez page_canvas true]
- *   [--es page_daytime <earlyMorning|morning|afternoon|nighttime|HH:MM|minute>] [--ez page_reduce true]`
+ *   [--es page_daytime <earlyMorning|morning|afternoon|nighttime|HH:MM|minute>] [--ez page_reduce true]
+ *   [--es page_scroll_id <id>]`
  * `page_render` pins the aurora phase (default 2.0 s, or `page_time`) and the clock (Tue 27 Oct 2026, 01:12 UTC)
  * so a screen is the same every time; without it the demo is live. `page_daytime` (or `page_daypart`) pins the time
  * of day the skies are drawn at, as a local minute ([RenderHarness.minuteOfDay]); without it they are drawn at 01:12. On a `motion-*` screen `page_time` is the
  * seconds into that signature motion ([DemoMotion]; android/tools/render-motion.sh builds the contact sheets).
+ * `page_scroll_id` frames any part of the Now stream by its id at the top (iOS `-NWScrollId`): `section-decide`, `section-look`,
+ * `section-review`, `section-in flight`, `row-<id>`, `runway`, `settled`; the screen's own framing gives way to it.
  * `page_canvas` draws with the Canvas fallbacks a device below Android 13 gets, instead of the AGSL shaders, and
  * `page_noblur` the Canvas aurora as a device below Android 12 draws it (no blur). `page_reduce` draws as under Reduce
  * Motion without touching the system's animator setting.
@@ -186,6 +189,7 @@ object Demo {
         renderScreen(
             render, CardGlow.argument(extras.getString("page_glow")) ?: CardGlow.OFF, if (extras.containsKey("page_time")) extras.getFloat("page_time").toDouble() else null,
             RenderHarness.minuteOfDay(extras.getString("page_daytime") ?: extras.getString("page_daypart")), reduce = extras.getBoolean("page_reduce"),
+            scrollId = extras.getString("page_scroll_id"),
         )
     }
 
@@ -305,7 +309,7 @@ object Demo {
         else -> DemoFixtures.sessionsWithFlight
     }
 
-    private fun renderScreen(asked: String, glow: CardGlow, time: Double?, dayTime: Double?, reduce: Boolean = false) {
+    private fun renderScreen(asked: String, glow: CardGlow, time: Double?, dayTime: Double?, reduce: Boolean = false, scrollId: String? = null) {
         // A motion screen is drawn on its base screen's fixtures, with the motion pinned (DemoMotion).
         val motion = asked
         val screen = if (DemoMotion.isMotion(asked)) DemoMotion.base(asked) else asked
@@ -324,8 +328,9 @@ object Demo {
         }
         RenderHarness.set(
             RenderHarness.Spec(
-                motion, glow, phase, DemoFixtures.now, pin, scrollTo = DemoMotion.scrollTo(motion) ?: scrollTo,
-                scrollTop = DemoMotion.scrollTop(motion) ?: (if (screen == "now-working") null else if (screen == "now-brief") "brief" else jumpTop),
+                motion, glow, phase, DemoFixtures.now, pin, scrollTo = if (scrollId != null) null else DemoMotion.scrollTo(motion) ?: scrollTo,
+                // `page_scroll_id` wins over the screen's own framing: the id goes to the top, as iOS `-NWScrollId` does.
+                scrollTop = scrollId ?: DemoMotion.scrollTop(motion) ?: (if (screen == "now-working") null else if (screen == "now-brief") "brief" else jumpTop),
                 pinnedArrival = DemoMotion.pinnedArrival(motion), ghosts = DemoMotion.ghosts(motion),
                 dragDp = if (screen == "now-swipe") 84f else null, queuedNew = if (screen == "now-new") 1 else 0,
                 hold = if (screen == "now-hold" || screen == "decision-hold") 0.55 else null, dispatchSending = screen == "dispatch-sending",

@@ -437,7 +437,7 @@ extension NightWatch.Palette {
     /// The tint of the chrome's glass: a light smoke of the page's night, so the
     /// glass itself shows (what is under it, bent at its edges, its rim lit) and
     /// white labels still hold over the brightest sky of the day.
-    static let chromeGlass = NightWatch.RGBA(hex: 0x04060A, alpha: 0.24)
+    static let chromeGlass = NightWatch.RGBA(hex: 0x04060A, alpha: 0.34)
 }
 
 private struct NWLiquidGlassKey: EnvironmentKey {

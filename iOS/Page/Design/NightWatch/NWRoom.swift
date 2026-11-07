@@ -341,7 +341,7 @@ struct NWSessionRoom: View {
                         .font(.system(style, weight: .semibold)).hidden()
                         .overlay(Text(l.title)
                             .font(.system(style, weight: on ? .semibold : .medium))
-                            .foregroundColor((on ? NightWatch.Palette.textPrimary : NightWatch.Palette.textTertiary).color))
+                            .foregroundColor((on ? NightWatch.Palette.textPrimary : NightWatch.RGBA(1, 1, 1, 0.78)).color))
                         .lineLimit(1).fixedSize()
                     if let n = data.badges[l] {
                         Text("\(n)").font(.system(.caption2, weight: .bold))

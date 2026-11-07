@@ -14,6 +14,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -237,7 +238,7 @@ private fun StripTile(r: InFlightRow, index: Int, motion: FlightMotion, modifier
         // Its emblem: the session's own star, large, glowing, and running off the corner.
         Box(Modifier.matchParentSize().clipToBounds(), contentAlignment = Alignment.BottomEnd) {
             Box(
-                Modifier.size(104.dp).offset(30.dp, 30.dp).drawBehind {
+                Modifier.requiredSize(104.dp).offset(30.dp, 30.dp).drawBehind {
                     val c = center
                     drawCircle(Brush.radialGradient(listOf(glowColour.opacity(0.55).color, glowColour.opacity(0.0).color), center = c, radius = 52.dp.toPx()), 52.dp.toPx(), c)
                     // The flare: two fine rays crossing at the star.

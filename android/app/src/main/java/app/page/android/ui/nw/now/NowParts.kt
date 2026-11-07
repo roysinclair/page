@@ -71,6 +71,8 @@ import app.page.android.model.SettledLog
 import app.page.android.ui.nw.components.NWButton
 import app.page.android.ui.nw.components.NWButtonKind
 import app.page.android.ui.nw.components.NWGlassCard
+import app.page.android.ui.nw.components.NWSoftTile
+import app.page.android.ui.nw.components.nwGlass
 import app.page.android.ui.nw.components.nwIcon
 import app.page.android.ui.nw.components.color
 import app.page.android.ui.nw.theme.NW
@@ -242,8 +244,14 @@ fun NWSettledList(log: SettledLog, modifier: Modifier = Modifier, onSeeAll: (() 
     val track = now?.let { rememberSettledTrack(log.today, it) }
     val clock = rememberNowClock(track?.arrivals?.values?.maxOrNull()?.plus(NowMotion.receiptLasts(reduce)))
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        // A rule closes the work above, and Settled, which is only told, has a quiet header below it.
+        Box(
+            Modifier.fillMaxWidth().padding(bottom = 8.dp).height(1.dp)
+                .background(Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0f), Color.White.copy(alpha = 0.10f), Color.White.copy(alpha = 0f))))
+                .clearAndSetSemantics {},
+        )
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("SETTLED", style = NW.Typo.labelLarge, color = NW.Palette.textTertiary.color, modifier = Modifier.weight(1f).semantics { heading() })
+            Text("Settled", style = NW.Typo.title, color = NW.Palette.textSecondary.color, modifier = Modifier.weight(1f).semantics { heading() })
             if (onSeeAll != null) Row(
                 Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button, onClick = onSeeAll).padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically,
@@ -259,7 +267,12 @@ fun NWSettledList(log: SettledLog, modifier: Modifier = Modifier, onSeeAll: (() 
             val c: Rgba = when (line.tone) {
                 SettledLine.Tone.APPROVED -> NW.Palette.green
                 SettledLine.Tone.SENT -> NW.Palette.sky
-                SettledLine.Tone.NEUTRAL -> NW.Palette.textQuiet
+                SettledLine.Tone.NEUTRAL -> SLATE
+            }
+            val symbol = when (line.tone) {
+                SettledLine.Tone.APPROVED -> "checkmark"
+                SettledLine.Tone.SENT -> "paperplane.fill"
+                SettledLine.Tone.NEUTRAL -> "circle.dotted"
             }
             val arrived = track?.arrivals?.get(line.id)
             val age = now?.let { NowMotion.settledOpacity(maxOf(0.0, it.secondsSince(line.at)) / 60) } ?: 1.0
@@ -267,16 +280,16 @@ fun NWSettledList(log: SettledLog, modifier: Modifier = Modifier, onSeeAll: (() 
                 Modifier.fillMaxWidth().then(if (arrived != null) Modifier.receiptArrival(arrived, clock, reduce, age) else Modifier.alpha(age.toFloat())).semantics(mergeDescendants = true) {},
                 horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(Modifier.size(7.dp).clip(CircleShape).background(c.color))
-                Text(line.text, style = NW.Typo.monoSmall, color = NW.Palette.textSecondary.color, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                NWSoftTile(symbol, c, size = 26.dp)
+                Text(line.text, style = NW.Typo.meta, color = NW.Palette.textSecondary.color, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 val status = listOfNotNull(line.age, line.status).joinToString(" · ")
                 if (now == null || '✓' !in status) {
-                    Text(status, style = NW.Typo.monoSmall, color = NW.Palette.textTertiary.color, maxLines = 1)
+                    Text(status, style = NW.Typo.metaSmall.copy(fontFeatureSettings = "tnum"), color = NW.Palette.textTertiary.color, maxLines = 1)
                 } else {
                     // The ✓ is drawn, so a new receipt's can draw itself once it has slid in; the words read the same.
                     val layout = remember { mutableStateOf<TextLayoutResult?>(null) }
                     Text(
-                        hideChecks(status), style = NW.Typo.monoSmall, color = NW.Palette.textTertiary.color, maxLines = 1, onTextLayout = { layout.value = it },
+                        hideChecks(status), style = NW.Typo.metaSmall.copy(fontFeatureSettings = "tnum"), color = NW.Palette.textTertiary.color, maxLines = 1, onTextLayout = { layout.value = it },
                         modifier = Modifier.drawWithContent {
                             drawContent()
                             val box = layout.value?.checkBox() ?: return@drawWithContent
@@ -289,12 +302,15 @@ fun NWSettledList(log: SettledLog, modifier: Modifier = Modifier, onSeeAll: (() 
         }
         for (day in log.days) {
             Row(Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}, horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(7.dp).clip(CircleShape).background(NW.Palette.textQuiet.color))
-                Text(day.headline, style = NW.Typo.monoSmall, color = NW.Palette.textSecondary.color, maxLines = 2)
+                NWSoftTile("calendar", SLATE, size = 26.dp)
+                Text(day.headline, style = NW.Typo.meta, color = NW.Palette.textTertiary.color, maxLines = 2)
             }
         }
     }
 }
+
+/** The slate of a neutral receipt and a day. */
+private val SLATE = Rgba.hex(0x94A3B8)
 
 /** A receipt arriving ([NowMotion.receipt]): it slides down from 6 dp above as it fades in, its height opening so the lines under it make room. Read as it is laid out. */
 private fun Modifier.receiptArrival(at: Double, clock: State<Double>, reduce: Boolean, age: Double): Modifier = layout { m, c ->
@@ -320,5 +336,22 @@ fun NWProblemCard(problem: ProblemState, onAction: (ProblemState.Action) -> Unit
             val a = problem.secondaryAction
             if (t != null && a != null) NWButton(t, { onAction(a) }, Modifier.fillMaxWidth())
         }
+    }
+}
+
+/**
+ * A raised card of the stream (iOS `NWGlassBackground(fill:tint:)`): a Look card, a Review card, a session's body. The fill is its
+ * own (surfaceRaised, or that mixed toward a project's colour); [tint] goes only into a radial at the top, the rim and a faint
+ * glow, never into the fill. The Card glow setting still decides whether a light rises from the bottom edge.
+ */
+@Composable
+internal fun NowRaisedCard(
+    modifier: Modifier = Modifier, fill: Rgba = NW.Palette.surfaceRaised, tint: Rgba? = null,
+    padding: PaddingValues = PaddingValues(NW.Space.lg), content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+) {
+    val glow = app.page.android.ui.nw.theme.LocalCardGlow.current
+    Box(modifier.fillMaxWidth().nwGlass(NW.Radius.card, fill = fill, tint = tint, glow = glow)) {
+        Column(Modifier.fillMaxWidth().padding(padding), content = content)
+        app.page.android.ui.nw.components.NWGlassEdgeLight(NW.Radius.card, Modifier.matchParentSize())
     }
 }

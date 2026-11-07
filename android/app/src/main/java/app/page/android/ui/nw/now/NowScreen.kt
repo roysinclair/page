@@ -303,6 +303,7 @@ fun NowScreen(modifier: Modifier = Modifier) {
         },
         modifier = modifier.fillMaxSize(),
     ) {
+        androidx.compose.runtime.CompositionLocalProvider(LocalStreamRecede provides remember(listState) { StreamRecede(listState) { streamTop[0] } }) {
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize().onGloballyPositioned { streamTop[0] = it.positionInRoot().y }.drawBehind {
@@ -450,6 +451,7 @@ fun NowScreen(modifier: Modifier = Modifier) {
             m.receiptLine?.let { line -> addItem("receipt", true, pad { QueuedReceipt(line, m.receiptFailed, receiptAt) }) }
             if (quiet && problem == null) add("tonight", pad { NWTonightCard(m.rings) })
             add("settled", pad { NWSettledList(screen.settled, Modifier.padding(top = 6.dp), onSeeAll = AppRouter::openHistory, now = screen.now) })
+        }
         }
         // The stream scrolls under the status bar: a soft scrim keeps the clock readable once the Horizon has gone.
         if (listState.firstVisibleItemIndex > 0) {

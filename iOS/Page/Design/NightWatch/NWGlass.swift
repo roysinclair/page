@@ -165,23 +165,32 @@ struct NWJewel: Equatable {
     let light: NightWatch.RGBA
     let lightStrength: Double
 
+    /// A jewel from its table row (`JewelTone.ramp`, shared with Android and the tests).
+    init(_ ramp: JewelRamp) {
+        self.init(top: .init(hex: ramp.top), bottom: .init(hex: ramp.bottom), light: .init(hex: ramp.light), lightStrength: ramp.lightStrength)
+    }
+
+    init(top: NightWatch.RGBA, bottom: NightWatch.RGBA, light: NightWatch.RGBA, lightStrength: Double) {
+        self.top = top; self.bottom = bottom; self.light = light; self.lightStrength = lightStrength
+    }
+
     /// Irreversible: crimson.
-    static let red = NWJewel(top: .init(hex: 0xA3243A), bottom: .init(hex: 0x4A0E1C), light: .init(hex: 0xFF7A8A), lightStrength: 0.32)
+    static let red = NWJewel(JewelTone.red.ramp)
     /// Considered: deep sky.
-    static let sky = NWJewel(top: .init(hex: 0x1D62AE), bottom: .init(hex: 0x0B2A55), light: .init(hex: 0x7CC8FF), lightStrength: 0.15)
+    static let sky = NWJewel(JewelTone.sky.ramp)
     /// Undoable: emerald.
-    static let green = NWJewel(top: .init(hex: 0x0B6E51), bottom: .init(hex: 0x05352A), light: .init(hex: 0x5EEAB0), lightStrength: 0.12)
+    static let green = NWJewel(JewelTone.green.ramp)
     /// A question, anything amber: ember.
-    static let amber = NWJewel(top: .init(hex: 0x9A4A08), bottom: .init(hex: 0x451A05), light: .init(hex: 0xFFB347), lightStrength: 0.2)
+    static let amber = NWJewel(JewelTone.amber.ramp)
 
     /// Working, a finished turn: deep teal.
-    static let teal = NWJewel(top: .init(hex: 0x0D7A72), bottom: .init(hex: 0x063A40), light: .init(hex: 0x5EEAD4), lightStrength: 0.08)
+    static let teal = NWJewel(JewelTone.teal.ramp)
     // A project's own colours (`ProjectHue`), for its doors and bands. Rose leans plum and white
     // leans indigo, so neither reads as Irreversible's crimson or as grey.
-    static let lime = NWJewel(top: .init(hex: 0x3A7A12), bottom: .init(hex: 0x17340A), light: .init(hex: 0xBEF264), lightStrength: 0.06)
-    static let violet = NWJewel(top: .init(hex: 0x5B3FC4), bottom: .init(hex: 0x261860), light: .init(hex: 0xC4B5FD), lightStrength: 0.2)
-    static let plum = NWJewel(top: .init(hex: 0x8E2A84), bottom: .init(hex: 0x3D1040), light: .init(hex: 0xF5A8E8), lightStrength: 0.12)
-    static let indigo = NWJewel(top: .init(hex: 0x3557A8), bottom: .init(hex: 0x16244D), light: .init(hex: 0xA5B8F0), lightStrength: 0.15)
+    static let lime = NWJewel(JewelTone.lime.ramp)
+    static let violet = NWJewel(JewelTone.violet.ramp)
+    static let plum = NWJewel(JewelTone.plum.ramp)
+    static let indigo = NWJewel(JewelTone.indigo.ramp)
 
     /// The jewel of a row's colour (`NowRow.tint`) or a section's.
     static func of(_ tint: NightWatch.RGBA?) -> NWJewel {
@@ -196,16 +205,7 @@ struct NWJewel: Equatable {
     }
 
     /// A project's jewel.
-    static func of(_ hue: ProjectHue) -> NWJewel {
-        switch hue {
-        case .teal: return .teal
-        case .sky: return .sky
-        case .lime: return .lime
-        case .violet: return .violet
-        case .rose: return .plum
-        case .white: return .indigo
-        }
-    }
+    static func of(_ hue: ProjectHue) -> NWJewel { NWJewel(JewelTone(hue: hue).ramp) }
 }
 
 /// A jewel's surface: its ramp, the light in its top corner, a bright lip, a

@@ -72,6 +72,8 @@ enum NightWatch {
     enum Typo {
         /// "2 need you": the Horizon sentence.
         static let hero = Font.system(.largeTitle, design: .rounded, weight: .bold)
+        /// A Decision sheet's ask: one step under the Horizon's.
+        static let sheetTitle = Font.system(.title, design: .rounded, weight: .bold)
         /// A card title: "Delete every Dev build?".
         static let headline = Font.system(.title3, design: .default, weight: .bold)
         static let title = Font.system(.headline, design: .default, weight: .semibold)

@@ -33,9 +33,7 @@ struct NWSectionHeader: View {
     }
 
     /// "IN FLIGHT" → "In flight".
-    static func words(_ title: String) -> String {
-        title.prefix(1).uppercased() + title.dropFirst().lowercased()
-    }
+    static func words(_ title: String) -> String { SectionTitle.words(title) }
 }
 
 /// A section's count: a glossy pill of its colour, glowing a little.
@@ -106,7 +104,7 @@ private struct NWCardTopLine: View {
             HStack(spacing: 4) {
                 if onJewel { Image(systemName: "clock").font(.system(.caption2, weight: .bold)) }
                 // On a jewel the clock says "waiting"; the chip holds just the time.
-                Text(onJewel ? row.waitingText(now: now).replacingOccurrences(of: "waiting ", with: "") : row.waitingText(now: now)).lineLimit(1)
+                Text(onJewel ? WaitChip.text(row.waitingText(now: now)) : row.waitingText(now: now)).lineLimit(1)
             }
             .font(NightWatch.Typo.captionStrong.monospacedDigit())
             .foregroundColor(onJewel ? Color.white.opacity(0.95) : NightWatch.Palette.textTertiary.color)

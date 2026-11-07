@@ -249,7 +249,7 @@ struct NWSessionRoom: View {
             NWAgentGlyph(character: data.character, size: 38)
             VStack(alignment: .leading, spacing: 2) {
                 Text(data.session.title)
-                    .font(.system(.title3, design: .monospaced, weight: .semibold))
+                    .font(.system(.title3, design: .rounded, weight: .bold))
                     .foregroundColor(NightWatch.Palette.textPrimary.color)
                     .lineLimit(1).minimumScaleFactor(0.7)
                 Text(data.subtitle)

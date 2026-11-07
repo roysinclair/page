@@ -174,7 +174,7 @@ struct NWStoryDivider: View {
     var body: some View {
         HStack(spacing: 12) {
             Rectangle().fill(Color.white.opacity(0.07)).frame(height: 1)
-            Text(label.uppercased()).font(NightWatch.Typo.monoMicro).kerning(1.2)
+            Text(NWSectionHeader.words(label)).font(NightWatch.Typo.captionStrong)
                 .foregroundColor(NightWatch.Palette.textTertiary.color).fixedSize()
             Rectangle().fill(Color.white.opacity(0.07)).frame(height: 1)
         }
@@ -301,9 +301,10 @@ struct NWStepsCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button(action: onToggle) {
-                HStack {
-                    Text("\(steps.count) STEP\(steps.count == 1 ? "" : "S")").font(NightWatch.Typo.label).kerning(1.4)
-                        .foregroundColor(NightWatch.Palette.textTertiary.color)
+                HStack(spacing: 10) {
+                    NWSoftTile(symbol: "list.bullet", tint: live ? NightWatch.Palette.teal : NightWatch.RGBA(hex: 0x94A3B8), size: 26)
+                    Text("\(steps.count) step\(steps.count == 1 ? "" : "s")").font(NightWatch.Typo.bodyStrong)
+                        .foregroundColor(NightWatch.Palette.textSecondary.color)
                     Spacer()
                     Image(systemName: expanded ? "chevron.up" : "chevron.down").font(.system(.footnote, weight: .semibold))
                         .foregroundColor(NightWatch.Palette.textTertiary.color)

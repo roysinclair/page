@@ -105,17 +105,11 @@ struct NWRunwayBar: View {
     @ScaledMetric(relativeTo: .caption2) private var chipHeight: CGFloat = 18
     private static let chipWidth: CGFloat = 132
 
-    /// Where the runway stops being clear (the earliest deadline), 0 ... 1; 1 when nothing stops it.
-    private var clearFraction: Double {
-        guard let until = model.clearUntil else { return 1 }
-        return model.markers.first { $0.at == until }?.fraction ?? model.markers.map(\.fraction).min() ?? 1
-    }
-
     private var instrumentBody: some View {
         let lanes = (model.markers.map(\.lane).max() ?? 0) + 1
         let lineY = 4 + CGFloat(lanes) * chipRow + 10
         let f = frame ?? NowMotion.RunwayFrame.settled(model)
-        let clear = CGFloat(clearFraction)
+        let clear = CGFloat(model.clearFraction)
         let track: CGFloat = 8
         return GeometryReader { geo in
             let w = geo.size.width - inset * 2

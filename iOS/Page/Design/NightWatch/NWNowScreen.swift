@@ -306,13 +306,7 @@ struct NWNowScreen: View {
 
     /// The light along the desk's edge: the mood's colour.
     private var deskLight: NightWatch.RGBA {
-        if let p = data.problem { return p.tone == .slate ? NightWatch.RGBA(hex: 0x6B7894) : NightWatch.Palette.amber }
-        switch data.model.mood {
-        case .needsYou: return NightWatch.Palette.amber
-        case .working: return NightWatch.Palette.teal
-        case .dusk: return NightWatch.Palette.violet
-        case .quiet: return NightWatch.Palette.teal.mixed(with: NightWatch.Palette.sky, 0.5)
-        }
+        NightWatch.RGBA(hex: DeskLight.colour(mood: data.model.mood, problem: data.problem.map { $0.tone == .slate ? .slate : .amber }))
     }
 
     // MARK: Stream

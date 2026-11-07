@@ -103,10 +103,15 @@ private struct NWCardTopLine: View {
                 .foregroundColor(onJewel ? Color.white.opacity(0.92) : NightWatch.Palette.textSecondary.color)
                 .lineLimit(1)
             Spacer(minLength: 4)
-            Text(row.waitingText(now: now))
-                .font(NightWatch.Typo.captionStrong.monospacedDigit())
-                .foregroundColor(onJewel ? Color.white.opacity(0.92) : NightWatch.Palette.textTertiary.color)
-                .lineLimit(1)
+            HStack(spacing: 4) {
+                if onJewel { Image(systemName: "clock").font(.system(.caption2, weight: .bold)) }
+                // On a jewel the clock says "waiting"; the chip holds just the time.
+                Text(onJewel ? row.waitingText(now: now).replacingOccurrences(of: "waiting ", with: "") : row.waitingText(now: now)).lineLimit(1)
+            }
+            .font(NightWatch.Typo.captionStrong.monospacedDigit())
+            .foregroundColor(onJewel ? Color.white.opacity(0.95) : NightWatch.Palette.textTertiary.color)
+            .padding(.horizontal, onJewel ? 8 : 0).padding(.vertical, onJewel ? 4 : 0)
+            .background(Capsule().fill(Color.black.opacity(onJewel ? 0.22 : 0)))
         }
     }
 }

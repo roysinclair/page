@@ -563,7 +563,7 @@ struct NWNowRunway: View {
         let now = motion.pinned ?? Date().timeIntervalSinceReferenceDate
         NWWorkflowClock(origin: 0, until: breathPeriod != nil && !rm ? .infinity : settles, pinned: motion.pinned,
                         fps: now < settles ? 30 : 20, holding: !visible) { t in
-            NWRunwayBar(model: model, frame: NowMotion.runway(s, model, at: t, breathPeriod: breathPeriod, reduceMotion: rm))
+            NWRunwayBar(model: model, frame: NowMotion.runway(s, model, at: t, breathPeriod: breathPeriod, reduceMotion: rm), instrument: true)
                 // Its motion is its own: a row arriving in the same update (the stream's spring) never animates it too.
                 .transaction { $0.animation = nil }
         }

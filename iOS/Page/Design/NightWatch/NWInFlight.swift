@@ -295,7 +295,13 @@ struct NWInFlightStrip: View {
                     Circle().fill(RadialGradient(colors: [glowColor.opacity(0.55).color, glowColor.opacity(0).color],
                                                  center: .center, startRadius: 0, endRadius: 52))
                         .frame(width: 104, height: 104)
-                    NWStarGlyph(seed: r.seed, color: glowColor, size: 46, brightness: 0.9, glow: f.star?.glow)
+                    // The flare: two fine rays crossing at the star.
+                    ForEach([0.0, 90.0], id: \.self) { a in
+                        Capsule().fill(LinearGradient(colors: [glowColor.opacity(0).color, Color.white.opacity(0.85), glowColor.opacity(0).color],
+                                                      startPoint: .leading, endPoint: .trailing))
+                            .frame(width: 84, height: 1.6).rotationEffect(.degrees(a))
+                    }
+                    NWStarGlyph(seed: r.seed, color: glowColor, size: 34, brightness: 0.95, glow: f.star?.glow)
                         .scaleEffect(CGFloat(f.star?.scale ?? 1))
                     if let line, flow?.fraction != nil { NWFlightRing(frame: line, size: 52, lineWidth: 3).opacity(line.fold) }
                 }
@@ -373,7 +379,9 @@ struct NWInFlightCardView: View {
             }
         }
         .padding(NightWatch.Space.lg)
-        .background(NWGlassBackground(radius: NightWatch.Radius.card, fill: NightWatch.Palette.surfaceRaised,
+        .background(NWGlassBackground(radius: NightWatch.Radius.card,
+                                      // The body carries its project's colour, faintly, so band and body read as one card.
+                                      fill: NightWatch.Palette.surfaceRaised.mixed(with: NWJewel.of(row.hue).bottom, 0.3),
                                       tint: f.amber > 0.01 ? NightWatch.Palette.amber.opacity(f.amber) : nil))
         .contextMenu {
             Button { onOpen(.screen) } label: { Label("Open", systemImage: "display") }

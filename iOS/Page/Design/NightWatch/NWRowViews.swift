@@ -18,22 +18,16 @@ struct NWSectionHeader: View {
     var quiet = false
 
     var body: some View {
-        HStack(alignment: .center, spacing: 8) {
-            if let symbol, !quiet {
-                Image(systemName: symbol).font(.system(.subheadline, weight: .bold)).foregroundColor(color.color)
-            }
+        HStack(alignment: .center, spacing: 10) {
+            if let symbol, !quiet { NWIconTile(symbol: symbol, jewel: .of(color), size: 30) }
             Text(NWSectionHeader.words(title))
                 .font(quiet ? NightWatch.Typo.title : NightWatch.Typo.section)
                 .foregroundColor((quiet ? NightWatch.Palette.textSecondary : NightWatch.Palette.textPrimary).color)
-            if let count, !quiet {
-                Text("\(count)").font(.system(.footnote, weight: .heavy)).monospacedDigit()
-                    .foregroundColor(NightWatch.Palette.onBright.color)
-                    .padding(.horizontal, 7).frame(minWidth: 22, minHeight: 22)
-                    .background(Capsule().fill(color.color))
-            }
+            if let count, !quiet { NWCountBadge(count: count, color: color) }
             Spacer(minLength: 0)
         }
-        .padding(.top, quiet ? 4 : 12)
+        // Sections stand apart: more room above a section than between its cards.
+        .padding(.top, quiet ? 4 : 20)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
     }
@@ -41,6 +35,23 @@ struct NWSectionHeader: View {
     /// "IN FLIGHT" → "In flight".
     static func words(_ title: String) -> String {
         title.prefix(1).uppercased() + title.dropFirst().lowercased()
+    }
+}
+
+/// A section's count: a glossy pill of its colour, glowing a little.
+struct NWCountBadge<Count: Hashable>: View {
+    var count: Count
+    var color: NightWatch.RGBA
+    var reduceMotion = false
+
+    var body: some View {
+        Text("\(String(describing: count))").font(.system(.footnote, weight: .heavy)).monospacedDigit()
+            .foregroundColor(NightWatch.Palette.onBright.color)
+            .padding(.horizontal, 8).frame(minWidth: 24, minHeight: 24)
+            .background(Capsule().fill(LinearGradient(colors: [color.mixed(with: .init(1, 1, 1), 0.3).color, color.color],
+                                                      startPoint: .top, endPoint: .bottom)))
+            .overlay(Capsule().strokeBorder(Color.white.opacity(0.45), lineWidth: 1).mask(LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: .center)))
+            .shadow(color: color.opacity(0.55).color, radius: 6, x: 0, y: 2)
     }
 }
 
@@ -199,11 +210,14 @@ struct NWDecideCard: View {
             Button(action: onOpen) {
                 VStack(alignment: .leading, spacing: 14) {
                     NWCardTopLine(row: row, now: now, onJewel: true)
-                    Text(row.headline)
-                        .font(NightWatch.Typo.headline)
-                        .foregroundColor(NightWatch.Palette.textPrimary.color)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(alignment: .center, spacing: 12) {
+                        NWIconTile(symbol: row.chip.symbol, jewel: .of(row.tint), size: 44, glass: true)
+                        Text(row.headline)
+                            .font(NightWatch.Typo.headline)
+                            .foregroundColor(NightWatch.Palette.textPrimary.color)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     commandBox(irreversible: irreversible)
                 }
                 .contentShape(Rectangle())
@@ -225,7 +239,7 @@ struct NWDecideCard: View {
             actions(irreversible: irreversible)
         }
         .padding(NightWatch.Space.lg)
-        .background(NWJewelSurface(jewel: .of(row.tint)))
+        .background(NWJewelSurface(jewel: .of(row.tint), lift: 1.25))
         .accessibilityElement(children: .contain)
     }
 
@@ -284,11 +298,14 @@ struct NWQuestionCard: View {
         Button(action: onOpen) {
             VStack(alignment: .leading, spacing: 12) {
                 NWCardTopLine(row: row, now: now, onJewel: true)
-                Text(row.summary)
-                    .font(NightWatch.Typo.title)
-                    .foregroundColor(NightWatch.Palette.textPrimary.color)
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(3)
+                HStack(alignment: .center, spacing: 12) {
+                    NWIconTile(symbol: row.chip.symbol, jewel: .of(row.tint), size: 44, glass: true)
+                    Text(row.summary)
+                        .font(NightWatch.Typo.title)
+                        .foregroundColor(NightWatch.Palette.textPrimary.color)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(3)
+                }
                 if let p = row.focusPreview {
                     Text(p).font(NightWatch.Typo.monoMicro).foregroundColor(Color.white.opacity(0.92))
                         .multilineTextAlignment(.leading)
@@ -303,7 +320,7 @@ struct NWQuestionCard: View {
             }
             .padding(NightWatch.Space.lg)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(NWJewelSurface(jewel: .of(row.tint)))
+            .background(NWJewelSurface(jewel: .of(row.tint), lift: 1.25))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -397,12 +414,7 @@ struct NWUndoableRow: View {
 
     private var rowBody: some View {
         HStack(spacing: 14) {
-            Image(systemName: "terminal")
-                .font(.system(.body, weight: .semibold))
-                .foregroundColor(.white)
-                .frame(width: 44, height: 44)
-                .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.black.opacity(0.24))
-                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.white.opacity(0.16), lineWidth: 1)))
+            NWIconTile(symbol: "terminal.fill", jewel: .green, size: 44, glass: true)
             VStack(alignment: .leading, spacing: 3) {
                 Text(row.summary).font(NightWatch.Typo.mono)
                     .foregroundColor(.white).lineLimit(1)
@@ -435,11 +447,7 @@ struct NWLookCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 14) {
-                Image(systemName: row.chip.symbol)
-                    .font(.system(.title3, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 48, height: 48)
-                    .background(NWJewelSurface(jewel: .amber, radius: 14))
+                NWIconTile(symbol: row.chip.symbol, jewel: .amber, size: 48)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(row.headline).font(NightWatch.Typo.title)
                         .foregroundColor(NightWatch.Palette.textPrimary.color).lineLimit(2)
@@ -492,7 +500,8 @@ struct NWReviewCard: View {
         VStack(alignment: .leading, spacing: 14) {
             Button(action: onOpen) {
                 VStack(alignment: .leading, spacing: 14) {
-                    HStack {
+                    HStack(spacing: 12) {
+                        NWIconTile(symbol: "checkmark.seal.fill", jewel: .teal, size: 36)
                         Text(row.projectName).font(NightWatch.Typo.nameLarge)
                             .foregroundColor(NightWatch.Palette.textPrimary.color).lineLimit(1)
                         Spacer(minLength: 4)

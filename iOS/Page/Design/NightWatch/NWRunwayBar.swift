@@ -38,7 +38,8 @@ struct NWRunwayBar: View {
                         colors: [NightWatch.Palette.teal.opacity(model.onAC ? 0.55 : 0.5).color,
                                  NightWatch.Palette.teal.opacity(model.onAC ? 0.55 : 0.22).color],
                         startPoint: .leading, endPoint: .trailing))
-                    .frame(width: w, height: 2)
+                    .frame(width: w, height: 3)
+                    .shadow(color: NightWatch.Palette.teal.opacity(0.6).color, radius: 4)
                     // It draws in from the NOW dot, the gradient staying where it lies.
                     .mask(alignment: .leading) { Rectangle().frame(width: max(0, w * CGFloat(min(1, f.line)))) }
                     .offset(x: inset, y: lineY - 1)

@@ -120,17 +120,15 @@ struct NWNowScreen: View {
                     // What needs you, and what is working, sit on the desk below it.
                     VStack(spacing: 16) { stream(inset: inset) }
                         .padding(.horizontal, NightWatch.Space.gutter)
-                        .padding(.top, 14)
                         .padding(.bottom, 136)
                         .frame(maxWidth: .infinity)
                         // The desk runs on past the end, so a bounce at the bottom shows more desk, not sky.
-                        .background(alignment: .top) { NWDesk(light: deskLight).padding(.bottom, -900) }
+                        .background(alignment: .top) { NWDesk(light: deskLight).padding(.top, -deskLift).padding(.bottom, -900) }
                         // Cards below a new arrival make room on its spring; nothing above moves.
                         .animation(reduceMotion ? nil : .spring(response: ApproachModel.response, dampingFraction: ApproachModel.damping),
                                    value: NWStreamSpring(rows: rowIds, horizon: horizonHeight))
                         // The New pill comes and goes (the cards below make room); a row change keeps the spring above.
                         .animation(queuedAnimation, value: data.queuedNew > 0)
-                        .padding(.top, 6)
                 }
                 .coordinateSpace(name: nwStreamSpace)
             }
@@ -292,14 +290,19 @@ struct NWNowScreen: View {
             NWNowRunway(model: data.model.runway, motion: motion, breathPeriod: runwayBreath)
                 .padding(6)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(NWSkyGlass(radius: 24))
+                .background(NWInstrumentGlass(light: deskLight))
                 .contentShape(Rectangle())
                 .onTapGesture(perform: actions.tapRunway)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityHint(Text("Opens the Tower at Budget"))
                 .padding(.horizontal, NightWatch.Space.gutter)
+                // Above the desk, which rises behind its lower half: the lift.
+                .zIndex(1)
         }
     }
+
+    /// How far the desk's edge rises behind the Runway (none when the Runway steps aside).
+    private var deskLift: CGFloat { data.problem?.kind == .macAsleep ? 0 : 58 }
 
     /// The light along the desk's edge: the mood's colour.
     private var deskLight: NightWatch.RGBA {
@@ -329,7 +332,7 @@ struct NWNowScreen: View {
         ForEach(sections, id: \.0) { section, rows in
             // In flight sits between what needs you and what has finished.
             if section == .review { inFlight }
-            NWSectionHeader(title: section.title, count: rows.filter { !data.ghosts.contains($0.id) }.count, color: section.color)
+            NWSectionHeader(title: section.title, count: rows.filter { !data.ghosts.contains($0.id) }.count, color: section.color, symbol: section.symbol)
                 .id("section-\(section.title.lowercased())")
                 .offset(y: push(below: rows.first.flatMap { order.firstIndex(of: $0.id) }.map { $0 - 1 }))
             ForEach(rows) { row in

@@ -71,16 +71,62 @@ struct NWButtonStyle: ButtonStyle {
     enum Kind { case quiet, bright, amber, danger, white, glass, soft }
     var kind: Kind = .quiet
 
+    /// A button you can see is a button: a body lit from above (a sheen over its
+    /// top half and a bright top edge), standing off the card on a glow of its
+    /// own colour, and sinking a little under the finger.
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
+        let shape = RoundedRectangle(cornerRadius: NightWatch.Radius.button, style: .continuous)
+        let pressed = configuration.isPressed
+        return configuration.label
             .font(NightWatch.Typo.button)
             .foregroundColor(foreground.color)
             .frame(maxWidth: .infinity, minHeight: 52)
-            .background(background)
-            .clipShape(RoundedRectangle(cornerRadius: NightWatch.Radius.button, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NightWatch.Radius.button, style: .continuous)
-                .strokeBorder(border.color, lineWidth: 1))
-            .opacity(configuration.isPressed ? 0.8 : 1)
+            .background(ZStack {
+                background
+                shape.fill(LinearGradient(stops: [.init(color: Color.white.opacity(sheen), location: 0),
+                                                  .init(color: Color.white.opacity(0), location: 0.55)],
+                                          startPoint: .top, endPoint: .bottom))
+            })
+            .clipShape(shape)
+            .overlay(shape.strokeBorder(LinearGradient(colors: [rimTop.color, border.color], startPoint: .top, endPoint: .bottom), lineWidth: 1))
+            .shadow(color: glow.color, radius: pressed ? 4 : 12, x: 0, y: pressed ? 2 : 6)
+            .scaleEffect(pressed ? 0.97 : 1)
+            .brightness(pressed ? -0.04 : 0)
+            .animation(.easeOut(duration: 0.12), value: pressed)
+    }
+
+    /// The light across the top half of its body.
+    private var sheen: Double {
+        switch kind {
+        case .bright, .amber: return 0.3
+        case .white: return 0
+        case .quiet, .glass, .soft: return 0.1
+        case .danger: return 0.06
+        }
+    }
+
+    /// Its top edge, where the light catches it.
+    private var rimTop: NightWatch.RGBA {
+        switch kind {
+        case .quiet: return NightWatch.RGBA(1, 1, 1, 0.22)
+        case .bright, .amber: return NightWatch.RGBA(1, 1, 1, 0.6)
+        case .white: return NightWatch.RGBA(1, 1, 1, 1)
+        case .glass: return NightWatch.RGBA(1, 1, 1, 0.34)
+        case .soft: return NightWatch.Palette.teal.opacity(0.6)
+        case .danger: return NightWatch.Palette.red.opacity(0.6)
+        }
+    }
+
+    /// The glow it stands on: its own colour for the ones that act, a soft dark for the rest.
+    private var glow: NightWatch.RGBA {
+        switch kind {
+        case .bright: return NightWatch.Palette.teal.opacity(0.45)
+        case .amber: return NightWatch.Palette.amber.opacity(0.45)
+        case .white: return NightWatch.RGBA(1, 1, 1, 0.22)
+        case .soft: return NightWatch.Palette.teal.opacity(0.16)
+        case .quiet, .glass: return NightWatch.RGBA(0, 0, 0, 0.35)
+        case .danger: return NightWatch.RGBA(0, 0, 0, 0)
+        }
     }
 
     private var foreground: NightWatch.RGBA {
@@ -106,7 +152,7 @@ struct NWButtonStyle: ButtonStyle {
 
     private var background: AnyView {
         switch kind {
-        case .quiet: return AnyView(Color.white.opacity(0.07))
+        case .quiet: return AnyView(LinearGradient(colors: [Color.white.opacity(0.12), Color.white.opacity(0.06)], startPoint: .top, endPoint: .bottom))
         case .bright:
             return AnyView(LinearGradient(colors: [NightWatch.Palette.teal.color, NightWatch.Palette.sky.color],
                                           startPoint: .leading, endPoint: .trailing))
@@ -115,8 +161,9 @@ struct NWButtonStyle: ButtonStyle {
                                           startPoint: .leading, endPoint: .trailing))
         case .danger: return AnyView(NightWatch.Palette.red.opacity(0.14).color)
         case .white: return AnyView(LinearGradient(colors: [Color.white, NightWatch.RGBA(hex: 0xE8EDF5).color], startPoint: .top, endPoint: .bottom))
-        case .glass: return AnyView(Color.black.opacity(0.2))
-        case .soft: return AnyView(NightWatch.Palette.teal.opacity(0.1).color)
+        case .glass: return AnyView(LinearGradient(colors: [Color.black.opacity(0.14), Color.black.opacity(0.3)], startPoint: .top, endPoint: .bottom))
+        case .soft: return AnyView(LinearGradient(colors: [NightWatch.Palette.teal.opacity(0.16).color, NightWatch.Palette.teal.opacity(0.07).color],
+                                                  startPoint: .top, endPoint: .bottom))
         }
     }
 }

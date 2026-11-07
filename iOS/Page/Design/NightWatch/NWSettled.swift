@@ -57,7 +57,7 @@ struct NWSettledList: View {
             }
             ForEach(log.days) { day in
                 HStack(spacing: 10) {
-                    Circle().fill(NightWatch.Palette.textQuiet.color).frame(width: 7, height: 7)
+                    NWSoftTile(symbol: "calendar", tint: NightWatch.RGBA(hex: 0x94A3B8), size: 26)
                     Text(day.headline).lineLimit(2)
                 }
                 .font(NightWatch.Typo.meta)
@@ -75,7 +75,7 @@ struct NWSettledList: View {
     private func todayLine(_ line: SettledLine, gap: CGFloat, arriving r: NowMotion.Receipt?) -> some View {
         let status = [line.age, line.status].compactMap { $0 }.joined(separator: " · ")
         return HStack(spacing: 10) {
-            Circle().fill(color(line.tone).color).frame(width: 7, height: 7)
+            NWSoftTile(symbol: symbol(line.tone), tint: color(line.tone), size: 26)
             Text(line.text).lineLimit(1)
             Spacer(minLength: 4)
             Group {
@@ -100,11 +100,19 @@ struct NWSettledList: View {
         .opacity(r?.opacity ?? 1)
     }
 
+    private func symbol(_ t: SettledLine.Tone) -> String {
+        switch t {
+        case .approved: return "checkmark"
+        case .sent: return "paperplane.fill"
+        case .neutral: return "circle.dotted"
+        }
+    }
+
     private func color(_ t: SettledLine.Tone) -> NightWatch.RGBA {
         switch t {
         case .approved: return NightWatch.Palette.green
         case .sent: return NightWatch.Palette.sky
-        case .neutral: return NightWatch.Palette.textQuiet
+        case .neutral: return NightWatch.RGBA(hex: 0x94A3B8)
         }
     }
 }

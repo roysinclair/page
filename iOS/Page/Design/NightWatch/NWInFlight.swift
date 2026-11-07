@@ -171,7 +171,8 @@ struct NWInFlightSection: View {
                     Text(section.isExpanded ? "Show fewer" : section.showAllLabel)
                         .font(NightWatch.Typo.captionStrong).foregroundColor(NightWatch.Palette.teal.color)
                         .frame(maxWidth: .infinity, minHeight: 44)
-                        .background(Capsule().fill(Color.white.opacity(0.06)))
+                        .background(Capsule().fill(LinearGradient(colors: [Color.white.opacity(0.1), Color.white.opacity(0.04)], startPoint: .top, endPoint: .bottom))
+                            .overlay(Capsule().strokeBorder(LinearGradient(colors: [Color.white.opacity(0.18), Color.white.opacity(0.03)], startPoint: .top, endPoint: .bottom), lineWidth: 1)))
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
@@ -189,12 +190,10 @@ struct NWInFlightSection: View {
     private var header: some View {
         Button(action: onHeader) {
             HStack(alignment: .center, spacing: 8) {
+                NWIconTile(symbol: "airplane", jewel: .teal, size: 30)
                 Text("In flight").font(NightWatch.Typo.section).foregroundColor(NightWatch.Palette.textPrimary.color)
-                Text("\(section.total)").font(.system(.footnote, weight: .heavy)).monospacedDigit()
-                    .foregroundColor(NightWatch.Palette.onBright.color)
+                NWCountBadge(count: section.total, color: NightWatch.Palette.teal)
                     .nwRolls(Double(section.total), reduceMotion: reduceMotion)
-                    .padding(.horizontal, 7).frame(minWidth: 22, minHeight: 22)
-                    .background(Capsule().fill(NightWatch.Palette.teal.color))
                 Spacer(minLength: 0)
                 HStack(spacing: 3) {
                     Text("Lanes")
@@ -202,7 +201,7 @@ struct NWInFlightSection: View {
                 }
                 .font(NightWatch.Typo.captionStrong).foregroundColor(NightWatch.Palette.textSecondary.color)
             }
-            .padding(.top, 12)
+            .padding(.top, 20)
             .frame(minHeight: 28)
             .contentShape(Rectangle())
         }
@@ -235,8 +234,11 @@ struct NWInFlightStrip: View {
                     }
                 }
                 .padding(.horizontal, NightWatch.Space.gutter)
+                .padding(.vertical, 4)
             }
         }
+        // The doors stand on their own glow: the strip must not cut it (or their tops) off.
+        .scrollClipDisabled()
         .animation(rm ? .easeOut(duration: WorkflowMotion.reducedFade) : .easeOut(duration: NowMotion.leave), value: rows.map(\.id))
         .modifier(NWOnScreen(visible: $visible))
     }
@@ -249,39 +251,59 @@ struct NWInFlightStrip: View {
         let closing = r.card.closing.first { $0.index == 0 }
         let flow = closing?.line ?? r.card.workflows.first
         let line = flow.map { NowMotion.line(s, row: r, line: $0, key: $0.name, closing: closing, place: .strip, index: i, at: t, reduceMotion: rm) }
-        return HStack(spacing: 10) {
-            ZStack {
-                NWStarGlyph(seed: r.seed, color: r.hue.color, size: 30, glow: f.star?.glow).scaleEffect(CGFloat(f.star?.scale ?? 1))
-                if let line, flow?.fraction != nil { NWFlightRing(frame: line, size: 34, lineWidth: 2).opacity(line.fold) }
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(r.project).font(NightWatch.Typo.name).foregroundColor(NightWatch.Palette.textPrimary.color).lineLimit(1)
-                Text(r.card.now).font(NightWatch.Typo.metaSmall).foregroundColor(NightWatch.Palette.textSecondary.color).lineLimit(1)
-                HStack(spacing: 6) {
-                    if r.card.health.needsAttention, let h = r.card.health.label {
-                        Text(h).font(NightWatch.Typo.captionStrong).foregroundColor(NightWatch.Palette.amber.color)
-                    } else if let flow, let p = flow.progress {
-                        ZStack(alignment: .leading) {
-                            Text(p.replacingOccurrences(of: " agents", with: "")).font(NightWatch.Typo.captionStrong.monospacedDigit())
-                                .foregroundColor(NightWatch.Palette.teal.mixed(with: NightWatch.Palette.amber, closing == nil ? 0 : line?.amber ?? 0).color)
-                                .nwRolls(p, reduceMotion: rm)
-                                .opacity(1 - (line?.check ?? 0))
-                            if let line, line.check > 0 {
-                                Text("✓ done").font(NightWatch.Typo.captionStrong).foregroundColor(NightWatch.Palette.teal.color).opacity(line.check)
-                            }
+        let jewel = NWJewel.of(r.hue)
+        let shape = RoundedRectangle(cornerRadius: NightWatch.Radius.row, style: .continuous)
+        return VStack(alignment: .leading, spacing: 2) {
+            Text(r.project).font(NightWatch.Typo.name).foregroundColor(.white).lineLimit(1)
+            Text(r.card.now).font(NightWatch.Typo.metaSmall).foregroundColor(Color.white.opacity(0.9)).lineLimit(1)
+            Spacer(minLength: 4)
+            HStack(spacing: 6) {
+                if r.card.health.needsAttention, let h = r.card.health.label {
+                    Text(h).font(NightWatch.Typo.captionStrong).foregroundColor(.white)
+                        .padding(.horizontal, 7).padding(.vertical, 2)
+                        .background(Capsule().fill(Color.black.opacity(0.28)))
+                } else if let flow, let p = flow.progress {
+                    ZStack(alignment: .leading) {
+                        Text(p.replacingOccurrences(of: " agents", with: "")).font(NightWatch.Typo.captionStrong.monospacedDigit())
+                            .foregroundColor(.white)
+                            .nwRolls(p, reduceMotion: rm)
+                            .opacity(1 - (line?.check ?? 0))
+                        if let line, line.check > 0 {
+                            Text("✓ done").font(NightWatch.Typo.captionStrong).foregroundColor(.white).opacity(line.check)
                         }
-                        .opacity(closing == nil ? 1 : line?.fold ?? 1)
                     }
-                    if let time {
-                        Text(time).font(NightWatch.Typo.caption.monospacedDigit()).foregroundColor(NightWatch.Palette.textTertiary.color).nwRolls(time, reduceMotion: rm)
-                    }
+                    .padding(.horizontal, 7).padding(.vertical, 2)
+                    .background(Capsule().fill(Color.black.opacity(0.28)))
+                    .opacity(closing == nil ? 1 : line?.fold ?? 1)
+                }
+                if let time {
+                    Text(time).font(NightWatch.Typo.caption.monospacedDigit()).foregroundColor(Color.white.opacity(0.85)).nwRolls(time, reduceMotion: rm)
                 }
             }
-            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 12)
-        .frame(width: 200, height: 72, alignment: .leading)
-        .background(tileBackground(amber: f.amber))
+        .padding(.leading, 14).padding(.vertical, 12).padding(.trailing, 50)
+        .frame(width: 212, height: 96, alignment: .topLeading)
+        .background {
+            ZStack {
+                // A door: the project's jewel, crossing to ember as the session turns stuck.
+                NWJewelSurface(jewel: jewel, radius: NightWatch.Radius.row, lift: 0.7)
+                NWJewelSurface(jewel: .amber, radius: NightWatch.Radius.row, lift: 0.7).opacity(f.amber)
+                // Its emblem: the session's own star, large, glowing, and running off the corner.
+                let glowColor = jewel.light.mixed(with: NightWatch.Palette.amber, f.amber)
+                ZStack {
+                    Circle().fill(RadialGradient(colors: [glowColor.opacity(0.55).color, glowColor.opacity(0).color],
+                                                 center: .center, startRadius: 0, endRadius: 52))
+                        .frame(width: 104, height: 104)
+                    NWStarGlyph(seed: r.seed, color: glowColor, size: 46, brightness: 0.9, glow: f.star?.glow)
+                        .scaleEffect(CGFloat(f.star?.scale ?? 1))
+                    if let line, flow?.fraction != nil { NWFlightRing(frame: line, size: 52, lineWidth: 3).opacity(line.fold) }
+                }
+                .frame(width: 104, height: 104)
+                .offset(x: 30, y: 30)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                .clipShape(shape)
+            }
+        }
         .offset(y: CGFloat(f.rise.offset))
         .opacity(f.rise.opacity)
         .accessibilityElement(children: .ignore)
@@ -290,14 +312,6 @@ struct NWInFlightStrip: View {
         .accessibilityAddTraits(.isButton)
     }
 
-    /// The tile's glass, raised; its amber rim crossing in (and out) as the session turns stuck.
-    private func tileBackground(amber: Double) -> some View {
-        let shape = RoundedRectangle(cornerRadius: NightWatch.Radius.row, style: .continuous)
-        return NWGlassBackground(radius: NightWatch.Radius.row, fill: NightWatch.Palette.surfaceRaised)
-            .overlay(shape.strokeBorder(LinearGradient(colors: [NightWatch.Palette.amber.opacity(0.75 * amber).color,
-                                                                NightWatch.Palette.amber.opacity(0.25 * amber).color],
-                                                       startPoint: .top, endPoint: .bottom), lineWidth: 1).opacity(amber > 0 ? 1 : 0))
-    }
 }
 
 /// One working session, as big as a Review card: who and where, what it is
@@ -376,22 +390,39 @@ struct NWInFlightCardView: View {
     // MARK: parts
 
     /// The star, the project, and where it runs.
+    /// The band: the star in a glass tile, the project and where it runs, on its project's jewel
+    /// (ember once it is stuck), bled to the card's edges.
     private func top(_ f: NowMotion.RowFrame) -> some View {
-        HStack(spacing: 12) {
-            NWStarGlyph(seed: row.seed, color: row.hue.color, size: 30, glow: f.star?.glow).scaleEffect(CGFloat(f.star?.scale ?? 1))
-                .frame(width: 36, height: 36)
+        let jewel = NWJewel.of(row.hue)
+        let pad = NightWatch.Space.lg
+        return HStack(spacing: 12) {
+            NWStarGlyph(seed: row.seed, color: jewel.light.mixed(with: NightWatch.Palette.amber, f.amber), size: 32, glow: f.star?.glow)
+                .scaleEffect(CGFloat(f.star?.scale ?? 1))
+                .frame(width: 44, height: 44)
+                .background(RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .fill(LinearGradient(colors: [Color.white.opacity(0.18), Color.white.opacity(0.05)], startPoint: .top, endPoint: .bottom))
+                    .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .strokeBorder(LinearGradient(colors: [Color.white.opacity(0.4), Color.white.opacity(0.06)], startPoint: .top, endPoint: .bottom), lineWidth: 1)))
             VStack(alignment: .leading, spacing: 3) {
-                Text(row.project).font(NightWatch.Typo.nameLarge).foregroundColor(NightWatch.Palette.textPrimary.color).lineLimit(1)
-                Text(whoWhere).font(NightWatch.Typo.caption).foregroundColor(NightWatch.Palette.textTertiary.color).lineLimit(1)
+                Text(row.project).font(NightWatch.Typo.nameLarge).foregroundColor(.white).lineLimit(1)
+                Text(whoWhere).font(NightWatch.Typo.caption).foregroundColor(Color.white.opacity(0.88)).lineLimit(1)
             }
             Spacer(minLength: 4)
             if card.health.needsAttention, let h = card.health.label {
                 Text(h.uppercased()).font(NightWatch.Typo.label).kerning(NightWatch.Typo.labelTracking)
-                    .foregroundColor(NightWatch.Palette.amber.color)
+                    .foregroundColor(.white)
                     .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(Capsule().fill(NightWatch.Palette.amber.opacity(0.14).color))
+                    .background(Capsule().fill(Color.black.opacity(0.28)))
             }
         }
+        .padding(.horizontal, pad).padding(.top, pad).padding(.bottom, 14)
+        .background {
+            ZStack {
+                NWHueBand(jewel: jewel)
+                NWHueBand(jewel: .amber).opacity(f.amber)
+            }
+        }
+        .padding(.horizontal, -pad).padding(.top, -pad)
     }
 
     /// "Claude · cmux › page · Opus 4.5".
@@ -533,13 +564,33 @@ struct NWInFlightCardView: View {
     /// A small caps label, and its content under it (stacked like the Mac's
     /// card, so a long step or a health line gets the card's whole width).
     private func fact<V: View>(_ title: String, @ViewBuilder _ content: () -> V) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.system(.caption2, weight: .semibold)).kerning(0.6)
-                .foregroundColor(NightWatch.Palette.textQuiet.color)
-                .lineLimit(1)
-            content()
+        // A tile says what the fact is (what it is doing, how long, its workflows, how it is doing),
+        // so the facts lead and no label stands over them.
+        HStack(alignment: .top, spacing: 12) {
+            NWSoftTile(symbol: factSymbol(title), tint: factTint(title), size: 30)
+            content().padding(.top, 5)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func factSymbol(_ title: String) -> String {
+        switch title {
+        case "NOW": return "waveform"
+        case "TIME": return "clock.fill"
+        case "WORKFLOWS": return "square.stack.3d.up.fill"
+        default: return "heart.fill"
+        }
+    }
+
+    private func factTint(_ title: String) -> NightWatch.RGBA {
+        switch title {
+        case "NOW": return NightWatch.Palette.teal
+        case "TIME": return NightWatch.Palette.sky
+        case "WORKFLOWS": return NightWatch.Palette.violet
+        default:
+            return card.health.needsAttention ? NightWatch.Palette.amber
+                : (card.health == .longRunning ? NightWatch.Palette.sky : NightWatch.Palette.green)
+        }
     }
 
     /// A button in words. A terminal Page cannot mirror or type into is dimmed,

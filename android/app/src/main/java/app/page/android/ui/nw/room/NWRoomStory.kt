@@ -83,6 +83,8 @@ import app.page.android.ui.nw.now.RowActions
 import app.page.android.ui.nw.now.RowStatus
 import app.page.android.ui.nw.theme.NW
 import app.page.android.ui.nw.theme.Rgba
+import app.page.android.ui.nw.components.NWSoftTile
+import app.page.android.model.SectionTitle
 import kotlin.math.max
 import kotlin.math.sin
 import kotlinx.coroutines.launch
@@ -199,7 +201,7 @@ private fun PrivacyCard(title: String, c: AgentCharacter) {
 private fun Divider(label: String) {
     Row(Modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = label }, horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.weight(1f).size(1.dp).background(Color.White.copy(alpha = 0.07f)))
-        Text(label.uppercase(), style = NW.Typo.monoMicro, color = NW.Palette.textTertiary.color, maxLines = 1)
+        Text(SectionTitle.words(label), style = NW.Typo.captionStrong, color = NW.Palette.textTertiary.color, maxLines = 1)
         Box(Modifier.weight(1f).size(1.dp).background(Color.White.copy(alpha = 0.07f)))
     }
 }
@@ -304,7 +306,7 @@ private fun PhotosChip(count: Int) {
     }
 }
 
-/** "5 STEPS": consecutive tool calls in one card. The newest one of a busy session spins. */
+/** "5 steps": consecutive tool calls in one card. The newest one of a busy session spins. */
 @Composable
 private fun StepsCard(steps: List<StoryStep>, live: Boolean, expanded: Boolean, onToggle: () -> Unit) {
     val shape = RoundedCornerShape(20.dp)
@@ -312,9 +314,10 @@ private fun StepsCard(steps: List<StoryStep>, live: Boolean, expanded: Boolean, 
         Row(
             Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(role = Role.Button, onClickLabel = if (expanded) "Collapses the steps" else "Shows the steps", onClick = onToggle).padding(horizontal = 18.dp)
                 .semantics { contentDescription = "${steps.size} steps" },
-            horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("${steps.size} STEP${if (steps.size == 1) "" else "S"}", style = NW.Typo.label, color = NW.Palette.textTertiary.color)
+            NWSoftTile("list.bullet", if (live) NW.Palette.teal else Rgba.hex(0x94A3B8), size = 26.dp)
+            Text("${steps.size} step${if (steps.size == 1) "" else "s"}", style = NW.Typo.bodyStrong, color = NW.Palette.textSecondary.color, modifier = Modifier.weight(1f))
             Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null, tint = NW.Palette.textTertiary.color, modifier = Modifier.size(20.dp))
         }
         if (expanded) {

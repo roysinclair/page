@@ -30,7 +30,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -59,7 +58,7 @@ fun NWDiffSheet(sessionId: String, title: String, onClose: () -> Unit, modifier:
                 Box(Modifier.size(48.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.09f)).clickable(role = Role.Button, onClickLabel = "Close", onClick = onClose), contentAlignment = Alignment.Center) {
                     Icon(Icons.Outlined.ExpandMore, "Close", tint = NW.Palette.textPrimary.color, modifier = Modifier.size(24.dp))
                 }
-                Text(title, style = NW.Typo.title.copy(fontFamily = FontFamily.Monospace), color = NW.Palette.textPrimary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(title, style = NW.Typo.title, color = NW.Palette.textPrimary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             NWChangesPanel(req?.answer?.let { ChangesModel.build(it) }, load, onRefresh = ::request, onCopy = { clip.setText(AnnotatedString(it)) })
         }

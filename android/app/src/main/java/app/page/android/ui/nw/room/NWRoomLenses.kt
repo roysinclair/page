@@ -78,6 +78,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import app.page.android.model.SectionTitle
 import androidx.compose.ui.unit.sp
 import app.page.android.data.AppGraph
 import app.page.android.model.AgentRoomModel
@@ -641,7 +642,7 @@ fun NWRoomWorkflowsLens(data: SessionRoomData, actions: SessionRoomActions, runI
                     horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(Modifier.size(8.dp).clip(CircleShape).background((if (r.isRunning) NW.Palette.teal else NW.Palette.textTertiary).color))
-                    Text(r.name, style = NW.Typo.monoSmall, color = (if (on) NW.Palette.textPrimary else NW.Palette.textSecondary).color, maxLines = 1)
+                    Text(r.name, style = NW.Typo.captionStrong, color = (if (on) NW.Palette.textPrimary else NW.Palette.textSecondary).color, maxLines = 1)
                 }
             }
         }
@@ -682,7 +683,7 @@ private fun WorkflowRunView(run: WorkflowRun, data: SessionRoomData, actions: Se
     NWGlassCard(radius = 28.dp, padding = PaddingValues(18.dp), tint = tint) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(run.name, style = NW.Typo.title.copy(fontFamily = FontFamily.Monospace), color = NW.Palette.textPrimary.color, maxLines = 2, modifier = Modifier.weight(1f).padding(end = 8.dp))
+                Text(run.name, style = NW.Typo.title, color = NW.Palette.textPrimary.color, maxLines = 2, modifier = Modifier.weight(1f).padding(end = 8.dp))
                 RunChip(track, clock, reduce)
             }
             // Its own line, clear of the chip, so a change of status never reflows the card.
@@ -708,7 +709,7 @@ private fun RunChip(track: WorkflowMotion.Track, clock: State<Double>, reduce: B
             horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically,
         ) {
             BreathingDot(c, 8.dp, o.isRunning && !reduce, clock)
-            Text(o.statusLabel.uppercase(), style = NW.Typo.label, color = c.color)
+            Text(SectionTitle.words(o.statusLabel), style = NW.Typo.captionStrong, color = c.color)
         }
     }
     Box(contentAlignment = Alignment.CenterEnd) {
@@ -726,7 +727,7 @@ private fun Agents(run: WorkflowRun, now: Instant, actions: SessionRoomActions, 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         for ((g, group) in groups.withIndex()) {
             val (title, agents) = group
-            Text("${title.uppercase()} · ${agents.size}", style = NW.Typo.label, color = NW.Palette.textQuiet.color, modifier = Modifier.padding(top = 4.dp).rowRise(clock, track.openedAt, firstRow[g], reduce))
+            Text("${SectionTitle.words(title)} · ${agents.size}", style = NW.Typo.captionStrong, color = NW.Palette.textTertiary.color, modifier = Modifier.padding(top = 4.dp).rowRise(clock, track.openedAt, firstRow[g], reduce))
             NWGlassCard(Modifier.cardRise(clock, track.openedAt, firstRow[g], reduce), radius = 20.dp, padding = PaddingValues(0.dp)) {
                 agents.forEachIndexed { i, a ->
                     val state = WorkflowOrbit.nodeState(a)
@@ -802,7 +803,7 @@ fun NWAgentRoomScreen(
                 val c = state.color
                 Row(Modifier.heightIn(min = 34.dp).clip(CircleShape).background(c.opacity(0.14).color).padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     BreathingDot(c, 8.dp, running && !reduce, clock)
-                    Text(when (state) { WorkflowOrbit.NodeState.RUNNING -> "RUNNING"; WorkflowOrbit.NodeState.DONE -> "DONE"; WorkflowOrbit.NodeState.FAILED -> "FAILED"; else -> "STOPPED" }, style = NW.Typo.label, color = c.color)
+                    Text(when (state) { WorkflowOrbit.NodeState.RUNNING -> "Running"; WorkflowOrbit.NodeState.DONE -> "Done"; WorkflowOrbit.NodeState.FAILED -> "Failed"; else -> "Stopped" }, style = NW.Typo.captionStrong, color = c.color)
                 }
             }
             val scroll = rememberScrollState()
@@ -816,7 +817,7 @@ fun NWAgentRoomScreen(
                             (if (at == null) Modifier else Modifier.rising(clock, at, reduce)).fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(NW.Palette.surface.mixed(NW.Palette.violet.opacity(1.0), 0.06).opacity(0.95).color).padding(16.dp).semantics(mergeDescendants = true) {},
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
-                            Text("TASK FROM THE WORKFLOW", style = NW.Typo.label, color = NW.Palette.violet.color)
+                            Text("Task from the workflow", style = NW.Typo.captionStrong, color = NW.Palette.violet.color)
                             SelectionContainer { Text(task, style = NW.Typo.subline, color = NW.Palette.textPrimary.color) }
                         }
                     }
@@ -857,7 +858,7 @@ private fun AgentBlock(b: StoryBlock) {
         }
         is StoryBlock.Marker -> Text(b.text, style = NW.Typo.caption, color = NW.Palette.textTertiary.color, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         is StoryBlock.User -> Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.White.copy(alpha = 0.045f)).padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("FROM THE WORKFLOW", style = NW.Typo.label, color = NW.Palette.violet.color)
+            Text("From the workflow", style = NW.Typo.captionStrong, color = NW.Palette.violet.color)
             SelectionContainer { Text(b.entry.text, style = NW.Typo.body, color = NW.Palette.textSecondary.color) }
         }
         else -> Unit

@@ -107,6 +107,8 @@ import app.page.android.ui.nw.components.NWBackdrop
 import app.page.android.ui.nw.components.NWButton
 import app.page.android.ui.nw.components.NWButtonKind
 import app.page.android.ui.nw.components.NWGlassCard
+import app.page.android.ui.nw.components.nwChromeGlass
+import app.page.android.ui.nw.components.nwGlassBubble
 import app.page.android.ui.nw.components.NWHoldSurface
 import app.page.android.ui.nw.components.nwIcon
 import app.page.android.ui.nw.theme.AuroraPalette
@@ -251,7 +253,7 @@ private fun TopBar(data: SessionRoomData, actions: SessionRoomActions, onHeld: (
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             NWAgentGlyph(data.character, 42.dp)
             Text(
-                data.session.title, style = NW.Typo.title.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace), color = NW.Palette.textPrimary.color,
+                data.session.title, style = NW.Typo.title.copy(fontSize = 20.sp, lineHeight = 25.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold), color = NW.Palette.textPrimary.color,
                 maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).semantics { heading() },
             )
         }
@@ -301,7 +303,8 @@ fun RoomChipView(chip: RoomChip) {
 
 @Composable
 private fun LensBar(data: SessionRoomData, lens: RoomLens, onLens: (RoomLens) -> Unit) = app.page.android.ui.nw.shell.NWCappedFontScale(1.15f) {
-    NWGlassCard(Modifier.padding(horizontal = NW.Space.lg).padding(top = 18.dp, bottom = 6.dp), radius = 22.dp, padding = androidx.compose.foundation.layout.PaddingValues(4.dp)) {
+    // The lenses are the room's tabs: chrome, so glass (smoke, a lit rim), with the selected one in a bubble.
+    Box(Modifier.padding(horizontal = NW.Space.lg).padding(top = 18.dp, bottom = 6.dp).fillMaxWidth().nwChromeGlass(22.dp).padding(4.dp)) {
         // At big system font sizes four tabs and their badges cannot share the width: the bar scrolls instead of clipping.
         val scrolling = androidx.compose.ui.platform.LocalConfiguration.current.fontScale > 1.3f
         Row(if (scrolling) Modifier.horizontalScroll(rememberScrollState()) else Modifier, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -309,13 +312,13 @@ private fun LensBar(data: SessionRoomData, lens: RoomLens, onLens: (RoomLens) ->
                 val on = l == lens
                 val badge = data.badges[l]
                 Row(
-                    (if (scrolling) Modifier else Modifier.weight(1f)).heightIn(min = 48.dp).clip(RoundedCornerShape(16.dp)).background(if (on) Color.White.copy(alpha = 0.13f) else Color.Transparent)
+                    (if (scrolling) Modifier else Modifier.weight(1f)).heightIn(min = 48.dp).then(if (on) Modifier.nwGlassBubble(18.dp) else Modifier).clip(RoundedCornerShape(18.dp))
                         .clickable(role = Role.Tab) { onLens(l) }
                         .semantics { selected = on; contentDescription = l.title + (badge?.let { ", $it" } ?: "") }
                         .padding(horizontal = if (scrolling) 14.dp else 0.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(l.title, style = NW.Typo.bodyStrong.copy(fontSize = 14.sp, fontWeight = if (on) androidx.compose.ui.text.font.FontWeight.SemiBold else androidx.compose.ui.text.font.FontWeight.Medium), color = (if (on) NW.Palette.textPrimary else NW.Palette.textTertiary).color, maxLines = 1)
+                    Text(l.title, style = NW.Typo.bodyStrong.copy(fontSize = 14.sp, fontWeight = if (on) androidx.compose.ui.text.font.FontWeight.SemiBold else androidx.compose.ui.text.font.FontWeight.Medium), color = (if (on) NW.Palette.textPrimary else Rgba(1.0, 1.0, 1.0, 0.78)).color, maxLines = 1)
                     if (badge != null) Text("$badge", style = NW.Typo.captionStrong.copy(fontSize = 11.sp), color = NW.Palette.teal.color, modifier = Modifier.clip(CircleShape).background(NW.Palette.teal.opacity(0.18).color).padding(horizontal = 5.dp, vertical = 1.dp))
                 }
             }

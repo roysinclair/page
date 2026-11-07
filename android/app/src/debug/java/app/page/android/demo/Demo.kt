@@ -95,11 +95,11 @@ object Demo {
         "motion-inflight-enter", "motion-inflight-advance", "motion-inflight-complete", "motion-inflight-vanish", "motion-inflight-stuck",
         "motion-now-enter", "motion-now-enter-review", "motion-now-change", "motion-now-change-settled", "motion-now-quiet",
         "history", "history-stats", "history-empty", "history-loading", "history-failed", "history-large", "history-stats-large",
-        "gallery-lower",
+        "gallery-lower", "depth", "depth-lower",
     )
 
     /** Screens drawn outside the shell (components on their own). */
-    private fun isStandalone(screen: String) = screen in setOf("gallery", "gallery-lower", "glow-compare", "runway", "settled", "widgets") || screen.startsWith("room-") || screen.startsWith("ask-") || isUnpaired(screen) || DemoMotion.isStandalone(screen)
+    private fun isStandalone(screen: String) = screen in setOf("gallery", "gallery-lower", "depth", "depth-lower", "glow-compare", "runway", "settled", "widgets") || screen.startsWith("room-") || screen.startsWith("ask-") || isUnpaired(screen) || DemoMotion.isStandalone(screen)
 
     /** Screens with no Mac paired (the first-run flow). */
     private fun isUnpaired(screen: String) = screen.startsWith("welcome") || screen.startsWith("scan") || screen.startsWith("pair") || screen == "paired" || screen == "paired-denied"
@@ -416,6 +416,8 @@ object Demo {
         "motion-hold", "motion-hold-burst" -> ({ DemoMotion.Hold(screen, DemoMotion.time(screen, time)) })
         "gallery" -> ({ DemoGallery() })
         "gallery-lower" -> ({ DemoGallery(lower = true) })
+        "depth" -> ({ DemoDepth() })
+        "depth-lower" -> ({ DemoDepth(lower = true) })
         "glow-compare" -> ({ DemoGlowCompare() })
         "runway" -> ({ DemoRunway() })
         "settled" -> ({ DemoSettled() })

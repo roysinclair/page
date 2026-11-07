@@ -10,6 +10,21 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.graphics.Color
+import app.page.android.ui.nw.components.NWCountBadge
+import app.page.android.ui.nw.components.NWIconTile
+import app.page.android.ui.nw.components.NWJewel
+import app.page.android.ui.nw.components.NWSoftTile
+import app.page.android.ui.nw.components.nwChromeGlass
+import app.page.android.ui.nw.components.nwDesk
+import app.page.android.ui.nw.components.nwGlass
+import app.page.android.ui.nw.components.nwGlassBubble
+import app.page.android.ui.nw.components.nwHueBand
+import app.page.android.ui.nw.components.nwInstrumentGlass
+import app.page.android.ui.nw.components.nwJewelSurface
+import app.page.android.ui.nw.components.symbol
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -167,6 +182,101 @@ fun DemoSettled() {
             item { NWSectionHeader("Settled", NW.Palette.textTertiary) }
             for (l in log.today) item { Row(Modifier.fillMaxWidth()) { Text(l.text, style = NW.Typo.body, color = NW.Palette.textSecondary.color, modifier = Modifier.weight(1f)); Text(listOfNotNull(l.age, l.status).joinToString(" · "), style = NW.Typo.caption, color = NW.Palette.textTertiary.color) } }
             for (d in log.days) item { NWGlassCard { Text(d.headline, style = NW.Typo.bodyStrong, color = NW.Palette.textPrimary.color) } }
+        }
+    }
+}
+
+/**
+ * The v5 depth foundation on its own: every jewel with its chip, the white and glass buttons and the hold button on it, the
+ * hue band over a session body, the raised glass (plain, amber, teal), icon and soft tiles, count badges, the button kinds, the
+ * desk with the Runway's instrument glass on it, and chrome glass with its bubble. `depth` is the top, `depth-lower` the rest.
+ */
+@Composable
+fun DemoDepth(lower: Boolean = false) {
+    val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    Box(Modifier.fillMaxSize()) {
+        NWBackdrop()
+        LazyColumn(
+            state = androidx.compose.foundation.lazy.rememberLazyListState(if (lower) 6 else 0),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = top + 12.dp, bottom = 60.dp), verticalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            val chips = listOf(
+                ChipKind.IRREVERSIBLE to "Delete every Dev build?", ChipKind.CONSIDERED to "Install the new CLI?", ChipKind.UNDOABLE to "page: swift test",
+                ChipKind.QUESTION to "Which branch?", ChipKind.REVIEW to "bottle-flip finished",
+            )
+            for ((chip, ask) in chips) item {
+                Column(Modifier.fillMaxWidth().nwJewelSurface(NWJewel.of(chip), lift = 1.25).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        NWChip(chip, pill = true, onJewel = true)
+                        Text("bottle-flip", style = NW.Typo.name, color = Color.White, modifier = Modifier.weight(1f))
+                        Text("4m", style = NW.Typo.meta, color = Color.White.copy(alpha = 0.88f))
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        NWIconTile(chip.symbol, NWJewel.of(chip), size = 44.dp, glass = true)
+                        Text(ask, style = NW.Typo.headline, color = Color.White)
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        NWButton("Deny", {}, Modifier.weight(1f), kind = NWButtonKind.GLASS)
+                        if (chip == ChipKind.IRREVERSIBLE) NWHoldButton({}, Modifier.weight(1f), label = "Hold to approve", fixedProgress = 0.4, onJewel = true)
+                        else NWButton("Approve", {}, Modifier.weight(1f), kind = NWButtonKind.WHITE)
+                    }
+                }
+            }
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    for (h in ProjectHue.entries) Box(Modifier.size(44.dp).nwJewelSurface(NWJewel.of(h), radius = 14.dp, lift = 0.7))
+                }
+            }
+            item {
+                Column(Modifier.fillMaxWidth().nwGlass(tint = NW.Palette.amber, fill = NW.Palette.surfaceRaised.opacity(0.96))) {
+                    Row(Modifier.fillMaxWidth().nwHueBand(NWJewel.violet).padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        NWIconTile("sparkles", NWJewel.violet, size = 36.dp, glass = true)
+                        Text("llm-play", style = NW.Typo.nameLarge, color = Color.White)
+                    }
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        for ((sym, tint, text) in listOf(Triple("waveform", NW.Palette.teal, "Running cargo test"), Triple("clock.fill", NW.Palette.sky, "working 41m"), Triple("heart.fill", NW.Palette.green, "Normal"))) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                NWSoftTile(sym, tint, size = 32.dp)
+                                Text(text, style = NW.Typo.activity, color = NW.Palette.textPrimary.color)
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            NWButton("Open", {}, Modifier.weight(1f))
+                            NWButton("Steer", {}, Modifier.weight(1f), kind = NWButtonKind.SOFT)
+                        }
+                    }
+                }
+            }
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    for ((s, j) in listOf("hand.raised.fill" to NWJewel.amber, "eye.fill" to NWJewel.amber, "checkmark.seal.fill" to NWJewel.teal, "airplane" to NWJewel.teal, "bolt.fill" to NWJewel.green, "paintpalette.fill" to NWJewel.violet, "info.circle.fill" to NWJewel.indigo, "square.grid.2x2.fill" to NWJewel.plum)) {
+                        NWIconTile(s, j, size = 30.dp)
+                    }
+                }
+            }
+            item { NWSectionHeader("IN FLIGHT", NW.Palette.teal, count = 5, symbol = "airplane", trailing = { Text("Lanes ›", style = NW.Typo.meta, color = NW.Palette.textSecondary.color) }) }
+            item { Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { NWCountBadge(2, NW.Palette.amber); NWCountBadge(5, NW.Palette.teal); NWCountBadge(12, NW.Palette.sky) } }
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    NWButton("Quiet", {}, Modifier.weight(1f)); NWButton("Bright", {}, Modifier.weight(1f), kind = NWButtonKind.BRIGHT)
+                    NWButton("Amber", {}, Modifier.weight(1f), kind = NWButtonKind.AMBER); NWButton("Danger", {}, Modifier.weight(1f), kind = NWButtonKind.DANGER)
+                }
+            }
+            item {
+                Box(Modifier.fillMaxWidth().height(260.dp)) {
+                    Box(Modifier.fillMaxWidth().padding(top = 58.dp).fillMaxHeight().nwDesk(NW.Palette.amber))
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp).nwInstrumentGlass(NW.Palette.amber).padding(18.dp)) {
+                        Text("Runway clear till 02:40", style = NW.Typo.activity, color = NW.Palette.textPrimary.color)
+                        Box(Modifier.size(1.dp, 40.dp))
+                    }
+                }
+            }
+            item {
+                Row(Modifier.fillMaxWidth().height(60.dp).nwChromeGlass().padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.weight(1f).fillMaxHeight().nwGlassBubble(), contentAlignment = Alignment.Center) { Text("Now", style = NW.Typo.button, color = NW.Palette.textPrimary.color) }
+                    Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) { Text("Lanes", style = NW.Typo.button, color = Color.White.copy(alpha = 0.78f)) }
+                }
+            }
         }
     }
 }

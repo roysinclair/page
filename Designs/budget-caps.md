@@ -166,8 +166,16 @@ Let `W` be the weekly % now, `C` the total `spent` of all sessions this window, 
    project=<absolute key, or empty>
    session=<session id, or empty>
    expires=<unix seconds: the window's reset>
+   member=<session id>      any number: the ledger's sessions of this project
+   spare=<session id>       any number: the ledger's sessions of other projects
+   exclude=<absolute key>   any number: known projects nested inside this one
    stop=<the complete, pre-escaped JSON line the hook prints>
    ```
+
+   The last three are only on a project's marker, and are rewritten as the ledger learns
+   sessions and projects. They exist because projects nest: Claude Code run from `~/projects`
+   is its own project, the parent of `~/projects/page`. A budget on `~/projects` must stop
+   only the sessions that are its own, wherever they have cd'd, and never `~/projects/page`.
 
    A key with a newline gets no marker. Both files are written atomically (the `.gate` last) and
    removed together (the `.gate` first). The markers, the pages open for them, the sessions Page
@@ -179,7 +187,9 @@ Let `W` be the weekly % now, `C` the total `spent` of all sessions this window, 
    phone's Stop path (`ClaudeBackend.remoteInterrupt`, the one `stopFromStuckPage` uses), once per
    marker: the gate stops their later turns, and Terminal.app, which can't take Esc, would
    otherwise be retried every pass. The marker is in place before the Esc. A project marker covers
-   a session whose ledger key is the project, or whose folder is inside it (the gate's rule).
+   a session whose ledger key is the project. A session the ledger hasn't seen yet is covered
+   when its folder is inside the project but not inside a known nested project (the gate's rule,
+   `BudgetGate.projectCovers`).
 3. **Gate.** `hooks/page-budget-gate.sh` is a new PreToolUse entry, matcher `*`,
    non-blocking, timeout 5 s, installed by `HookInstaller` (Claude only; paged on Linux leaves it out
    until `install-linux.sh` ships the script). It is pure bash, runs under macOS `/bin/bash` 3.2, has no
@@ -189,9 +199,11 @@ Let `W` be the weekly % now, `C` the total `spent` of all sessions this window, 
    - It reads the start of stdin (16 KB) and takes the first `session_id` and `cwd` strings, so text inside
      a tool's input that looks like those keys is never used. (Deviation: bash parameter expansion rather than
      `sed`, because a `sed` with a leading `.*` takes the last occurrence.) A `cwd` with a backslash is allowed.
-   - A marker matches when its `session` equals `session_id`, or when it has no `session`
-     and `cwd` is the marker's `project` or lies inside it, at a path boundary (`/x/proj` is not `/x/proj2`).
-     The `cwd` is also tried as `pwd -P` says it, since the key has its symlinks resolved.
+   - A marker matches when its `session` equals `session_id`. A project marker (no `session`)
+     matches a `member` wherever its `cwd` is, never a `spare`, and otherwise a call whose `cwd` is the
+     marker's `project` or lies inside it, at a path boundary (`/x/proj` is not `/x/proj2`), but not
+     inside an `exclude`. The `cwd` is also tried as `pwd -P` says it, since the key has its symlinks
+     resolved.
    - Expired markers (`expires` < now) and malformed `.gate` files are ignored.
    - When a marker matches and the session has no allow file (`budget-allow/<session id>`, step 5), it prints
      the `stop` line:

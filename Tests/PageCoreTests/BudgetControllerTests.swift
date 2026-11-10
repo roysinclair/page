@@ -138,14 +138,16 @@ final class BudgetControllerTests: XCTestCase {
         XCTAssertEqual(files.markerHashes(), [h])
         let gate = try String(contentsOf: files.overDirectory.appendingPathComponent(h + ".gate"), encoding: .utf8)
         let lines = gate.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
-        XCTAssertEqual(lines.count, 5, "four key=value lines and a trailing newline: \(lines)")
+        XCTAssertEqual(lines.count, 7, "three key=value lines, the two members, the stop line and a trailing newline: \(lines)")
         XCTAssertEqual(lines[0], "project=\(project)")
         XCTAssertEqual(lines[1], "session=")
         XCTAssertEqual(lines[2], "expires=\(window)")
-        XCTAssertTrue(lines[3].hasPrefix("stop={\"continue\":false,\"stopReason\":\"Page: \(projectName) reached its budget (25% of the week). "
-                                        + "Raise it in Page, or wait for the reset on "), lines[3])
-        XCTAssertEqual(lines[4], "")
-        let stopJSON = try JSONSerialization.jsonObject(with: Data(lines[3].dropFirst("stop=".count).utf8)) as? [String: Any]
+        XCTAssertEqual(lines[3], "member=s1", "the ledger's sessions of this project, stopped wherever they cd")
+        XCTAssertEqual(lines[4], "member=s4")
+        XCTAssertTrue(lines[5].hasPrefix("stop={\"continue\":false,\"stopReason\":\"Page: \(projectName) reached its budget (25% of the week). "
+                                        + "Raise it in Page, or wait for the reset on "), lines[5])
+        XCTAssertEqual(lines[6], "")
+        let stopJSON = try JSONSerialization.jsonObject(with: Data(lines[5].dropFirst("stop=".count).utf8)) as? [String: Any]
         XCTAssertEqual(stopJSON?["continue"] as? Bool, false)
 
         let marker = try JSONSerialization.jsonObject(with: Data(contentsOf: files.overDirectory.appendingPathComponent(h + ".json"))) as? [String: Any]
@@ -158,6 +160,40 @@ final class BudgetControllerTests: XCTestCase {
 
         XCTAssertEqual(c.openPageIds, [stopId])
         XCTAssertEqual(c.state.markers[h]?.affected, ["s1", "s4"])
+    }
+
+    /// A budget on a parent folder (~/projects) must not stop the projects nested in it
+    /// (~/projects/page): only the sessions that are the parent's own, wherever they have cd'd.
+    func testABudgetOnAParentFolderLeavesNestedProjectsAlone() throws {
+        let parent = "/budgettest-no-such-folder/p", child = "/budgettest-no-such-folder/p/page"
+        let c = ctl()
+        let budget = config(projects: [parent: 25])
+        let liveNow = [live("A", busy: true, cwd: child),            // the parent's, cd'd into page
+                       live("B", busy: true, cwd: child),            // page's own
+                       live("C", busy: true, cwd: child + "/src")]   // not seen yet, inside page
+        writeStatus("A", cwd: parent, cost: 0, week: 10, at: t0)
+        writeStatus("B", cwd: child, cost: 0, week: 10, at: t0)
+        c.refresh(now: t0, budget: budget, captureOn: true, live: liveNow)
+        writeStatus("A", cwd: parent, cost: 30, week: 40, at: t0.addingTimeInterval(60))
+        writeStatus("B", cwd: child, cost: 1, week: 40, at: t0.addingTimeInterval(60))
+        let effects = c.refresh(now: t0.addingTimeInterval(60), budget: budget, captureOn: true, live: liveNow)
+        XCTAssertTrue(effects.contains(.interrupt(sessionIds: ["A"])), "\(effects)")
+        let stopped = effects.flatMap { e -> [String] in if case .interrupt(let ids) = e { return ids }; return [] }
+        XCTAssertEqual(stopped, ["A"], "page's sessions keep working")
+        let gate = try String(contentsOf: files.overDirectory.appendingPathComponent(BudgetHash.project(parent) + ".gate"), encoding: .utf8)
+        XCTAssertTrue(gate.contains("\nmember=A\n"), gate)
+        XCTAssertTrue(gate.contains("\nspare=B\n"), gate)
+        XCTAssertTrue(gate.contains("\nexclude=\(child)\n"), gate)
+    }
+
+    func testProjectCoversPrefersTheLedgerAndSkipsNestedProjects() {
+        let ex = ["/p/page"]
+        XCTAssertTrue(BudgetGate.projectCovers(key: "/p", cwd: "/p/page", ledgerKey: "/p", excludes: ex), "a member, wherever it is")
+        XCTAssertFalse(BudgetGate.projectCovers(key: "/p", cwd: "/p", ledgerKey: "/p/page", excludes: ex), "another project's session")
+        XCTAssertFalse(BudgetGate.projectCovers(key: "/p", cwd: "/p/page/src", ledgerKey: nil, excludes: ex), "unknown, in a nested project")
+        XCTAssertTrue(BudgetGate.projectCovers(key: "/p", cwd: "/p/other", ledgerKey: nil, excludes: ex), "unknown, in the project")
+        XCTAssertTrue(BudgetGate.projectCovers(key: "/p", cwd: "/p/pagex", ledgerKey: nil, excludes: ex), "a path boundary, not a prefix")
+        XCTAssertFalse(BudgetGate.projectCovers(key: "/p", cwd: nil, ledgerKey: nil, excludes: ex))
     }
 
     func testTheSameOverBudgetIsNotInterruptedAgain() {

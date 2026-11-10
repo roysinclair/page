@@ -675,10 +675,29 @@ enum BudgetGate {
 
     /// The `.gate` file's text: `project`, `session`, `expires` (unix seconds) and `stop`.
     /// nil when a key has a newline (it would break the format).
-    static func gateFile(project: String?, session: String?, expires: Int, stopLine: String) -> String? {
+    ///
+    /// A project's file also says which sessions Page knows belong to it (`member=`, stopped
+    /// wherever they have cd'd), which it knows belong elsewhere (`spare=`, never stopped by
+    /// it), and the known projects nested inside it (`exclude=`): a budget on ~/projects must
+    /// not stop ~/projects/page. Only a session Page hasn't seen yet goes by its folder.
+    static func gateFile(project: String?, session: String?, expires: Int, stopLine: String,
+                         members: [String] = [], spares: [String] = [], excludes: [String] = []) -> String? {
         for v in [project, session].compactMap({ $0 }) where v.contains("\n") || v.contains("\r") { return nil }
         guard !stopLine.contains("\n"), !stopLine.contains("\r") else { return nil }
-        return "project=\(project ?? "")\nsession=\(session ?? "")\nexpires=\(expires)\nstop=\(stopLine)\n"
+        var out = "project=\(project ?? "")\nsession=\(session ?? "")\nexpires=\(expires)\n"
+        for m in members where BudgetProjectKey.isSaneSessionId(m) { out += "member=\(m)\n" }
+        for s in spares where BudgetProjectKey.isSaneSessionId(s) { out += "spare=\(s)\n" }
+        for e in excludes where e.hasPrefix("/") && e.count > 1 && !e.contains("\n") && !e.contains("\r") { out += "exclude=\(e)\n" }
+        return out + "stop=\(stopLine)\n"
+    }
+
+    /// Whether a project's budget covers a session (the gate's rule, in Swift). Page's own record
+    /// decides when it has one; otherwise the folder, unless it lies in a known project nested
+    /// inside this one.
+    static func projectCovers(key: String, cwd: String?, ledgerKey: String?, excludes: [String]) -> Bool {
+        if let ledgerKey { return ledgerKey == key }
+        guard let cwd, covers(project: key, cwd: cwd) else { return false }
+        return !excludes.contains { covers(project: $0, cwd: cwd) }
     }
 
     /// The `.json` marker (Designs/budget-caps.md §4).

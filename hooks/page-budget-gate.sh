@@ -19,12 +19,17 @@
 #   budget-over/<hash>.gate   key=value lines written by Page Studio:
 #       project=<absolute folder, or empty>   session=<session id, or empty>
 #       expires=<unix seconds>                stop=<the JSON line to print>
+#       member=<session id>   (any number) a session Page knows is this project's
+#       spare=<session id>    (any number) a session Page knows is another project's
+#       exclude=<folder>      (any number) a known project nested inside this one
 #   budget-allow/<session id> exists while that session may finish one turn
 #
-# A marker matches when its session equals the call's session_id, or when it has
-# no session and the call's cwd is the project or inside it (/x/proj does not
-# match /x/proj2). Typed prompts are not blocked: the turn they start stops at
-# its first tool call.
+# A marker matches when its session equals the call's session_id. A project's
+# marker matches its members wherever they have cd'd, never its spares, and
+# otherwise a call whose cwd is the project or inside it (/x/proj does not match
+# /x/proj2) but not inside an excluded nested project: a budget on ~/projects
+# never stops ~/projects/page. Typed prompts are not blocked: the turn they
+# start stops at its first tool call.
 #
 # Installed by Page Studio > Integrations > "Install agent hooks…" (a PreToolUse
 # entry, matcher "*", timeout 5). Written for macOS /bin/bash 3.2: no associative
@@ -134,13 +139,18 @@ inside() {
 
 for gate in "$OVER"/*.gate; do
     [ -f "$gate" ] || continue
-    project=""; session=""; expires=""; stop=""
+    project=""; session=""; expires=""; stop=""; member=""; spare=""; excluded=""
     while IFS= read -r line || [ -n "$line" ]; do
         case "$line" in
             project=*) project="${line#project=}" ;;
             session=*) session="${line#session=}" ;;
             expires=*) expires="${line#expires=}" ;;
             stop=*) stop="${line#stop=}" ;;
+            member=*) [ -n "$SID" ] && [ "${line#member=}" = "$SID" ] && member=1 ;;
+            spare=*) [ -n "$SID" ] && [ "${line#spare=}" = "$SID" ] && spare=1 ;;
+            exclude=/?*)
+                ex="${line#exclude=}"
+                if inside "$CWD" "$ex" || inside "$CWD_REAL" "$ex"; then excluded=1; fi ;;
         esac
     done 2>/dev/null < "$gate"
     [ -n "$stop" ] || continue
@@ -150,7 +160,11 @@ for gate in "$OVER"/*.gate; do
         [ -n "$SID" ] && [ "$session" = "$SID" ] || continue
     else
         [ -n "$project" ] || continue
-        inside "$CWD" "$project" || inside "$CWD_REAL" "$project" || continue
+        if [ -z "$member" ]; then
+            [ -n "$spare" ] && continue
+            [ -n "$excluded" ] && continue
+            inside "$CWD" "$project" || inside "$CWD_REAL" "$project" || continue
+        fi
     fi
     printf '%s\n' "$stop"
     exit 0

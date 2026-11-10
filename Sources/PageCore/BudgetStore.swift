@@ -103,6 +103,11 @@ struct BudgetFiles {
             && Self.write(Data(gate.utf8), to: overDirectory.appendingPathComponent(hash + ".gate"))
     }
 
+    /// A marker's `.gate` text as written, or nil.
+    func gateText(hash: String) -> String? {
+        try? String(contentsOf: overDirectory.appendingPathComponent(hash + ".gate"), encoding: .utf8)
+    }
+
     /// Removes both files together, the gate first (the hook stops matching at once).
     func removeMarker(hash: String) {
         try? FileManager.default.removeItem(at: overDirectory.appendingPathComponent(hash + ".gate"))

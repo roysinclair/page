@@ -180,13 +180,21 @@ final class BudgetController {
     }
 
     /// The running sessions a target covers: by session id, or by project (the
-    /// ledger's key, or a folder inside it: the gate's rule).
+    /// ledger's key when it has one, else a folder inside it but outside the known
+    /// projects nested in it: the gate's rule).
     private func covered(_ t: Target, live: [BudgetLiveSession]) -> [BudgetLiveSession] {
         if let sid = t.session { return live.filter { $0.sessionId == sid } }
         guard let key = t.project else { return [] }
+        let excludes = nested(in: key)
         return live.filter { s in
-            ledger.sessions[s.sessionId]?.projectKey == key || (s.cwd.map { BudgetGate.covers(project: key, cwd: $0) } ?? false)
+            BudgetGate.projectCovers(key: key, cwd: s.cwd, ledgerKey: ledger.sessions[s.sessionId]?.projectKey, excludes: excludes)
         }
+    }
+
+    /// The known projects strictly inside `key` (sessions this window, budgets, names).
+    private func nested(in key: String) -> [String] {
+        let known = Set(ledger.sessions.values.map(\.projectKey)).union(status.projects.map(\.key)).union(ledger.names.keys)
+        return known.filter { $0 != key && BudgetGate.covers(project: key, cwd: $0) }.sorted()
     }
 
     private func targets() -> [String: Target] {
@@ -217,6 +225,7 @@ final class BudgetController {
         for (h, t) in all where t.state == .over {
             if var m = state.markers[h] {
                 let rewrite = m.cap != t.cap || m.window != window || abs(m.used - t.used) >= 0.5 || !files.markerExists(hash: h)
+                    || files.gateText(hash: h) != gateText(t, window: window)
                 m.cap = t.cap; m.used = t.used; m.window = window
                 for s in covered(t, live: live) where s.busy && !m.affected.contains(s.sessionId) { m.affected.append(s.sessionId) }
                 if rewrite { _ = writeMarker(t, window: window) }
@@ -293,11 +302,23 @@ final class BudgetController {
         return effects
     }
 
-    private func writeMarker(_ t: Target, window: Int) -> Bool {
+    /// The `.gate` text for a target: for a project, with its members, the sessions known to be
+    /// elsewhere, and the projects nested in it.
+    private func gateText(_ t: Target, window: Int) -> String? {
         let reason = BudgetGate.stopReason(subject: t.session != nil ? "this session" : t.name, cap: t.cap,
                                            resetsAt: Date(timeIntervalSince1970: TimeInterval(window)), timeZone: timeZone)
-        guard let gate = BudgetGate.gateFile(project: t.project, session: t.session, expires: window,
-                                             stopLine: BudgetGate.stopLine(reason: reason)) else { return false }
+        var members: [String] = [], spares: [String] = [], excludes: [String] = []
+        if let key = t.project, t.session == nil {
+            for (sid, s) in ledger.sessions { if s.projectKey == key { members.append(sid) } else { spares.append(sid) } }
+            members.sort(); spares.sort()
+            excludes = nested(in: key)
+        }
+        return BudgetGate.gateFile(project: t.project, session: t.session, expires: window, stopLine: BudgetGate.stopLine(reason: reason),
+                                   members: members, spares: spares, excludes: excludes)
+    }
+
+    private func writeMarker(_ t: Target, window: Int) -> Bool {
+        guard let gate = gateText(t, window: window) else { return false }
         let json = BudgetGate.markerJSON(project: t.project, session: t.session, name: t.name, cap: t.cap, used: t.used, expiresAt: window)
         return files.writeMarker(hash: t.hash, json: json, gate: gate)
     }

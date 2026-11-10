@@ -18,6 +18,7 @@ const moments = [
   { p: 'power', kind: 'Approval', when: 'A tool call or plan from Claude Code is waiting for your OK.', act: 'Approve · Deny · Deny with instructions' },
   { p: 'power', kind: 'Looks stuck', when: 'The same command failed three times in a row, or nothing was written for 15 minutes.', act: 'Steer · Stop it' },
   { p: 'power', kind: 'Low battery', when: 'Your agents were paused at your cutoff, each with a two-line summary.', act: 'Carry on · stay paused' },
+  { p: 'power', kind: 'Budget reached', when: 'A project used its share of your weekly Claude limit, so its sessions were stopped.', act: 'Raise the budget · Let this turn finish' },
   { p: 'aura', kind: 'Tool request', when: 'A chat asks to use an app on your computer (a local MCP tool).', act: 'Allow once · Deny' },
   { p: 'aura', kind: 'Reply ready', when: 'A reply finished while you were away from your computer.', act: 'Read the end · send a message' },
   { p: 'orbit', kind: 'Approval', when: 'An agent wants to run a command or use a tool that asks first.', act: 'Allow once · Deny' },

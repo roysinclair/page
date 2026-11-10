@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Project budgets</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .win { left: 372px; top: 40px; width: 590px; border-radius: 6.4px; }
+  .card { left: 336px; top: 262px; width: 194px; border-radius: 13px; box-shadow: 0 26px 60px rgba(0,0,0,.72), 0 0 0 .5px rgba(255,255,255,.1); }
+  .copy p { max-width: 268px; text-wrap: pretty; }
+</style></head>
+<body><div class="canvas feat">
+  <div class="sky" data-seed="61"></div>
+  <div class="aurora" data-blobs="55,-30,60,70,amber,.20,70; 85,10,40,60,teal,.24,70; 10,60,50,60,sky,.12,90"></div>
+  <div class="copy" style="--cw:280px">
+    <span class="eyebrow"><span class="pulse amber" style="--s:18px"><b></b></span>Budgets</span>
+    <h2 class="headline">A share of the week, <em>per project.</em></h2>
+    <p class="caption">Give a project, or one session, its share of your weekly Claude limit. Page warns at 80% and stops it at 100%, so a runaway can't eat the week your important work needs.</p>
+    <div class="chips">
+      <span class="chip"><span class="dot"></span>Page Studio</span>
+      <span class="chip"><span class="dot" style="background:var(--amber);box-shadow:0 0 8px var(--amber)"></span>Menu bar</span>
+      <span class="chip"><span class="dot" style="background:var(--sky);box-shadow:0 0 8px var(--sky)"></span>Phone</span>
+    </div>
+  </div>
+  <div class="render win shadowed fade-bottom"><img src="assets/mac-tower-budget.webp" alt=""></div>
+  <div class="render card"><img src="assets/mac-popover-budget.webp" alt=""></div>
+</div><script src="sky.js"></script></body></html>

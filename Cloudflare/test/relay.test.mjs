@@ -596,6 +596,11 @@ test("v4 subtypes get their own push wording", async () => {
   assert.equal(bodyForPush({ ...base, kind: "rate_limit", subtype: "battery_forecast", context: "Battery 18%" }), "Battery 18%");
   assert.equal(bodyForPush({ ...base, kind: "rate_limit", context: "resets 5pm" }), "Rate-limited: resets 5pm");
   assert.equal(bodyForPush({ ...base, kind: "idle", subtype: "workflow_stalled", context: "" }), "A workflow stopped making progress");
+  // Budget pages are kind rate_limit, but they aren't a rate limit: no "Rate-limited:" prefix.
+  const reached = "payments-api reached its budget: about 26% of the week (budget 25%). Page stopped 2 sessions.";
+  assert.equal(bodyForPush({ ...base, kind: "rate_limit", subtype: "budget_reached", context: reached }), reached);
+  assert.equal(bodyForPush({ ...base, kind: "rate_limit", subtype: "budget_warning", context: "" }), "A project is near its budget");
+  assert.equal(bodyForPush({ ...base, kind: "rate_limit", subtype: "budget_reached", context: "" }), "A project reached its budget");
 });
 
 test("webSocketClose reciprocates and announces the computer going offline", async () => {

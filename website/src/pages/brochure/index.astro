@@ -84,7 +84,7 @@ const pTower = img('iphone-tower');
             <div class="thumb"><img src={tMac.src} width={tMac.w} height={tMac.h} alt="" /></div>
             <p class="mono tag">Menu-bar app</p>
             <h3>Page Studio for Mac</h3>
-            <p>Page Power keeps the Mac awake while agents work and pauses them at your cutoff; Page Relay pages your phone, forecasts battery and usage, and types replies into Terminal.app, iTerm2, tmux, cmux, WezTerm, kitty, Herdr and Claude Squad.</p>
+            <p>Page Power keeps the Mac awake while agents work and pauses them at your cutoff; Page Relay pages your phone, forecasts battery and usage, holds each project to its budget, and types replies into Terminal.app, iTerm2, tmux, cmux, WezTerm, kitty, Herdr and Claude Squad.</p>
           </article>
           <article class="card tone-amber">
             <div class="thumb"><img src={tPhones.src} width={tPhones.w} height={tPhones.h} alt="" /></div>
@@ -314,6 +314,7 @@ const pTower = img('iphone-tower');
 
   /* moments */
   .kinds { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 1.4); }
+  .kinds > .k:last-child:nth-child(odd) { grid-column: 1 / -1; }
   .kinds .k { padding: calc(var(--u) * 1.4) calc(var(--u) * 1.6); }
   .kinds .k p { font-size: calc(var(--u) * 1.65); line-height: 1.4; }
   .kinds .ktag { margin-bottom: calc(var(--u) * .4); }

@@ -24,6 +24,8 @@ export const jobs = [
   { name: 'feature-widgets', html: 'feature-widgets.html', w: 800, h: 500, dpr: 2 },
   { name: 'feature-relay', html: 'feature-relay.html', w: 800, h: 500, dpr: 2 },
   { name: 'feature-aura', html: 'feature-aura.html', w: 800, h: 500, dpr: 2 },
+  { name: 'feature-budgets', html: 'feature-budgets.html', w: 800, h: 500, dpr: 2 },
+  { name: 'feature-budget-stop', html: 'feature-budget-stop.html', w: 800, h: 500, dpr: 2 },
   { name: 'family', html: 'family.html', w: 1200, h: 750, dpr: 2 },        // 2400x1500
   { name: 'screen-lock', html: 'screen-lock.html', w: 782, h: 1690, dpr: 1 }, // the website's power/lock (website/scripts/product-shots.py)
 ];

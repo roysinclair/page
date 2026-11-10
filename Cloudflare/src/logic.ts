@@ -838,6 +838,9 @@ export function bodyForPush(iv: Intervention): string {
     case "workflow_stalled": return trimmed || "A workflow stopped making progress";
     case "battery_forecast": return trimmed || "Battery cutoff soon";
     case "usage_forecast":   return trimmed || "Claude usage limit soon";
+    // Budget caps: the Mac's text names the project and the numbers ("… reached its budget: about 26% …").
+    case "budget_warning":   return trimmed || "A project is near its budget";
+    case "budget_reached":   return trimmed || "A project reached its budget";
   }
   switch (iv.kind) {
     case "permission":

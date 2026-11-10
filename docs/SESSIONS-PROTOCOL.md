@@ -149,7 +149,8 @@ When it changes, the phone resets its `seq` tracking.
   until the turn ends"). `retract-v1`: the `retract` op ("Taking a message
   back"). `images-v1`: the `imagePart` and `inputImages` ops, the row's
   `attach` / `attachBlocker` and the result's `attached` / `missing`
-  ("Images"). Later features append their own names to the same array. Older
+  ("Images"). `budget-v1`: the header's and rows' `budget` and the `budget`
+  op ("Budgets"). Later features append their own names to the same array. Older
   Macs send no `caps`; a phone treats a missing `caps` as `[]`. Readers ignore
   names they don't know.
 
@@ -427,6 +428,7 @@ phone clock) and `viewer` (a random id per app install, persisted).
 | `diff` | `sessionId` | Replies with a `diff` (§4), or a `result` `refused/not_found` for a session that isn't running. |
 | `folders` | — | Replies with a `folders` (§4). |
 | `interruptAll` | — | Siri / Shortcuts "Stop my agents": presses Esc in every session that is `active` (skipping hosts where Esc can't be sent), each through the same gate as `interrupt`. Replies with one `result`: "Stopped 2 agents", "Stopped 1 of 2 agents" or "No agents were working". |
+| `budget` | `scope` (`project` \| `session` \| `default`), `key`, `sessionId`, `pct`; needs `budget-v1` | Sets or clears a budget (see "Budgets"). Always replies with a `result`. |
 | `start` | `folder`, `text` (the prompt, 0–4000 characters; may be empty) | Starts a new Claude session: a cmux workspace in `folder` running `claude -- '<text>'`. Off unless "Let my phone start sessions" is on (`phoneStartSessionsEnabled`, default false): `refused/disabled`. `folder` must be one the `folders` list would contain, compared after standardising (`refused/not_found`). The prompt is folded to one line, control characters stripped, and passed as one shell-quoted argument after `--`, so it can never be read as a flag; a one-word prompt gets a full stop added so it can never match a `claude` subcommand (`purge` → `purge.`). Needs cmux in a mode that lets Page Studio in (`refused/not_typable` with cmux's reason). Always replies with a `result`. |
 
 ### Acceptance (before any op)
@@ -1031,6 +1033,74 @@ Host-specific measurements that shaped the code:
   one-question single-select without Other behaved, but is unproven in the real
   transport, so Page Studio refuses every Terminal.app answer with "Terminal.app adds a
   Return to every key Page Studio types, which would skip or dismiss questions".
+
+### Budgets (`budget-v1`)
+
+Project budgets (README "Project budgets") are measured, stored and enforced
+on the Mac. The phones show what the Mac reports and send changes back. A
+phone draws budget controls only when `caps` has `budget-v1`.
+
+**`list` header** gains `budget`, sent with capture off too:
+
+```json
+"budget": { "window": "week", "capture": true, "measuring": false, "resetsAt": 1794852000, "weekPct": 34,
+            "defaultCap": null,
+            "projects": [ { "key": "/Users/me/projects/payments-api", "name": "payments-api", "used": 18.4,
+                            "cap": 25, "state": "ok" } ] }
+```
+
+- `capture`: whether usage tracking is on. With it off there are no
+  `projects` and no row `budget`, and every budget control says to turn it
+  on.
+- `measuring`: true until the week has risen one whole point since the Mac
+  started watching; shares are not known yet and no budget can trigger.
+- `resetsAt` (unix seconds) and `weekPct` are absent until the Mac has seen
+  a weekly figure. `used` is percent of the week, one decimal.
+- `projects`: every project with spend or a budget this week, live or not,
+  highest `used` first, at most 60. `cap` is the project's own budget, or
+  null when it has none (then `defaultCap`, if set, applies). `state` is
+  measured against whichever applies: `ok`, `warn` (80% of the budget) or
+  `over`.
+
+**`list` row** gains `budget` (Claude sessions the Mac has seen, while capture
+is on):
+
+```json
+"budget": { "projectKey": "/Users/me/projects/payments-api", "used": 18.4, "cap": 25, "scope": "project",
+            "state": "ok", "sessionUsed": 6.1, "sessionCap": null }
+```
+
+`cap` is the budget that binds this session and `scope` says whose it is: the
+project's or the session's own. When a session has both, the one further
+along binds (`over`, then `warn`, then `ok`; on a tie the lower budget).
+
+**Op `budget`** sets or clears one budget. `pct` missing or null clears it.
+
+```json
+{ "op": "budget", "clientId": "…", "ts": 1761300000000, "viewer": "v1",
+  "scope": "project", "key": "/Users/me/projects/payments-api", "pct": 30 }
+{ "op": "budget", …, "scope": "session", "sessionId": "s1", "key": "<the row's projectKey>", "pct": 10 }
+{ "op": "budget", …, "scope": "default", "pct": null }
+```
+
+- The phone echoes `key` exactly as the Mac sent it and never derives one. For
+  `scope: "session"` the key is ignored.
+- Refused (`refused/error`): a `pct` that is a boolean, a fraction or outside
+  1–100; a `key` that isn't an absolute folder path (at most 1024 characters,
+  no newline; trailing slashes are dropped); a session id outside
+  `[A-Za-z0-9-]`; a missing or unknown `scope`.
+- With capture off: `refused/disabled`, "Turn on usage tracking in Page Studio
+  ▸ Budget to set budgets."
+- Success is `delivered` with a short `detail` ("payments-api's budget is now
+  30%"). The Mac's next `list` carries the new value. Every edit, from the
+  phone, Page Studio or the menu bar, goes through one Mac path that reads
+  `config.json` fresh (and refuses if it can't), writes, and re-checks the
+  budgets at once.
+- While the Mac is away the relay answers `503 mac_offline`; the phone keeps
+  the old value and says so.
+
+Answers to the budget pages themselves go through `/reply` (PROTOCOL.md §3,
+`budget_warning` / `budget_reached`), not through this channel.
 
 ## 6. Phone UX contract
 

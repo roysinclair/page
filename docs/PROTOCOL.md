@@ -99,7 +99,7 @@ An *intervention* (a "page") is one moment where an agent needs a human.
 | `repliedAt`, `repliedText`, `repliedAction` | timestamp, string, string | Worker | The latest accepted reply. `repliedAt` and `repliedAction` are cleared when delivery fails (`repliedText` is kept) |
 | `backend` | `"claude"` \| `"codex"` \| `"aura"` \| `"orbit"` | sender | Missing → `codex`, `aura` or `orbit` if the id starts with `codex-`, `aura-` or `orbit-`, else `claude`. `aura`: Page Aura ([AURA-LINK.md](AURA-LINK.md)); `orbit`: Page Orbit ([ORBIT-LINK.md](ORBIT-LINK.md)) |
 | `source` | `terminal` \| `desktop` \| `vscode` \| `exec` \| `remote` \| `unknown` | sender | Missing → `terminal`. Unrecognised → `unknown` |
-| `subtype` | string | sender | Free-form, ≤ 100. Known values: `plan`, `low_battery`; v4: `looping`, `stuck`, `workflow_stalled` (kind `idle`), `battery_forecast`, `usage_forecast` (kind `rate_limit`) |
+| `subtype` | string | sender | Free-form, ≤ 100. Known values: `plan`, `low_battery`; v4: `looping`, `stuck`, `workflow_stalled` (kind `idle`), `battery_forecast`, `usage_forecast`, `budget_warning`, `budget_reached` (kind `rate_limit`) |
 | `promptKey` | string | sender (hook) | The agent's tool-use id for the prompt (`toolu_…`, `call_…`). Kept only if it matches `^[A-Za-z0-9_.:-]{1,200}$` |
 | `deliveryStatus` | `pending` \| `delivered` \| `failed` | Worker | v2. Never trusted inbound |
 | `deliveryDetail` | string | Worker | v2. Short, human, phone-safe (≤ 300) |
@@ -125,6 +125,7 @@ the v1 names so old phones decode them:
 | `question` | The agent asked something (AskUserQuestion, elicitation) |
 | `idle` | The turn finished and the session waits. With `subtype: "low_battery"`: Page Studio paused it at the battery cutoff. Codex `Stop`-hook pages are `idle` too |
 | `rate_limit` | A usage limit was hit (information only). A written reply is queued and typed into the session when the limit resets (v4). With `subtype: "battery_forecast"` (session id `page-mac-battery`): the battery reaches the cutoff in about 15 min while agents work. With `subtype: "usage_forecast"` (session id `page-mac-usage`): the 5-hour limit is about 30 min away at the current pace. Both are Mac-wide, opened and closed by the Coordinator; replies are answered "nothing to answer" |
+| `rate_limit` + `subtype: "budget_warning"` / `"budget_reached"` | Project budgets (README "Project budgets"): a project or session has used 80% of its share of the week, or all of it and Page Studio stopped it. Session id `page-budget-<hash>`, one per budget. The context is the Mac's sentence, which the phones parse for the numbers, so keep its words: "payments-api has used about 20% of the week (budget 25%). Page stops it at 25%." and "payments-api reached its budget: about 26% of the week (budget 25%). Page stopped 2 sessions." The Mac takes the reply before any delivery: `approve` raises the budget by 10 points for good and carries on the sessions it stopped, `carry_on` lets them finish this turn, and `deny` or typed text keeps them stopped (nothing is ever typed from the reply). The `reply.injected` `detail` says what happened ("Raised payments-api to 35%"). Phones that don't know the subtypes show a rate-limit card with a text reply, which keeps the project stopped |
 | `idle` + `subtype: "looping"` / `"stuck"` / `"workflow_stalled"` | v4 stuck watch: a busy session repeats a failing call, has written nothing for the configured time, or one of its workflows stopped making progress. A written reply is typed as a message (queued while busy); Deny on `looping`/`stuck` presses Esc (Stop). Id `<sessionId>-<subtype>-<epoch>` |
 
 Approval-type kinds are `permission`, `plan` and `approval`. Question-type
@@ -141,6 +142,7 @@ the Mac.
 | `<sessionId>-<kind>-<stateStartEpoch>`, e.g. `…-permission-1761300000` (kind `permission`, `question`, `idle`) | Mac Claude detector | Mac (ClaudeBackend) |
 | `<sessionId>-rate_limit-<eventEpoch>` | Mac Claude rate-limit watcher | (information only) |
 | `<sessionId>-low_battery-<tripEpoch>` | Mac Coordinator (battery pause) | Mac Coordinator, which intercepts these before backend routing |
+| `page-budget-<hash>-warn-<resetEpoch>`, `page-budget-<hash>-stop-<resetEpoch>` | Mac Coordinator (project budgets). `<hash>` is 16 hex digits (FNV-1a 64 of the project key or session id); `<resetEpoch>` is the weekly reset, so each week's page is new | Mac Coordinator, which takes every `page-budget-` id before backend routing |
 | `codex-idle-<threadId>-<turnEndEpoch>` | Mac CodexBackend | Mac (CodexBackend) |
 | `codex-req-<childToken>-<requestId>` | Mac CodexBackend (approval request from its own app-server child) | Mac (CodexBackend) |
 | `hook-<sid8>-<epoch>-<pid>` | Hook, Notification event (fire-and-forget) | Mac, which resolves the live session by the payload's `sessionId` (a UUID starting with `sid8`) |
@@ -568,7 +570,11 @@ once. Each APNs request times out after 4 s.
 
 - `aps.alert.body`: a kind prefix ("Approval needed: ", "Plan ready: ",
   "Session is waiting: ", "Rate-limited: ", or none for questions) plus the
-  first 180 characters of `context`.
+  first 180 characters of `context`. Some subtypes have their own wording:
+  `looping` and `stuck` get "Looks stuck: "; `workflow_stalled`,
+  `battery_forecast`, `usage_forecast`, `budget_warning` and `budget_reached`
+  get the context alone (no "Rate-limited: "), because it already says what
+  happened.
 - `aps.category` by kind:
 
   | Kind | Category |

@@ -19,8 +19,9 @@ Decided with the user (2026-11-10):
   - The phones only display what the Mac reports and send changes back.
 - **Not in v1:**
   - **Codex sessions:** OpenAI limits are a different plan, and Codex has no PreToolUse hook.
-  - **Linux UI:** the core logic is shared, so `paged` measures and enforces too, set with
-    `paged config set`.
+  - **Linux:** the core logic is shared, but `paged` can't turn on usage tracking, has no
+    `paged config set` for budgets, and its `install-hooks` leaves the gate out (as built,
+    2026-11-10: `install-linux.sh` doesn't ship `page-budget-gate.sh`). So on Linux budgets stay off.
 
 ## 1. Words
 

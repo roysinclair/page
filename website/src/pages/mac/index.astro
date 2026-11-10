@@ -245,6 +245,36 @@ import { u, GUIDE, BLOB, GITHUB } from '../../data/site';
     </div>
   </section>
 
+  <!-- BUDGETS -->
+  <section id="budgets" class="block-section border-t border-white/[0.06]">
+    <div class="wrap">
+      <div class="grid items-center gap-8 lg:grid-cols-[1.1fr_1fr] lg:gap-12">
+        <Showcase name="showcase/feature-budgets-visual" motion="final-approach" sizes="(min-width: 1024px) 580px, 100vw" alt="Project budgets: the Tower's Budget page with the 5-hour and 7-day usage rings and the project budgets for this week. payments-api has used 10 percent of its 10 percent and is stopped, sensor-hub 8 percent of 10. Over it, a menu-bar session card for payments-api at 21 percent of its 25 percent budget, with Set budget open: Project or This session only, Off, 10, 25, 50, and 35 percent chosen." />
+        <div>
+          <p class="label">Budgets</p>
+          <h2 class="h2 mt-3">A share of the week, <span class="text-grad">per project.</span></h2>
+          <p class="lede mt-5">Some projects run away with your weekly Claude limit. Give each one, or a single session, a share of the week, so the work that matters still has room.</p>
+          <ul class="list-dots mt-6">
+            <li><strong>Warn at 80%, stop at 100%.</strong> At its budget, Page Studio presses Esc in the project’s working sessions and blocks their next tool calls until you decide.</li>
+            <li><strong>Your call, from anywhere.</strong> The page offers <em>Raise to N%</em> (ten points more, for good), <em>Let this turn finish</em>, or keep it stopped. A typed reply is never sent to the session.</li>
+            <li><strong>Set it where you are.</strong> Budget in the Tower, <em>Set budget</em> on each session card in the menu bar, or from your phone.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="mt-12 grid gap-5 md:grid-cols-2">
+        <div class="card">
+          <h3 class="h3">How the share is measured</h3>
+          <p class="body mt-3">Claude Code reports the week as a whole percentage. Page Studio splits each rise between your projects by what their sessions spent. Until the week has risen one whole point since Page Studio started watching, a project reads “Measuring…” and no budget can stop it.</p>
+          <p class="fine mt-3">Only Claude Code sessions on this Mac are seen. Chats on claude.ai, other computers and <code class="code-inline">claude -p</code> runs still count toward the week, so shares can read a little high, the safe side for a budget. Codex isn’t covered.</p>
+        </div>
+        <div class="card">
+          <h3 class="h3">What it needs</h3>
+          <p class="body mt-3">Turn on <strong>Show my Claude usage</strong> (Tower ▸ Budget), and install the agent hooks again from <strong>Integrations ▸ Install agent hooks…</strong>: that adds the small budget gate that blocks a stopped project’s tool calls. The gate is plain bash, fails open, and does nothing until a budget is reached.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- TOWER -->
   <section id="tower" class="block-section border-t border-white/[0.06]">
     <div class="wrap grid items-start gap-10 lg:grid-cols-[1fr_1.1fr]">

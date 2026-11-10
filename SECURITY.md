@@ -25,6 +25,7 @@ the security model is about who can send replies and what Page Studio will type.
 |---|---|
 | **Mac app** | Runs as you, from a LaunchAgent. It can send Apple Events to Terminal.app and iTerm2 (Automation), post a Return key through System Events for Codex in Terminal.app (Accessibility), drive cmux through its CLI, run `claude`/`codex` in the background, and run the narrow `pmset` commands below through sudo if you opted in. It has no listening network socket. Its only remote peer is your Worker |
 | **Hook** (`hooks/page-notify.sh`) | Run by Claude Code / Codex as you. It POSTs pages to your Worker over HTTPS and prints a permission decision only for an explicit phone answer |
+| **Budget gate** (`hooks/page-budget-gate.sh`) | Run by Claude Code as you before every tool call. Plain bash with no network: it reads Page Studio's budget markers and can only stop a call, never allow one |
 | **Worker** | A public HTTPS/WebSocket endpoint on your Cloudflare account. Its only authentication is the bearer relay token |
 | **iOS app** | Connects to your Worker. Receives APNs pushes. Lock-screen actions require device authentication |
 
@@ -147,7 +148,18 @@ encrypted with a second secret, the **session key**:
   only when you turn it on, after a backup, and puts the original back
   byte for byte when you turn it off. The wrapper script is 0700 in Page Studio's
   Application Support folder; the saved status line input (model, folder,
-  usage numbers, no secrets) is 0600.
+  usage numbers, no secrets) is 0600. For budgets the wrapper also keeps the
+  latest input per session (`statusline/<session id>.json`, 0600, folder
+  0700), removed after 8 days.
+- **Budgets** can stop a project's sessions: Page Studio presses Esc in them
+  (the same path as the Stop button) and the budget gate stops their tool
+  calls. Changing a budget from the phone is an authenticated
+  `sessions.command`, refused while usage tracking is off. A reply to a
+  budget page can raise the budget, let the stopped turn finish, or keep it
+  stopped; Page Studio takes those page ids before reply delivery, so the
+  reply's text is never typed into a session. The only text it types is its
+  own fixed "carry on" line into a session it stopped, when that session is
+  idle and untouched.
 
 ## What the Worker stores, and for how long
 
@@ -254,6 +266,15 @@ from sleeping with the lid closed.
   `ExitPlanMode` handlers that Page Studio installs. Don't set it unless you mean it.
 - The hook's temporary payload files (which hold commands and transcript
   excerpts) are 0600 inside a private temp directory deleted on exit.
+- **The budget gate** (`PreToolUse`, matcher `*`, 5 s timeout) never allows
+  anything. It prints `{"continue":false,"stopReason":…}` only when a
+  marker Page Studio wrote in `budget-over/` matches the session (by session
+  id, or by folder for a session Page Studio hasn't seen yet) and the session
+  has no `budget-allow/` file. It reads at most 16 KB of the hook input and
+  takes the first `session_id` and `cwd`, so text inside a tool's input can't
+  steer it. A missing folder, an unreadable or malformed marker, an expired
+  marker or any error lets the call through (exit 0, no output). The markers
+  and allow files are 0600 in a 0700 folder that only you can write.
 
 ## cmux
 

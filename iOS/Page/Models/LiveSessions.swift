@@ -116,6 +116,8 @@ struct LiveSession: Identifiable, Hashable {
     /// an optional field of the Mac's list (docs/SESSIONS-PROTOCOL.md); an
     /// older Mac sends none and the card shows what it has.
     var flight: SessionFlight? = nil
+    /// Its budget (Designs/budget-caps.md): the binding cap and how much of it is used; nil when the Mac sends none.
+    var budget: SessionBudget? = nil
     /// `hold-v1`: Page can type here once the turn ends, so "When it finishes" may be offered.
     var canHold = false
     /// Messages the Mac is holding for this session, or settled in the last 15 minutes, oldest first.

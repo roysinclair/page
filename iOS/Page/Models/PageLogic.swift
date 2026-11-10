@@ -179,6 +179,11 @@ enum PageSubtype {
     /// Stop (Deny → Esc) applies to a busy session, not a stalled workflow.
     static func canStop(_ subtype: String?) -> Bool { subtype == "looping" || subtype == "stuck" }
 
+    static let budgetReached = "budget_reached"
+    static let budgetWarning = "budget_warning"
+    /// A project at (or near) its share of the week: Designs/budget-caps.md.
+    static func isBudget(_ subtype: String?) -> Bool { subtype == budgetReached || subtype == budgetWarning }
+
     static func isForecast(_ subtype: String?) -> Bool {
         subtype == "battery_forecast" || subtype == "usage_forecast"
     }
@@ -191,6 +196,7 @@ enum PageSubtype {
         case (.idle, "low_battery"): return "PAUSED"
         case (.rateLimit, "battery_forecast"): return "BATTERY"
         case (.rateLimit, "usage_forecast"): return "USAGE"
+        case (.rateLimit, "budget_reached"), (.rateLimit, "budget_warning"): return "BUDGET"
         default: return kind.label
         }
     }
@@ -216,6 +222,8 @@ enum ReplyCopy {
         case (.idle, "workflow_stalled"): return "A workflow stopped making progress"
         case (.rateLimit, "battery_forecast"): return "Battery cutoff soon"
         case (.rateLimit, "usage_forecast"): return "Claude limit soon"
+        case (.rateLimit, "budget_reached"): return "\(iv.projectName) reached its budget"
+        case (.rateLimit, "budget_warning"): return "\(iv.projectName) is near its budget"
         default: break
         }
         switch iv.kind {

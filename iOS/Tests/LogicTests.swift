@@ -5860,7 +5860,7 @@ do {
     // Chip and hue mappings.
     let chipMap: [(ChipKind, JewelTone)] = [
         (.irreversible, .red), (.considered, .sky), (.undoable, .green), (.review, .teal),
-        (.looksStuck, .amber), (.question, .amber), (.forecast, .amber), (.rateLimited, .amber),
+        (.looksStuck, .amber), (.question, .amber), (.forecast, .amber), (.rateLimited, .amber), (.budget, .amber),
     ]
     check(chipMap.count == ChipKind.allCases.count, "mapping: every chip is covered")
     for (chip, tone) in chipMap {

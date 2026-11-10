@@ -59,6 +59,8 @@ struct InFlightRow: Equatable, Identifiable {
     let canMirror: Bool
     /// The step in words, the steps before it, the clocks, workflows and health.
     var card: InFlightCard = InFlightCard(now: "Working")
+    /// Its budget, when its project (or it) has one or has used some of the week.
+    var budget: SessionBudget? = nil
 
     /// The spoken line: "relay, Claude in tmux, Running vitest, working 4m, 1 workflow running".
     var spoken: String {
@@ -114,7 +116,8 @@ struct InFlightSection: Equatable {
                 seed: StableHash.fnv1a(s.cwd.isEmpty ? s.id : s.cwd + "|" + s.id),
                 hue: ProjectHue(key: s.cwd.isEmpty ? s.title : s.cwd),
                 canType: s.canType, canStop: s.canInterrupt, canMirror: mirrorHosts.contains(host),
-                card: InFlightCard.build(session: s, runs: workflows[s.id] ?? [], hasStuckPage: stuck.contains(s.id), now: now))
+                card: InFlightCard.build(session: s, runs: workflows[s.id] ?? [], hasStuckPage: stuck.contains(s.id), now: now),
+                budget: s.budget)
             return (row, s.title)
         }
         .sorted { a, b in

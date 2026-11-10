@@ -5,6 +5,8 @@ struct TowerScreenData {
     var macName: String
     var power: TowerPower
     var budget: TowerBudget
+    /// Each project's share of the week and its budget (Designs/budget-caps.md); nil while the Mac doesn't send budgets.
+    var budgetProjects: MacBudget? = nil
     var macs: [TowerMacRow]
     /// "online · 3 active sessions · Battery 54%, on power".
     var macLine: String?
@@ -40,6 +42,8 @@ struct TowerScreenActions {
     var turnOnNotifications: () -> Void = {}
     var setGlow: (CardGlow) -> Void = { _ in }
     var openHistory: () -> Void = {}
+    /// Opens the budget sheet for a project or the default.
+    var openBudget: (BudgetSheetModel) -> Void = { _ in }
     /// "Show the tips again": every first-time tip comes back.
     var resetTips: () -> Void = {}
     var refresh: () async -> Void = {}
@@ -197,6 +201,10 @@ struct NWTowerScreen: View {
             } else {
                 Text(data.budget.emptyNote).font(NightWatch.Typo.caption).foregroundColor(NightWatch.Palette.textSecondary.color)
                     .padding(16)
+            }
+            if let projects = data.budgetProjects {
+                Rectangle().fill(Color.white.opacity(0.07)).frame(height: 1)
+                NWBudgetProjects(budget: projects, timeZone: data.timeZone, open: actions.openBudget)
             }
             divider
             towerRow(icon: "clock.arrow.circlepath", tint: NightWatch.Palette.sky, title: "History and stats", detail: "everything you've settled, and the day's numbers",

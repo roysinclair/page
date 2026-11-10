@@ -348,6 +348,22 @@ struct NWBudgetPage: View {
             NWNote(text: "Claude Code only gives these numbers to your status line, so Page Studio wraps it: a small script saves them, then runs your own status line unchanged. Changes ~/.claude/settings.json (backed up first); turning this off puts it back. This one applies straight away.")
                 .padding(.horizontal, 4).padding(.top, -10)
 
+            if let board = store.budgetBoard {
+                NWCard(title: "PROJECT BUDGETS · THIS WEEK") {
+                    if board.measuring {
+                        NWNote(text: "Measuring… shares appear once the week has moved a little.").padding(16)
+                    }
+                    ForEach(board.rows) { row in
+                        NWBudgetBoardRowView(row: row, defaultCap: board.defaultCap, measuring: board.measuring,
+                                             set: { store.setBudget(key: row.key, pct: $0) })
+                        NWDivider()
+                    }
+                    NWBudgetDefaultRow(cap: board.defaultCap, resetText: board.resetText, set: { store.setBudget(key: nil, pct: $0) })
+                }
+                NWNote(text: "A project's share of the week is estimated from what Claude Code on this Mac spends; chats elsewhere count toward the week too, so shares can read a little high. At 80% of a budget your phone gets a page; at 100% Page Studio stops the project's sessions and blocks their tools until you raise it or the week resets. Budgets apply straight away.")
+                    .padding(.horizontal, 4).padding(.top, -10)
+            }
+
             NWCard(title: "WHEN CLAUDE HITS A RATE LIMIT") {
                 NWToggleRow(title: "Watch for rate-limit events", detail: "reads Claude’s transcripts for “limit reached”",
                             isOn: store.bind(\.rateLimitWatcherEnabled))
@@ -367,6 +383,123 @@ struct NWBudgetPage: View {
             NWNote(text: "Auto-resume works for Claude sessions only. On your phone you can also reply to a rate-limit page with a message to send when it resets.")
                 .padding(.horizontal, 4).padding(.top, -10)
         }
+    }
+}
+
+/// One project on the Budget page: its share and bar, and − budget + inline.
+struct NWBudgetBoardRowView: View {
+    var row: BudgetBoardRow
+    var defaultCap: Int?
+    var measuring = false
+    var set: (Int?) -> Void
+
+    var body: some View {
+        let warm = row.state != .ok
+        HStack(alignment: .center, spacing: 14) {
+            Image(systemName: row.state == .over ? "pause.fill" : "folder.fill")
+                .font(Font.system(size: 13, weight: .semibold))
+                .foregroundColor((warm ? P.amber : P.teal).color)
+                .frame(width: 30, height: 30)
+                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill((warm ? P.amber : P.teal).opacity(0.14).color))
+            VStack(alignment: .leading, spacing: 6) {
+                Text(row.name).font(Font.system(size: 13.5, weight: .semibold)).foregroundColor(P.textPrimary.color).lineLimit(1)
+                if !measuring { NWBudgetBoardBar(fraction: BudgetBoard.fraction(row, defaultCap: defaultCap), warm: warm,
+                                                 hasBudget: (row.cap ?? defaultCap) != nil) }
+                Text(measuring ? "Measuring…" : BudgetBoard.line(row, defaultCap: defaultCap))
+                    .font(Font.system(size: 11.5).monospacedDigit())
+                    .foregroundColor((warm ? P.amber : P.textTertiary).color)
+            }
+            Spacer(minLength: 12)
+            NWBudgetStepper(value: row.cap, placeholder: row.cap == nil && defaultCap != nil ? "Default" : "Off", set: set)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12)
+    }
+}
+
+/// The default budget, for every project without its own.
+struct NWBudgetDefaultRow: View {
+    var cap: Int?
+    var resetText: String?
+    var set: (Int?) -> Void
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "slider.horizontal.3").font(Font.system(size: 13, weight: .semibold)).foregroundColor(P.sky.color)
+                .frame(width: 30, height: 30)
+                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(P.sky.opacity(0.14).color))
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Default for other projects").font(Font.system(size: 13.5, weight: .semibold)).foregroundColor(P.textPrimary.color)
+                Text(["any project without a budget of its own", resetText].compactMap { $0 }.joined(separator: " · "))
+                    .font(Font.system(size: 11.5)).foregroundColor(P.textTertiary.color)
+            }
+            Spacer(minLength: 12)
+            NWBudgetStepper(value: cap, placeholder: "Off", set: set)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12)
+    }
+}
+
+/// − 25% +: steps of 5, Off below 5.
+struct NWBudgetStepper: View {
+    var value: Int?
+    var placeholder = "Off"
+    var set: (Int?) -> Void
+
+    var body: some View {
+        HStack(spacing: 0) {
+            stepButton("minus", enabled: value != nil) { set(BudgetBoard.step(value, up: false)) }
+            Text(value.map { "\($0)%" } ?? placeholder)
+                .font(Font.system(size: 12.5, weight: .semibold).monospacedDigit())
+                .foregroundColor((value == nil ? P.textTertiary : P.teal).color)
+                .frame(width: 58)
+            stepButton("plus", enabled: (value ?? 0) < 100) { set(BudgetBoard.step(value, up: true)) }
+        }
+        .frame(height: 30)
+        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.white.opacity(0.06)))
+        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Color.white.opacity(0.1), lineWidth: 1))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Budget"))
+        .accessibilityValue(Text(value.map { "\($0) percent of the week" } ?? placeholder))
+        .accessibilityAdjustableAction { d in
+            switch d {
+            case .increment: set(BudgetBoard.step(value, up: true))
+            case .decrement: set(BudgetBoard.step(value, up: false))
+            @unknown default: break
+            }
+        }
+    }
+
+    private func stepButton(_ symbol: String, enabled: Bool, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol).font(Font.system(size: 11, weight: .bold))
+                .foregroundColor(P.textSecondary.color).frame(width: 30, height: 30).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).disabled(!enabled).opacity(enabled ? 1 : 0.4)
+    }
+}
+
+/// The bar: teal while there's room, amber from 80%; faint with no budget.
+struct NWBudgetBoardBar: View {
+    var fraction: Double
+    var warm: Bool
+    var hasBudget: Bool
+
+    var body: some View {
+        GeometryReader { g in
+            let tone = !hasBudget ? P.sky.opacity(0.55) : (warm ? P.amber : P.teal)
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.white.opacity(0.09)).frame(height: 6)
+                Capsule().fill(tone.color).frame(width: fraction > 0 ? max(6, g.size.width * fraction) : 0, height: 6)
+                    .shadow(color: tone.opacity(hasBudget ? 0.5 : 0).color, radius: 4)
+                if hasBudget {
+                    Capsule().fill(Color.white.opacity(0.7)).frame(width: 2, height: 11).offset(x: g.size.width * 0.8 - 1)
+                }
+            }
+            .frame(height: 11)
+        }
+        .frame(height: 11)
+        .frame(maxWidth: 360)
+        .accessibilityHidden(true)
     }
 }
 

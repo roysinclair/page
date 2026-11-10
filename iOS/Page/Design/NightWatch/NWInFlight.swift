@@ -362,6 +362,7 @@ struct NWInFlightCardView: View {
                     if let time = card.timeText {
                         fact("TIME") { text(time, NightWatch.Palette.textPrimary).nwRolls(time, reduceMotion: reduceMotion) }
                     }
+                    if let b = row.budget { fact("BUDGET") { budgetBlock(b.meter) } }
                     if card.workflowHeading != nil || !card.closing.isEmpty { workflows(at: t) }
                     fact("HEALTH") { healthBlock(f) }
                 }
@@ -566,6 +567,14 @@ struct NWInFlightCardView: View {
         card.health == .longRunning ? NightWatch.Palette.sky : NightWatch.Palette.green
     }
 
+    /// "18% of 25% this week", and the bar under it (amber from the warning).
+    private func budgetBlock(_ m: BudgetMeter) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            text(m.line + " this week", m.tone == .warm ? NightWatch.Palette.amber : NightWatch.Palette.textPrimary)
+            NWBudgetBar(meter: m, height: 6).frame(maxWidth: 200)
+        }
+    }
+
     private func text(_ s: String, _ c: NightWatch.RGBA) -> some View {
         Text(s).font(NightWatch.Typo.meta.monospacedDigit()).foregroundColor(c.color).lineLimit(2)
     }
@@ -587,6 +596,7 @@ struct NWInFlightCardView: View {
         case "NOW": return "waveform"
         case "TIME": return "clock.fill"
         case "WORKFLOWS": return "square.stack.3d.up.fill"
+        case "BUDGET": return ChipKind.budget.symbol
         default: return "heart.fill"
         }
     }
@@ -596,6 +606,7 @@ struct NWInFlightCardView: View {
         case "NOW": return NightWatch.Palette.teal
         case "TIME": return NightWatch.Palette.sky
         case "WORKFLOWS": return NightWatch.Palette.violet
+        case "BUDGET": return row.budget?.meter.tone == .warm ? NightWatch.Palette.amber : NightWatch.Palette.teal
         default:
             return card.health.needsAttention ? NightWatch.Palette.amber
                 : (card.health == .longRunning ? NightWatch.Palette.sky : NightWatch.Palette.green)

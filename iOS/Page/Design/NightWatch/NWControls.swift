@@ -10,7 +10,7 @@ extension ChipKind {
         case .irreversible: return NightWatch.Palette.red
         case .undoable: return NightWatch.Palette.green
         case .considered: return NightWatch.Palette.sky
-        case .looksStuck, .question, .forecast, .rateLimited: return NightWatch.Palette.amber
+        case .looksStuck, .question, .forecast, .rateLimited, .budget: return NightWatch.Palette.amber
         case .review: return NightWatch.Palette.teal
         }
     }
@@ -26,6 +26,7 @@ extension ChipKind {
         case .forecast: return "clock.badge.exclamationmark"
         case .rateLimited: return "gauge.with.needle"
         case .review: return "checkmark.circle"
+        case .budget: return "chart.pie.fill"
         }
     }
 }

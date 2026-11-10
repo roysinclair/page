@@ -81,7 +81,7 @@ extension NowRow {
         switch chip {
         case .irreversible: return NightWatch.Palette.red
         case .considered: return NightWatch.Palette.sky
-        case .looksStuck, .forecast, .rateLimited, .question: return NightWatch.Palette.amber
+        case .looksStuck, .forecast, .rateLimited, .question, .budget: return NightWatch.Palette.amber
         case .undoable: return NightWatch.Palette.green
         case .review: return NightWatch.Palette.teal
         }
@@ -89,7 +89,7 @@ extension NowRow {
 }
 
 /// The header line of a card: chip, project, how long it has waited.
-private struct NWCardTopLine: View {
+struct NWCardTopLine: View {
     var row: NowRow
     var now: Date
     var onJewel = false

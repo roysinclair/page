@@ -122,6 +122,8 @@ final class TowerStore: ObservableObject {
     @Published private(set) var helperInstalling = false
     @Published private(set) var relayTest: RelayTest = .idle
     @Published private(set) var usageCapture = UsageCaptureStatus()
+    /// Each project's share of the week and its budget; nil until the Mac has measured (Designs/budget-caps.md).
+    @Published private(set) var budgetBoard: BudgetBoard?
     @Published private(set) var localLines: [String] = []
     /// config.json had a problem when the window opened.
     @Published private(set) var problem: String?
@@ -189,7 +191,9 @@ final class TowerStore: ObservableObject {
     func preview(helper: SleepGuard.HelperStatus? = nil, installing: Bool = false, localLines: [String]? = nil,
                  usageCapture: UsageCaptureStatus? = nil, relayTest: RelayTest? = nil, problem: String? = nil,
                  terminals: TerminalProbe.Snapshot? = nil, terminalsUnprobed: Bool = false, terminalNotice: TowerStatusLine? = nil,
-                 widgetStatus: WidgetRegistration.Status? = nil, widgetGuideOpen: Bool? = nil, widgetPreviewsExample: Bool? = nil) {
+                 widgetStatus: WidgetRegistration.Status? = nil, widgetGuideOpen: Bool? = nil, widgetPreviewsExample: Bool? = nil,
+                 budgetBoard: BudgetBoard? = nil) {
+        if let budgetBoard { self.budgetBoard = budgetBoard }
         if let helper { helperStatus = helper }
         helperInstalling = installing
         if let localLines { self.localLines = localLines }
@@ -202,6 +206,19 @@ final class TowerStore: ObservableObject {
         if let widgetStatus { self.widgetStatus = widgetStatus }
         if let widgetGuideOpen { self.widgetGuideOpen = widgetGuideOpen }
         if let widgetPreviewsExample { self.widgetPreviewsExample = widgetPreviewsExample }
+    }
+
+    /// Sets a project's budget (`key`), or the default (`key` nil); nil `pct` clears it.
+    /// Design round: changes the board in place; the build stores it and tells the Coordinator.
+    func setBudget(key: String?, pct: Int?) {
+        guard var b = budgetBoard else { return }
+        if let key, let i = b.rows.firstIndex(where: { $0.key == key }) {
+            let r = b.rows[i]
+            b.rows[i] = BudgetBoardRow(key: r.key, name: r.name, used: r.used, cap: pct, state: r.state)
+        } else if key == nil {
+            b.defaultCap = pct
+        }
+        budgetBoard = b
     }
 
     // MARK: opening

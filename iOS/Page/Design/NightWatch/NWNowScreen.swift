@@ -483,6 +483,10 @@ struct NWNowScreen: View {
         let outcome = data.outcomes[row.id] ?? .none
         let pending = data.pending[row.id]
         switch row.section {
+        case _ where row.chip == .budget:
+            NWBudgetCard(row: row, now: data.now, outcome: outcome, pending: pending, receipt: data.receipts[row.id],
+                         onRaise: { actions.approve(row) }, onLetFinish: { actions.looksGood(row) },
+                         onOpen: { actions.open(row.id) }, onCancel: { actions.cancel(row.id) })
         case .decide where row.canSwipeApprove:
             NWUndoableRow(row: row, now: data.now, outcome: outcome, pending: pending, receipt: data.receipts[row.id], fixedDrag: data.fixedDrag,
                           onApprove: { actions.approve(row) }, onOpen: { actions.open(row.id) }, onCancel: { actions.cancel(row.id) })

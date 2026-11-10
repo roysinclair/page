@@ -38,6 +38,8 @@ struct SessionRoomContainer: View {
     @State private var lens: RoomLens = .story
     @State private var runId: String?
     @State private var presentedPage: AppRouter.PresentedIntervention?
+    /// This session's own budget, over the room (the room is already a sheet, so this one stacks on it).
+    @State private var budgetSheet: BudgetSheetModel?
     @State private var agent: AgentRef?
     @State private var diffRequestedAt = Date.distantPast
     /// The receipt (by clientId) the user closed.
@@ -125,6 +127,9 @@ struct SessionRoomContainer: View {
                 .environmentObject(sessions)
                 .presentationDragIndicator(.visible)
         }
+        .sheet(item: $budgetSheet) { model in
+            BudgetSheetContainer(model: model)
+        }
         .sheet(item: $presentedPage) { item in
             // "Open session" there just comes back here.
             DecisionContainer(interventionId: item.id, onOpenSession: { _ in presentedPage = nil })
@@ -167,6 +172,7 @@ struct SessionRoomContainer: View {
         inputs.pageIsHook = page?.isBlockingHook ?? false
         inputs.pageContext = page?.context
         inputs.caps = sessions.macCaps
+        inputs.budgetControls = sessions.budgetControls
         inputs.lastChoice = lastChoice
         inputs.choiceExplained = choiceExplained
         inputs.retractNotes = sessions.retractNotes
@@ -263,6 +269,7 @@ struct SessionRoomContainer: View {
         a.openRun = { id in runId = id; lens = .workflows }
         a.openAgent = { run, agentId in agent = AgentRef(runId: run, agentId: agentId) }
         a.openDecision = { presentedPage = .init(id: $0) }
+        a.openBudget = { budgetSheet = .session(data.session, resetsAt: sessions.macBudget?.resetsAt) }
         a.banner = { action in
             switch action {
             case .retry: sessions.refresh(); Task { await api.refreshAll() }

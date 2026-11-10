@@ -25,7 +25,9 @@ enum RenderHarness {
         "decision-steer-busy", "decision-steer-undo", "decision-queued-relay", "decision-queued-held",
         "hold-stop", "stop-confirm", "stop-result", "stop-none",
         "lanes", "lanes-crowded", "lanes-empty", "lanes-problem", "lanes-standby", "lanes-paused",
-        "tower", "tower-budget", "tower-budget-projects", "budget-sheet", "budget-sheet-session", "budget-sheet-default", "now-budget", "now-budget-flight",
+        "tower", "tower-budget", "tower-budget-projects", "tower-budget-off", "tower-budget-measuring", "budget-sheet", "budget-sheet-session", "budget-sheet-default",
+        "budget-sheet-saving", "budget-sheet-offline", "budget-sheet-refused", "budget-sheet-live", "now-budget", "now-budget-flight",
+        "decision-budget", "decision-budget-warning", "room-budget", "room-budget-warn", "room-budget-none",
         "tower-glow", "tower-terminals", "tower-gestures",
         "tower-widgets", "tower-widgets-lock", "tower-widgets-previews", "tower-widgets-large", "tower-widgets-lockscreen",
         "dispatch", "dispatch-sending", "dispatch-off",
@@ -107,6 +109,8 @@ enum RenderFixtures {
                       "Changed 3 files (+120 −14) · tests passed\n\n" + longReply, ago: 120)
         case "decision-undoable":
             return open[1]
+        case "decision-budget": return budgetPages[0]
+        case "decision-budget-warning": return budgetPages[1]
         default:
             return open[0]
         }
@@ -402,6 +406,7 @@ enum RenderFixtures {
         if ["now-flight", "now-flight-old", "now-flight-jump"].contains(screen) { d.scrollToId = HeaderJump.sectionId }
         if screen == "now-flight-two" { d.scrollTo = "inflight-sess-p3" }
         if screen == "now-budget-flight" { d.scrollTo = "inflight-w2" }
+        d.budgetControls = screen.hasPrefix("now-budget")
         if screen == "now-inflight-long", let last = d.inFlight.rows.last { d.scrollTo = "inflight-\(last.id)" }
         // `-NWScrollId section-look`: frame any part of the stream (a section, "row-<id>"), for a review of its look.
         if let id = UserDefaults.standard.string(forKey: "NWScrollId") { d.scrollTo = nil; d.scrollToId = id }
@@ -730,8 +735,17 @@ struct HarnessTower: View {
             if screen == "tower-widgets-lockscreen" { d.scrollToId = "widgets-lock" }
             if screen == "tower-widgets" { d.widgets = TowerWidgets.status(placed: []) }
         }
-        if screen.hasPrefix("tower-budget") { d.budgetProjects = RenderFixtures.budget }
-        if screen == "tower-budget-projects" { d.scrollToId = "budget-projects" }
+        if screen.hasPrefix("tower-budget") {
+            var b = RenderFixtures.budget
+            if screen == "tower-budget-off" { b.capture = false; b.projects = [] }
+            if screen == "tower-budget-measuring" {
+                // Early in the week: shares mean nothing yet, so every project reads 0 and nothing is near a budget.
+                b.measuring = true
+                b.projects = b.projects.map { var p = $0; p.used = 0; p.state = .ok; return p }
+            }
+            d.budgetProjects = b
+        }
+        if ["tower-budget-projects", "tower-budget-off", "tower-budget-measuring"].contains(screen) { d.scrollToId = "budget-projects" }
         return d
     }
     var body: some View {
@@ -740,9 +754,12 @@ struct HarnessTower: View {
     }
 }
 
-/// The budget sheet as it sits over the Tower: a project's, one session's, or the default.
+/// The budget sheet as it sits over the Tower: a project's, one session's, or the default; while it saves, and with
+/// the reason a change didn't go (the Mac offline, or refusing it). `budget-sheet-live` is the real container in a
+/// real sheet, to see its detent.
 struct HarnessBudgetSheet: View {
     let screen: String
+    @State private var live = true
     private var model: BudgetSheetModel {
         let b = RenderFixtures.budget
         switch screen {
@@ -751,19 +768,37 @@ struct HarnessBudgetSheet: View {
             return BudgetSheetModel(scope: .session, name: p.name, key: "w2", hue: p.hue, used: 6.3, cap: 10, resetsAt: b.resetsAt)
         case "budget-sheet-default":
             return BudgetSheetModel(scope: .defaultCap, name: "", key: nil, hue: nil, used: nil, cap: b.defaultCap, resetsAt: b.resetsAt)
+        case "budget-sheet-saving", "budget-sheet-offline", "budget-sheet-refused":
+            // Save was tapped with 30% chosen: the sheet still shows it, over the 25% in force.
+            let p = b.projects[2]
+            return BudgetSheetModel(scope: .project, name: p.name, key: p.key, hue: p.hue, used: p.used, cap: 30, resetsAt: b.resetsAt)
         default:
             let p = b.projects[2]
             return BudgetSheetModel(scope: .project, name: p.name, key: p.key, hue: p.hue, used: p.used, cap: 25, resetsAt: b.resetsAt)
         }
     }
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            NWTowerScreen(data: { var d = RenderFixtures.tower(scroll: .budget, glow: .off); d.budgetProjects = RenderFixtures.budget; return d }())
-                .padding(.top, 50)
-                .overlay(Color.black.opacity(0.45))
-            NWBudgetSheet(model: model, timeZone: RenderHarness.timeZone)
+    private var status: BudgetSaveStatus {
+        switch screen {
+        case "budget-sheet-saving": return .saving
+        case "budget-sheet-offline": return .failed(BudgetCopy.macOffline)
+        case "budget-sheet-refused": return .failed(BudgetCopy.refusal(reason: "not_found", detail: nil))
+        default: return .idle
         }
-        .ignoresSafeArea(edges: .bottom)
+    }
+    private var tower: some View {
+        NWTowerScreen(data: { var d = RenderFixtures.tower(scroll: .budget, glow: .off); d.budgetProjects = RenderFixtures.budget; return d }())
+            .padding(.top, 50)
+    }
+    var body: some View {
+        if screen == "budget-sheet-live" {
+            tower.sheet(isPresented: $live) { BudgetSheetContainer(model: model).environmentObject(SessionStore.shared) }
+        } else {
+            ZStack(alignment: .bottom) {
+                tower.overlay(Color.black.opacity(0.45))
+                NWBudgetSheet(model: model, timeZone: RenderHarness.timeZone, status: status)
+            }
+            .ignoresSafeArea(edges: .bottom)
+        }
     }
 }
 

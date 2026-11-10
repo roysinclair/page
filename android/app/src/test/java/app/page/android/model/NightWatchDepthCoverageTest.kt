@@ -52,6 +52,7 @@ class NightWatchDepthCoverageTest {
             ChipKind.QUESTION to JewelTone.AMBER,
             ChipKind.FORECAST to JewelTone.AMBER,
             ChipKind.RATE_LIMITED to JewelTone.AMBER,
+            ChipKind.BUDGET to JewelTone.AMBER,
         )
         // A new chip must be given a tone here as well, not fall through unnoticed.
         assertEquals(ChipKind.entries.toSet(), expected.keys)

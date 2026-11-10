@@ -53,6 +53,8 @@ object RenderHarness {
         val nowScript: List<Pair<Double, app.page.android.model.NowMotion.Look>>? = null,
         /** Drawn as under Reduce Motion (the demo's `page_reduce`), whatever the system says. */
         val reduce: Boolean = false,
+        /** The Tower: scroll to the project list under Budget's rings (`tower-budget-projects`). */
+        val towerProjects: Boolean = false,
     )
 
     /**

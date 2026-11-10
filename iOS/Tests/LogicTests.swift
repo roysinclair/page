@@ -5914,5 +5914,334 @@ do {
     }
 }
 
+// MARK: - Budget caps (Designs/budget-caps.md: §1 words, §3 caps, §4 page texts, §5 wire)
+// Budget.swift and the session models that carry a budget (LiveSessions, SessionRoom, DecisionContent, SettledLog,
+// InFlightRows). Fixed instants and time zones, so the words don't move.
+do {
+    let bUTC = TimeZone(identifier: "UTC")!
+    let bAuckland = TimeZone(identifier: "Pacific/Auckland")!
+    let bMon0900 = PageDate.parse("2026-11-09T09:00:00Z")!   // a Monday, in UTC
+    let bKey = "/Users/me/projects/night-owl"
+    let reset = " Resets Mon 09:00."
+
+    func near(_ a: Double?, _ b: Double) -> Bool { a.map { abs($0 - b) < 1e-9 } ?? false }
+
+    // Decoders: the page decoder, as the Worker payloads use.
+    func mac(_ json: String) -> MacBudget { try! JSONDecoder.page().decode(MacBudget.self, from: Data(json.utf8)) }
+    func decodeMac(_ json: String) -> MacBudget? { try? JSONDecoder.page().decode(MacBudget.self, from: Data(json.utf8)) }
+    func proj(_ json: String) -> BudgetProject? { try? JSONDecoder.page().decode(BudgetProject.self, from: Data(json.utf8)) }
+    func row(_ json: String) -> SessionBudget? { try? JSONDecoder.page().decode(SessionBudget.self, from: Data(json.utf8)) }
+
+    /// A row's budget as the Mac sends it, built directly (the binding cap, the project's key by default).
+    func sb(_ used: Double, _ cap: Int?, state: BudgetState? = nil, scope: SessionBudget.Scope = .project,
+            sessionUsed: Double? = nil, sessionCap: Int? = nil, key: String = "/Users/me/projects/night-owl") -> SessionBudget {
+        SessionBudget(projectKey: key, used: used, cap: cap, scope: scope, state: state ?? BudgetState(used: used, cap: cap),
+                      sessionUsed: sessionUsed, sessionCap: sessionCap)
+    }
+    func withBudget(_ s: LiveSession, _ b: SessionBudget?) -> LiveSession { var s = s; s.budget = b; return s }
+
+    // §3: the state the numbers give. No cap is always ok; 80% of the cap warns; the cap itself is over.
+    check(BudgetState(used: 99, cap: nil) == .ok, "state: no cap is ok at any share")
+    check(BudgetState(used: 19.99, cap: 25) == .ok, "state: just under 80% of 25 is ok")
+    check(BudgetState(used: 20, cap: 25) == .warn, "state: exactly 80% of 25 warns")
+    check(BudgetState(used: 25, cap: 25) == .over, "state: exactly the cap is over")
+    check(BudgetState(used: 7.99, cap: 10) == .ok && BudgetState(used: 8, cap: 10) == .warn && BudgetState(used: 10, cap: 10) == .over,
+          "state: 10 warns at 8 and is over at 10")
+    check(BudgetState(used: 79.99, cap: 100) == .ok && BudgetState(used: 80, cap: 100) == .warn && BudgetState(used: 100, cap: 100) == .over,
+          "state: 100 warns at 80")
+    check(BudgetState(used: 0.5, cap: 1) == .ok && BudgetState(used: 0.8, cap: 1) == .warn && BudgetState(used: 1, cap: 1) == .over,
+          "state: a 1% cap warns at 0.8")
+
+    // The Mac's word for the state: the three words, forgiving of case and spaces; anything else is no word.
+    check(BudgetState(wire: "ok") == .ok && BudgetState(wire: "warn") == .warn && BudgetState(wire: "over") == .over, "wire state: the three words")
+    check(BudgetState(wire: " OVER ") == .over && BudgetState(wire: "Warn") == .warn, "wire state: case and spaces are forgiven")
+    check(BudgetState(wire: "bogus") == nil && BudgetState(wire: "") == nil && BudgetState(wire: nil) == nil, "wire state: anything else reads as nil")
+
+    // §1 and §3: the bar and its words.
+    let m1 = BudgetMeter(used: 18.4, cap: 25)
+    check(m1.usedText == "18%" && m1.line == "18% of 25%", "meter: 18.4 of 25 reads 18% of 25% (\(m1.line))")
+    check(m1.state == .ok && m1.tone == .calm && m1.warnMark == 0.8, "meter: under the warning is calm, with the tick at 80%")
+    check(near(m1.fraction, 18.4 / 25), "meter: the bar is used over budget (\(m1.fraction))")
+    let mw = BudgetMeter(used: 20, cap: 25)
+    let mo = BudgetMeter(used: 25, cap: 25)
+    check(mo.state == .over && mo.tone == .warm && mo.fraction == 1, "meter: at the cap the bar is full and warm")
+    let mx = BudgetMeter(used: 40, cap: 25)
+    check(mx.fraction == 1 && mx.line == "40% of 25%", "meter: past the cap the bar clamps to full")
+    let mn = BudgetMeter(used: 18, cap: nil)
+    check(mn.line == "18% · no budget" && near(mn.fraction, 0.18) && mn.warnMark == nil && mn.tone == .quiet && mn.state == .ok,
+          "meter: no budget reads 18% · no budget, quiet, no tick")
+    check(BudgetMeter(used: 0, cap: 25).line == "0% of 25%" && BudgetMeter(used: 0, cap: 25).fraction == 0, "meter: nothing used is an empty bar")
+    let mstate = BudgetMeter(used: 18, cap: 25, state: .over)
+    check(mstate.state == .over && mstate.tone == .warm, "meter: the Mac's state wins over the numbers")
+    check(mn.spoken(name: "Night Owl") == "Night Owl, 18% of the week, no budget", "spoken: no budget (\(mn.spoken(name: "Night Owl")))")
+    check(m1.spoken(name: "Night Owl") == "Night Owl, 18% of the week, budget 25%", "spoken: ok (\(m1.spoken(name: "Night Owl")))")
+    check(mw.spoken(name: "Night Owl") == "Night Owl, 20% of the week, near its 25% budget", "spoken: warn (\(mw.spoken(name: "Night Owl")))")
+    check(mo.spoken(name: "Night Owl") == "Night Owl, 25% of the week, budget 25% reached, stopped", "spoken: over (\(mo.spoken(name: "Night Owl")))")
+
+    // §1 and §3: the picker's steps. Off, the presets, and steps of 5, never past 100 and never below Off.
+    check(BudgetPercent.presets == [nil, 10, 25, 50] && BudgetPercent.step == 5, "percent: presets Off, 10, 25, 50, in steps of 5")
+    check(BudgetPercent.up(nil) == 5, "up: Off goes to 5")
+    check(BudgetPercent.up(23) == 25, "up: 23 rounds up to 25")
+    check(BudgetPercent.up(25) == 30, "up: 25 goes to 30")
+    check(BudgetPercent.up(96) == 100 && BudgetPercent.up(100) == 100, "up: never past 100")
+    check(BudgetPercent.down(nil) == nil, "down: Off stays Off")
+    check(BudgetPercent.down(27) == 25, "down: 27 goes to 25")
+    check(BudgetPercent.down(25) == 20, "down: 25 goes to 20")
+    check(BudgetPercent.down(5) == nil && BudgetPercent.down(1) == nil, "down: 5 (or less) goes to Off")
+    check(BudgetPercent.down(6) == 5, "down: 6 goes to 5, not Off")
+    check(BudgetPercent.raised(25) == 35 && BudgetPercent.raised(95) == 100 && BudgetPercent.raised(100) == 100, "raised: ten more, at most 100")
+
+    // §1 and §3: the copy's numbers, the reset's words, and the lines the screens share.
+    check(BudgetCopy.warnAt(25) == 20 && BudgetCopy.warnAt(10) == 8 && BudgetCopy.warnAt(100) == 80, "warnAt: 25 → 20, 10 → 8, 100 → 80")
+    check(BudgetCopy.pct(18.4) == "18%" && BudgetCopy.pct(0) == "0%" && BudgetCopy.pct(100) == "100%", "pct: whole percents")
+    let monday = PageDate.parse("2026-11-09T09:00:00Z")!
+    check(BudgetCopy.resets(monday, timeZone: bUTC) == "Mon 09:00", "resets: Monday 09:00 in UTC")
+    check(BudgetCopy.resets(monday, timeZone: bAuckland) == "Mon 22:00", "resets: the same instant in Auckland is Monday 22:00")
+    check(BudgetCopy.preview(name: "Night Owl", cap: 25, session: false, resetsAt: bMon0900, timeZone: bUTC)
+          == "Page warns at 20% and stops Night Owl at 25% of the week." + reset, "preview: a project's budget")
+    check(BudgetCopy.preview(name: "Night Owl", cap: nil, session: false, resetsAt: bMon0900, timeZone: bUTC)
+          == "No budget: Night Owl can use any share of the week." + reset, "preview: a project with no budget")
+    check(BudgetCopy.preview(name: "Night Owl", cap: 10, session: true, resetsAt: bMon0900, timeZone: bUTC)
+          == "Page warns at 8% and stops this session at 10% of the week." + reset, "preview: a session's own budget says this session")
+    check(BudgetCopy.preview(name: "Night Owl", cap: nil, session: true, resetsAt: bMon0900, timeZone: bUTC)
+          == "No budget of its own: this session shares Night Owl's." + reset, "preview: a session with no budget shares its project's")
+    check(BudgetCopy.footnote == "Estimated from Claude Code on this Mac. Chats elsewhere count toward the week, so shares can read a little high.",
+          "footnote: the one honest line")
+    check(BudgetCopy.chip(sb(18.4, 25)) == "Budget 18/25%", "chip: Budget 18/25%")
+    check(BudgetCopy.chip(sb(18, nil)) == nil, "chip: no budget, no chip")
+    check(BudgetCopy.reachedLine(used: 26.4, stopped: 2) == "about 26% of the week · 2 sessions stopped", "reached line: plural sessions")
+    check(BudgetCopy.reachedLine(used: 25, stopped: 1) == "about 25% of the week · 1 session stopped", "reached line: one session")
+
+    // §4: the two page texts, word for word, read back by the phone.
+    let reached = BudgetPage.parse("Night Owl reached its budget: about 26% of the week (budget 25%). Page stopped 2 sessions.")
+    check(reached == BudgetPage(used: 26, cap: 25, stopped: 2), "page: reached text gives 26, 25 and 2 (\(reached))")
+    let warning = BudgetPage.parse("Night Owl has used about 20% of the week (budget 25%). Page stops it at 25%.")
+    check(warning == BudgetPage(used: 20, cap: 25, stopped: nil), "page: warning text gives 20 and 25, no stopped (\(warning))")
+    check(BudgetPage.parse("Night Owl reached its budget.") == BudgetPage(used: nil, cap: nil, stopped: nil), "page: no numbers, nothing read")
+    check(BudgetPage.parse("NIGHT OWL REACHED ITS BUDGET: ABOUT 26% OF THE WEEK (BUDGET 25%). PAGE STOPPED 2 SESSIONS.") == reached,
+          "page: matching ignores case")
+    check(reached.line(reached: true) == "about 26% of the week · 2 sessions stopped", "page line: the reached card's line")
+    check(warning.line(reached: false) == "20% of its 25% budget", "page line: the warning card's line")
+    check(BudgetPage.parse("Night Owl reached its budget.").line(reached: true) == nil, "page line: no numbers, no line")
+    let rm = reached.meter(reached: true)
+    check(rm?.state == .over && rm?.fraction == 1 && rm?.line == "26% of 25%", "page meter: a reached bar is over and full (\(String(describing: rm?.line)))")
+    let wm = warning.meter(reached: false)
+    check(wm?.state == .warn && near(wm?.fraction, 0.8) && wm?.warnMark == 0.8 && wm?.line == "20% of 25%", "page meter: the warning bar sits at 20 of 25, warn")
+    let unbudgetedReached = BudgetPage.parse("Night Owl reached its budget: about 25% of the week. Page stopped 2 sessions.")
+    check(unbudgetedReached.meter(reached: true)?.cap == 25 && unbudgetedReached.meter(reached: true)?.state == .over,
+          "page meter: a reached page with no budget N% is full at its own share")
+    check(unbudgetedReached.line(reached: true) == "about 25% of the week · 2 sessions stopped", "page line: a reached page with no budget N% still has its line")
+
+    // §3 and the sheets: the project's own budget is what is edited; the session's own cap, never the binding one.
+    let night = BudgetProject(key: bKey, name: "Night Owl", used: 18.4, cap: 25, state: .ok)
+    let pm = BudgetSheetModel.project(night, resetsAt: bMon0900)
+    check(pm.scope == .project && pm.name == "Night Owl" && pm.key == bKey && pm.cap == 25 && near(pm.used, 18.4), "project sheet: its name, key, share and budget")
+    check(pm.hue == night.hue && pm.title == "Night Owl\u{2019}s budget", "project sheet: the project's hue and title (\(pm.title))")
+    check(pm.subtitle == "18% of the week so far", "project sheet: the share so far (\(pm.subtitle))")
+    check(pm.preview(25, timeZone: bUTC) == "Page warns at 20% and stops Night Owl at 25% of the week." + reset, "project sheet: the preview at 25")
+    let unbudgeted = BudgetSheetModel.project(BudgetProject(key: bKey, name: "Night Owl", used: 0.2, cap: nil, state: .ok), resetsAt: nil)
+    check(unbudgeted.cap == nil && unbudgeted.subtitle == "<1% of the week so far", "project sheet: no budget of its own is seeded as none")
+
+    let budget = MacBudget(resetsAt: bMon0900, capture: true, measuring: false, weekPct: 34, defaultCap: 15, projects: [])
+    let dm = BudgetSheetModel.forDefault(budget)
+    check(dm.scope == .defaultCap && dm.cap == 15 && dm.key == nil && dm.hue == nil && dm.used == nil, "default sheet: the default cap, no key, no hue, no share")
+    check(dm.title == "Default budget" && dm.subtitle == "For every project without a budget of its own", "default sheet: its title and purpose")
+    check(dm.preview(10, timeZone: bUTC) == "Every project without its own budget stops at 10% of the week, with a warning at 8%." + reset,
+          "default sheet: the preview at 10")
+
+    let bottle = withBudget(nwSession("s9", title: "bottle-flip", cwd: "~/code/bottle-flip"),
+                            sb(18.4, 10, sessionUsed: 6.1, sessionCap: 20))
+    let ss = BudgetSheetModel.session(bottle, resetsAt: bMon0900)
+    check(ss.scope == .session && ss.key == "s9" && ss.name == "bottle-flip", "session sheet: the session's id and its project's name (\(ss.name))")
+    check(ss.cap == 20 && near(ss.used, 6.1), "session sheet: seeded from the session's own cap (20) and share, not the binding cap (10)")
+    check(ss.projectKey == bKey && ss.title == "This session only", "session sheet: keeps the project key, titled This session only")
+    check(ss.subtitle == "bottle-flip · 6% of the week so far", "session sheet: subtitle (\(ss.subtitle))")
+    check(ss.preview(12, timeZone: bUTC) == "Page warns at 10% and stops this session at 12% of the week." + reset, "session sheet: the preview at 12")
+    let shared = withBudget(nwSession("s8", title: "bottle-flip", cwd: "~/code/bottle-flip"), sb(18.4, 25))
+    let sm = BudgetSheetModel.session(shared, resetsAt: nil)
+    check(sm.cap == nil && sm.used == nil, "session sheet: no session cap of its own is seeded as none, not the project's 25")
+
+    // The `budget` op each sheet sends (§5); nil when nothing can be sent.
+    check(pm.command(pct: 25) == .budget(scope: .project, key: bKey, sessionId: nil, pct: 25), "command: a project's budget")
+    check(pm.command(pct: nil) == .budget(scope: .project, key: bKey, sessionId: nil, pct: nil), "command: Off is a clear")
+    check(pm.command(pct: 0) == nil && pm.command(pct: 101) == nil && pm.command(pct: -5) == nil, "command: outside 1–100 sends nothing")
+    check(BudgetSheetModel.project(BudgetProject(key: "", name: "x", used: 1, cap: nil, state: .ok), resetsAt: nil).command(pct: 25) == nil,
+          "command: a project with no key sends nothing")
+    check(ss.command(pct: 12) == .budget(scope: .session, key: bKey, sessionId: "s9", pct: 12), "command: a session names itself and its project")
+    check(BudgetSheetModel.session(nwSession("s7", cwd: "~/code/bottle-flip"), resetsAt: nil).command(pct: 12)
+          == .budget(scope: .session, key: nil, sessionId: "s7", pct: 12), "command: a session with no project key still names itself")
+    check(dm.command(pct: 15) == .budget(scope: .default, key: nil, sessionId: nil, pct: 15), "command: the default")
+    check(dm.command(pct: nil) == .budget(scope: .default, key: nil, sessionId: nil, pct: nil), "command: the default's Off")
+
+    // §5 wire: the list header, as the spec shows it.
+    let hdr = #"{"window": "week", "resetsAt": 1794852000, "capture": true, "measuring": false, "weekPct": 34, "defaultCap": null, "projects": [{"key": "/Users/me/projects/night-owl", "name": "Night Owl", "used": 18.4, "cap": 25, "state": "ok"}]}"#
+    let h = mac(hdr)
+    check(h.resetsAt == Date(timeIntervalSince1970: 1_794_852_000), "wire header: resetsAt in seconds (\(String(describing: h.resetsAt)))")
+    check(h.capture && !h.measuring && h.weekPct == 34 && h.defaultCap == nil, "wire header: capture on, not measuring, 34% of the week, no default")
+    check(h.projects.count == 1, "wire header: one project")
+    if let p = h.projects.first {
+        check(p.key == bKey && p.name == "Night Owl" && p.cap == 25 && p.state == .ok && near(p.used, 18.4), "wire project: the spec's row (\(p))")
+        check(p.id == bKey && p.hue == ProjectHue(key: "~/projects/night-owl"), "wire project: the hue is the home-abbreviated folder's")
+        check(p.effectiveCap(default: 15) == 25, "wire project: its own cap beats the default")
+    } else { check(false, "wire project row decodes") }
+
+    let rowJSON = #"{"projectKey": "/Users/me/projects/night-owl", "used": 18.4, "cap": 25, "scope": "project", "state": "ok", "sessionUsed": 6.1, "sessionCap": null}"#
+    if let r = row(rowJSON) {
+        check(r.projectKey == bKey && r.cap == 25 && r.scope == .project && r.state == .ok, "wire row: the spec's row")
+        check(near(r.sessionUsed, 6.1) && r.sessionCap == nil && r.meter.line == "18% of 25%", "wire row: session share, no session cap, the bar's line")
+    } else { check(false, "wire row decodes") }
+    check(row(#"{"projectKey": "/a", "used": 18.4, "cap": 25, "scope": "session"}"#)?.scope == .session, "wire row: scope session is kept")
+
+    // Malformed headers: a block that is not an object is nothing; the rest is lenient.
+    check(decodeMac("5") == nil && decodeMac("\"x\"") == nil && decodeMac("[]") == nil, "wire header: a block that is not an object is nothing")
+    check(mac(#"{"projects": []}"#).capture == true && mac(#"{"projects": []}"#).measuring == false, "wire header: missing capture is on, missing measuring is off")
+    check(mac(#"{"capture": "no"}"#).capture == true, "wire header: a non-bool capture is missing, so on")
+    check(mac(#"{"weekPct": 150}"#).weekPct == 100 && mac(#"{"weekPct": -4}"#).weekPct == 0, "wire header: the week's share is kept in 0–100")
+    check(mac(#"{"defaultCap": 15}"#).defaultCap == 15, "wire header: a default cap of 15")
+
+    // Project rows: a row needs a key and a share; the rest falls back. Bad rows are dropped, the rest kept.
+    let withBad = #"{"projects": [{"key": "/a/one", "used": 1}, {"used": 2}, {"key": "/a/bad", "used": "x"}, {"key": "/a/nouse"}, {"key": "   ", "used": 3}, null, {"key": "/a/two", "used": 4}]}"#
+    check(mac(withBad).projects.map(\.key) == ["/a/one", "/a/two"], "wire header: bad project rows are dropped, the rest kept (\(mac(withBad).projects.map(\.key)))")
+    check(proj(#"{"key": "/a/b", "used": 150}"#)?.used == 100 && proj(#"{"key": "/a/b", "used": -3}"#)?.used == 0, "wire project: the share is kept in 0–100")
+    check(proj(#"{"key": "/a/b"}"#) == nil && proj(#"{"used": 5}"#) == nil, "wire project: no share or no key is dropped")
+    let longKey = String(repeating: "k", count: 1025)
+    check(proj(#"{"key": "\#(longKey)", "used": 5}"#) == nil, "wire project: a 1025-character key is dropped")
+    check(proj(#"{"key": "/Users/me/projects/night-owl", "used": 5}"#)?.name == "night-owl", "wire project: no name is the folder's last part")
+    check(proj(#"{"key": "/a/b", "used": 5, "name": "\#(String(repeating: "n", count: 100))"}"#)?.name.count == 80, "wire project: a long name is cut to 80")
+    let capCases: [(String, Int?)] = [("0", nil), ("101", nil), ("\"x\"", nil), ("25.5", nil), ("-3", nil), ("null", nil), ("1", 1), ("100", 100), ("25", 25)]
+    for (raw, want) in capCases {
+        let p = proj(#"{"key": "/a/b", "used": 5, "cap": \#(raw)}"#)
+        check(p != nil && p?.cap == want, "wire project: cap \(raw) reads as \(String(describing: want)) (got \(String(describing: p?.cap)))")
+    }
+    check(proj(#"{"key": "/a/b", "used": 5}"#) != nil && proj(#"{"key": "/a/b", "used": 5}"#)?.cap == nil, "wire project: no cap is none")
+    // The state: the Mac's word wins; without one it is the numbers' (ok, warn, over).
+    check(proj(#"{"key": "/a/b", "used": 18.4, "cap": 25, "state": "warn"}"#)?.state == .warn, "wire project: the Mac's state is kept")
+    check(proj(#"{"key": "/a/b", "used": 5, "cap": 25, "state": "bogus"}"#)?.state == .ok, "wire project: a state that isn't a word is derived (ok)")
+    check(proj(#"{"key": "/a/b", "used": 20, "cap": 25}"#)?.state == .warn, "wire project: no state at 80% derives warn")
+
+    // More than 60 projects: the first 60, in the Mac's order.
+    let many = (0..<61).map { #"{"key": "/p/\#($0)", "used": 1}"# }.joined(separator: ",")
+    let mm = mac(#"{"projects": [\#(many)]}"#)
+    check(MacBudget.maxProjects == 60 && mm.projects.count == 60, "wire header: more than 60 projects keeps 60 (\(mm.projects.count))")
+    check(mm.projects.first?.key == "/p/0" && mm.projects.last?.key == "/p/59", "wire header: the first 60, in order")
+
+    // The wire's numbers, read on their own.
+    check(BudgetWire.cap(nil) == nil && BudgetWire.cap(0) == nil && BudgetWire.cap(1) == 1 && BudgetWire.cap(100) == 100, "wire cap: whole 1–100 only (ends)")
+    check(BudgetWire.cap(.nan) == nil && BudgetWire.cap(.infinity) == nil, "wire cap: NaN and infinity are none")
+    check(BudgetWire.share(nil) == nil && BudgetWire.share(.nan) == nil && BudgetWire.share(-1) == 0 && BudgetWire.share(101) == 100, "wire share: clamped to 0–100, NaN is none")
+    check(BudgetWire.validCap(nil) && BudgetWire.validCap(1) && BudgetWire.validCap(100), "validCap: Off and 1–100 are valid")
+
+    // Budgets are drawn only for a Mac that says so (`caps`).
+    let rowed = [withBudget(nwSession("g1", cwd: "~/code/bottle-flip"), sb(18.4, 25))]
+    let off = BudgetWire.gated(budget: h, sessions: rowed, caps: ["hold-v1", "images-v1"])
+    check(off.budget == nil && off.sessions.count == 1 && off.sessions.allSatisfy { $0.budget == nil }, "gated: without budget-v1 no block and no row budget")
+    let on = BudgetWire.gated(budget: h, sessions: rowed, caps: ["budget-v1"])
+    check(on.budget == h && on.sessions.first?.budget == sb(18.4, 25), "gated: with budget-v1 everything is kept")
+
+    // A whole `list` (SessionsPlaintext): the header and the row, with and without budget-v1.
+    func listPlain(caps: String?, header: String?, rowBudget: String?) -> Data {
+        var parts: [String] = [#""kind":"list","seq":5,"ts":1761300000000"#]
+        if let caps { parts.append(#""caps":\#(caps)"#) }
+        if let header { parts.append(#""budget":\#(header)"#) }
+        var sessionRow = #"{"id":"s-bottle","backend":"claude","title":"bottle-flip","cwd":"~/code/bottle-flip","state":"active","host":"cmux","canType":true"#
+        if let rowBudget { sessionRow += #","budget":\#(rowBudget)"# }
+        parts.append(#""sessions":[\#(sessionRow)}]"#)
+        return Data(("{" + parts.joined(separator: ",") + "}").utf8)
+    }
+    if let p = SessionsPlaintext.decode(listPlain(caps: #"["hold-v1","budget-v1"]"#, header: hdr, rowBudget: rowJSON)),
+       case .list(_, let ss) = p.update {
+        check(p.budget?.projects.first?.key == bKey && p.budget?.resetsAt == Date(timeIntervalSince1970: 1_794_852_000), "list: the header's budget is kept with budget-v1")
+        check(ss.count == 1 && ss.first?.budget?.meter.line == "18% of 25%", "list: the row's budget is kept with budget-v1")
+    } else { check(false, "list with budget-v1 decodes") }
+    if let p = SessionsPlaintext.decode(listPlain(caps: #"["hold-v1"]"#, header: hdr, rowBudget: rowJSON)), case .list(_, let ss) = p.update {
+        check(p.budget == nil && ss.count == 1 && ss.first?.budget == nil, "list: without budget-v1 no block, no row budget, the session still listed")
+    } else { check(false, "list without budget-v1 decodes") }
+    if let p = SessionsPlaintext.decode(listPlain(caps: nil, header: hdr, rowBudget: rowJSON)), case .list(_, let ss) = p.update {
+        check(p.budget == nil && ss.count == 1 && ss.first?.budget == nil, "list: an old Mac with no caps has no budgets")
+    } else { check(false, "list with no caps decodes") }
+    if let p = SessionsPlaintext.decode(listPlain(caps: #"["budget-v1"]"#, header: #""x""#, rowBudget: rowJSON)), case .list(_, let ss) = p.update {
+        check(p.budget == nil && ss.count == 1 && ss.first?.budget?.cap == 25, "list: a budget block that isn't an object is nothing, the list still reads")
+    } else { check(false, "list with a bad header decodes") }
+    if let p = SessionsPlaintext.decode(listPlain(caps: #"["budget-v1"]"#, header: hdr, rowBudget: #"{"projectKey":"/a","used":"x"}"#)),
+       case .list(_, let ss) = p.update {
+        check(p.budget != nil && ss.count == 1 && ss.first?.budget == nil, "list: a row whose budget doesn't read is no budget, the row is kept")
+    } else { check(false, "list with a bad row budget decodes") }
+    if let p = SessionsPlaintext.decode(listPlain(caps: #"["budget-v1"]"#, header: nil, rowBudget: #"{"projectKey":"/a","used":9,"cap":10}"#)),
+       case .list(_, let ss) = p.update {
+        check(p.budget == nil && ss.first?.budget?.state == .warn, "list: a row with no state derives it (9 of 10 warns)")
+    } else { check(false, "list with a row budget and no state decodes") }
+
+    // §5 op: the bytes the Mac reads, decoded as JSON.
+    func budgetOp(_ c: SessionCommand) -> (raw: String, body: [String: Any]) {
+        let data = c.plaintext(clientId: "c-9", viewer: "viewer-1", now: nwNow)
+        return (String(decoding: data, as: UTF8.self), (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:])
+    }
+    let opP = budgetOp(.budget(scope: .project, key: bKey, sessionId: nil, pct: 25))
+    check(opP.body["op"] as? String == "budget" && (opP.body["scope"] as? String) == "project", "op: a project budget names its op and scope")
+    check((opP.body["key"] as? String) == bKey && (opP.body["pct"] as? Int) == 25, "op: the project's key verbatim, pct 25")
+    check(opP.body["sessionId"] == nil, "op: a project sends no sessionId")
+    check(opP.raw.contains(#""key":"/Users/me/projects/night-owl""#), "op: slashes in the key are not escaped")
+    let opClear = budgetOp(.budget(scope: .project, key: bKey, sessionId: nil, pct: nil))
+    check(opClear.body["pct"] is NSNull && opClear.raw.contains(#""pct":null"#), "op: a clear is pct null, written out")
+    let opSession = budgetOp(.budget(scope: .session, key: bKey, sessionId: "s9", pct: 12))
+    check((opSession.body["scope"] as? String) == "session" && (opSession.body["sessionId"] as? String) == "s9", "op: a session names its session")
+    check((opSession.body["key"] as? String) == bKey && (opSession.body["pct"] as? Int) == 12, "op: a session sends its project key too, and pct")
+    let opDefault = budgetOp(.budget(scope: .default, key: nil, sessionId: nil, pct: 15))
+    check((opDefault.body["scope"] as? String) == "default" && (opDefault.body["pct"] as? Int) == 15, "op: the default's scope and pct")
+
+    // §5: a relay answer to the POST, and the Mac's `result`, into what the sheet shows.
+    check(BudgetSaveStatus.afterPost(.accepted) == nil, "save: 202 keeps waiting for the Mac's result")
+    check(BudgetSaveStatus.afterPost(SessionCommandOutcome.from(status: 202, body: Data())) == nil, "save: a 202 from the relay keeps waiting")
+    check(BudgetSaveStatus.afterPost(SessionCommandOutcome.from(status: 503, body: Data())) == .failed(BudgetCopy.macOffline), "save: a 503 is the offline copy")
+    check(BudgetSaveStatus.afterPost(.rateLimited)?.failure?.hasPrefix("Too many changes in a minute") == true, "save: rate limited says so")
+    check(BudgetSaveStatus.afterPost(.relayTooOld) == .failed(SessionCommandOutcome.relayTooOld.failureMessage!), "save: an old relay says to update the Worker")
+    func res(_ ok: Bool, _ reason: String?, _ detail: String? = nil) -> CommandResult {
+        CommandResult(clientId: "c-9", ok: ok, code: ok ? .delivered : .refused, reason: reason, detail: detail, interventionId: nil)
+    }
+    check(BudgetSaveStatus.from(result: res(true, nil)) == .saved, "result: ok is saved")
+    check(BudgetSaveStatus.from(result: res(false, "not_found")).failure == "Your Mac doesn't have that project or session any more. The budget wasn't changed.",
+          "result: a project or session the Mac no longer has")
+    check(BudgetSaveStatus.from(result: res(false, "stale")).failure == SessionResultCopy.refusal(reason: "stale", detail: nil, agent: "Your agent"),
+          "result: a stale target uses the session copy")
+    check(BudgetSaveStatus.from(result: res(false, "invalid")).failure == "Your Mac didn't accept that percentage. The budget wasn't changed.",
+          "result: an invalid percentage, no detail")
+    check(BudgetSaveStatus.from(result: res(false, "invalid", "Use 1 to 100.")).failure == "Use 1 to 100.", "result: an invalid percentage uses the Mac's words")
+    check(BudgetSaveStatus.from(result: res(false, "new_thing", "Your Mac said so.")).failure == "Your Mac said so.", "result: an unknown reason uses the Mac's detail")
+    check(BudgetSaveStatus.noAnswer == .failed(BudgetCopy.noAnswer) && BudgetSaveStatus.resultTimeout == 20, "status: no answer is said once the 20 seconds pass")
+
+    // §4 and §6: the room's chip. Present with a budget; absent with none, and once the session has ended.
+    let claudeC = AgentCharacter.from(backend: .known(.claude), provider: nil)
+    func room(_ s: LiveSession, ended: Bool = false, fiveH: Double? = nil) -> [RoomChip] {
+        RoomHeader.chips(session: s, character: claudeC, ended: ended, waitingSince: nil, hasReviewPage: false, fiveHourPct: fiveH, now: nwNow)
+    }
+    let live = nwSession("r-b", state: "active", cwd: "~/code/bottle-flip", activeAt: nwT0 - 45)
+    let chipOk = room(withBudget(live, sb(18.4, 25)))
+    check(chipOk.last?.text == "Budget 18/25%" && chipOk.last?.budget == true && chipOk.last?.symbol == "chart.pie.fill" && chipOk.last?.tone == .working,
+          "room: the budget chip is last, pie-symbolled, working-toned when ok (\(chipOk.map(\.text)))")
+    check(room(live).allSatisfy { !$0.budget }, "room: no budget, no budget chip")
+    check(room(withBudget(live, sb(18.4, 25)), ended: true).map(\.text) == ["ENDED"], "room: an ended session has no budget chip")
+    check(room(withBudget(live, sb(18.4, 25)), fiveH: 62).map(\.text).last == "Budget 18/25%", "room: the budget chip follows the 5h chip")
+
+    // §4: a budget page's three answers, in what they did; the Mac's numbers are not repeated.
+    func budgetPage(action: String?, delivery: String? = "delivered", subtype: String = "budget_reached") -> Intervention {
+        var iv = nwIv("bp-\(action ?? "none")", .rateLimit, "Night Owl reached its budget: about 26% of the week (budget 25%). Page stopped 2 sessions.",
+                      at: nwT0 - 600, project: "Night Owl", subtype: subtype)
+        iv.repliedAt = Date(timeIntervalSince1970: nwT0 - 60)
+        iv.repliedAction = action
+        iv.deliveryStatus = delivery
+        return iv
+    }
+    let raised = SettledLog.line(for: budgetPage(action: "approve"), now: nwNow)
+    check(raised.text == "Raised Night Owl\u{2019}s budget" && raised.tone == .approved && raised.status == "delivered ✓",
+          "settled: an approved budget page reads as a raise (\(raised.text))")
+    let letRun = SettledLog.line(for: budgetPage(action: "carry_on"), now: nwNow)
+    check(letRun.text == "Let Night Owl\u{2019}s turn finish" && letRun.tone == .sent, "settled: carry on reads as letting the turn finish (\(letRun.text))")
+    let kept = SettledLog.line(for: budgetPage(action: "deny"), now: nwNow)
+    check(kept.text == "Kept Night Owl stopped" && kept.tone == .neutral, "settled: deny reads as kept stopped (\(kept.text))")
+    check(SettledLog.line(for: budgetPage(action: "approve", delivery: "failed"), now: nwNow).status == "not delivered", "settled: a budget reply that didn't arrive says so")
+    check(SettledLog.build(history: [budgetPage(action: "approve")], now: nwNow, calendar: nwCal, timeZone: nwUTC).today.first?.text == "Raised Night Owl\u{2019}s budget",
+          "settled: today's log carries the budget words")
+}
+
 print("passes=\(passes) failures=\(failures)")
 exit(failures == 0 ? 0 : 1)

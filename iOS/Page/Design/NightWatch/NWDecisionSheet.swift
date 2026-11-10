@@ -338,6 +338,7 @@ struct NWDecisionScreen: View {
             .overlay(RoundedRectangle(cornerRadius: NightWatch.Radius.inset, style: .continuous).strokeBorder(Color.white.opacity(0.07), lineWidth: 1))
         case .plan, .question, .note:
             VStack(alignment: .leading, spacing: 10) {
+                if let m = c.budgetMeter { budgetFigure(m) }
                 if let s = c.turnSummary {
                     let chips = TurnSummaryChips.parse(s)
                     HStack(spacing: 8) { ForEach(Array(chips.enumerated()), id: \.offset) { _, ch in NWTurnChip(chip: ch) } }
@@ -355,6 +356,17 @@ struct NWDecisionScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(RoundedRectangle(cornerRadius: NightWatch.Radius.inset, style: .continuous).fill(NightWatch.Palette.inset.color))
         }
+    }
+
+    /// A budget page's figure: the project's bar (full once Page stopped it) and the line under it, amber from the warning.
+    private func budgetFigure(_ m: BudgetMeter) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            NWBudgetBar(meter: m, height: 10)
+            Text(c.budget?.line(reached: c.section == .decide) ?? m.line).font(NightWatch.Typo.captionStrong.monospacedDigit())
+                .foregroundColor((m.tone == .warm ? NightWatch.Palette.amber : NightWatch.Palette.textSecondary).color)
+        }
+        .padding(.bottom, 2)
+        .accessibilityElement(children: .combine)
     }
 
     private func screenNoteView(_ text: String) -> some View {
@@ -514,6 +526,8 @@ struct NWDecisionScreen: View {
                 .frame(maxWidth: .infinity)
             } else if !busy || state.phase == .unconfirmed {
                 switch c.section {
+                case _ where c.chip == .budget:
+                    budgetControls
                 case .decide where c.chip == .question:
                     // The composer, when it is up, is in the dock; this is the picker and the way to the composer.
                     if let ask = state.ask {
@@ -556,6 +570,23 @@ struct NWDecisionScreen: View {
                 }
             }
         }
+    }
+
+    /// A budget page (Designs/budget-caps.md): "Raise to 35%" (the Mac changes the budget for good) and, once Page has
+    /// stopped the project, "Let this turn finish" (the stopped turn goes through once). Both are the page's own
+    /// actions; neither types anything into a session.
+    @ViewBuilder private var budgetControls: some View {
+        let reached = c.section == .decide
+        if let raise = row.action(.approve) {
+            Button(raise.label, action: actions.approve).buttonStyle(NWButtonStyle(kind: reached ? .bright : .amber))
+        }
+        if let finish = row.action(.carryOn) {
+            Button(finish.label, action: actions.carryOn).buttonStyle(NWButtonStyle(kind: .quiet))
+        }
+        Text(reached ? "Raising the budget changes it for good. Let this turn finish lets the stopped turn through once, then Page stops it again."
+             : "Page stops \(c.project) at \(c.budget?.cap.map { "\($0)%" } ?? "its budget"). Raising the budget changes it for good.")
+            .font(NightWatch.Typo.caption).foregroundColor(NightWatch.Palette.textTertiary.color)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder private var lookControls: some View {

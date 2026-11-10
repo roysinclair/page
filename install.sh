@@ -252,11 +252,12 @@ disable_power_helpers() {
 
 install_hook() {
     local src
-    for src in hooks/page-notify.sh hooks/page-extract-context.py; do
+    for src in hooks/page-notify.sh hooks/page-budget-gate.sh hooks/page-extract-context.py; do
         [[ -f "$src" ]] || { echo "!! Missing $src (run from the repository root)" >&2; exit 1; }
     done
     mkdir -p "$HOOKS_DIR"
     install -m 0755 hooks/page-notify.sh "$HOOKS_DIR/page-notify.sh"
+    install -m 0755 hooks/page-budget-gate.sh "$HOOKS_DIR/page-budget-gate.sh"
     install -m 0755 hooks/page-extract-context.py "$HOOKS_DIR/page-extract-context.py"
     echo "==> Installed the Page Studio hook into $HOOKS_DIR"
     # The entries below mirror what Page Studio's in-app installer writes
@@ -282,7 +283,11 @@ install_hook() {
           { "matcher": "AskUserQuestion|ExitPlanMode",
             "hooks": [ { "type": "command",
                          "command": "~/.claude/hooks/page-notify.sh",
-                         "timeout": 570 } ] }
+                         "timeout": 570 } ] },
+          { "matcher": "*",
+            "hooks": [ { "type": "command",
+                         "command": "~/.claude/hooks/page-budget-gate.sh",
+                         "timeout": 5 } ] }
         ],
         "Notification": [
           { "hooks": [ { "type": "command",
@@ -296,6 +301,10 @@ install_hook() {
     timeout. Notification only pages (it never blocks). Keep "timeout" above
     PAGE_HOOK_TIMEOUT (540 s by default) if you change either.
 
+    The "*" PreToolUse entry is the budget gate: it prints nothing unless a project
+    has used its whole budget in Page Studio > Budget, and then stops that
+    project's tool calls. It fails open on any error.
+
     Claude Code normally picks up settings changes by itself; if a running
     session doesn't, restart it.
 EOF
@@ -307,22 +316,25 @@ EOF
 # the bundles given (default: $APP_DEST). Prints the leftover entries; returns
 # 0 when there are none.
 check_leftover_hooks() {
-    local app script escaped f found=1
+    local app script name escaped f found=1
     [[ $# -gt 0 ]] || set -- "$APP_DEST"
     for f in "$HOME/.claude/settings.json" "$HOME/.codex/hooks.json"; do
         [[ -f "$f" ]] || continue
         for app in "$@"; do
-            script="$app/Contents/Resources/hooks/page-notify.sh"
-            # Also the JSON-escaped spelling ("\/"), in case another tool rewrote the file.
-            escaped="${script//\//\\/}"
-            if grep -qF -e "$script" -e "$escaped" "$f" 2>/dev/null; then
-                if [[ "$found" == 1 ]]; then
-                    echo "!! Page Studio's phone-approval hooks are still installed and would point at a deleted script:" >&2
+            # The notify hook and the budget gate (a PreToolUse entry) sit side by side in the bundle.
+            for name in page-notify.sh page-budget-gate.sh; do
+                script="$app/Contents/Resources/hooks/$name"
+                # Also the JSON-escaped spelling ("\/"), in case another tool rewrote the file.
+                escaped="${script//\//\\/}"
+                if grep -qF -e "$script" -e "$escaped" "$f" 2>/dev/null; then
+                    if [[ "$found" == 1 ]]; then
+                        echo "!! Page Studio's phone-approval hooks are still installed and would point at a deleted script:" >&2
+                    fi
+                    found=0
+                    echo "   $f:" >&2
+                    grep -nF -e "$script" -e "$escaped" "$f" | sed 's/^/     /' >&2
                 fi
-                found=0
-                echo "   $f:" >&2
-                grep -nF -e "$script" -e "$escaped" "$f" | sed 's/^/     /' >&2
-            fi
+            done
         done
     done
     [[ "$found" == 1 ]]
@@ -438,7 +450,7 @@ uninstall() {
     if [[ -f "$HOOKS_DIR/page-notify.sh" ]]; then
         echo "    Note: the hook copy in $HOOKS_DIR (from --install-hook) was left in place;"
         echo "    remove its entries from ~/.claude/settings.json (and ~/.codex/hooks.json)"
-        echo "    and delete page-notify.sh / page-extract-context.py there if you no longer want it."
+        echo "    and delete page-notify.sh / page-budget-gate.sh / page-extract-context.py there if you no longer want it."
     fi
     echo "Uninstalled. Settings and logs remain in ~/Library/Application Support/ClaudePowerMode"
     echo "and ~/Library/Logs; delete them by hand for a clean slate."

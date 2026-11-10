@@ -96,6 +96,12 @@ sealed interface SessionCommand {
     /** v4: start a new Claude session in [folder] with [text] as its first prompt (may be empty). */
     data class Start(val folder: String, val text: String) : SessionCommand
 
+    /**
+     * Sets, or with a null [pct] clears, a budget on the Mac (`budget-v1`; Designs/budget-caps.md section 5). [key] is
+     * the Mac's project key, sent back verbatim; [sessionId] names a session's own budget. Answered by one `result`.
+     */
+    data class Budget(val scope: BudgetOpScope, val key: String?, val sessionId: String?, val pct: Int?) : SessionCommand
+
     val op: String
         get() = when (this) {
             is Watch, is WatchAgent -> "watch"
@@ -112,6 +118,7 @@ sealed interface SessionCommand {
             is Diff -> "diff"
             Folders -> "folders"
             is Start -> "start"
+            is Budget -> "budget"
         }
 
     /** The plaintext JSON. Keys are sorted so the bytes are deterministic. */
@@ -182,6 +189,13 @@ sealed interface SessionCommand {
                 body["sessionId"] = JsonPrimitive(sessionId)
                 body["runId"] = JsonPrimitive(runId)
                 body["agentId"] = JsonPrimitive(agentId)
+            }
+            is Budget -> {
+                body["scope"] = JsonPrimitive(scope.wire)
+                // A key that doesn't apply is absent (not null); an absent `pct` would not clear, so that one is explicit.
+                key?.let { body["key"] = JsonPrimitive(it) }
+                sessionId?.let { body["sessionId"] = JsonPrimitive(it) }
+                body["pct"] = pct?.let(::JsonPrimitive) ?: JsonNull
             }
         }
         return JsonObject(body).toString().toByteArray(Charsets.UTF_8)

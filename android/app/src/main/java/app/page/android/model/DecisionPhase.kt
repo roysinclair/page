@@ -69,7 +69,7 @@ sealed interface DecisionPhase {
     data class StatusLine(val text: String, val tone: Tone)
 
     /** The strip under the ask, in the trust model's words. null while open. */
-    fun statusLine(legacyRelay: Boolean): StatusLine? = when (this) {
+    fun statusLine(legacyRelay: Boolean, deliveredFallback: String = "typed into the session on your computer"): StatusLine? = when (this) {
         Open, Loading, Missing -> null
         Sending -> StatusLine("Sending…", Tone.NEUTRAL)
         is Sent -> when {
@@ -82,7 +82,7 @@ sealed interface DecisionPhase {
             else -> StatusLine("Sent · waiting for your computer to confirm…", Tone.NEUTRAL)
         }
         CheckingClose -> StatusLine("This page closed · checking whether your reply landed…", Tone.NEUTRAL)
-        is Delivered -> StatusLine("Delivered · ${detail ?: "typed into the session on your computer"}.", Tone.GOOD)
+        is Delivered -> StatusLine("Delivered · ${detail ?: deliveredFallback}.", Tone.GOOD)
         is Failed -> StatusLine(message, Tone.PROBLEM)
         Unconfirmed -> StatusLine("Your computer never confirmed this. If the session is still waiting, you can answer again.", Tone.WARN)
         AlreadyReplied -> StatusLine("Already answered at your computer", Tone.NEUTRAL)

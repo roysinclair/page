@@ -18,6 +18,14 @@ object PageSubtype {
     const val BATTERY_FORECAST = "battery_forecast"
     const val USAGE_FORECAST = "usage_forecast"
 
+    // Budget caps (Designs/budget-caps.md, kind rate_limit): a project reached its share of the week (a decision), or is
+    // near it (a look).
+    const val BUDGET_REACHED = "budget_reached"
+    const val BUDGET_WARNING = "budget_warning"
+
+    /** A project at (or near) its share of the week. */
+    fun isBudget(subtype: String?): Boolean = subtype == BUDGET_REACHED || subtype == BUDGET_WARNING
+
     // Kind-less forms, as iOS `PageSubtype` has them (callers already know the kind).
     fun isStuck(subtype: String?): Boolean = subtype == LOOPING || subtype == STUCK || subtype == WORKFLOW_STALLED
 
@@ -48,5 +56,6 @@ fun chipLabel(kind: InterventionKind, subtype: String?): String = when {
     PageSubtype.isStuck(kind, subtype) -> "LOOKS STUCK"
     kind == InterventionKind.RATE_LIMIT && subtype == PageSubtype.BATTERY_FORECAST -> "BATTERY"
     kind == InterventionKind.RATE_LIMIT && subtype == PageSubtype.USAGE_FORECAST -> "USAGE"
+    kind == InterventionKind.RATE_LIMIT && PageSubtype.isBudget(subtype) -> "BUDGET"
     else -> kind.label
 }

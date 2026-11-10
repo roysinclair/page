@@ -87,8 +87,13 @@ data class DecisionContent(
     val canTell: Boolean,
     /** A finished turn's last message ends on a plain yes/no question ([YesNoQuestion]): the sheet offers Yes and No. */
     val yesNo: String? = null,
+    /** A budget page's numbers (Designs/budget-caps.md): the sheet draws the project's bar and the two budget buttons. */
+    val budget: BudgetPage? = null,
 ) {
     enum class AskKind { COMMAND, EDIT, PLAN, QUESTION, NOTE }
+
+    /** The bar a budget page draws; null on every other page and when the text named no share. */
+    val budgetMeter: BudgetMeter? get() = budget?.meter(reached = section == NowRow.Section.DECIDE)
 
     companion object {
         /** What undoing would look like, per class. A hint, never a "safe" badge. Pure. */
@@ -153,6 +158,8 @@ data class DecisionContent(
             }
 
             val isInfo: String? = when {
+                // A budget page is a decision (Raise, Let this turn finish), whichever agent's sessions it stopped.
+                iv.kind == InterventionKind.RATE_LIMIT && PageSubtype.isBudget(iv.subtype) -> null
                 iv.kind == InterventionKind.RATE_LIMIT && iv.subtype == "battery_forecast" -> "Nothing to answer. Plug your computer in to keep the agents going."
                 iv.kind == InterventionKind.RATE_LIMIT && iv.subtype == "usage_forecast" -> "Nothing to answer. Page Power keeps your computer awake through the reset and can resume sessions when it resets."
                 iv.kind == InterventionKind.RATE_LIMIT && iv.backend == InterventionBackend.CODEX -> "Nothing to answer. Codex picks up again once the limit resets."
@@ -162,7 +169,10 @@ data class DecisionContent(
 
             val cwd = if (iv.cwd.isEmpty()) null else PathDisplay.abbreviatingHome(iv.cwd)
             val footer: String
-            if (iv.isBlockingHook) {
+            if (PageSubtype.isBudget(iv.subtype)) {
+                // The page's session is Page's own (`page-budget-...`): nothing is typed anywhere, the Mac changes a number.
+                footer = "Page Studio changes the budget on $mac. Nothing is typed into a session."
+            } else if (iv.isBlockingHook) {
                 footer = "Your answer goes straight to $backendLabel's permission hook in session ${Sw.prefix(iv.sessionId, 8)} on $mac."
             } else {
                 var where_ = "session ${Sw.prefix(iv.sessionId, 8)}"
@@ -181,6 +191,7 @@ data class DecisionContent(
                 screenNote = if (unknownAgent) DeliveryPreview.unreadableNote else null,
                 decisionsOnly = iv.acceptsDecisionsOnly, isHook = iv.isBlockingHook, footer = footer, rawContext = iv.context,
                 informational = isInfo, stoppable = PageSubtype.canStop(iv.subtype), canTell = !iv.acceptsDecisionsOnly, yesNo = yesNo,
+                budget = if (row.chip == ChipKind.BUDGET) row.budget else null,
             )
         }
     }

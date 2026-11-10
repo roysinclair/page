@@ -348,7 +348,10 @@ struct NWBudgetPage: View {
             NWNote(text: "Claude Code only gives these numbers to your status line, so Page Studio wraps it: a small script saves them, then runs your own status line unchanged. Changes ~/.claude/settings.json (backed up first); turning this off puts it back. This one applies straight away.")
                 .padding(.horizontal, 4).padding(.top, -10)
 
-            if let board = store.budgetBoard {
+            if let board = store.budgetBoard, !board.captureOn {
+                NWNote(text: "Turn on “Show my Claude usage” above to share the week out between projects and set budgets for them.")
+                    .padding(.horizontal, 4).padding(.top, -6)
+            } else if let board = store.budgetBoard {
                 NWCard(title: "PROJECT BUDGETS · THIS WEEK") {
                     if board.measuring {
                         NWNote(text: "Measuring… shares appear once the week has moved a little.").padding(16)

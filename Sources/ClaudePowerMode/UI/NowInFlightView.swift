@@ -141,6 +141,8 @@ struct NWInFlightRowView: View {
                     .accessibilityAddTraits(.isButton)
                     .accessibilityAction { store.clickFlight(.open, on: row) }
                 actions
+                // Budgets: a slim line under Open and Steer, and its editor in this card.
+                NWBudgetSlot(store: store, rowId: row.id, sessionId: row.sessionId, backend: row.backend)
             } else {
                 compact
             }

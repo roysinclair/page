@@ -163,8 +163,8 @@ final class SessionHoldTests: XCTestCase {
     func testTheListAdvertisesHoldAndRetract() {
         setSessions([session("s1", .idle)])
         let list = lastList()
-        XCTAssertEqual(list?["caps"] as? [String], ["hold-v1", "retract-v1", "images-v1"])
-        XCTAssertEqual(SessionRemote.capabilities, ["hold-v1", "retract-v1", "images-v1"])
+        XCTAssertEqual(list?["caps"] as? [String], ["hold-v1", "retract-v1", "images-v1", "budget-v1"])
+        XCTAssertEqual(SessionRemote.capabilities, ["hold-v1", "retract-v1", "images-v1", "budget-v1"])
     }
 
     // MARK: holding

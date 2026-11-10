@@ -117,6 +117,8 @@ private struct SheetHost: View {
         case .history:
             HistoryContainer()
                 .presentationDragIndicator(.visible)
+        case .budget(let model):
+            BudgetSheetContainer(model: model)
         }
     }
 }

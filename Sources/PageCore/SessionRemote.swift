@@ -135,6 +135,11 @@ struct SessionCommand: Equatable {
     /// `inputImages` only (`images-v1`): the photos the message carries
     /// (nil when absent or malformed: the whole list is dropped).
     var images: [ImageRef]? = nil
+    /// `budget` only (`budget-v1`): "project" | "session" | "default", the project's key
+    /// (`sessionId` names the session) and the new cap (`pct`, null clears it).
+    var budgetScope: String? = nil
+    var budgetKey: String? = nil
+    var budgetPct: BudgetOp.PctField = .absent
     /// Typed or clicked at this Mac (`SessionRemote.performLocal`), never
     /// parsed from the wire: `parse` cannot set it, so a phone command can
     /// never claim to be local.
@@ -166,6 +171,10 @@ struct SessionCommand: Equatable {
         switch op {
         case "imagePart": cmd.imagePart = ImagePart.parse(obj)
         case "inputImages": cmd.images = ImageRef.parseList(obj["images"])
+        case "budget":
+            cmd.budgetScope = obj["scope"] as? String
+            cmd.budgetKey = (obj["key"] as? String).flatMap { $0.count > BudgetProjectKey.maxLength ? nil : $0 }
+            cmd.budgetPct = BudgetOp.PctField.from(obj["pct"], present: obj.keys.contains("pct"))
         default: break
         }
         return cmd
@@ -387,6 +396,8 @@ struct RemoteSessionRow: Equatable {
     var attach: String? = nil
     /// Why not, when the row can be typed into but takes no photos.
     var attachBlocker: String? = nil
+    /// The session's budget (`budget-v1`): see `BudgetStatus.rowWire`.
+    var budget: WireFields? = nil
 
     var jsonObject: [String: Any] {
         var o: [String: Any] = [
@@ -404,6 +415,7 @@ struct RemoteSessionRow: Equatable {
         if canHold { o["canHold"] = true }
         if let attach { o["attach"] = attach }
         if let attachBlocker { o["attachBlocker"] = attachBlocker }
+        if let budget { o["budget"] = budget.object }
         // Added keys never replace one the row already has.
         if let working { o.merge(working.object) { mine, _ in mine } }
         return o
@@ -476,7 +488,7 @@ final class SessionRemote {
     static let maxListPlaintextBytes = 180 * 1024
     /// The list header's `caps`: what this Mac accepts beyond the base ops
     /// (SESSIONS-PROTOCOL.md §4). Features append their name here.
-    static let capabilities = ["hold-v1", "retract-v1", "images-v1"]
+    static let capabilities = ["hold-v1", "retract-v1", "images-v1", "budget-v1"]
     /// Held sessions' state is re-read this often while anything is held.
     static let outboxInterval: TimeInterval = 2
     /// How long an `inputImages` waits for its photos' last pieces (`images-v1`).
@@ -545,6 +557,8 @@ final class SessionRemote {
     /// What Page Aura was last told (`aura-link` watch): a phone is looking, and which chats.
     private var auraWatch: (list: Bool, ids: Set<String>) = (false, [])
     private var macName: String?
+    /// Budgets as the Coordinator last said (`update(budget:)`), for the list's header and rows.
+    private var budget = BudgetStatus.off
     private var stopped = false
     /// Where the result of a `performLocal` command goes (confined to `queue`).
     private var localResponders: [String: (SessionCommandResult) -> Void] = [:]
@@ -712,6 +726,18 @@ final class SessionRemote {
             self.cleanImagesIfDue()
         }
     }
+
+    /// The budgets after a pass (a value copy). The list follows when they changed.
+    func update(budget status: BudgetStatus) {
+        queue.async {
+            guard self.budget != status else { return }
+            self.budget = status
+        }
+    }
+
+    /// Where a phone's `budget` op goes: the Coordinator applies it (config.json or
+    /// the session caps) and calls back with the result, on any queue. Set once, before commands arrive.
+    var budgetSetter: ((BudgetOp, @escaping (SessionCommandResult) -> Void) -> Void)?
 
     func handleCommand(_ envelope: SessionEnvelope) {
         queue.async { self.handleCommandLocked(envelope) }
@@ -921,7 +947,7 @@ final class SessionRemote {
             probeFlightIfNeeded(t)
         }
         let rows = enabled ? currentRows(t) : []
-        let body = Self.listBody(rows, enabled: enabled)
+        let body = Self.listBody(rows, enabled: enabled, budget: budget.headerWire)
         if SessionsSchedule.listDue(phones: phones, changed: body != lastListBody, lastSentAt: lastListAt, now: t) {
             sendList(rows, body: body, at: t)
         }
@@ -1176,7 +1202,8 @@ final class SessionRemote {
                 held: WireList(outbox.rowEntries(sessionId: s.sessionId, now: t)),
                 canHold: Self.canHold(backend: s.backend, probed: probed),
                 attach: photos.attach,
-                attachBlocker: photos.blocker
+                attachBlocker: photos.blocker,
+                budget: s.backend == .claude ? budget.rowWire(sessionId: s.sessionId).flatMap(WireFields.init) : nil
             ))
         }
         return Self.ordered(rows)
@@ -1250,8 +1277,9 @@ final class SessionRemote {
         return FileStamp(size: UInt64(max(0, st.st_size)), mtime: mtime)
     }
 
-    static func listBody(_ rows: [RemoteSessionRow], enabled: Bool) -> Data {
-        let obj: [String: Any] = ["sessions": rows.map(\.jsonObject), "disabled": !enabled]
+    static func listBody(_ rows: [RemoteSessionRow], enabled: Bool, budget: [String: Any]? = nil) -> Data {
+        var obj: [String: Any] = ["sessions": rows.map(\.jsonObject), "disabled": !enabled]
+        if let budget { obj["budget"] = budget }
         return (try? JSONSerialization.data(withJSONObject: obj, options: [.sortedKeys])) ?? Data()
     }
 
@@ -1274,6 +1302,7 @@ final class SessionRemote {
         var head = header("list", at: t)
         head["macName"] = macName ?? "Mac"
         head["caps"] = Self.capabilities
+        head["budget"] = budget.headerWire
         // Not in the spec: tells a phone that knows it why the list is
         // empty (others ignore unknown fields).
         if !enabled { head["disabled"] = true }
@@ -1412,7 +1441,7 @@ final class SessionRemote {
         case "refresh":
             if phones > 0 {
                 let rows = enabled ? currentRows(t) : []
-                sendList(rows, body: Self.listBody(rows, enabled: enabled), at: t)
+                sendList(rows, body: Self.listBody(rows, enabled: enabled, budget: budget.headerWire), at: t)
             }
             if let viewer = cmd.viewer, let agent = watchers.agent(forViewer: viewer, now: t) {
                 sendAgentTranscript(agent, force: true, at: t)
@@ -1680,6 +1709,28 @@ final class SessionRemote {
             default:
                 Logger.shared.log("Sessions: retract → refused/error (names \(cmd.heldId == nil ? "nothing" : "two messages"))")
                 sendResult(cmd.clientId, .refused(.error, "Say which one message to delete"))
+            }
+        case "budget":
+            guard let setter = budgetSetter else {
+                Logger.shared.log("Sessions: budget → refused/disabled")
+                return sendResult(cmd.clientId, .refused(.disabled, "This Mac can't set budgets"))
+            }
+            switch BudgetOp.parse(scope: cmd.budgetScope, key: cmd.budgetKey, sessionId: cmd.sessionId, pct: cmd.budgetPct) {
+            case .failure(let why):
+                Logger.shared.log("Sessions: budget → refused/error")
+                sendResult(cmd.clientId, .refused(.error, why.detail))
+            case .success(let op):
+                Logger.shared.log("Sessions: budget \(cmd.budgetScope ?? "-") \(op.pct.map { "\($0)%" } ?? "off")")
+                let clientId = cmd.clientId
+                setter(op) { [weak self] r in
+                    guard let self else { return }
+                    self.queue.async {
+                        Logger.shared.log("Sessions: budget → \(r.code.rawValue)\(r.reason.map { "/\($0.rawValue)" } ?? "")")
+                        self.sendResult(clientId, r)
+                        // The list says the new value at once.
+                        self.lastListBody = nil
+                    }
+                }
             }
         default:
             // Unknown ops are ignored (forward compatibility).

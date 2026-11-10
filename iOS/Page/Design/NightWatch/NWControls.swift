@@ -26,7 +26,7 @@ extension ChipKind {
         case .forecast: return "clock.badge.exclamationmark"
         case .rateLimited: return "gauge.with.needle"
         case .review: return "checkmark.circle"
-        case .budget: return "chart.pie.fill"
+        case .budget: return BudgetCopy.symbol
         }
     }
 }

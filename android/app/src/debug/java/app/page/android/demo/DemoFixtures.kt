@@ -3,6 +3,12 @@ package app.page.android.demo
 import app.page.android.model.ActivityLog
 import app.page.android.model.AgentBackend
 import app.page.android.model.BatteryForecast
+import app.page.android.model.BudgetProject
+import app.page.android.model.BudgetSheetModel
+import app.page.android.model.BudgetState
+import app.page.android.model.MacBudget
+import app.page.android.model.PageSubtype
+import app.page.android.model.SessionBudget
 import app.page.android.model.ClaudeUsage
 import app.page.android.model.DiffFile
 import app.page.android.model.Intervention
@@ -77,6 +83,9 @@ object DemoFixtures {
         // A Steer on a finished turn that the relay holds for an offline Mac; a rate-limit reply the Mac holds until it resets.
         "decision-queued" -> open[3]
         "decision-held" -> iv("rl1", "page", InterventionKind.RATE_LIMIT, "Claude's usage limit is reached. It resets at 3:00 PM.", 300)
+        // A budget page opened: the project's bar, Raise to 35% and Let this turn finish (reached), or the raise alone (a warning).
+        "decision-budget" -> budgetPages()[0]
+        "decision-budget-warning" -> budgetPages()[1]
         else -> open[0]
     }
 
@@ -138,9 +147,72 @@ object DemoFixtures {
         }
     }
 
+    // region Budget caps (Designs/budget-caps.md; the iOS RenderFixtures' numbers)
+
+    fun budgetKey(project: String) = "/Users/you/projects/$project"
+
+    /**
+     * A week three days from its reset: one project stopped at its budget, one near it, one on the default, and the small
+     * ones. [at] is the clock the reset is counted from (the harness clock, or the real one for the live demo).
+     */
+    fun budget(at: Instant = now): MacBudget {
+        fun p(name: String, used: Double, cap: Int?, state: BudgetState) = BudgetProject(budgetKey(name), name, used, cap, state)
+        return MacBudget(
+            resetsAt = at.plusSeconds(3 * 86_400L + 4 * 3600L), capture = true, measuring = false, weekPct = 66.0, defaultCap = 15,
+            projects = listOf(
+                p("payments-api", 25.6, 25, BudgetState.OVER), p("sensor-hub", 21.0, 25, BudgetState.WARN), p("page", 11.2, null, BudgetState.OK),
+                p("bottle-flip", 4.4, 10, BudgetState.OK), p("llm-play", 2.1, null, BudgetState.OK), p("mac-on-claude-code", 0.4, null, BudgetState.OK),
+            ),
+        )
+    }
+
+    /** The budget pages: payments-api reached its budget (a decision), sensor-hub is near its own (a look). [at] is the clock they are aged from. */
+    fun budgetPages(at: Instant = now): List<Intervention> {
+        fun age(s: Long) = at.minusSeconds(s)
+        return listOf(
+            iv("b1", "payments-api", InterventionKind.RATE_LIMIT, "payments-api reached its budget: about 26% of the week (budget 25%). Page stopped 2 sessions.", 120, sub = PageSubtype.BUDGET_REACHED, session = "page-budget-a1b2").copy(openedAt = age(120)),
+            iv("b2", "sensor-hub", InterventionKind.RATE_LIMIT, "sensor-hub has used about 21% of the week (budget 25%). Page stops it at 25%.", 600, sub = PageSubtype.BUDGET_WARNING, session = "page-budget-c3d4").copy(openedAt = age(600)),
+        )
+    }
+
+    /** Sessions wearing their project's budget (the default where it has none of its own). */
+    fun withBudgets(sessions: List<LiveSession>, b: MacBudget = budget()): List<LiveSession> {
+        val byName = b.projects.associateBy { it.name }
+        return sessions.map { s ->
+            val name = app.page.android.model.SkyModel.projectName(s.cwd, s.title)
+            val p = byName[name] ?: return@map s
+            val cap = p.effectiveCap(b.defaultCap)
+            s.copy(budget = SessionBudget(p.key, p.used, cap, SessionBudget.Scope.PROJECT, BudgetState.of(p.used, cap)))
+        }
+    }
+
+    /** The working sessions of the Now screens, each wearing its project's budget. */
+    val budgetSessions: List<LiveSession> get() = withBudgets(sessionsWithFlight.filter { it.id in setOf("w1", "w2", "w5") })
+
+    /** The sheets, as the iOS harness draws them: a project's, one session's, the default. */
+    fun budgetSheet(screen: String): BudgetSheetModel {
+        val b = budget()
+        return when (screen) {
+            "budget-sheet-session" -> {
+                val p = b.projects[1]
+                BudgetSheetModel(BudgetSheetModel.Scope.SESSION, p.name, "w2", p.hue, 6.3, 10, b.resetsAt, projectKey = p.key)
+            }
+            "budget-sheet-default" -> BudgetSheetModel.forDefault(b)
+            else -> {
+                val p = b.projects[2]
+                BudgetSheetModel(BudgetSheetModel.Scope.PROJECT, p.name, p.key, p.hue, p.used, 25, b.resetsAt)
+            }
+        }
+    }
+
+    // endregion
+
     fun nowSessions(screen: String): List<LiveSession> {
         fun pick(ids: List<String>, from: List<LiveSession>) = ids.mapNotNull { id -> from.firstOrNull { it.id == id } }
         return when (screen) {
+            "now-budget", "now-budget-arming" -> budgetSessions
+            // sensor-hub on its own: its card, with its BUDGET fact in amber (the warning), is the whole In flight section.
+            "now-budget-flight" -> budgetSessions.filter { it.id == "w2" }
             "now-flight", "now-flight-two", "now-flight-header", "now-flight-jump" -> pick(listOf("sess-p1", "w1", "sess-p3"), sessionsWithFlight)
             "now-flight-old" -> pick(listOf("sess-p1", "w1", "sess-p3"), sessions)
             "now-flight-quiet" -> pick(listOf("w1", "sess-p3"), sessionsWithFlight)

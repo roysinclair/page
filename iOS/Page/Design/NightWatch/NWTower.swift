@@ -202,7 +202,8 @@ struct NWTowerScreen: View {
                 Text(data.budget.emptyNote).font(NightWatch.Typo.caption).foregroundColor(NightWatch.Palette.textSecondary.color)
                     .padding(16)
             }
-            if let projects = data.budgetProjects {
+            // With usage tracking off the rings' note already says so: no second one under it.
+            if let projects = data.budgetProjects, projects.capture || data.budget.model != nil {
                 Rectangle().fill(Color.white.opacity(0.07)).frame(height: 1)
                 NWBudgetProjects(budget: projects, timeZone: data.timeZone, open: actions.openBudget)
             }

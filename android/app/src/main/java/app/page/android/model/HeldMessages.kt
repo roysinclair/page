@@ -14,6 +14,7 @@ object SessionCaps {
     const val HOLD = "hold-v1"
     const val RETRACT = "retract-v1"
     const val IMAGES = "images-v1"
+    const val BUDGET = BudgetWire.CAPABILITY
 
     /** The relay's `GET /status` `features` name for `DELETE /reply/:id`. */
     const val RELAY_RETRACT = "reply-retract-v1"
@@ -23,6 +24,9 @@ object SessionCaps {
 
     /** A phone offers Delete for a message the Mac holds only when the Mac can take it back. */
     fun canRetract(caps: Set<String>): Boolean = RETRACT in caps
+
+    /** Budget controls (the Tower's list, the sheet, the room's chip and action) are drawn only for a Mac that does budgets. */
+    fun canBudget(caps: Set<String>): Boolean = BUDGET in caps
 }
 
 /** One entry of a session row's `held` list: a message the Mac holds, or settled in the last 15 minutes. */

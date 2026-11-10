@@ -95,11 +95,13 @@ struct NWBudgetProjectRow: View {
 
     var body: some View {
         let cap = project.effectiveCap(default: defaultCap)
-        let meter = BudgetMeter(used: project.used, cap: cap, state: project.state)
+        // Early in the week nothing is stopped or near it, whatever the numbers say: they mean nothing yet.
+        let stopped = project.state == .over && !measuring
+        let meter = BudgetMeter(used: project.used, cap: cap, state: measuring ? .ok : project.state)
         let inherited = project.cap == nil && defaultCap != nil
         Button(action: action) {
             HStack(spacing: 14) {
-                NWIconTile(symbol: project.state == .over ? "pause.fill" : "folder.fill", jewel: .of(project.hue), size: 44)
+                NWIconTile(symbol: stopped ? "pause.fill" : "folder.fill", jewel: .of(project.hue), size: 44)
                 VStack(alignment: .leading, spacing: 6) {
                     Text(project.name).font(NightWatch.Typo.name).foregroundColor(NightWatch.Palette.textPrimary.color)
                         .lineLimit(1).truncationMode(.middle)
@@ -122,7 +124,7 @@ struct NWBudgetProjectRow: View {
 
     /// "26% of 25% · stopped"; "11% of 15% · default budget"; "2% · no budget".
     private func detail(_ m: BudgetMeter, inherited: Bool) -> String {
-        if project.state == .over { return m.line + " · stopped, raise it to carry on" }
+        if project.state == .over, !measuring { return m.line + " · stopped, raise it to carry on" }
         return m.line + (inherited ? " · default budget" : "")
     }
 }
@@ -151,13 +153,13 @@ struct NWBudgetProjects: View {
                 if budget.measuring { note(BudgetCopy.measuring) }
                 ForEach(budget.projects) { p in
                     NWBudgetProjectRow(project: p, defaultCap: budget.defaultCap, measuring: budget.measuring) {
-                        open(BudgetSheetModel(scope: .project, name: p.name, key: p.key, hue: p.hue, used: p.used, cap: p.cap, resetsAt: budget.resetsAt))
+                        open(.project(p, resetsAt: budget.resetsAt))
                     }
                     .id("budget-\(p.key)")
                 }
                 Rectangle().fill(Color.white.opacity(0.07)).frame(height: 1).padding(.leading, 72)
                 Button {
-                    open(BudgetSheetModel(scope: .defaultCap, name: "", key: nil, hue: nil, used: nil, cap: budget.defaultCap, resetsAt: budget.resetsAt))
+                    open(.forDefault(budget))
                 } label: {
                     HStack(spacing: 14) {
                         NWSoftTile(symbol: "slider.horizontal.3", tint: NightWatch.Palette.sky, size: 44)
@@ -191,13 +193,17 @@ struct NWBudgetProjects: View {
 struct NWBudgetSheet: View {
     var model: BudgetSheetModel
     var timeZone: TimeZone = .current
+    /// Where the change stands: the sheet keeps the old value until the Mac answers, and says why when it can't.
+    var status: BudgetSaveStatus = .idle
     var onSave: (Int?) -> Void = { _ in }
     var onCancel: () -> Void = {}
     @State private var value: Int?
 
-    init(model: BudgetSheetModel, timeZone: TimeZone = .current, onSave: @escaping (Int?) -> Void = { _ in }, onCancel: @escaping () -> Void = {}) {
+    init(model: BudgetSheetModel, timeZone: TimeZone = .current, status: BudgetSaveStatus = .idle,
+         onSave: @escaping (Int?) -> Void = { _ in }, onCancel: @escaping () -> Void = {}) {
         self.model = model
         self.timeZone = timeZone
+        self.status = status
         self.onSave = onSave
         self.onCancel = onCancel
         _value = State(initialValue: model.cap)
@@ -221,16 +227,34 @@ struct NWBudgetSheet: View {
                 }
             }
             NWPercentPicker(value: $value)
+                .disabled(status.isSaving)
             Text(model.preview(value, timeZone: timeZone))
                 .font(NightWatch.Typo.body).foregroundColor(NightWatch.Palette.textSecondary.color)
                 .fixedSize(horizontal: false, vertical: true)
+            if let why = status.failure { failure(why) }
             HStack(spacing: 10) {
                 Button("Cancel", action: onCancel).buttonStyle(NWButtonStyle(kind: .quiet))
-                Button("Save") { onSave(value) }.buttonStyle(NWButtonStyle(kind: .bright))
+                Button(status.isSaving ? "Saving…" : "Save") { onSave(value) }
+                    .buttonStyle(NWButtonStyle(kind: .bright))
+                    .disabled(status.isSaving)
+                    .opacity(status.isSaving ? 0.7 : 1)
             }
         }
         .padding(.horizontal, 22).padding(.top, 28).padding(.bottom, 22)
         .background(alignment: .top) { NWBudgetSheetBackground(jewel: jewel) }
+    }
+
+    /// Why the change didn't go, in the Mac's words or Page's: amber (never red), with the old value still in force.
+    private func failure(_ why: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill").foregroundColor(NightWatch.Palette.amber.color)
+            Text(why).font(NightWatch.Typo.caption).foregroundColor(NightWatch.Palette.textPrimary.color)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: NightWatch.Radius.inset, style: .continuous).fill(NightWatch.Palette.amber.opacity(0.12).color))
+        .accessibilityElement(children: .combine)
     }
 
     private var symbol: String {
@@ -276,10 +300,7 @@ struct NWBudgetCard: View {
     var onCancel: () -> Void = {}
 
     private var reached: Bool { row.section == .decide }
-    private var meter: BudgetMeter? {
-        guard let p = row.budget, let used = p.used else { return nil }
-        return BudgetMeter(used: used, cap: p.cap ?? (reached ? Int(used.rounded()) : nil))
-    }
+    private var meter: BudgetMeter? { row.budget?.meter(reached: reached) }
 
     var body: some View {
         if reached { reachedCard } else { warningCard }

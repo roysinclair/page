@@ -50,7 +50,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.page.android.model.BudgetSheetModel
 import app.page.android.model.CardGlow
+import app.page.android.model.MacBudget
 import app.page.android.model.DeliveryPreview
 import app.page.android.model.GestureEntry
 import app.page.android.model.GestureGuide
@@ -62,6 +64,7 @@ import app.page.android.model.TowerMacRow
 import app.page.android.model.TowerPower
 import app.page.android.model.TowerSection
 import app.page.android.model.UsageGauge
+import app.page.android.ui.nw.budget.NWBudgetProjects
 import app.page.android.ui.nw.components.NWGlassCard
 import app.page.android.ui.nw.components.NWIconTile
 import app.page.android.ui.nw.components.NWJewel
@@ -81,6 +84,8 @@ data class TowerScreenData(
     val macName: String,
     val power: TowerPower,
     val budget: TowerBudget,
+    /** Each project's share of the week and its budget (Designs/budget-caps.md); null while the Mac doesn't send budgets (`budget-v1`). */
+    val budgetProjects: MacBudget? = null,
     val macs: List<TowerMacRow>,
     /** "online · 3 active sessions · Battery 54%, on power". */
     val macLine: String?,
@@ -97,6 +102,8 @@ data class TowerScreenData(
     val zone: ZoneId = ZoneId.systemDefault(),
     /** Open the Tower scrolled to a section (the Runway opens Budget). */
     val scrollTo: TowerSection? = null,
+    /** The render harness: scroll to the project list under Budget's rings instead of the section's heading. */
+    val scrollToProjects: Boolean = false,
     val feedbackUrl: String? = null,
     /** A demo pairing says "Leave the demo". */
     val isDemo: Boolean = false,
@@ -110,6 +117,8 @@ class TowerScreenActions(
     val setStayConnected: (Boolean) -> Unit = {},
     val setGlow: (CardGlow) -> Unit = {},
     val openHistory: () -> Unit = {},
+    /** Opens the budget sheet for a project or the default. */
+    val openBudget: (BudgetSheetModel) -> Unit = {},
     /** "Show the tips again": every first-time tip comes back. */
     val resetTips: () -> Unit = {},
     val openFeedback: () -> Unit = {},
@@ -125,14 +134,19 @@ class TowerScreenActions(
 fun NWTowerScreen(data: TowerScreenData, actions: TowerScreenActions, modifier: Modifier = Modifier) {
     val scroll = rememberScrollState()
     var offsets by remember { mutableStateOf(mapOf<TowerSection, Int>()) }
-    LaunchedEffect(data.scrollTo, offsets.size) {
+    // Where the project list sits under Budget's rings, in the column's own coordinates.
+    var projectsOffset by remember { mutableIntStateOf(-1) }
+    LaunchedEffect(data.scrollTo, data.scrollToProjects, offsets.size, if (data.scrollToProjects) projectsOffset else 0) {
         val s = data.scrollTo ?: return@LaunchedEffect
-        offsets[s]?.let { scroll.scrollTo(maxOf(0, it - 24)) }
+        val at = offsets[s] ?: return@LaunchedEffect
+        if (data.scrollToProjects && s == TowerSection.BUDGET) {
+            if (projectsOffset >= 0) scroll.scrollTo(maxOf(0, at + projectsOffset - 24))
+        } else scroll.scrollTo(maxOf(0, at - 24))
     }
     Column(modifier.fillMaxSize().verticalScroll(scroll).padding(horizontal = NW.Space.gutter).padding(top = 18.dp, bottom = 40.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(26.dp)) {
         Header(data, actions)
         Section(TowerSection.POWER, { offsets = offsets + (TowerSection.POWER to it) }) { Power(data) }
-        Section(TowerSection.BUDGET, { offsets = offsets + (TowerSection.BUDGET to it) }) { Budget(data, actions) }
+        Section(TowerSection.BUDGET, { offsets = offsets + (TowerSection.BUDGET to it) }) { Budget(data, actions) { projectsOffset = it } }
         Section(TowerSection.MACS, { offsets = offsets + (TowerSection.MACS to it) }) { Macs(data) }
         Section(TowerSection.ATTENTION, { offsets = offsets + (TowerSection.ATTENTION to it) }) { Attention(data, actions) }
         Section(TowerSection.GESTURES, { offsets = offsets + (TowerSection.GESTURES to it) }) { Gestures(actions) }
@@ -224,7 +238,7 @@ private fun Power(data: TowerScreenData) {
 // MARK: Budget
 
 @Composable
-private fun Budget(data: TowerScreenData, actions: TowerScreenActions) {
+private fun Budget(data: TowerScreenData, actions: TowerScreenActions, onProjectsOffset: (Int) -> Unit = {}) {
     Card {
         val m = data.budget.model
         if (m != null) {
@@ -244,6 +258,12 @@ private fun Budget(data: TowerScreenData, actions: TowerScreenActions) {
             }
         } else {
             Text(data.budget.emptyNote, style = NW.Typo.caption, color = NW.Palette.textSecondary.color, modifier = Modifier.padding(16.dp))
+        }
+        // Each project's share of the week and its budget (only from a Mac that does budgets).
+        // With usage tracking off the rings' note already says so: no second one under it.
+        data.budgetProjects?.takeIf { it.capture || data.budget.model != null }?.let { projects ->
+            Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.07f)))
+            NWBudgetProjects(projects, data.zone, actions.openBudget, Modifier.onGloballyPositioned { onProjectsOffset(it.positionInParent().y.toInt()) })
         }
         Divider()
         TRow("clock.arrow.circlepath", NW.Palette.sky, "History and stats", "everything you've settled, and the day's numbers", chevron = true, onClick = actions.openHistory)

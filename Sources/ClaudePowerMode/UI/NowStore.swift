@@ -60,6 +60,8 @@ final class NowStore: ObservableObject {
     @Published private(set) var tipDismissed = false
     /// Bumped by "N working" in the header: the cards scroll to the top.
     @Published private(set) var flightJumpToken = 0
+    /// Budgets as the Mac last reported them (nil until it has: no budget rows are drawn then).
+    @Published private(set) var budget: BudgetStatus?
     /// The height the panel can give everything between its header and its
     /// footer: what is left of the screen (set by the panel when it opens).
     var bodyBudget: CGFloat = 760
@@ -71,6 +73,7 @@ final class NowStore: ObservableObject {
         return max(260, bodyBudget - rows - 110)
     }
 
+    var timeZone: TimeZone = .current
     var perform: (NowEffect) -> Void = { _ in }
     var command: (NowCommand) -> Void = { _ in }
     var now: () -> Date = Date.init
@@ -144,6 +147,7 @@ final class NowStore: ObservableObject {
         let live = Set(rows.map(\.id))
         var keep = Set(flightReceipts.keys)
         if let c = state.composer { keep.insert(c.rowId) }
+        if let e = state.budgetEditor { keep.insert(e.rowId) }
         for id in keep.sorted() where !live.contains(id) {
             if let r = lastFlight[id], r.kind == .session { rows.append(r.finished) }
         }
@@ -153,6 +157,7 @@ final class NowStore: ObservableObject {
     var selectedId: String? { state.selectedId }
     var expanded: Bool { state.expanded }
     var composer: NowPanelState.Composer? { state.composer }
+    var budgetEditor: BudgetEditor? { state.budgetEditor }
     var hold: HoldGesture? { state.hold }
 
     /// Rows the keys may act on: the ones drawn, not ones held behind the pill,
@@ -193,7 +198,7 @@ final class NowStore: ObservableObject {
     /// O or T on a selected working row that did nothing: say why, as the
     /// button's click does, instead of staying silent.
     private func explainFlightKey(_ press: NowKeyPress, before: NowPanelState, result r: (state: NowPanelState, effect: NowEffect)) {
-        guard r.effect == .none, r.state.composer == nil, before.composer == nil, !before.showShortcuts,
+        guard r.effect == .none, r.state.composer == nil, before.composer == nil, before.budgetEditor == nil, !before.showShortcuts,
               !press.hasModifiers, !press.isRepeat, case .char(let raw) = press.key,
               let id = before.selectedId, let row = flightRows.first(where: { $0.id == id }) else { return }
         switch raw.lowercased() {
@@ -209,7 +214,7 @@ final class NowStore: ObservableObject {
 
     func select(_ id: String) {
         guard model.rows.contains(where: { $0.id == id }) || flightRows.contains(where: { $0.id == id }),
-              state.composer == nil else { return }
+              state.composer == nil, state.budgetEditor == nil else { return }
         var s = state
         s.selectedId = id
         s.hold = nil
@@ -234,7 +239,7 @@ final class NowStore: ObservableObject {
     /// nothing is selected, so a decision row you were on keeps the keys. The
     /// first hover only takes the selection when no decision row has it.
     func hoverFlight(_ id: String, pointer: CGPoint? = nil) {
-        guard state.composer == nil, state.hold == nil, state.selectedId != id else { return }
+        guard state.composer == nil, state.budgetEditor == nil, state.hold == nil, state.selectedId != id else { return }
         if let p = pointer {
             let previous = lastHoverPointer
             lastHoverPointer = p
@@ -314,9 +319,14 @@ final class NowStore: ObservableObject {
                             failed: !row.actions.checking)
             return false
         }
+        if let e = state.budgetEditor, e.changed {
+            notice = Notice(text: "Save or cancel your budget change first · Esc closes it", failed: false)
+            return false
+        }
         var s = state
         s.selectedId = row.id
         s.composer = NowPanelState.Composer(rowId: row.id, kind: .type, target: target)
+        s.budgetEditor = nil
         s.hold = nil
         state = s
         composerFocusToken += 1
@@ -406,8 +416,13 @@ final class NowStore: ObservableObject {
         if !wasSelected, action == .approve || action == .deny { return }
         if action == .tellInstead {
             guard (row.keys + row.moreKeys).contains(where: { $0.action == .tellInstead }) else { return }
+            if let e = state.budgetEditor, e.changed {
+                notice = Notice(text: "Save or cancel your budget change first · Esc closes it", failed: false)
+                return
+            }
             var s = state
             s.composer = NowPanelState.Composer(rowId: row.id)
+            s.budgetEditor = nil
             state = s
             composerFocusToken += 1
             return
@@ -436,6 +451,72 @@ final class NowStore: ObservableObject {
     func submitComposer() {
         handle(NowKeyPress(key: .ret))
     }
+
+    // MARK: budget
+
+    /// The Mac's budgets, after each snapshot.
+    func updateBudget(_ status: BudgetStatus?) {
+        guard budget != status else { return }
+        budget = status
+    }
+
+    /// The row under a Claude session's Open and Steer: nil when the Mac hasn't said, or budgets don't cover it.
+    func budgetLine(sessionId: String, backend: AgentBackendID?) -> NowBudgetLine? {
+        guard backend == .claude, let budget else { return nil }
+        return NowBudgetLine.build(status: budget, sessionId: sessionId)
+    }
+
+    /// "Set budget": opens the editor in this card, or closes it if it is already open there.
+    /// A half-typed message (or an unsaved budget change on another card) is never thrown away.
+    func clickSetBudget(rowId: String, sessionId: String, backend: AgentBackendID?) {
+        guard let budget, backend == .claude else { return }
+        if let e = state.budgetEditor {
+            if e.rowId == rowId { cancelBudgetEditor(); return }
+            if e.changed {
+                notice = Notice(text: "Save or cancel your budget change first · Esc closes it", failed: false)
+                return
+            }
+        }
+        if let c = state.composer, !c.text.isEmpty {
+            notice = Notice(text: "Finish or close your message first · Esc closes it", failed: false)
+            return
+        }
+        let editor: BudgetEditor
+        if budget.capture, let row = budget.sessions[sessionId] {
+            editor = BudgetEditor(rowId: rowId, sessionId: sessionId, row: row, resetsAt: budget.resetsAt)
+        } else if !budget.capture {
+            editor = BudgetEditor(captureOffRowId: rowId, sessionId: sessionId)
+        } else {
+            return
+        }
+        var s = state
+        s.composer = nil
+        s.budgetEditor = editor
+        s.selectedId = rowId
+        s.hold = nil
+        state = s
+    }
+
+    private func editBudget(_ change: (inout BudgetEditor) -> Void) {
+        guard var e = state.budgetEditor else { return }
+        change(&e)
+        var s = state
+        s.budgetEditor = e
+        state = s
+    }
+
+    func setBudgetScope(_ scope: BudgetEditor.Scope) { editBudget { $0.setScope(scope) } }
+    func setBudgetValue(_ v: Int?) { editBudget { $0.choose(v) } }
+
+    func cancelBudgetEditor() {
+        guard state.budgetEditor != nil else { return }
+        var s = state
+        s.budgetEditor = nil
+        state = s
+    }
+
+    /// Save: the same effect Return has in the editor.
+    func saveBudget() { handle(NowKeyPress(key: .ret)) }
 
     /// The panel closed (or is opening): nothing stays selected, held or
     /// half-typed, and nothing mid-motion. What is on screen now counts as seen,

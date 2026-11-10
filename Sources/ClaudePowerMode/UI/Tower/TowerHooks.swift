@@ -312,8 +312,9 @@ struct NWPhoneApprovalsPage: View {
             NWCard(title: "CLAUDE CODE") {
                 NWHookAgentRow(agent: .claude, row: model.claude) { model.run($0, .claude) }
                 NWDivider()
-                NWNote(text: "Adds three entries to ~/.claude/settings.json: approvals (PermissionRequest), Claude's questions and plans "
-                       + "(AskUserQuestion, ExitPlanMode) and notifications. Cloud sessions don't read this file.")
+                NWNote(text: "Adds four entries to ~/.claude/settings.json: approvals (PermissionRequest), Claude's questions and plans "
+                       + "(AskUserQuestion, ExitPlanMode), notifications, and the budget gate (PreToolUse), which only ever acts once a "
+                       + "project has reached its budget. Cloud sessions don't read this file.")
                     .padding(.horizontal, 16).padding(.vertical, 12)
                 if let note = model.cmuxNote {
                     NWDivider()

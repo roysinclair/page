@@ -17,7 +17,12 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PanTool
+import androidx.compose.material.icons.filled.ManageAccounts
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PieChart
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Speed
@@ -199,5 +204,12 @@ fun nwIcon(symbol: String): ImageVector = when (symbol) {
     "list.bullet" -> Icons.AutoMirrored.Outlined.FormatListBulleted
     "circle.fill" -> Icons.Filled.Circle
     "chevron.right.2" -> Icons.AutoMirrored.Outlined.ArrowForward
+    // Budget caps: the pie (the BUDGET chip, the in-flight fact, the room's chip), a stopped project, the default's sliders,
+    // a session of its own, and the picker's steps.
+    "chart.pie.fill" -> Icons.Filled.PieChart
+    "pause.fill" -> Icons.Filled.Pause
+    "slider.horizontal.3" -> Icons.Filled.Tune
+    "person.crop.circle.badge.clock" -> Icons.Filled.ManageAccounts
+    "minus" -> Icons.Filled.Remove
     else -> Icons.Outlined.Circle
 }

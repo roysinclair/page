@@ -1,7 +1,12 @@
 package app.page.android.data
 
 import android.util.Log
+import app.page.android.model.BudgetEdit
+import app.page.android.model.BudgetCopy
+import app.page.android.model.BudgetSaveStatus
+import app.page.android.model.BudgetSheetModel
 import app.page.android.model.CommandResult
+import app.page.android.model.MacBudget
 import app.page.android.model.HeldDelete
 import app.page.android.model.HeldMessages
 import app.page.android.model.LatePhotoResults
@@ -94,6 +99,15 @@ object SessionStore {
 
     data class State(
         val sessions: List<LiveSession> = emptyList(),
+        /**
+         * The list header's budget block (Designs/budget-caps.md): every project's share of the week and its budget. Null
+         * until a list brings one, and for a Mac whose caps don't say `budget-v1` ([app.page.android.model.BudgetWire.gated]).
+         */
+        val budget: MacBudget? = null,
+        /** Where the budget change just sent stands (the sheet's own line); the old value stays until the Mac's next `list` says otherwise. */
+        val budgetSave: BudgetSaveStatus = BudgetSaveStatus.Idle,
+        /** The [BudgetSheetModel.id] of the sheet [budgetSave] is about, so another sheet never reads this one's answer. */
+        val budgetFor: String? = null,
         /** A `list` has arrived since the last reset. */
         val hasList: Boolean = false,
         /** The last list said live sessions are turned off on the Mac. */
@@ -160,6 +174,9 @@ object SessionStore {
 
         /** The Mac can take a held message back (`retract-v1`). */
         val canRetract: Boolean get() = SessionCaps.canRetract(caps)
+
+        /** The Mac measures and enforces budgets (`budget-v1`): the controls are drawn only then. */
+        val canBudget: Boolean get() = SessionCaps.canBudget(caps)
 
         /** The most recent Stop for this session, while it's worth showing. */
         fun latestInterrupt(sessionId: String, now: Instant): SentSessionCommand? =
@@ -253,6 +270,9 @@ object SessionStore {
     /** The uploads running, by bubble id: they belong to the store, so leaving the room does not stop one. */
     private val photoJobs = HashMap<String, Job>()
 
+    /** The `budget` op whose `result` the sheet is waiting for (null: none). */
+    private var budgetClientId: String? = null
+
     private val viewer: String get() = AppGraph.prefs.viewer
 
     // region Lifecycle
@@ -294,6 +314,7 @@ object SessionStore {
         pendingStart = null
         pendingStartJob?.cancel()
         pendingStartJob = null
+        budgetClientId = null
         gate.reset()
         undecryptableInARow = 0
         watchedSessionId = null
@@ -436,6 +457,7 @@ object SessionStore {
                     s.copy(
                         sessions = u.sessions,
                         caps = u.caps,
+                        budget = u.budget,
                         macName = u.macName ?: s.macName,
                         hasList = true,
                         lastListAt = Instant.now(),
@@ -493,6 +515,14 @@ object SessionStore {
 
     private fun applyResult(r: CommandResult) {
         val s = _state.value
+        // The answer to a `budget` op: saved, or why not. Nothing is written here: the new value is the Mac's next `list`.
+        if (budgetClientId == r.clientId) {
+            budgetClientId = null
+            timeoutJobs.remove(r.clientId)?.cancel()
+            update { it.copy(budgetSave = BudgetSaveStatus.from(r)) }
+            Log.i(TAG, "budget ${r.clientId.take(8)} -> ${r.code.wire}${r.reason?.let { "/$it" } ?: ""}")
+            return
+        }
         s.start?.takeIf { it.clientId == r.clientId }?.let { start ->
             update { it.copy(start = start.copy(state = start.state.applying(r, "Claude"))) }
             timeoutJobs.remove(r.clientId)?.cancel()
@@ -1261,6 +1291,74 @@ object SessionStore {
         }
     }
 
+    // region Budget caps (Designs/budget-caps.md)
+
+    /**
+     * Saves [pct] (null = Off) as [model]'s budget: the `budget` op, answered by one `result`. The old value stays on screen
+     * until the Mac's next `list` carries the new one, and [State.budgetSave] says where the change stands: sending, saved,
+     * or why not (an offline Mac: "Your Mac is offline - the budget wasn't changed."). One change at a time.
+     */
+    fun saveBudget(model: BudgetSheetModel, pct: Int?) {
+        if (_state.value.budgetSave.isSaving) return
+        val command = model.command(pct)
+        if (command == null) {
+            update { it.copy(budgetSave = BudgetSaveStatus.Failed(BudgetCopy.notSent), budgetFor = model.id) }
+            return
+        }
+        val clientId = UUID.randomUUID().toString().lowercase()
+        if (_state.value.isDemoMode) {
+            // A pretend Mac: it answers in half a second and its next list carries the new number.
+            budgetClientId = clientId
+            update { it.copy(budgetSave = BudgetSaveStatus.Saving, budgetFor = model.id) }
+            scope.launch {
+                delay(500)
+                if (budgetClientId != clientId) return@launch
+                budgetClientId = null
+                update { s ->
+                    val next = BudgetEdit.applying(s.budget, s.sessions, command)
+                    s.copy(budget = next.first, sessions = next.second, budgetSave = BudgetSaveStatus.Saved)
+                }
+            }
+            return
+        }
+        val body = encrypt(command, clientId)
+        if (body == null) {
+            update { it.copy(budgetSave = BudgetSaveStatus.Failed("This phone has no session key. Re-pair with your computer."), budgetFor = model.id) }
+            return
+        }
+        budgetClientId = clientId
+        update { it.copy(budgetSave = BudgetSaveStatus.Saving, budgetFor = model.id) }
+        scope.launch {
+            val outcome = RelayClient.postSessionCommand(body)
+            noteOutcome(outcome)
+            Log.i(TAG, "budget ${clientId.take(8)} post -> ${outcome.logName}")
+            // Only a refusal ends the wait here: 202 means the Mac has it and its `result` is the answer.
+            val failed = BudgetSaveStatus.afterPost(outcome) ?: return@launch
+            if (budgetClientId != clientId) return@launch
+            budgetClientId = null
+            timeoutJobs.remove(clientId)?.cancel()
+            update { it.copy(budgetSave = failed) }
+        }
+        timeoutJobs[clientId] = scope.launch {
+            delay((BudgetSaveStatus.RESULT_TIMEOUT * 1000).toLong())
+            if (budgetClientId != clientId) return@launch
+            budgetClientId = null
+            timeoutJobs.remove(clientId)
+            update { it.copy(budgetSave = BudgetSaveStatus.noAnswer) }
+        }
+    }
+
+    /** The render harness: a change's line as it stands (the sheet's failure line, say), never sent. */
+    fun seedDemoBudgetSave(forId: String, status: BudgetSaveStatus) = update { it.copy(budgetSave = status, budgetFor = forId) }
+
+    /** The budget sheet closed (or opened): nothing is left of the last change's line. A change in flight stays, so a late `result` is not lost. */
+    fun clearBudgetSave() {
+        if (_state.value.budgetSave.isSaving) return
+        if (_state.value.budgetSave != BudgetSaveStatus.Idle) update { it.copy(budgetSave = BudgetSaveStatus.Idle, budgetFor = null) }
+    }
+
+    // endregion
+
     // region v4: changes, folders, start
 
     /** Asks the Mac what this session changed; the answer lands in `diffs`. */
@@ -1426,10 +1524,12 @@ object SessionStore {
         transcripts: List<SessionTranscript>,
         screens: List<SessionScreen>,
         workflows: Map<String, List<WorkflowRun>>,
+        budget: MacBudget? = null,
     ) {
         reset()
         _state.value = State(
             sessions = sessions,
+            budget = budget,
             hasList = true,
             macName = macName,
             lastListAt = Instant.now(),
@@ -1438,7 +1538,8 @@ object SessionStore {
             workflows = workflows,
             // The demo's Mac holds and deletes messages, and its relay takes queued replies back.
             relayFeatures = setOf(SessionAvailability.FEATURE, SessionCaps.RELAY_RETRACT),
-            caps = setOf(SessionCaps.HOLD, SessionCaps.RETRACT, SessionCaps.IMAGES),
+            // A demo Mac that sends a budget block also says it does budgets (`budget-v1`).
+            caps = setOf(SessionCaps.HOLD, SessionCaps.RETRACT, SessionCaps.IMAGES) + (if (budget != null) setOf(SessionCaps.BUDGET) else emptySet()),
             hasKey = true,
             isDemoMode = true,
         )

@@ -19,6 +19,115 @@ enum BudgetState: String, Equatable {
     }
 }
 
+// MARK: - Wire (the sessions `list`)
+
+/// The capability a Mac advertises (`caps`) when it measures and enforces budgets. Budget controls are
+/// drawn only when it is there; the budget pages (`budget_reached`, `budget_warning`) come over the
+/// relay inbox and are drawn whatever the list says.
+enum BudgetWire {
+    static let capability = "budget-v1"
+
+    /// A whole-percent budget the Mac would take: 1–100.
+    static func validCap(_ pct: Int?) -> Bool { pct.map { (1...100).contains($0) } ?? true }
+
+    /// A budget read off the wire: a whole number 1–100, else none.
+    static func cap(_ raw: Double?) -> Int? {
+        guard let raw, raw.isFinite, raw == raw.rounded(), (1...100).contains(raw) else { return nil }
+        return Int(raw)
+    }
+
+    /// A share of the week read off the wire, kept in 0–100.
+    static func share(_ raw: Double?) -> Double? {
+        guard let raw, raw.isFinite else { return nil }
+        return min(100, max(0, raw))
+    }
+
+    /// What a `list` says about budgets once the Mac's capabilities are known: nothing at all without
+    /// `budget-v1`, so no card, chip or sheet is drawn for a Mac that cannot honour a budget. Pure.
+    static func gated(budget: MacBudget?, sessions: [LiveSession], caps: Set<String>) -> (budget: MacBudget?, sessions: [LiveSession]) {
+        if caps.contains(capability) { return (budget, sessions) }
+        return (nil, sessions.map { s in
+            guard s.budget != nil else { return s }
+            var s = s
+            s.budget = nil
+            return s
+        })
+    }
+}
+
+extension BudgetState {
+    /// "ok" / "warn" / "over"; anything else reads as nil, and the numbers decide.
+    init?(wire raw: String?) {
+        guard let raw, let s = BudgetState(rawValue: raw.trimmingCharacters(in: .whitespaces).lowercased()) else { return nil }
+        self = s
+    }
+}
+
+/// Lenient, like every optional part of the list: a block that is not an object is nil, a bad project row
+/// is dropped, a bad number is missing. Nothing here can fail the list.
+extension MacBudget: Decodable {
+    private enum CodingKeys: String, CodingKey { case resetsAt, capture, measuring, weekPct, defaultCap, projects }
+
+    /// The most projects one list carries onto the phone.
+    static let maxProjects = 60
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        resetsAt = LenientDate.decode(c, .resetsAt)
+        // Usage tracking is on unless the Mac says it is off: a block with no word on it still lists its projects.
+        capture = c.lenientBool(.capture) ?? true
+        measuring = c.lenientBool(.measuring) ?? false
+        weekPct = BudgetWire.share((try? c.decodeIfPresent(Double.self, forKey: .weekPct)) ?? nil)
+        defaultCap = BudgetWire.cap((try? c.decodeIfPresent(Double.self, forKey: .defaultCap)) ?? nil)
+        projects = Array((((try? c.decodeIfPresent(LossyList<BudgetProject>.self, forKey: .projects)) ?? nil)?.elements ?? []).prefix(Self.maxProjects))
+    }
+}
+
+extension BudgetProject: Decodable {
+    private enum CodingKeys: String, CodingKey { case key, name, used, cap, state }
+
+    /// Needs a key (the Mac's project folder, sent back verbatim) and a share; the rest has a fallback.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let rawKey = (c.lenientString(.key) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !rawKey.isEmpty, rawKey.count <= 1024 else {
+            throw DecodingError.dataCorruptedError(forKey: .key, in: c, debugDescription: "Bad project key")
+        }
+        guard let used = BudgetWire.share(try c.decode(Double.self, forKey: .used)) else {
+            throw DecodingError.dataCorruptedError(forKey: .used, in: c, debugDescription: "Bad share")
+        }
+        key = rawKey
+        let named = (c.lenientString(.name) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        name = String((named.isEmpty ? (rawKey as NSString).lastPathComponent : named).prefix(80))
+        self.used = used
+        cap = BudgetWire.cap((try? c.decodeIfPresent(Double.self, forKey: .cap)) ?? nil)
+        state = BudgetState(wire: c.lenientString(.state)) ?? BudgetState(used: used, cap: cap)
+    }
+}
+
+extension SessionBudget: Decodable {
+    private enum CodingKeys: String, CodingKey { case projectKey, used, cap, scope, state, sessionUsed, sessionCap }
+
+    /// Needs the project key and the share; a row whose `budget` is anything else has none.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let rawKey = (c.lenientString(.projectKey) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !rawKey.isEmpty, rawKey.count <= 1024 else {
+            throw DecodingError.dataCorruptedError(forKey: .projectKey, in: c, debugDescription: "Bad project key")
+        }
+        guard let used = BudgetWire.share(try c.decode(Double.self, forKey: .used)) else {
+            throw DecodingError.dataCorruptedError(forKey: .used, in: c, debugDescription: "Bad share")
+        }
+        projectKey = rawKey
+        self.used = used
+        cap = BudgetWire.cap((try? c.decodeIfPresent(Double.self, forKey: .cap)) ?? nil)
+        scope = Scope(rawValue: c.lenientString(.scope) ?? "") ?? .project
+        state = BudgetState(wire: c.lenientString(.state)) ?? BudgetState(used: used, cap: cap)
+        sessionUsed = BudgetWire.share((try? c.decodeIfPresent(Double.self, forKey: .sessionUsed)) ?? nil)
+        sessionCap = BudgetWire.cap((try? c.decodeIfPresent(Double.self, forKey: .sessionCap)) ?? nil)
+    }
+}
+
 /// The Mac's budget block for the week (the sessions list header).
 struct MacBudget: Equatable {
     /// When the weekly limit resets.
@@ -112,7 +221,7 @@ struct BudgetMeter: Equatable {
     /// "Night Owl, 18% of the week, budget 25%" for VoiceOver.
     func spoken(name: String) -> String {
         let base = "\(name), \(usedText) of the week"
-        guard let cap else { return base + ", no budget" }
+        guard let cap, cap > 0 else { return base + ", no budget" }
         switch state {
         case .over: return base + ", budget \(cap)% reached, stopped"
         case .warn: return base + ", near its \(cap)% budget"
@@ -147,6 +256,9 @@ enum BudgetPercent {
 }
 
 enum BudgetCopy {
+    /// The pie that marks a budget: the BUDGET chip, the room's chip, the in-flight fact.
+    static let symbol = "chart.pie.fill"
+
     /// A page and amber from this share of the budget.
     static let warnShare = 0.8
 
@@ -183,7 +295,7 @@ enum BudgetCopy {
     static let footnote = "Estimated from Claude Code on this Mac. Chats elsewhere count toward the week, so shares can read a little high."
 
     /// Budget with usage tracking off.
-    static let captureOff = "Turn on usage tracking in Page Studio on your computer to see and set budgets."
+    static let captureOff = "Turn on usage tracking in Page Studio ▸ Budget to see and set budgets."
 
     /// Early in the week, before shares mean anything.
     static let measuring = "Measuring… shares appear once the week has moved a little."
@@ -194,10 +306,12 @@ enum BudgetCopy {
         return "Budget \(Int(b.used.rounded()))/\(cap)%"
     }
 
-    /// The cap-reached card's line: "about 25% of the week · 2 sessions stopped".
-    static func reachedLine(used: Double, stopped: Int) -> String {
-        let s = stopped == 1 ? "1 session stopped" : "\(stopped) sessions stopped"
-        return "about \(pct(used)) of the week · \(s)"
+    /// The cap-reached card's line: "about 25% of the week · 2 sessions stopped";
+    /// just "about 25% of the week" when the count is unknown.
+    static func reachedLine(used: Double, stopped: Int?) -> String {
+        let week = "about \(pct(used)) of the week"
+        guard let stopped else { return week }
+        return week + " · " + (stopped == 1 ? "1 session stopped" : "\(stopped) sessions stopped")
     }
 }
 
@@ -219,10 +333,19 @@ struct BudgetPage: Equatable {
                           stopped: number(#"stopped \d+ session"#).map { Int($0) })
     }
 
+    /// The bar a budget page draws: the used share against the budget the text names. A cap-reached page
+    /// that names none is full by definition (it stopped at the budget); a warning without one has no bar.
+    func meter(reached: Bool) -> BudgetMeter? {
+        guard let used else { return nil }
+        if let cap { return BudgetMeter(used: used, cap: cap) }
+        guard reached else { return nil }
+        return BudgetMeter(used: used, cap: max(1, Int(used.rounded())), state: .over)
+    }
+
     /// The card's line: "about 25% of the week · 2 sessions stopped" (reached),
     /// "20% of its 25% budget" (warning); nil when the text had no numbers.
     func line(reached: Bool) -> String? {
-        if reached, let used { return BudgetCopy.reachedLine(used: used, stopped: stopped ?? 0) }
+        if reached, let used { return BudgetCopy.reachedLine(used: used, stopped: stopped) }
         if let used, let cap { return "\(BudgetCopy.pct(used)) of its \(cap)% budget" }
         return nil
     }
@@ -243,6 +366,8 @@ struct BudgetSheetModel: Equatable, Identifiable {
     /// The budget now.
     var cap: Int?
     var resetsAt: Date?
+    /// A session's project key (`SessionBudget.projectKey`): sent with the session's own budget.
+    var projectKey: String? = nil
 
     var id: String { "\(scope)-\(key ?? "default")" }
 
@@ -271,5 +396,104 @@ struct BudgetSheetModel: Equatable, Identifiable {
             return "Every project without its own budget stops at \(value)% of the week, with a warning at \(BudgetCopy.warnAt(value))%.\(reset)"
         }
         return BudgetCopy.preview(name: name, cap: value, session: scope == .session, resetsAt: resetsAt, timeZone: timeZone)
+    }
+}
+
+// MARK: - The sheets' models, from what the Mac reported
+
+extension BudgetSheetModel {
+    /// A project's sheet: its own budget (not the default it may be using) is what is edited.
+    static func project(_ p: BudgetProject, resetsAt: Date?) -> BudgetSheetModel {
+        BudgetSheetModel(scope: .project, name: p.name, key: p.key, hue: p.hue, used: p.used, cap: p.cap, resetsAt: resetsAt)
+    }
+
+    /// The default for projects with none of their own.
+    static func forDefault(_ b: MacBudget) -> BudgetSheetModel {
+        BudgetSheetModel(scope: .defaultCap, name: "", key: nil, hue: nil, used: nil, cap: b.defaultCap, resetsAt: b.resetsAt)
+    }
+
+    /// "This session only": the session's own budget and share, never the binding cap (saving that
+    /// unchanged would quietly give the session a budget equal to its project's).
+    static func session(_ s: LiveSession, resetsAt: Date?) -> BudgetSheetModel {
+        BudgetSheetModel(scope: .session, name: SkyModel.projectName(cwd: s.cwd, fallback: s.title), key: s.id,
+                         hue: ProjectHue(key: s.cwd.isEmpty ? s.title : s.cwd),
+                         used: s.budget?.sessionUsed, cap: s.budget?.sessionCap, resetsAt: resetsAt, projectKey: s.budget?.projectKey)
+    }
+
+    /// The `budget` op that saves `pct` (nil = Off), or nil when none can be sent: a project or session
+    /// with no key to send back, or a percentage the Mac would not take (outside 1–100).
+    func command(pct: Int?) -> SessionCommand? {
+        guard BudgetWire.validCap(pct) else { return nil }
+        switch scope {
+        case .project:
+            guard let key, !key.isEmpty else { return nil }
+            return .budget(scope: .project, key: key, sessionId: nil, pct: pct)
+        case .session:
+            guard let key, !key.isEmpty else { return nil }
+            return .budget(scope: .session, key: projectKey, sessionId: key, pct: pct)
+        case .defaultCap:
+            return .budget(scope: .default, key: nil, sessionId: nil, pct: pct)
+        }
+    }
+}
+
+// MARK: - Changing a budget (the `budget` op)
+
+/// What a `budget` op edits, as the wire names it.
+enum BudgetOpScope: String, Equatable {
+    case project, session
+    case `default`
+}
+
+/// Where a budget change stands, for the sheet's own line. The sheet keeps the old value until the Mac
+/// answers; `saved` closes it, `failed` says why under the picker and leaves the old value in place.
+enum BudgetSaveStatus: Equatable {
+    case idle
+    case saving
+    case saved
+    case failed(String)
+
+    var isSaving: Bool { self == .saving }
+    var failure: String? { if case .failed(let why) = self { return why } else { return nil } }
+
+    /// The relay answered the POST. Only a refusal says anything: 202 means the Mac has it, and its
+    /// `result` is the answer (nil = keep waiting). A Mac that is away is said in the spec's words.
+    static func afterPost(_ outcome: SessionCommandOutcome) -> BudgetSaveStatus? {
+        switch outcome {
+        case .accepted: return nil
+        case .macOffline: return .failed(BudgetCopy.macOffline)
+        case .rateLimited: return .failed("Too many changes in a minute. Wait a moment and try again. The budget wasn't changed.")
+        case .relayTooOld: return .failed("Your relay doesn't support live sessions yet. Update your Cloudflare Worker.")
+        default: return .failed(["The budget wasn't changed.", outcome.failureMessage].compactMap { $0 }.joined(separator: " "))
+        }
+    }
+
+    /// The Mac's `result` for the op: ok is saved; anything else is its words, or Page's for a known reason.
+    static func from(result r: CommandResult) -> BudgetSaveStatus {
+        if r.ok { return .saved }
+        return .failed(BudgetCopy.refusal(reason: r.reason, detail: r.detail))
+    }
+
+    /// The Mac never answered within the wait.
+    static let noAnswer = BudgetSaveStatus.failed(BudgetCopy.noAnswer)
+
+    static let resultTimeout: TimeInterval = SessionDeliveryState.resultTimeout
+}
+
+extension BudgetCopy {
+    /// A change that could not reach the Mac: said once, in these words.
+    static let macOffline = "Your Mac is offline — the budget wasn't changed."
+
+    /// The Mac didn't answer in time.
+    static let noAnswer = "Your Mac didn't confirm the change, so the budget may not have changed. Check again in a moment."
+
+    /// The Mac refused or failed the op.
+    static func refusal(reason: String?, detail: String?) -> String {
+        switch reason {
+        case "not_found": return "Your Mac doesn't have that project or session any more. The budget wasn't changed."
+        case "stale", "replay": return SessionResultCopy.refusal(reason: reason, detail: detail, agent: "Your agent")
+        case "invalid": return detail ?? "Your Mac didn't accept that percentage. The budget wasn't changed."
+        default: return detail ?? "Your Mac couldn't change the budget."
+        }
     }
 }

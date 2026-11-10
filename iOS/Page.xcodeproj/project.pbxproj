@@ -142,6 +142,7 @@
 		B332B8F769197DAEECF6B571 /* UsageDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE95F5541E992F13DB7BC9EB /* UsageDisplay.swift */; };
 		B3DE6FE9BD2214D2BD381DFB /* NowStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C25B3E2B731B3873638966E /* NowStream.swift */; };
 		B4FAFCAD410EDE5DCC3109D5 /* NWNowParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD2A413590058FC99CF4246C /* NWNowParts.swift */; };
+		B638A12CC030A2C619840E58 /* BudgetSheetContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3679C9BB32F7CD6AB352D536 /* BudgetSheetContainer.swift */; };
 		B75D2B9FF587C41A6A0B299F /* NWShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BFDB6DB2502DFACBF223566 /* NWShell.swift */; };
 		B803473590042902C57D680F /* LanesContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F007852EE013D2DD7E0F320 /* LanesContainer.swift */; };
 		B87AE14581D6B07D0F2E0E9E /* Reversibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13947691F147367D45B37FF3 /* Reversibility.swift */; };
@@ -253,6 +254,7 @@
 		2ED116C81E1FE471B6977A9A /* HistoryContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryContainer.swift; sourceTree = "<group>"; };
 		3058E7826B1DAFBB9A6FE336 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		314D7D39859EA3652636C001 /* TowerContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerContainer.swift; sourceTree = "<group>"; };
+		3679C9BB32F7CD6AB352D536 /* BudgetSheetContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetSheetContainer.swift; sourceTree = "<group>"; };
 		3715A976450E67F9E60015C4 /* DiffView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiffView.swift; sourceTree = "<group>"; };
 		37DB696FFFB8618F5D72AA5C /* SkyModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyModel.swift; sourceTree = "<group>"; };
 		39C90FA6902C0DAC78CF3399 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
@@ -413,6 +415,7 @@
 		8C70351AF6359769766ECBED /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				3679C9BB32F7CD6AB352D536 /* BudgetSheetContainer.swift */,
 				1588891D19CD34ADF0286895 /* DecisionContainer.swift */,
 				3715A976450E67F9E60015C4 /* DiffView.swift */,
 				649088C92E8341D54B6CC0FD /* DispatchContainer.swift */,
@@ -754,6 +757,7 @@
 				1CA7428041B21CAD53B48AFA /* AwayStore.swift in Sources */,
 				D812AF33C1BBC2DD8420D4A5 /* BiometricGate.swift in Sources */,
 				9D7C04022928C6777E5F1391 /* Budget.swift in Sources */,
+				B638A12CC030A2C619840E58 /* BudgetSheetContainer.swift in Sources */,
 				ADE9A4ECC6519EB5A38AD2AD /* CardGlow.swift in Sources */,
 				AF713C7ED532345581A16E6F /* CardGlowStore.swift in Sources */,
 				9F1E5DEFC4714C12AAEECA00 /* Daypart.swift in Sources */,

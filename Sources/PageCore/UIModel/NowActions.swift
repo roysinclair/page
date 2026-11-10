@@ -200,6 +200,8 @@ struct NowPanelState: Equatable {
     var inFlightExpanded = false
     /// The shortcuts sheet is up in place of the rows.
     var showShortcuts = false
+    /// The budget editor open in a card ("Set budget"). Never together with the composer.
+    var budgetEditor: BudgetEditor?
 }
 
 /// What the controller should do after a key.
@@ -231,6 +233,9 @@ enum NowEffect: Equatable {
     /// Delete a message a phone asked to hold until its session's turn ends
     /// (the phone's `retract`); nothing is typed.
     case deleteHeld(clientId: String)
+    /// Save in the budget editor: sets or clears a budget (config.json or the session caps).
+    /// Nothing is typed into any session.
+    case setBudget(BudgetOp)
 }
 
 enum NowKeys {
@@ -242,6 +247,7 @@ enum NowKeys {
         let ids = Set(rows.map(\.id)).union(flights.map(\.id))
         if let id = s.selectedId, !ids.contains(id) { s.selectedId = nil }
         if let c = s.composer, !ids.contains(c.rowId) { s.composer = nil }
+        if let e = s.budgetEditor, !ids.contains(e.rowId) { s.budgetEditor = nil }
         if let h = s.hold, case .approve(let id) = h.kind, !ids.contains(id) { s.hold = nil }
         if rows.count <= NowModel.visibleRows { s.expanded = false }
         if flights.count <= InFlightLayout.cap { s.inFlightExpanded = false }
@@ -290,6 +296,23 @@ enum NowKeys {
             default: break
             }
             return (s, .none)
+        }
+
+        // The budget editor owns the keyboard too, so a "1" is never an approval under it:
+        // Esc closes it (not the panel), Return saves, nothing else acts.
+        if let e = s.budgetEditor {
+            switch press.key {
+            case .esc:
+                s.budgetEditor = nil
+                return (s, .none)
+            case .ret:
+                guard !press.isRepeat else { return (s, .none) }
+                s.budgetEditor = nil
+                guard e.changed, let op = e.op else { return (s, .none) }
+                return (s, .setBudget(op))
+            default:
+                return (s, .none)
+            }
         }
 
         // The composer owns the keyboard: a typed "1" is text, not an approval.

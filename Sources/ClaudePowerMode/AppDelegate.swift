@@ -440,6 +440,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         inputs.route = { routes[$0.sessionId]?.label }
         inputs.blocker = { routes[$0.sessionId]?.blocker }
         let model = NowModel.build(inputs)
+        nowStore.updateBudget(snap.budget)
         nowStore.update(model)
         widgets.offer(WidgetSnapshotBuilder.build(model: model, snapshot: snap, cardGlow: cfg.cardGlow, now: now))
         // The Tower's sidebar card, badge and Power page follow the same model while it is open.
@@ -586,6 +587,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
             stopAllAgents()
         case .deleteHeld(let clientId):
             deleteHeld(clientId)
+        case .setBudget(let op):
+            setBudget(op)
+        }
+    }
+
+    /// Save in a card's budget editor: the same Coordinator path as Page Studio's steppers and the phone's op.
+    private func setBudget(_ op: BudgetOp) {
+        coordinator.setBudget(op) { [weak self] result in
+            DispatchQueue.main.async {
+                let ok = result.code == .delivered
+                // "Night Owl’s budget is now 30%" on success; why not, otherwise.
+                self?.nowStore.notice = NowStore.Notice(text: result.detail, failed: !ok)
+            }
         }
     }
 

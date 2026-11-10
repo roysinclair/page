@@ -137,6 +137,11 @@ data class LiveSession(
     val attach: String? = null,
     /** Why a session Page can type into takes no photos ("Page can't send photos to Codex yet"). */
     val attachBlocker: String? = null,
+    /**
+     * Its budget (Designs/budget-caps.md): the binding cap and how much of it is used; null when the Mac sends none
+     * (and, once a `list` is decoded, whenever the Mac's caps don't say `budget-v1`: [BudgetWire.gated]).
+     */
+    val budget: SessionBudget? = null,
 ) {
     val hostLabel: String
         get() {
@@ -198,6 +203,8 @@ data class LiveSession(
                 // A value this build doesn't know is no photo route at all, never a guess.
                 attach = c.str("attach")?.trim()?.takeIf { it == ATTACH_IMAGE || it == ATTACH_PATH },
                 attachBlocker = c.str("attachBlocker")?.trim()?.takeIf { it.isNotEmpty() }?.capped(200),
+                // A row's budget that doesn't read is no budget, never a failed list.
+                budget = SessionBudget.decode(c["budget"]),
             )
         }
     }

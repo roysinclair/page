@@ -46,6 +46,8 @@ struct NowScreenData {
     var inboxLoaded = true
     /// Question rows whose questions the Mac sent: opened, they offer tap-to-tick answers.
     var answerable: Set<String> = []
+    /// The Mac sets budgets and usage tracking is on: a working session's card offers "Session budget…".
+    var budgetControls = false
 }
 
 /// What the Now screen can ask for. Every one is routed by the container
@@ -62,6 +64,8 @@ struct NowScreenActions {
     var tapRunway: () -> Void = {}
     /// Opens a working session's room: on Story, Screen, the composer, or where Stop is held.
     var openRoom: (String, RoomEntry) -> Void = { _, _ in }
+    /// "Session budget…" on a working session's card, by the session's id.
+    var openSessionBudget: (String) -> Void = { _ in }
     var toggleInFlight: () -> Void = {}
     var dismissTip: (NWTip) -> Void = { _ in }
     var toLanes: () -> Void = {}
@@ -410,7 +414,8 @@ struct NWNowScreen: View {
         if !data.inFlight.rows.isEmpty {
             let before = sections.first { $0.0 == .review }?.1.first.flatMap { order.firstIndex(of: $0.id) }.map { $0 - 1 } ?? (order.count - 1)
             NWInFlightSection(section: data.inFlight, tip: data.tip.flatMap { $0.tip == .inFlight ? $0 : nil }, biometry: data.biometry,
-                              onOpen: actions.openRoom, onToggle: actions.toggleInFlight, onHeader: actions.toLanes, onDismissTip: actions.dismissTip)
+                              onOpen: actions.openRoom, onBudget: actions.openSessionBudget, budgetControls: data.budgetControls,
+                              onToggle: actions.toggleInFlight, onHeader: actions.toLanes, onDismissTip: actions.dismissTip)
                 .id("section-in flight")
                 .offset(y: push(below: before))
         }

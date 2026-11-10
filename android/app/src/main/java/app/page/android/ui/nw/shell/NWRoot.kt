@@ -95,7 +95,9 @@ private fun NWMain(onRequestNotifications: () -> Unit) {
             AppRouter.sheetDismissed()
         }
     }
-    LaunchedEffect(sheets.current != null) { NowStore.setFrozen(sheets.current != null) }
+    // The budget sheet over Now (from an In flight card's menu) holds the stream still too.
+    val covered = sheets.current != null || router.budgetSheet != null
+    LaunchedEffect(covered) { NowStore.setFrozen(covered) }
 
     if (router.confirmingUnpair) {
         val mac by PairingStore.pairedMac.collectAsStateWithLifecycle()
@@ -110,7 +112,7 @@ private fun NWMain(onRequestNotifications: () -> Unit) {
     }
     // The shell holds still under a sheet; the sheet and the Room on top of it keep moving (iOS sets
     // nwAnimationsPaused on the shell only).
-    CompositionLocalProvider(LocalAnimationsPaused provides (sheets.current != null)) {
+    CompositionLocalProvider(LocalAnimationsPaused provides covered) {
         NWShell(
             destination = router.destination, onDestinationChange = AppRouter::selectDestination,
             decideCount = screen.decideCount, workingCount = screen.workingCount,
@@ -150,5 +152,12 @@ private fun Sheets(current: NWSheet?, onRequestNotifications: () -> Unit) {
     NWSheetHost(current is NWSheet.History, AppRouter::closeSheet) { app.page.android.ui.nw.history.HistoryContainer() }
     NWOverlay(current is NWSheet.Session, AppRouter::closeSheet) {
         sessionId?.let { id -> RoomContainer(id, entry) }
+    }
+    // The budget sheet comes up over whatever is showing (the Tower's list, a room, Now's In flight menu), last, so it is on top.
+    val budget by AppRouter.state.collectAsStateWithLifecycle()
+    var budgetShown by remember { mutableStateOf<app.page.android.model.BudgetSheetModel?>(null) }
+    budget.budgetSheet?.let { budgetShown = it }
+    NWSheetHost(budget.budgetSheet != null, AppRouter::closeBudget, heightFraction = 0.88f, containerColor = NW.Palette.surface.color, fitContent = true) {
+        budgetShown?.let { app.page.android.ui.nw.budget.BudgetSheetContainer(it) }
     }
 }

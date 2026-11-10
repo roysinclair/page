@@ -149,7 +149,7 @@ final class SessionImagesTests: XCTestCase {
         setSessions([session("tmux1"), session("term1"), session("ghost"), session("codex1", backend: .codex)])
         _ = lastList()   // the first list starts the host probe
         let list = lastList()
-        XCTAssertEqual(list?["caps"] as? [String], ["hold-v1", "retract-v1", "images-v1"])
+        XCTAssertEqual(list?["caps"] as? [String], ["hold-v1", "retract-v1", "images-v1", "budget-v1"])
         XCTAssertEqual(row("tmux1")?["attach"] as? String, "image")
         XCTAssertNil(row("tmux1")?["attachBlocker"])
         XCTAssertEqual(row("term1")?["attach"] as? String, "path")

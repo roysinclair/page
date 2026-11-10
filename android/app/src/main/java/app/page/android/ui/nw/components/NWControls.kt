@@ -64,6 +64,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.page.android.model.BudgetCopy
 import app.page.android.model.ChipKind
 import app.page.android.model.MacChipModel
 import app.page.android.model.NowBanner
@@ -95,7 +96,7 @@ val ChipKind.color: Rgba
         ChipKind.IRREVERSIBLE -> NW.Palette.red
         ChipKind.UNDOABLE -> NW.Palette.green
         ChipKind.CONSIDERED -> NW.Palette.sky
-        ChipKind.LOOKS_STUCK, ChipKind.QUESTION, ChipKind.FORECAST, ChipKind.RATE_LIMITED -> NW.Palette.amber
+        ChipKind.LOOKS_STUCK, ChipKind.QUESTION, ChipKind.FORECAST, ChipKind.RATE_LIMITED, ChipKind.BUDGET -> NW.Palette.amber
         ChipKind.REVIEW -> NW.Palette.teal
     }
 
@@ -110,6 +111,7 @@ val ChipKind.symbol: String
         ChipKind.FORECAST -> "clock.badge.exclamationmark"
         ChipKind.RATE_LIMITED -> "gauge.with.needle"
         ChipKind.REVIEW -> "checkmark.circle"
+        ChipKind.BUDGET -> BudgetCopy.SYMBOL
     }
 
 val RingStat.Kind.color: Rgba
@@ -158,7 +160,7 @@ val NowRow.tint: Rgba
     get() = when (chip) {
         ChipKind.IRREVERSIBLE -> NW.Palette.red
         ChipKind.CONSIDERED -> NW.Palette.sky
-        ChipKind.LOOKS_STUCK, ChipKind.FORECAST, ChipKind.RATE_LIMITED, ChipKind.QUESTION -> NW.Palette.amber
+        ChipKind.LOOKS_STUCK, ChipKind.FORECAST, ChipKind.RATE_LIMITED, ChipKind.QUESTION, ChipKind.BUDGET -> NW.Palette.amber
         ChipKind.UNDOABLE -> NW.Palette.green
         ChipKind.REVIEW -> NW.Palette.teal
     }
@@ -355,9 +357,12 @@ fun NWSwitch(isOn: Boolean, modifier: Modifier = Modifier, onChange: ((Boolean) 
     }
 }
 
-/** A segmented control in the Night Watch style: slate track, a raised pill under the selected option. Every segment is a 44 dp button. */
+/**
+ * A segmented control in the Night Watch style: slate track, a raised pill under the selected option. Every segment is a
+ * [segmentHeight] button (44 dp; the budget picker passes 48).
+ */
 @Composable
-fun <T> NWSegmented(options: List<Pair<T, String>>, selection: T, onSelect: (T) -> Unit, modifier: Modifier = Modifier) {
+fun <T> NWSegmented(options: List<Pair<T, String>>, selection: T, onSelect: (T) -> Unit, modifier: Modifier = Modifier, segmentHeight: Dp = 44.dp) {
     Row(
         modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = 0.07f)).padding(3.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -367,7 +372,7 @@ fun <T> NWSegmented(options: List<Pair<T, String>>, selection: T, onSelect: (T) 
             Box(
                 Modifier
                     .weight(1f)
-                    .heightIn(min = 44.dp)
+                    .heightIn(min = segmentHeight)
                     .clip(RoundedCornerShape(9.dp))
                     .background(if (on) Color.White.copy(alpha = 0.14f) else Color.Transparent)
                     .clickable(role = Role.Tab) { onSelect(value) }

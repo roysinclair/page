@@ -39,7 +39,10 @@ Decided with the user (2026-11-10):
 
 The status-line wrapper `page-statusline.sh` (`UsageCapture.script`) already saves the
 latest status-line JSON to `statusline-input.json`. It also writes
-`statusline/<session_id>.json`: atomic, 0600, with the same content. The fields used are:
+`statusline/<session_id>.json` next to it: atomic (temp file, then `mv`), 0600 (umask 077),
+the same content. The id is taken with `sed` in POSIX sh and kept to `[A-Za-z0-9-]`
+(at most 128 characters); with nothing left, no per-session file is written. Files nobody has
+touched for 8 days are removed. The fields used are:
 
 | Field | Use |
 |---|---|
@@ -48,9 +51,13 @@ latest status-line JSON to `statusline-input.json`. It also writes
 | `cost.total_cost_usd` | the session's running cost: weight only, never shown |
 | `rate_limits.seven_day.used_percentage`, `.resets_at` | the account's weekly %, and the window |
 
+- **Existing installs get the new script at app start.** `UsageCapture.set(true)` returns early
+  when settings are already wrapped, so at launch `UsageCapture.refreshWrapper()` rewrites the
+  wrapper (0700) if capture is on and the file differs from the current script. Without it
+  nothing would be measured on a Mac that turned capture on before budgets existed.
 - **Usage capture must be on** (Settings ▸ Budget, "Show my Claude usage"). When it is off,
-  every budget screen says "Turn on usage tracking in Page Studio to see and set budgets"
-  and nothing is enforced.
+  every budget screen says "Turn on usage tracking in Page Studio ▸ Budget to set budgets"
+  and nothing is enforced: Page removes every marker and allow file and closes its budget pages.
 - **Sessions that never draw a status line are not counted:** `claude -p`, SDK runs, and
   other machines. That is why the footnote's "a little high" matters.
 
@@ -64,7 +71,8 @@ Kept per window, keyed by `seven_day.resets_at`:
   - `lastCost`: the last `total_cost_usd` seen.
   - `spent`: dollars counted in this window.
 
-Updated on every `Coordinator.refreshUsage` pass (15 s) from the per-session files that changed:
+Updated on every `Coordinator.refreshUsage` pass (15 s) from the per-session files that changed
+(by mtime; at most 256 KB read from each, with `BoundedFileRead`):
 
 - **First sighting of a session in the window:** `lastCost = cost` and `spent = 0`.
   Spend from before Page saw it, such as a resumed session's history, is not counted.
@@ -73,9 +81,17 @@ Updated on every `Coordinator.refreshUsage` pass (15 s) from the per-session fil
   - If `cost < lastCost`, the counter was reset (`/clear`): `spent += cost`.
   - Then `lastCost = cost`.
 - **When `resets_at` changes:** start a new window. Every `spent` goes to 0, `startPct` takes
-  the new %, and every `lastCost` is re-baselined.
+  the new %, and `lastCost` is kept as the baseline the next sighting is measured from (what a
+  session spent across the boundary counts in the new window, where most of it was).
+  - A `resets_at` that moved by less than an hour is the same window (jitter); the latest value is kept.
+  - The window only moves forward. A file still showing an older `resets_at` moves its session's
+    `lastCost` and adds no spend. A file whose `resets_at` is already past, or that Claude Code wrote
+    more than 6 hours ago, is ignored.
+  - A weekly % that falls below `startPct` starts a new window.
+  - Ten minutes after the window's reset with no sample from the next one, the old spend is dropped.
 - **Finished sessions** (no file update for 8 days) are dropped. Their `spent` is kept per
   project as `closedSpent`.
+- **Warned this window** (marker hashes) is kept in the ledger too, so a restart doesn't page again.
 
 ### Estimate
 
@@ -95,20 +111,30 @@ Let `W` be the weekly % now, `C` the total `spent` of all sessions this window, 
 
 ### Project key
 
-- The Mac's canonical key is `workspace.project_dir` with symlinks resolved. If that is
-  missing, it uses `cwd`.
+- The Mac's canonical key is `workspace.project_dir` with symlinks resolved (`realpath`, so
+  `/tmp` is `/private/tmp`, as `pwd -P` says in the gate). If that is missing, it uses `cwd`. A path
+  must be absolute and without control characters. A path in a macOS privacy-protected folder
+  (Desktop, Documents, …) is left as written: even a stat there can raise the prompt.
 - The Mac sends the key in every row. The phones echo it back verbatim and never derive it.
-- The display name is the last path component, from the same `ProjectLabel` rule the phones use.
+- The display name is what the Mac already calls the project everywhere else
+  (`InterventionDetector.projectName`: the folder with a project marker, so `iOS/` reads as its
+  parent). Deviation: not the phones' `ProjectLabel`, which names from a folder string alone.
+- A running session the status line hasn't reported yet still gets a `list` row (its folder's
+  project, used 0 of its own), so a budget can be set before the first status line.
 
 ## 3. Caps
 
 - **Project caps:** `Config.budget.projects: [key: pct]`.
   - `Config.budget.defaultPct` is an optional cap for every project that has none of its own.
   - Both are written by Page Studio, `paged config set`, and the phone op `budget`.
-- **Session caps:** `budget-session-caps.json` (0600), `sessionId → pct`.
-  - Dropped when the session has been gone 8 days.
-- **Values:** whole percentages, 1–100. Off means no cap.
-- **The binding cap** for a session is the lower of its session cap and its project cap.
+- **Session caps:** `budget-session-caps.json` (0600), `{"<sessionId>": {"pct": 10, "seenAt": <unix seconds>}}`.
+  - Dropped when the session has been gone 8 days (`seenAt` is refreshed about hourly while it runs).
+- **Values:** whole percentages, 1–100. Off means no cap. `config.json` entries out of range, or whose
+  key isn't an absolute folder, are dropped with a note; each entry decodes on its own, so old files load.
+- **The binding cap** for a session is the one of its session cap and its project cap (own, else the
+  default) that is further along: `over`, then `warn`, then `ok`; on a tie the lower cap; on a tie of
+  both the project's. With both below 80% that is the lower cap, as written before; the refinement
+  keeps a session the project's cap has stopped from reading `ok` because its own, lower, cap has room.
   - `state`: `ok` below 80% of the binding cap, `warn` from 80%, `over` at 100%.
 - **Raising a cap** (from the cap-reached page, or any control) changes the stored cap for good.
   - "Raise to N%" means the cap plus 10, at most 100.
@@ -127,59 +153,105 @@ Let `W` be the weekly % now, `C` the total `spent` of all sessions this window, 
 **At `over`:**
 
 1. **Marker.** Write `budget-over/<hash>.json` (0600) for each project over its cap, and for
-   each session over a session cap:
+   each session over a session cap. `<hash>` is FNV-1a 64 (16 hex digits) of `p:<project key>` or
+   `s:<session id>` (never `hashValue`, which changes on every launch):
 
    ```json
    {"project": "<key>", "session": "<id or null>", "name": "Night Owl", "cap": 25, "used": 25, "expiresAt": <weekly resets_at>}
    ```
 
-   Remove the marker when the cap is raised past `used`, when the window resets, or at app
-   start when it no longer applies.
-2. **Interrupt.** Send Esc to the busy sessions it covers, the same way `stopFromStuckPage`
-   does. On hosts that can't take Esc, like Terminal.app, the gate (step 3) stops them at
-   their next tool call.
+   Beside it, `budget-over/<hash>.gate` (0600): plain `key=value` lines, which is all the hook reads:
+
+   ```
+   project=<absolute key, or empty>
+   session=<session id, or empty>
+   expires=<unix seconds: the window's reset>
+   stop=<the complete, pre-escaped JSON line the hook prints>
+   ```
+
+   A key with a newline gets no marker. Both files are written atomically (the `.gate` last) and
+   removed together (the `.gate` first). The markers, the pages open for them, the sessions Page
+   stopped and the allows live in `budget-state.json` (0600), so a restart changes nothing.
+   Remove the marker when the cap is raised past `used`, when the window resets, when the cap is
+   removed, or when capture is off. The first pass after launch recomputes from the loaded books and
+   removes markers and allow files that no longer apply (never before the books are loaded).
+2. **Interrupt.** Send Esc to the busy sessions it covers (and that hold no allow file), through the
+   phone's Stop path (`ClaudeBackend.remoteInterrupt`, the one `stopFromStuckPage` uses), once per
+   marker: the gate stops their later turns, and Terminal.app, which can't take Esc, would
+   otherwise be retried every pass. The marker is in place before the Esc. A project marker covers
+   a session whose ledger key is the project, or whose folder is inside it (the gate's rule).
 3. **Gate.** `hooks/page-budget-gate.sh` is a new PreToolUse entry, matcher `*`,
-   non-blocking, timeout 5 s. It is pure bash with no relay, no Python and no away or bypass
-   step-aside.
-   - It reads stdin `session_id` and `cwd`.
+   non-blocking, timeout 5 s, installed by `HookInstaller` (Claude only; paged on Linux leaves it out
+   until `install-linux.sh` ships the script). It is pure bash, runs under macOS `/bin/bash` 3.2, has no
+   relay, no Python and no away or bypass step-aside.
+   - Its folder is found as `page-notify.sh` finds its support folder (macOS, Linux XDG), or `PAGE_BUDGET_DIR`.
+     With no `budget-over/` folder or no `*.gate` in it, it drains stdin and exits 0.
+   - It reads the start of stdin (16 KB) and takes the first `session_id` and `cwd` strings, so text inside
+     a tool's input that looks like those keys is never used. (Deviation: bash parameter expansion rather than
+     `sed`, because a `sed` with a leading `.*` takes the last occurrence.) A `cwd` with a backslash is allowed.
    - A marker matches when its `session` equals `session_id`, or when it has no `session`
-     and `cwd` is the marker's `project` or lies inside it.
-   - Expired markers (`expiresAt` < now) are ignored.
-   - When a marker matches and the session has no allow marker (step 5), it prints:
+     and `cwd` is the marker's `project` or lies inside it, at a path boundary (`/x/proj` is not `/x/proj2`).
+     The `cwd` is also tried as `pwd -P` says it, since the key has its symlinks resolved.
+   - Expired markers (`expires` < now) and malformed `.gate` files are ignored.
+   - When a marker matches and the session has no allow file (`budget-allow/<session id>`, step 5), it prints
+     the `stop` line:
 
      ```json
-     {"continue": false, "stopReason": "Page: Night Owl reached its budget (25% of the week). Raise it in Page, or wait for the reset on Mon 09:00."}
+     {"continue":false,"stopReason":"Page: Night Owl reached its budget (25% of the week). Raise it in Page, or wait for the reset on Mon 09:00."}
      ```
 
-   - Every error, a missing directory or an unreadable file means allow: the gate fails open.
+     A session cap says "this session" in place of the project's name.
+   - Every error, a missing directory or an unreadable file means allow: the gate fails open and always exits 0.
    - Typed prompts are not blocked. The turn they start is stopped at its first tool call,
      with the same message.
-4. **Page.** A page of kind `rate_limit` and subtype `budget_reached`.
+4. **Page.** A page of kind `rate_limit` and subtype `budget_reached`, id
+   `page-budget-<hash>-stop-<reset epoch>`, session id `page-budget-<hash>` (`BudgetPages.isPageId`
+   is the prefix `page-budget-`). Its card is closed when it stops applying: the cap raised past
+   `used`, the window reset, capture turned off.
    - The text, word for word: "Night Owl reached its budget: about 26% of the week (budget 25%).
      Page stopped 2 sessions."
    - The phones parse `about N%`, `budget N%` and `stopped N session` from it. Without
      `budget N%` the raise button reads "Raise by 10%".
-   - Reply mapping on the Mac:
+   - Reply mapping on the Mac (`Coordinator.route` takes budget page ids before `deliver`, so typed text
+     can never reach a session):
 
      | Action | Effect |
      |---|---|
-     | `approve` | Raise to N% |
-     | `carry_on` | Let this turn finish |
+     | `approve` | Raise the binding cap by 10 (at most 100), for good, then carry on (below) |
+     | `carry_on` | Let this turn finish, then carry on (below) |
      | `deny` | Keep stopped (closes the page) |
      | Typed text | Same as `deny` (no text is typed into the session) |
 
+   - "The binding cap" a raise changes: a project's own cap; when it came from the default, the project's own
+     cap becomes default + 10; a session's cap for a session marker. A cap already at 100 can't be raised.
+   - **Carrying on.** Page pressed Esc, so both "Raise" and "Let this turn finish" resume the sessions Page
+     stopped for that marker (the ones it interrupted, and those seen working while the marker stood), through
+     the battery resume's `resumePausedSessions` path (only an idle session the user hasn't typed in since):
+     "Page: budget raised to 35% — carry on where you left off." or "Page: you can finish this turn — carry on
+     where you left off." A raise removes the marker before the message is typed; if the project has already
+     spent past the new cap it stays stopped and the reply says so.
+   - Every reply to the relay carries a human `detail`: "Raised Night Owl to 35%", "Night Owl can finish this
+     turn", "Kept Night Owl stopped", or why it was refused.
+   - The warning page, `page-budget-<hash>-warn-<reset epoch>`, is sent once per budget and window
+     (`budget_warning`), and closed when the budget goes back below 80% or is reached. `approve` raises the
+     cap as above; every other reply closes it.
+
 5. **Let this turn finish.**
-   - For each session the page covers, write `budget-allow/<sessionId>`. The gate lets that
-     session through while the marker exists.
-   - The Mac removes the marker when that session next goes idle or waiting, so the following
-     turn is gated again.
+   - For each session the page covers that is stopped, or working now, write `budget-allow/<sessionId>`.
+     The gate lets that session through while the file exists.
+   - The Mac removes the file once that session has been seen working and is idle or waiting again, so
+     the following turn is gated again; or after 30 minutes without it becoming busy; or when no marker
+     covers it any more, or it is gone.
    - Interrupts are not sent to allowed sessions.
 
 **Older phones** show `budget_*` pages as "Rate limit reached" with a text reply. That is
 harmless, because typed text means "keep stopped".
 
-**Hook install.** The canonical hook entries change, so existing installs show as outdated
-until "Install agent hooks…" is run again. The installer and its tests include the new entry.
+**Hook install.** The canonical hook entries change (a Claude-only `PreToolUse` group, matcher `*`, timeout 5, command the
+quoted path of `page-budget-gate.sh` beside `page-notify.sh`), so existing installs show as outdated
+until "Install agent hooks…" is run again. Page recognises the gate's entry as its own (status, update,
+uninstall, the bundle move), the build and installer ship the script beside `page-notify.sh`, and the
+installer's tests include the new entry.
 
 ## 5. Wire (encrypted sessions channel; nothing new in the heartbeat)
 
@@ -193,7 +265,8 @@ until "Install agent hooks…" is run again. The installer and its tests include
   ```
 
   - `projects` is sorted by `used`, highest first, and lists every project with spend or a cap
-    this window, live or not.
+    this window, live or not (at most 60). With capture off the block is still sent, with
+    `"capture": false` and no projects.
 - **`list` row** gains `budget`:
 
   ```json
@@ -201,13 +274,22 @@ until "Install agent hooks…" is run again. The installer and its tests include
   ```
 
   - `cap` is the binding cap, and `scope` says whether it is the project's cap or the session's.
+  - Every running Claude session has one while capture is on; none while it is off.
 - **Op `budget`** sets or clears a cap. `pct: null` clears it:
 
   ```json
   {"op": "budget", "scope": "project" | "session" | "default", "key": "…", "sessionId": "…", "pct": 25 | null}
   ```
 
-  - The Mac replies with `result`, and its next `list` echoes the new value.
+  - The phones send `{"op":"budget","scope":"project","key":"/Users/me/projects/night-owl","pct":30}`,
+    `{"op":"budget","scope":"session","sessionId":"s1","key":"<the row's projectKey>","pct":10}` (the key is
+    ignored) and `{"op":"budget","scope":"default","pct":null}`. A `pct` that is missing or `null` clears;
+    a boolean, a fraction or a value outside 1–100 is refused, as is a `key` that isn't an absolute folder path
+    (at most 1024 characters, no newline; trailing slashes are dropped) or a session id outside `[A-Za-z0-9-]`.
+  - The Mac replies with `result`, and its next `list` echoes the new value. With capture off it refuses
+    (`disabled`). The detail is a short sentence: "Night Owl's budget is now 30%".
+  - Every edit, from the phone, Page Studio or the panel, goes through one `Coordinator.setBudget`: it
+    loads config.json fresh (and refuses if it can't be read), writes, applies, and re-evaluates the markers at once.
   - The relay answers `mac_offline` while the Mac is away. The control shows that and keeps
     the old value.
 - **Page replies** use the existing `/reply` with the actions in §4.
@@ -269,6 +351,20 @@ The iOS views are in `iOS/Page/Design/NightWatch/NWBudget.swift`, and their pure
    - an inline − 25% + stepper, in steps of 5. Below 5 it reads Off, or "Default" when the
      default applies.
    - Budgets apply straight away, outside the page's Apply button, and the footnote says so.
+   - With capture off the card is replaced by one line saying to turn on "Show my Claude usage".
+7. **Menu-bar panel (the Now popover):** a slim **BUDGET** row under Open and Steer on every In-flight card
+   and every finished-turn row (Claude sessions):
+   - the mini bar (the same rules as the Page Studio bar), the detail line ("21% of 25%", "2% · no budget",
+     amber from `warn`), and a **Set budget** button on the right in the same style as Open and Steer.
+   - With usage capture off, only the label and the button; expanding says "Turn on usage tracking in
+     Page Studio ▸ Budget to set budgets."
+   - **Set budget** opens an editor inside the card (state in `NowStore`, no nested popover): a two-way toggle,
+     "Project (all its sessions)" or "This session only"; presets Off · 10 · 25 · 50; a − N% + stepper in
+     steps of 5; the plain-words preview line (`BudgetCopy.preview`, the same sentences as the iOS sheet);
+     Cancel and Save. Save writes straight through `Coordinator.setBudget` and closes the editor. Esc cancels
+     (before the panel's own Esc), Return saves, and no other key acts under it (so a "1" is never an approval).
+   - One editor or composer at a time; a half-typed message, or an unsaved budget change, is never thrown away
+     by opening the other.
 
 Invariants from v5 hold:
 - Red only for Irreversible, so budgets use amber and teal.

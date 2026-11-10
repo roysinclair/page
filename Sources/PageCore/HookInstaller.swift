@@ -442,14 +442,20 @@ struct CodexConfigInfo: Equatable {
 /// ~/.codex/hooks.json. Pure logic over files under `homeDirectory`, so tests
 /// run against a temp directory. Never writes without an explicit `apply`.
 ///
-/// Page's entries are recognised by their command naming `page-notify.sh`,
-/// wherever it lives — including an older manual install such as
-/// ~/.claude/hooks/page-notify.sh, which an install migrates (otherwise the
-/// Notification page would fire twice). Other tools' hooks are never removed
+/// Page's entries are recognised by their command naming `page-notify.sh` (or
+/// the budget gate, `page-budget-gate.sh`), wherever it lives — including an
+/// older manual install such as ~/.claude/hooks/page-notify.sh, which an
+/// install migrates (otherwise the Notification page would fire twice). Other tools' hooks are never removed
 /// or edited: Page only adds its own matcher groups, and on uninstall removes
 /// handlers that are its own (whole groups only when every handler in them is).
 struct HookInstaller {
     static let scriptName = "page-notify.sh"
+    /// The budget gate (Designs/budget-caps.md §4): a PreToolUse hook that stops the tool
+    /// calls of a project that has reached its budget. Shipped beside `page-notify.sh`.
+    static let gateScriptName = "page-budget-gate.sh"
+    /// The gate must answer fast; it never waits on anything.
+    static let gateTimeout = 5
+    static let gateMatcher = "*"
     /// Blocking hooks wait this long for the phone (PAGE_HOOK_TIMEOUT default
     /// in the script) …
     static let hookWaitSeconds = 540
@@ -462,6 +468,16 @@ struct HookInstaller {
     let homeDirectory: URL
     let scriptPath: String
     var fileManager: FileManager = .default
+    /// Claude only: the budget gate's PreToolUse entry. paged (Linux) doesn't ship the
+    /// gate script yet, and an entry for a missing script would error on every tool call.
+    var budgetGate = true
+
+    /// The gate script: a sibling of `page-notify.sh`.
+    var gateScriptPath: String { Self.gateSibling(ofScript: scriptPath) }
+
+    static func gateSibling(ofScript path: String) -> String {
+        URL(fileURLWithPath: path).deletingLastPathComponent().appendingPathComponent(gateScriptName).path
+    }
 
     var claudeDirectory: URL { homeDirectory.appendingPathComponent(".claude", isDirectory: true) }
     var codexDirectory: URL { homeDirectory.appendingPathComponent(".codex", isDirectory: true) }
@@ -545,6 +561,12 @@ struct HookInstaller {
         return .object(members)
     }
 
+    /// The gate's handler: the quoted script, a short timeout, no status message (it is silent unless it stops something).
+    private func gateHandler() -> OrderedJSON {
+        .object([.init("type", .str("command")), .init("command", .str(Self.shellQuote(gateScriptPath))),
+                 .init("timeout", .number(String(Self.gateTimeout)))])
+    }
+
     private func group(matcher: String?, _ handler: OrderedJSON) -> OrderedJSON {
         var members: [OrderedJSON.Member] = []
         if let matcher { members.append(.init("matcher", .str(matcher))) }
@@ -556,15 +578,17 @@ struct HookInstaller {
     func canonicalEntries(for agent: HookAgent, codexStop: Bool = false) -> [(event: String, group: OrderedJSON)] {
         switch agent {
         case .claude:
-            return [
+            var entries: [(event: String, group: OrderedJSON)] = [
                 ("PermissionRequest", group(matcher: nil, handler(.claude, timeout: Self.blockingTimeout,
                                                                   statusMessage: Self.blockingStatusMessage))),
                 ("PreToolUse", group(matcher: Self.questionMatcher,
                                      handler(.claude, timeout: Self.blockingTimeout,
-                                             statusMessage: Self.blockingStatusMessage))),
-                ("Notification", group(matcher: nil, handler(.claude, timeout: Self.notificationTimeout,
-                                                             statusMessage: nil, blocking: false)))
+                                             statusMessage: Self.blockingStatusMessage)))
             ]
+            if budgetGate { entries.append(("PreToolUse", group(matcher: Self.gateMatcher, gateHandler()))) }
+            entries.append(("Notification", group(matcher: nil, handler(.claude, timeout: Self.notificationTimeout,
+                                                                        statusMessage: nil, blocking: false))))
+            return entries
         case .codex:
             var entries: [(event: String, group: OrderedJSON)] = [
                 ("PermissionRequest", group(matcher: nil, handler(.codex, timeout: Self.blockingTimeout,
@@ -582,7 +606,7 @@ struct HookInstaller {
 
     static func isPageHandler(_ v: OrderedJSON) -> Bool {
         guard let cmd = v["command"]?.stringValue else { return false }
-        return cmd.contains(scriptName)
+        return cmd.contains(scriptName) || cmd.contains(gateScriptName)
     }
 
     /// Page handler commands in a parsed file, in order.
@@ -945,7 +969,10 @@ struct HookInstaller {
         if let reason = Self.unsuitableScriptReason(scriptPath) { throw HookInstallerError.scriptUnavailable(reason) }
         let loaded = try load(agent)
         let (moved, count) = Self.movingScript(in: loaded.root, from: oldScripts.filter { $0 != scriptPath }, to: scriptPath)
-        let newText = count > 0 ? render(moved, like: loaded.text) : loaded.text
+        // The budget gate sits beside the script in the bundle, so it moves with it.
+        let oldGates = oldScripts.map { Self.gateSibling(ofScript: $0) }.filter { $0 != gateScriptPath }
+        let (movedGate, gateCount) = Self.movingScript(in: moved, from: oldGates, to: gateScriptPath)
+        let newText = count + gateCount > 0 ? render(movedGate, like: loaded.text) : loaded.text
         return HookChangePlan(agent: agent, action: .install, fileURL: fileURL(for: agent), writeURL: loaded.writeURL,
                               originalData: loaded.data, originalText: loaded.text, newText: newText)
     }

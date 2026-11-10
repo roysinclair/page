@@ -62,6 +62,8 @@ data class InFlightRow(
     val canMirror: Boolean,
     /** The step in words, the steps before it, the clocks, workflows and health. */
     val card: InFlightCard = InFlightCard(now = "Working"),
+    /** Its budget, when its project (or it) has one or has used some of the week (Designs/budget-caps.md). */
+    val budget: SessionBudget? = null,
 ) {
     /** The spoken line: "relay, Claude in tmux, Running vitest, working 4m, 1 workflow running". */
     val spoken: String
@@ -71,6 +73,7 @@ data class InFlightRow(
             card.timeText?.let { parts.add(it) }
             val w = card.workflowHeading
             if (w != null) parts.add(w) else if (progress != null) parts.add(progress)
+            budget?.let { parts.add(it.meter.spokenDetail) }
             return parts.joinToString(", ")
         }
 }
@@ -126,6 +129,7 @@ data class InFlightSection(
                     hue = ProjectHue.of(if (s.cwd.isEmpty()) s.title else s.cwd),
                     canType = s.canType, canStop = s.canInterrupt, canMirror = host in mirrorHosts,
                     card = InFlightCard.build(s, workflows[s.id] ?: emptyList(), stuck.contains(s.id), now, zone, ended[s.id] ?: emptySet()),
+                    budget = s.budget,
                 )
                 Pair(row, s.title)
             }.sortedWith { a, b ->

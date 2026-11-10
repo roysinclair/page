@@ -145,6 +145,7 @@ struct NowContainer: View {
         d.inFlight = flightGrace.merged(flight, now: Date(), provisional: { !flightQuiet && !NWFlightBook.played($0) })
         d.biometry = BiometricGate.displayName
         d.pending = coordinator.pending
+        d.budgetControls = sessions.budgetControls
         var outcomes: [String: CardOutcome] = [:]
         var receipts: [String: ReceiptThreadInput] = [:]
         for row in model.rows {
@@ -222,6 +223,10 @@ struct NowContainer: View {
         a.openRoom = { id, entry in
             tips.retire(.inFlight)
             router.openSession(id, entry: entry)
+        }
+        a.openSessionBudget = { id in
+            guard let s = sessions.session(id), sessions.budgetControls else { return }
+            router.openBudget(.session(s, resetsAt: sessions.macBudget?.resetsAt))
         }
         a.toggleInFlight = { inFlightExpanded.toggle() }
         a.dismissTip = { tip in

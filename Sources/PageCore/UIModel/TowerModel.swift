@@ -471,6 +471,8 @@ struct BudgetBoard: Equatable {
     var resetText: String?
     /// Too early in the week to share it out.
     var measuring: Bool
+    /// Usage capture is on: without it nothing is measured, and the card says so.
+    var captureOn = true
 
     /// "18%", "<1%". Pure.
     static func pct(_ v: Double) -> String { v > 0 && v < 1 ? "<1%" : "\(Int(v.rounded()))%" }

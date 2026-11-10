@@ -86,7 +86,11 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.page.android.model.BudgetCopy
+import app.page.android.model.BudgetMeter
 import app.page.android.model.FlightHealth
+import app.page.android.ui.nw.budget.NWBudgetBar
+import androidx.compose.foundation.layout.widthIn
 import app.page.android.model.FlightLineStatus
 import app.page.android.model.FlightWorkflowLine
 import app.page.android.model.InFlightRow
@@ -133,6 +137,8 @@ fun NWInFlightSection(
     onToggle: () -> Unit = {},
     onHeader: () -> Unit = {},
     onDismissTip: (NWTip) -> Unit = {},
+    /** "Session budget..." in a card's menu (and TalkBack's actions), with the session's id; null where the Mac doesn't do budgets. */
+    onBudget: ((String) -> Unit)? = null,
 ) {
     val reduce = LocalReduceMotion.current
     val track = rememberFlightTrack(section, epoch)
@@ -170,7 +176,7 @@ fun NWInFlightSection(
             if (shown.showsStrip) NWInFlightStrip(motion, Modifier.layoutFullBleed(), onOpen = { onOpen(it, RoomEntry.STORY) })
             for ((row, leaving) in cards) key(row.id) {
                 val m = if (leaving != null) Modifier.flightLeave(motion, leaving).clearAndSetSemantics {} else Modifier.flightRise(motion, track.cardsIn[row.id])
-                NWInFlightCardView(row, m, motion, onOpen = { onOpen(row.id, it) })
+                NWInFlightCardView(row, m, motion, onOpen = { onOpen(row.id, it) }, onBudget = onBudget?.let { b -> { b(row.id) } })
                 if (leaving == null && tip != null && tip.anchorId == row.id && tip.tip == NWTip.IN_FLIGHT) NWTipCallout(tip.tip.text(biometry), symbol = tip.tip.symbol, onDismiss = { onDismissTip(tip.tip) })
             }
             if (shown.isCapped) {
@@ -302,7 +308,7 @@ private fun stepped(x: Double): Double = kotlin.math.round(x.coerceIn(0.0, 1.0) 
  * workflow bars move, and its health dot breathes or, when it is stuck, ripples amber.
  */
 @Composable
-fun NWInFlightCardView(row: InFlightRow, modifier: Modifier = Modifier, motion: FlightMotion, onOpen: (RoomEntry) -> Unit = {}) {
+fun NWInFlightCardView(row: InFlightRow, modifier: Modifier = Modifier, motion: FlightMotion, onOpen: (RoomEntry) -> Unit = {}, onBudget: (() -> Unit)? = null) {
     val card = row.card
     val track = motion.track
     val reduce = motion.reduce
@@ -321,6 +327,7 @@ fun NWInFlightCardView(row: InFlightRow, modifier: Modifier = Modifier, motion: 
                     add(CustomAccessibilityAction("Open") { onOpen(RoomEntry.SCREEN); true })
                     add(CustomAccessibilityAction("Steer") { onOpen(RoomEntry.TYPE); true })
                     if (row.canStop) add(CustomAccessibilityAction("Stop") { onOpen(RoomEntry.STOP); true })
+                    if (onBudget != null) add(CustomAccessibilityAction("Session budget") { onBudget(); true })
                 }
             }
             .nwGlass(NW.Radius.card, fill = body, tint = if (amber > 0.01) NW.Palette.amber.opacity(amber) else null, glow = glow),
@@ -328,7 +335,7 @@ fun NWInFlightCardView(row: InFlightRow, modifier: Modifier = Modifier, motion: 
         Column {
             Box {
                 Column(
-                    Modifier.fillMaxWidth().combinedClickable(role = Role.Button, onClickLabel = "Opens the session", onLongClickLabel = "Open, Steer or Stop", onLongClick = { menu = true }, onClick = { onOpen(RoomEntry.STORY) })
+                    Modifier.fillMaxWidth().combinedClickable(role = Role.Button, onClickLabel = "Opens the session", onLongClickLabel = if (onBudget != null) "Open, Steer, Session budget or Stop" else "Open, Steer or Stop", onLongClick = { menu = true }, onClick = { onOpen(RoomEntry.STORY) })
                         .semantics(mergeDescendants = true) { contentDescription = row.spoken },
                 ) {
                     // The band: the star in a glass tile, the project and where it runs, on its project's jewel (ember once it is stuck), bled to the card's edges.
@@ -358,6 +365,8 @@ fun NWInFlightCardView(row: InFlightRow, modifier: Modifier = Modifier, motion: 
                     Column(Modifier.padding(start = NW.Space.lg, end = NW.Space.lg, top = 14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Fact("NOW") { NowSteps(row, motion) }
                         card.timeText?.let { t -> Fact("TIME") { TimeText(t) } }
+                        // BUDGET: a mini bar and "18% of 25% this week", amber from the warning (Designs/budget-caps.md).
+                        row.budget?.let { b -> Fact("BUDGET", tint = if (b.meter.tone == BudgetMeter.Tone.WARM) NW.Palette.amber else NW.Palette.teal) { BudgetFact(b.meter) } }
                         if (lines.isNotEmpty()) {
                             // With only a ghost left, the whole fact folds away with it.
                             val last = lines.singleOrNull()?.takeIf { it.status != FlightLineStatus.RUNNING }
@@ -392,6 +401,7 @@ fun NWInFlightCardView(row: InFlightRow, modifier: Modifier = Modifier, motion: 
                 DropdownMenu(menu, { menu = false }) {
                     DropdownMenuItem({ Text("Open") }, { menu = false; onOpen(RoomEntry.SCREEN) })
                     DropdownMenuItem({ Text("Steer") }, { menu = false; onOpen(RoomEntry.TYPE) })
+                    if (onBudget != null) DropdownMenuItem({ Text("Session budget…") }, { menu = false; onBudget() })
                     if (row.canStop) DropdownMenuItem({ Text("Stop…") }, { menu = false; onOpen(RoomEntry.STOP) })
                 }
             }
@@ -523,6 +533,18 @@ private fun EntryButton(entry: RoomEntry, enabled: Boolean, kind: NWButtonKind, 
     }
 }
 
+/** "18% of 25% this week", and the bar under it (amber from the warning). */
+@Composable
+private fun BudgetFact(m: BudgetMeter) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            m.line + " this week", style = NW.Typo.meta.copy(fontFeatureSettings = "tnum"), maxLines = 2,
+            color = (if (m.tone == BudgetMeter.Tone.WARM) NW.Palette.amber else NW.Palette.textPrimary).color,
+        )
+        NWBudgetBar(m, Modifier.widthIn(max = 200.dp), height = 6.dp)
+    }
+}
+
 /**
  * A fact, led by a soft tile that says what it is (what it is doing, how long, its workflows, how it is doing), so no label stands
  * over it. [tint] is the tile's colour; the tile is not read (the words are).
@@ -533,6 +555,7 @@ private fun Fact(title: String, tint: Rgba? = null, content: @Composable () -> U
         "NOW" -> "waveform" to NW.Palette.teal
         "TIME" -> "clock.fill" to NW.Palette.sky
         "WORKFLOWS" -> "square.stack.3d.up.fill" to NW.Palette.violet
+        "BUDGET" -> BudgetCopy.SYMBOL to (tint ?: NW.Palette.teal)
         else -> "heart.fill" to (tint ?: NW.Palette.green)
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {

@@ -86,6 +86,7 @@ import app.page.android.model.HoldRingSpec
 import app.page.android.model.LiveSessionState
 import app.page.android.model.NowRow
 import app.page.android.model.RoomBanner
+import app.page.android.model.BudgetCopy
 import app.page.android.model.RoomChip
 import app.page.android.model.RoomComposerMode
 import app.page.android.model.RoomLens
@@ -157,6 +158,8 @@ class SessionRoomActions(
     val refreshChanges: () -> Unit = {},
     val copy: (String) -> Unit = {},
     val dismissReceipt: (String) -> Unit = {},
+    /** "Session budget...": the budget sheet in its session variant. */
+    val budget: () -> Unit = {},
     /** "Submit all": the draft's answers, for the container to send. */
     val submitAnswers: (app.page.android.model.AnswerSheet) -> Unit = {},
     /** The busy-session choice: "Now" or "When it finishes". */
@@ -218,8 +221,14 @@ fun NWSessionRoom(
             TopBar(data, actions, onHeld = { stopHeld = it })
             if (stopShown) StopPreview(data.stop)
             // Chips
-            Row(Modifier.padding(top = 12.dp).horizontalScroll(rememberScrollState()).padding(horizontal = NW.Space.lg), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (c in data.chips) RoomChipView(c)
+            Row(Modifier.padding(top = 12.dp).horizontalScroll(rememberScrollState()).padding(horizontal = NW.Space.lg), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                for (c in data.chips) {
+                    // The budget chip is a status you can press: it opens the same sheet as "Session budget...".
+                    if (data.canBudget && c.symbol == BudgetCopy.SYMBOL) {
+                        Box(Modifier.heightIn(min = 48.dp).clip(CircleShape).clickable(role = Role.Button, onClickLabel = "Session budget", onClick = actions.budget), contentAlignment = Alignment.Center) { RoomChipView(c) }
+                    } else RoomChipView(c)
+                }
+                if (data.canBudget) RoomActionChip("Session budget…", BudgetCopy.SYMBOL, actions.budget)
             }
             LensBar(data, lens, onLens)
             Column(Modifier.weight(1f).fillMaxWidth()) {
@@ -298,6 +307,20 @@ fun RoomChipView(chip: RoomChip) {
         if (chip.symbol != null) Icon(nwIcon(chip.symbol!!), null, tint = c.color, modifier = Modifier.size(14.dp))
         else Box(Modifier.size(9.dp).clip(CircleShape).background(c.color))
         Text(chip.text, style = NW.Typo.captionStrong, color = c.color, maxLines = 1, softWrap = false)
+    }
+}
+
+/** An action beside the chips (a chip you can press): "Session budget...". 48 dp high, a glyph and words. */
+@Composable
+private fun RoomActionChip(text: String, symbol: String, onClick: () -> Unit) {
+    val c = NW.Palette.textSecondary
+    Row(
+        Modifier.heightIn(min = 48.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.07f)).border(1.dp, Color.White.copy(alpha = 0.22f), CircleShape)
+            .clickable(role = Role.Button, onClick = onClick).padding(horizontal = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(nwIcon(symbol), null, tint = c.color, modifier = Modifier.size(14.dp))
+        Text(text, style = NW.Typo.captionStrong, color = c.color, maxLines = 1, softWrap = false)
     }
 }
 

@@ -204,7 +204,7 @@ data class TowerBudget(
 ) {
     companion object {
         fun build(usage: ClaudeUsage?, now: Instant): TowerBudget =
-            TowerBudget(UsageCardModel.from(usage, now), "Turn on usage tracking in Page Studio on your computer to see your 5-hour and 7-day limits here.")
+            TowerBudget(UsageCardModel.from(usage, now), "Turn on usage tracking in Page Studio on your computer to see your 5-hour and 7-day limits and set project budgets here.")
     }
 }
 

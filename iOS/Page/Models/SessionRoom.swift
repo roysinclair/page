@@ -164,6 +164,8 @@ struct RoomChip: Equatable, Identifiable {
     let tone: Tone
     /// An SF Symbol, when the chip has one.
     let symbol: String?
+    /// The session's budget (Designs/budget-caps.md): where the Mac sets budgets it opens "Session budget…".
+    var budget = false
     var id: String { text }
 }
 
@@ -210,6 +212,10 @@ enum RoomHeader {
             out.append(RoomChip(text: "on-device", tone: .local, symbol: "lock"))
         } else if character.kind == .claude, let pct = fiveHourPct {
             out.append(RoomChip(text: "5h \(Int(pct.rounded()))%", tone: pct >= 80 ? .warm : .quiet, symbol: "gauge.with.needle"))
+        }
+        // Designs/budget-caps.md: "Budget 18/25%", amber from the warning. Only a session with a budget has one.
+        if !ended, let b = session.budget, let text = BudgetCopy.chip(b) {
+            out.append(RoomChip(text: text, tone: b.state == .ok ? .working : .warm, symbol: BudgetCopy.symbol, budget: true))
         }
         return out
     }

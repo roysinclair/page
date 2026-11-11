@@ -57,6 +57,12 @@ final class PreferencesWindowController: NSWindowController, NSWindowDelegate {
             self.runDialog(spec, done)
         }
         env.showAlert = { [weak self] title, text in self?.runDialog(.notice(title, text)) { _ in } }
+        env.setBudget = { [weak self] op in
+            coordinator.setBudget(op) { result in
+                guard result.code != .delivered else { return }
+                DispatchQueue.main.async { self?.runDialog(.notice("Couldn’t save the budget", result.detail)) { _ in } }
+            }
+        }
         env.confirmReplaceBrokenConfig = { [weak self] info, done in
             guard let self else { return done(false) }
             self.runDialog(.confirm("config.json couldn’t be read", info, ok: "Replace config.json", tone: .warning, destructive: true)) { done($0 == 0) }

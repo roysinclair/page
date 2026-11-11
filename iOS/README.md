@@ -220,6 +220,26 @@ The tab also tells you when the relay needs updating (its `/status` lacks
 list within 5 seconds (update Page Studio on the Mac), and when the two clocks
 disagree by more than 10 minutes.
 
+## Budgets
+
+Shown when the Mac's session list advertises `budget-v1`
+([SESSIONS-PROTOCOL.md](../docs/SESSIONS-PROTOCOL.md), "Budgets"). The Mac
+measures, stores and enforces every budget; the app shows what it reports
+and sends changes back. See the main README's
+[Project budgets](../README.md#project-budgets).
+
+- **Tower ▸ Budget** lists every project this week with how much of the week
+  it has used against its budget, the default for projects without their
+  own, and "Measuring…" until the week has risen one whole point.
+- **In a session**, the budget chip opens the budget sheet for its project
+  or for that session only.
+- **Pages.** "Near its budget" (80%) arrives under Look and "Stopped at its
+  budget" under Decide. Their notifications use `PAGE_INFO` (no actions), so
+  Raise to N% and Let this turn finish are answered in the app.
+- **Saving** goes over the encrypted sessions channel (the `budget` op). While
+  the Mac is offline, or usage tracking is off, the sheet says so and keeps
+  the old value.
+
 ## Files
 
 ```

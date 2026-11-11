@@ -78,6 +78,9 @@ final class Coordinator {
         var usageHitAt: Date? = nil
         /// Messages a phone asked to type once their session's turn ends.
         var held: [HeldMessageInfo] = []
+        /// Budget caps: each project's share of the week and where it stands (`.off` while
+        /// capture is off). nil when the snapshot doesn't say (fixtures, tests).
+        var budget: BudgetStatus? = nil
 
         var relayConnected: Bool { relayState == .connected }
         var boosting: Bool { awake.preventIdleSleep }
@@ -201,6 +204,12 @@ final class Coordinator {
     private var usage = UsageForecast()
     private var usageReadStamp: Date?
     private var usagePageId: String?
+    /// Budget caps (Designs/budget-caps.md): the books, the gate's markers and the
+    /// budget pages (tick queue only).
+    private let budgetController: BudgetController
+    private var budgetCaptureOn = false
+    private var budgetCaptureCheckedAt: Date = .distantPast
+    private var lastBudgetStatus = BudgetStatus.off
     private var savedBattery = BatteryPolicy()
     private let batteryStore = BatteryPauseStore()
     /// Pausing and resuming type into terminals and can block for seconds;
@@ -317,11 +326,12 @@ final class Coordinator {
 
     /// `platform` becomes `Platform.current`, so the static helpers the
     /// backends call (presence, process inspection) agree with it.
-    init(platform: Platform = .current) {
+    init(platform: Platform = .current, budgetFiles: BudgetFiles = .live()) {
         Platform.current = platform
         self.platform = platform
         power = platform.makePower()
         sleepGuard = platform.makeLidGuard()
+        budgetController = BudgetController(files: budgetFiles)
         let loaded = Config.loadResult()
         let cfg = loaded.config ?? Config()
         publishedConfig = cfg
@@ -340,6 +350,11 @@ final class Coordinator {
         liveBackends = LiveSessionBackends(claude: claudeBackend, codex: codexBackend, aura: auraBackend)
         sessionRemote = SessionRemote(backends: liveBackends, replayStore: PairingTokenManager.sessionReplayFileURL,
                                       outboxStore: PairingTokenManager.heldOutboxFileURL, imageStore: .standard)
+        // A phone's `budget` op: the one entry point every budget edit goes through.
+        sessionRemote.budgetSetter = { [weak self] op, done in
+            guard let self else { return done(.refused(.error, "Page Studio is shutting down")) }
+            self.setBudget(op, completion: done)
+        }
         // Delivery results reach the Mac panel whether or not a relay is up.
         for b in backends {
             b.onReplyFinished = { [weak self] finished in self?.finishMacReply(finished) }
@@ -381,6 +396,9 @@ final class Coordinator {
             self.claudeBackend.onResumeResult = { [weak self] result in
                 self?.onResumeResult?(result)
             }
+            // Existing installs keep the status line script they were given: bring it up to date
+            // (budgets read the per-session files it writes).
+            self.usageCapture.refreshWrapper()
             self.restorePowerStateAfterLaunch(cfg)
             self.sessionRemote.setEnabled(cfg.remoteSessionsEnabled)
             self.sessionRemote.setStartEnabled(cfg.phoneStartSessionsEnabled)
@@ -727,12 +745,13 @@ final class Coordinator {
             hookHeldSessionIds: HookHoldMarkers.heldSessions(in: HookHoldMarkers.defaultDirectory),
             userAtMac: userAtMac)
         for page in pages { client.sendInterventionOpened(page) }
+        for page in budgetController.openPages { client.sendInterventionOpened(page) }
         let lowBattery = battery.entries.filter(\.pageOpen)
         if !lowBattery.isEmpty {
             sendLowBatteryPages(lowBattery, percent: battery.trippedPercent ?? lastPower.percent, via: client)
         }
         if !pages.isEmpty || !lowBattery.isEmpty {
-            Logger.shared.log("Relay channel changed — re-sent \(pages.count + lowBattery.count) open page(s)")
+            Logger.shared.log("Relay channel changed — re-sent \(pages.count + lowBattery.count + budgetController.openPages.count) open page(s)")
         }
     }
 
@@ -782,6 +801,11 @@ final class Coordinator {
         }
         if BatteryPolicy.isLowBatteryPageId(reply.interventionId) {
             tickQueue.async { [weak self] in self?.handleLowBatteryReply(reply) }
+            return
+        }
+        // Budget pages are Page's own too. Before `deliver`: typed text must never reach a session.
+        if BudgetPages.isPageId(reply.interventionId) {
+            tickQueue.async { [weak self] in self?.handleBudgetReply(reply) }
             return
         }
         phoneReplyLock.lock()
@@ -860,6 +884,7 @@ final class Coordinator {
             ids.formUnion(battery.entries.filter { $0.pageOpen && $0.session.backend == backend.id }.map(\.pageId))
             if backend.id == .claude, let id = forecastPageId { ids.insert(id) }
             if backend.id == .claude, let id = usagePageId { ids.insert(id) }
+            if backend.id == .claude { ids.formUnion(budgetController.openPageIds) }
             relay.sendSync(backend: backend.id, openIds: ids.sorted())
         }
     }
@@ -984,6 +1009,7 @@ final class Coordinator {
         applyPower(p, snapshots: lastSnapshots)
         updateForecastPage(estimate, power: p, cfg: cfg)
         refreshUsage(cfg: cfg)
+        refreshBudget(cfg: cfg)
         return before.0 != battery || before.1 != power.held || before.2 != sleepGuard.isActive
             || before.3 != sleepGuard.cleanupPending || estimateChanged
     }
@@ -1130,6 +1156,196 @@ final class Coordinator {
                                               : "agents working on battery, \(p.percent)%"))
         let relevant = cfg.keepAwakeLidClosedOnBattery && boosting && p.hasBattery && !p.onAC
         lidBlocker = relevant ? blocker : nil
+    }
+
+// MARK: budget caps (tick queue)
+
+    /// Whether usage capture is on (the status line wrapper is in place): without it nothing
+    /// is measured or enforced. Reads settings.json, so at most every 30 s.
+    private func budgetCaptureIsOn(now: Date) -> Bool {
+        if now.timeIntervalSince(budgetCaptureCheckedAt) >= 30 || now < budgetCaptureCheckedAt {
+            budgetCaptureCheckedAt = now
+            budgetCaptureOn = usageCapture.state() == .on
+        }
+        return budgetCaptureOn
+    }
+
+    /// The Claude sessions budgets cover, and whether each is mid-turn.
+    private func budgetLiveSessions() -> [BudgetLiveSession] {
+        claudeBackend.currentSnapshot.sessions.filter { $0.state != .offline }.map {
+            BudgetLiveSession(sessionId: $0.sessionId, cwd: $0.cwd, busy: $0.state == .active)
+        }
+    }
+
+    /// Reads the status line files that changed, updates the books, and brings the gate's
+    /// markers, the pages and the Esc presses in line with the caps.
+    private func refreshBudget(cfg: Config) {
+        let now = Date()
+        let effects = budgetController.refresh(now: now, budget: cfg.budget, captureOn: budgetCaptureIsOn(now: now),
+                                               live: budgetLiveSessions())
+        performBudget(effects)
+        publishBudget()
+    }
+
+    private func performBudget(_ effects: [BudgetEffect]) {
+        for e in effects {
+            switch e {
+            case .openPage(let event):
+                if let relay { relay.sendInterventionOpened(event) } else {
+                    Logger.shared.log("Budget page not sent — the phone relay is off")
+                }
+            case .closePage(let id, let reason):
+                relay?.sendInterventionClosed(id: id, reason: reason)
+            case .interrupt(let ids):
+                // Page's marker is already in place. Each session once: the gate stops its later turns.
+                for id in ids {
+                    claudeBackend.remoteInterrupt(sessionId: id, interventionId: nil) { r in
+                        Logger.shared.log("Budget: stop \(id.prefix(8)) → \(r.code.rawValue)\(r.reason.map { "/\($0.rawValue)" } ?? "")")
+                    }
+                }
+            }
+        }
+    }
+
+    /// Hands the phone's list the budgets when they changed.
+    private func publishBudget() {
+        let status = budgetController.status
+        guard status != lastBudgetStatus else { return }
+        lastBudgetStatus = status
+        sessionRemote.update(budget: status)
+    }
+
+    /// Sets or clears a budget: a project's or the default (config.json) or one session's
+    /// (budget-session-caps.json). The one path the phone's `budget` op, Page Studio and
+    /// the panel all take. `completion` runs on the tick queue.
+    func setBudget(_ op: BudgetOp, completion: @escaping (SessionCommandResult) -> Void) {
+        tickQueue.async { [weak self] in
+            guard let self, !self.isShutDown else { return completion(.refused(.error, "Page Studio is shutting down")) }
+            var result = self.applyBudget(op)
+            if result.code == .delivered {
+                self.refreshBudget(cfg: self.tickConfig)
+                self.publishSnapshot()
+                var name: String?
+                if case .project(let key) = op.target { name = self.budgetController.status.project(key)?.name ?? self.budgetController.ledger.name(of: key) }
+                result = SessionCommandResult(code: .delivered, reason: nil, detail: op.resultDetail(projectName: name))
+            }
+            completion(result)
+        }
+    }
+
+    /// The write itself. Refuses with usage capture off, and with an unreadable config.json
+    /// (as the lid switch does: a broken file is never replaced behind the user's back).
+    private func applyBudget(_ op: BudgetOp) -> SessionCommandResult {
+        // Read settings.json afresh: capture may have been switched on a moment ago.
+        budgetCaptureCheckedAt = .distantPast
+        guard budgetCaptureIsOn(now: Date()) else { return .refused(.disabled, BudgetCopy.captureOff) }
+        switch op.target {
+        case .session(let id):
+            budgetController.setSessionCap(id, pct: op.pct, now: Date())
+        case .project, .defaultCap:
+            guard var cfg = Config.loadResult().config else {
+                return .refused(.error, "config.json can’t be read — fix it before changing budgets")
+            }
+            cfg.budget = op.applied(to: cfg.budget)
+            guard cfg.save() else { return .refused(.error, "Couldn’t save config.json") }
+            adoptSavedConfig()
+        }
+        return SessionCommandResult(code: .delivered, reason: nil, detail: "Budget saved")
+    }
+
+    /// `reloadConfig`, for a caller already on the tick queue that needs the new values now.
+    private func adoptSavedConfig() {
+        let loaded = Config.loadResult()
+        configLock.lock()
+        if let cfg = loaded.config { publishedConfig = cfg }
+        publishedConfigProblem = loaded.problem
+        configLock.unlock()
+        if let cfg = loaded.config { apply(cfg) }
+    }
+
+    /// A phone's reply to a budget page. approve raises the cap by 10 for good; carry_on lets
+    /// the turn finish; deny and typed text keep it stopped. Never typed into a session.
+    private func handleBudgetReply(_ reply: RelayReply) {
+        let id = reply.interventionId
+        let now = Date()
+        let live = budgetLiveSessions()
+        guard let plan = budgetController.plan(pageId: id, action: reply.action, text: reply.text, live: live, now: now) else {
+            relay?.sendReplyInjected(interventionId: id, method: "budget", success: false,
+                                     detail: BudgetPages.staleDetail, output: nil)
+            relay?.sendInterventionClosed(id: id, reason: "session_resolved")
+            return
+        }
+        func done(_ success: Bool, _ detail: String, close: Bool) {
+            relay?.sendReplyInjected(interventionId: id, method: "budget", success: success, detail: detail, output: nil)
+            if close { relay?.sendInterventionClosed(id: id, reason: "replied") }
+            refreshBudget(cfg: tickConfig)
+            publishSnapshot()
+        }
+        // Words in a warning page's mouth: there is nothing stopped to let finish.
+        let decision: BudgetPages.Decision = plan.kind == .warn && plan.decision == .carryOn ? .keepStopped : plan.decision
+        switch decision {
+        case .keepStopped:
+            budgetController.pageAnswered(hash: plan.hash, kind: plan.kind)
+            done(true, plan.kind == .warn ? BudgetPages.dismissedDetail(name: plan.name) : BudgetPages.keptStoppedDetail(name: plan.name), close: true)
+        case .raise:
+            guard let raised = plan.raisedCap else {
+                relay?.sendReplyInjected(interventionId: id, method: "budget", success: false,
+                                         detail: BudgetPages.alreadyMaxDetail, output: nil)
+                return
+            }
+            // The sessions are read before the marker goes: their "since" is when Page stopped them.
+            let paused = plan.kind == .stop ? budgetController.pausedSessions(plan.affected, plan: plan, live: live, now: now) : []
+            let op: BudgetOp
+            switch plan.target {
+            case .session(let sid): op = BudgetOp(target: .session(sid), pct: raised)
+            case .project(let key): op = BudgetOp(target: .project(key), pct: raised)
+            case .defaultCap: op = BudgetOp(target: .defaultCap, pct: raised)
+            }
+            let result = applyBudget(op)
+            guard result.code == .delivered else {
+                relay?.sendReplyInjected(interventionId: id, method: "budget", success: false, detail: result.detail, output: nil)
+                return
+            }
+            budgetController.pageAnswered(hash: plan.hash, kind: plan.kind)
+            refreshBudget(cfg: tickConfig)
+            // Still over (it spent more than the new cap): stays stopped.
+            if let m = budgetController.state.markers[plan.hash] {
+                done(true, BudgetPages.stillOverDetail(name: plan.name, cap: raised, used: m.used), close: true)
+                return
+            }
+            resumeBudgetSessions(paused, message: BudgetPages.raisedMessage(cap: raised)) { [weak self] n in
+                guard self != nil else { return }
+                done(true, BudgetPages.raisedDetail(name: plan.name, cap: raised) + Self.couldntResumeText(n, of: paused.count), close: true)
+            }
+        case .carryOn:
+            // These sessions pass the gate until their turn is over; the idle ones are told to go on.
+            let allowed = Set(plan.affected).union(live.filter { $0.busy && plan.covered.contains($0.sessionId) }.map(\.sessionId))
+            budgetController.allowSessions(allowed.sorted(), now: now, live: live)
+            let paused = budgetController.pausedSessions(plan.affected, plan: plan, live: live, now: now)
+            budgetController.pageAnswered(hash: plan.hash, kind: plan.kind)
+            resumeBudgetSessions(paused, message: BudgetPages.finishTurnMessage) { [weak self] n in
+                guard self != nil else { return }
+                done(true, BudgetPages.carryOnDetail(name: plan.name) + Self.couldntResumeText(n, of: paused.count), close: true)
+            }
+        }
+    }
+
+    /// "" when every session Page stopped was told to go on (or there were none);
+    /// otherwise " · 1 of 2 sessions couldn’t be told to carry on (not idle, or you’d already typed there)".
+    private static func couldntResumeText(_ n: Int, of total: Int) -> String {
+        guard total > n else { return "" }
+        let missed = total - n
+        return " · \(missed) of \(total) session\(total == 1 ? "" : "s") couldn’t be told to carry on (not idle, or you’d already typed there)"
+    }
+
+    /// Types `message` into the sessions Page stopped, through the battery resume's path (only
+    /// into an idle session the user hasn't touched since). Off the tick queue: it blocks.
+    private func resumeBudgetSessions(_ paused: [PausedSession], message: String, completion: @escaping (Int) -> Void) {
+        guard !paused.isEmpty else { return completion(0) }
+        batteryQueue.async { [weak self] in
+            let ok = self?.claudeBackend.resumePausedSessions(paused, message: message) ?? []
+            self?.tickQueue.async { completion(ok.count) }
+        }
     }
 
     // MARK: low battery (tick queue)
@@ -1467,7 +1683,8 @@ final class Coordinator {
             usageLines: usage.menuLines(now: Date()),
             usage: usage.latest,
             usageHitAt: usage.hitAt(now: Date()),
-            held: sessionRemote.heldMessages()
+            held: sessionRemote.heldMessages(),
+            budget: budgetController.status
         )
         onStateChange?(snap)
     }

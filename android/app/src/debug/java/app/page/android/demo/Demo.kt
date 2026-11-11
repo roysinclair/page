@@ -72,7 +72,8 @@ object Demo {
         "decision-failed", "decision-tip",
         "hold-stop", "stop-confirm", "stop-result", "stop-none",
         "lanes", "lanes-crowded", "lanes-empty", "lanes-problem", "lanes-paused",
-        "tower", "tower-budget", "tower-glow", "tower-terminals", "tower-gestures",
+        "tower", "tower-budget", "tower-budget-projects", "tower-glow", "tower-terminals", "tower-gestures",
+        "budget-sheet", "budget-sheet-session", "budget-sheet-default", "budget-sheet-offline", "now-budget", "now-budget-arming", "now-budget-flight", "decision-budget", "decision-budget-warning", "room-budget",
         "dispatch", "dispatch-sending", "dispatch-off",
         "runway", "settled", "gallery", "glow-compare",
         "room-story", "room-screen", "room-changes", "room-workflows", "room-waiting", "room-codex", "room-local", "room-agent",
@@ -111,8 +112,12 @@ object Demo {
         if (PairingStore.isPaired && !PairingStore.isDemoPairing) return
         // The fixtures' timestamps are on the harness clock; live, the Mac's status is stamped against the real one
         // and kept fresh, or the demo opens on "Studio MBP stopped checking in".
+        val real = Instant.now()
+        // The demo Mac does budgets too: the Tower's list, the sessions' bars, and a project stopped at its budget.
+        val budget = DemoFixtures.budget(real)
         seed(
-            open = DemoFixtures.openAt(Instant.now()), status = DemoFixtures.statusAt(Instant.now()), sessions = DemoFixtures.sessionsWithFlight,
+            open = DemoFixtures.budgetPages(real).take(1) + DemoFixtures.openAt(real), status = DemoFixtures.statusAt(real),
+            sessions = DemoFixtures.withBudgets(DemoFixtures.sessionsWithFlight, budget), budget = budget,
         )
         kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) {
             while (PairingStore.isDemoPairing) {
@@ -141,13 +146,14 @@ object Demo {
         open: List<Intervention>, status: MacStatusSnapshot?, sessions: List<LiveSession>,
         workflows: Map<String, List<app.page.android.model.WorkflowRun>> = DemoFixtures.workflows(),
         history: List<Intervention> = DemoFixtures.history,
+        budget: app.page.android.model.MacBudget? = null,
     ) {
         PairingStore.adoptDemo(PairedMac(DemoFixtures.mac, DemoFixtures.now.minusSeconds(26 * 86_400)))
         RelayClient.seedDemoInbox(open)
         RelayClient.seedDemoHistory(history)
         status?.let { RelayClient.seedDemoStatus(it) }
         // Sessions are seeded after the inbox, whose reset clears them.
-        SessionStore.seedDemo(DemoFixtures.mac, sessions, DemoFixtures.transcripts(), DemoFixtures.screens(), workflows)
+        SessionStore.seedDemo(DemoFixtures.mac, sessions, DemoFixtures.transcripts(), DemoFixtures.screens(), workflows, budget)
         SessionStore.seedDemoExtras(sessions.associate { it.id to DemoFixtures.diff(it.id) }, DemoFixtures.folders)
     }
 
@@ -277,6 +283,7 @@ object Demo {
             screen in setOf("now-inflight-long", "now-tip-undoable") -> listOf(o[1])
             screen in setOf("now-quiet", "now-still", "now-brief-quiet", "now-working", "now-flight-quiet", "now-tip-inflight") -> emptyList()
             screen.startsWith("problem-") || screen == "lanes-empty" -> emptyList()
+            screen in setOf("now-budget", "now-budget-arming", "now-budget-flight") -> DemoFixtures.budgetPages()
             screen == "lanes-paused" -> listOf(DemoFixtures.iv("pz", "bottle-flip", InterventionKind.IDLE, "Page Power paused your agents at 10% battery.", 600, sub = "low_battery"))
             screen == "now-dusk" -> listOf(DemoFixtures.iv("pz", "bottle-flip", InterventionKind.IDLE, "Page Power paused your agents at 10% battery.", 600, sub = "low_battery"))
             screen.startsWith("decision") -> o + listOfNotNull(DemoFixtures.page(screen).takeIf { p -> o.none { it.id == p.id } })
@@ -320,7 +327,7 @@ object Demo {
         TipStore.overrideForRender(TipBook())
         NowStore.clock = { DemoFixtures.now }
         NowStore.zone = DemoFixtures.zone
-        val jumpTop = if (screen in setOf("now-flight", "now-flight-old", "now-flight-jump", "now-inflight", "now-tip-inflight", "now-flight-two", "now-flight-header", "now-flight-quiet", "now-inflight-long", "now-working")) "section-in flight" else null
+        val jumpTop = if (screen in setOf("now-flight", "now-flight-old", "now-flight-jump", "now-inflight", "now-tip-inflight", "now-flight-two", "now-flight-header", "now-flight-quiet", "now-inflight-long", "now-working", "now-budget-flight")) "section-in flight" else null
         val scrollTo = when (screen) {
             "now-swipe", "now-receipt", "now-tip-undoable" -> "row-p2"
             "now-arming" -> "row-p2"
@@ -336,6 +343,7 @@ object Demo {
                 hold = if (screen == "now-hold" || screen == "decision-hold") 0.55 else null, dispatchSending = screen == "dispatch-sending",
                 lanesAvailability = if (screen == "lanes-problem") app.page.android.model.SessionAvailability.NeedsRepair(keyMismatch = false) else null,
                 dayTime = dayTime, flightScript = DemoMotion.flightScript(motion), nowScript = DemoMotion.nowScript(motion), reduce = reduce,
+                towerProjects = screen == "tower-budget-projects" || screen.startsWith("budget-sheet"),
             ),
         )
         if (isStandalone(motion) || isUnpaired(screen)) return
@@ -345,6 +353,8 @@ object Demo {
         seed(
             open, DemoMotion.status(motion, at) ?: statusFor(screen), DemoMotion.sessions(motion, at) ?: sessionsFor(screen), DemoMotion.workflows(motion, at) ?: DemoFixtures.workflows(),
             DemoMotion.history(motion, at) ?: DemoFixtures.history,
+            // The Mac says it does budgets (`budget-v1`) and sends its block on the screens that draw it.
+            budget = if (screen.startsWith("tower-budget") || screen.startsWith("budget-sheet") || screen in setOf("now-budget", "now-budget-arming", "now-budget-flight", "decision-budget", "decision-budget-warning")) DemoFixtures.budget() else null,
         )
         ActivityStore.overridePowerForRender(DemoMotion.power(motion))
         val extra: Map<String, app.page.android.model.ReplyDelivery> = when (screen) {
@@ -386,6 +396,12 @@ object Demo {
                 ActionCoordinator.seedForRender(mapOf(r.id to PendingAction(r.id, RowAction.Kind.APPROVE, "", r.commit, DemoFixtures.now.minusMillis(500), true, r.action(RowAction.Kind.APPROVE)?.preview)))
             }
         }
+        // Raise to 35% pressed: the 1.2 s ring on the jewel, naming what the Mac will do.
+        if (screen == "now-budget-arming") {
+            rows.firstOrNull { it.chip == app.page.android.model.ChipKind.BUDGET && it.section == app.page.android.model.NowRow.Section.DECIDE }?.let { r ->
+                ActionCoordinator.seedForRender(mapOf(r.id to PendingAction(r.id, RowAction.Kind.APPROVE, "", r.commit, DemoFixtures.now.minusMillis(500), true, r.action(RowAction.Kind.APPROVE)?.preview)))
+            }
+        }
         if (screen == "now-receipt") {
             rows.firstOrNull { it.section == app.page.android.model.NowRow.Section.REVIEW }?.let { r ->
                 ActionCoordinator.seedForRender(emptyMap(), mapOf(r.id to "Didn't confirm in time · Check on your computer"))
@@ -395,8 +411,16 @@ object Demo {
         when {
             screen.startsWith("lanes") -> AppRouter.selectDestination(app.page.android.model.NWDestination.LANES)
             screen.startsWith("decision") -> AppRouter.open(DemoFixtures.page(screen).id)
+            // The sheet over the Tower's Budget list, as iOS draws it.
+            screen.startsWith("budget-sheet") -> {
+                val sheet = DemoFixtures.budgetSheet(screen)
+                AppRouter.openTower(TowerSection.BUDGET)
+                AppRouter.openBudget(sheet)
+                // The Mac is away: the sheet says so, in the spec's words, and the old value stays.
+                if (screen == "budget-sheet-offline") SessionStore.seedDemoBudgetSave(sheet.id, app.page.android.model.BudgetSaveStatus.Failed(app.page.android.model.BudgetCopy.macOffline))
+            }
             screen.startsWith("tower") -> AppRouter.openTower(
-                when (screen) { "tower-budget" -> TowerSection.BUDGET; "tower-glow" -> TowerSection.APPEARANCE; "tower-terminals" -> TowerSection.TERMINALS; "tower-gestures" -> TowerSection.GESTURES; else -> null },
+                when (screen) { "tower-budget", "tower-budget-projects" -> TowerSection.BUDGET; "tower-glow" -> TowerSection.APPEARANCE; "tower-terminals" -> TowerSection.TERMINALS; "tower-gestures" -> TowerSection.GESTURES; else -> null },
             )
             screen.startsWith("dispatch") -> AppRouter.openDispatch()
             screen.startsWith("history") -> AppRouter.openHistory()

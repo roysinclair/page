@@ -42,7 +42,7 @@ enum class JewelTone {
             ChipKind.CONSIDERED -> SKY
             ChipKind.UNDOABLE -> GREEN
             ChipKind.REVIEW -> TEAL
-            ChipKind.LOOKS_STUCK, ChipKind.QUESTION, ChipKind.FORECAST, ChipKind.RATE_LIMITED -> AMBER
+            ChipKind.LOOKS_STUCK, ChipKind.QUESTION, ChipKind.FORECAST, ChipKind.RATE_LIMITED, ChipKind.BUDGET -> AMBER
         }
 
         /** A project's jewel. */

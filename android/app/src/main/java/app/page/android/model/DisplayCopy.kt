@@ -114,6 +114,8 @@ object ReplyCopy {
         InterventionKind.RATE_LIMIT -> when (iv.subtype) {
             PageSubtype.BATTERY_FORECAST -> "Battery cutoff soon"
             PageSubtype.USAGE_FORECAST -> "Claude limit soon"
+            PageSubtype.BUDGET_REACHED -> "${iv.projectName} reached its budget"
+            PageSubtype.BUDGET_WARNING -> "${iv.projectName} is near its budget"
             else -> "Rate limit reached"
         }
     }

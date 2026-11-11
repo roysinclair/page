@@ -50,6 +50,8 @@ extension SessionRoomData {
         var yesNoArm: YesNoArm? = nil
         /// The photos in the composer (`images-v1`).
         var photos: [PhotoDraftItem] = []
+        /// The Mac sets budgets here and usage tracking is on: the room offers "Session budget…".
+        var budgetControls = false
         /// The message (clientId) whose photo bytes are still held, so a refused one can be put back in the composer.
         var putBackId: String? = nil
         var timeZone: TimeZone = .current
@@ -154,6 +156,7 @@ extension SessionRoomData {
             }
         }
         data.stopping = i.latestStop?.state.isPending == true
+        data.budgetControls = i.budgetControls && !i.ended && s.budget != nil
         return data
     }
 }

@@ -25,7 +25,10 @@ enum RenderHarness {
         "decision-steer-busy", "decision-steer-undo", "decision-queued-relay", "decision-queued-held",
         "hold-stop", "stop-confirm", "stop-result", "stop-none",
         "lanes", "lanes-crowded", "lanes-empty", "lanes-problem", "lanes-standby", "lanes-paused",
-        "tower", "tower-budget", "tower-glow", "tower-terminals", "tower-gestures",
+        "tower", "tower-budget", "tower-budget-projects", "tower-budget-off", "tower-budget-measuring", "budget-sheet", "budget-sheet-session", "budget-sheet-default",
+        "budget-sheet-saving", "budget-sheet-offline", "budget-sheet-refused", "budget-sheet-live", "now-budget", "now-budget-flight",
+        "decision-budget", "decision-budget-warning", "room-budget", "room-budget-warn", "room-budget-none",
+        "tower-glow", "tower-terminals", "tower-gestures",
         "tower-widgets", "tower-widgets-lock", "tower-widgets-previews", "tower-widgets-large", "tower-widgets-lockscreen",
         "dispatch", "dispatch-sending", "dispatch-off",
         "runway", "settled", "gallery", "glow-compare",
@@ -106,6 +109,8 @@ enum RenderFixtures {
                       "Changed 3 files (+120 −14) · tests passed\n\n" + longReply, ago: 120)
         case "decision-undoable":
             return open[1]
+        case "decision-budget": return budgetPages[0]
+        case "decision-budget-warning": return budgetPages[1]
         default:
             return open[0]
         }
@@ -208,6 +213,7 @@ enum RenderFixtures {
     static func nowSessions(_ screen: String) -> [LiveSession] {
         func pick(_ ids: [String], from all: [LiveSession]) -> [LiveSession] { ids.compactMap { id in all.first { $0.id == id } } }
         switch screen {
+        case "now-budget", "now-budget-flight": return budgetSessions
         case "now-flight", "now-flight-two", "now-flight-header", "now-flight-jump":
             return pick(["sess-p1", "w1", "sess-p3"], from: sessionsWithFlight)
         case "now-flight-old": return pick(["sess-p1", "w1", "sess-p3"], from: sessions)
@@ -222,6 +228,40 @@ enum RenderFixtures {
     }
 
     /// The Mac's richer list rows for the two working sessions: one with workflows, one it calls stuck.
+    // MARK: Budget caps (Designs/budget-caps.md)
+
+    static func budgetKey(_ project: String) -> String { "/Users/you/projects/\(project)" }
+
+    /// A week three days from its reset: one project stopped at its budget, one near it,
+    /// one on the default, and the small ones.
+    static var budget: MacBudget {
+        func p(_ name: String, _ used: Double, _ cap: Int?, _ state: BudgetState) -> BudgetProject {
+            BudgetProject(key: budgetKey(name), name: name, used: used, cap: cap, state: state)
+        }
+        return MacBudget(resetsAt: now.addingTimeInterval(3 * 86_400 + 4 * 3600), capture: true, measuring: false, weekPct: 66, defaultCap: 15,
+                         projects: [p("payments-api", 25.6, 25, .over), p("sensor-hub", 21, 25, .warn), p("page", 11.2, nil, .ok),
+                                    p("bottle-flip", 4.4, 10, .ok), p("llm-play", 2.1, nil, .ok), p("mac-on-claude-code", 0.4, nil, .ok)])
+    }
+
+    static var budgetPages: [Intervention] {
+        [iv("b1", "payments-api", .rateLimit, "payments-api reached its budget: about 26% of the week (budget 25%). Page stopped 2 sessions.", ago: 120, sub: "budget_reached"),
+         iv("b2", "sensor-hub", .rateLimit, "sensor-hub has used about 21% of the week (budget 25%). Page stops it at 25%.", ago: 600, sub: "budget_warning")]
+    }
+
+    /// The working sessions, each wearing its project's budget.
+    static var budgetSessions: [LiveSession] {
+        let byProject = Dictionary(uniqueKeysWithValues: budget.projects.map { ($0.name, $0) })
+        return sessionsWithFlight.filter { ["w1", "w2", "w5"].contains($0.id) }.map { s in
+            var s = s
+            let name = SkyModel.projectName(cwd: s.cwd, fallback: s.title)
+            if let p = byProject[name] {
+                let cap = p.effectiveCap(default: budget.defaultCap)
+                s.budget = SessionBudget(projectKey: p.key, used: p.used, cap: cap, scope: .project, state: BudgetState(used: p.used, cap: cap))
+            }
+            return s
+        }
+    }
+
     static var sessionsWithFlight: [LiveSession] {
         sessions.map { s in
             var s = s
@@ -274,6 +314,9 @@ enum RenderFixtures {
         case "now-working":
             var st = status; st.onAC = true; st.forecast = nil
             return NowModel.build(inputs(open: [], status: st, sessions: sessions.filter { $0.state != .waitingOnApproval }))
+        case "now-budget", "now-budget-flight":
+            var st = status; st.onAC = true
+            return NowModel.build(inputs(open: budgetPages, status: st, sessions: budgetSessions))
         case "now-dusk":
             let paused = iv("pz", "bottle-flip", .idle, "Page Power paused your agents at 10% battery.", ago: 600, sub: "low_battery")
             return NowModel.build(inputs(open: [paused], status: status))
@@ -362,6 +405,8 @@ enum RenderFixtures {
         if screen == "now-inflight" { d.scrollTo = "inflight-w1" }
         if ["now-flight", "now-flight-old", "now-flight-jump"].contains(screen) { d.scrollToId = HeaderJump.sectionId }
         if screen == "now-flight-two" { d.scrollTo = "inflight-sess-p3" }
+        if screen == "now-budget-flight" { d.scrollTo = "inflight-w2" }
+        d.budgetControls = screen.hasPrefix("now-budget")
         if screen == "now-inflight-long", let last = d.inFlight.rows.last { d.scrollTo = "inflight-\(last.id)" }
         // `-NWScrollId section-look`: frame any part of the stream (a section, "row-<id>"), for a review of its look.
         if let id = UserDefaults.standard.string(forKey: "NWScrollId") { d.scrollTo = nil; d.scrollToId = id }
@@ -524,6 +569,8 @@ struct RenderHarnessRoot: View {
             HarnessShell(screen: s, destination: .now)
         case _ where s.hasPrefix("tower"):
             HarnessTower(screen: s, glow: glowStore.glow)
+        case _ where s.hasPrefix("budget-sheet"):
+            HarnessBudgetSheet(screen: s)
         case _ where s.hasPrefix("dispatch"):
             HarnessDispatch(screen: s)
         case "runway":
@@ -688,11 +735,70 @@ struct HarnessTower: View {
             if screen == "tower-widgets-lockscreen" { d.scrollToId = "widgets-lock" }
             if screen == "tower-widgets" { d.widgets = TowerWidgets.status(placed: []) }
         }
+        if screen.hasPrefix("tower-budget") {
+            var b = RenderFixtures.budget
+            if screen == "tower-budget-off" { b.capture = false; b.projects = [] }
+            if screen == "tower-budget-measuring" {
+                // Early in the week: shares mean nothing yet, so every project reads 0 and nothing is near a budget.
+                b.measuring = true
+                b.projects = b.projects.map { var p = $0; p.used = 0; p.state = .ok; return p }
+            }
+            d.budgetProjects = b
+        }
+        if ["tower-budget-projects", "tower-budget-off", "tower-budget-measuring"].contains(screen) { d.scrollToId = "budget-projects" }
         return d
     }
     var body: some View {
         NWTowerScreen(data: towerData)
             .padding(.top, 50)
+    }
+}
+
+/// The budget sheet as it sits over the Tower: a project's, one session's, or the default; while it saves, and with
+/// the reason a change didn't go (the Mac offline, or refusing it). `budget-sheet-live` is the real container in a
+/// real sheet, to see its detent.
+struct HarnessBudgetSheet: View {
+    let screen: String
+    @State private var live = true
+    private var model: BudgetSheetModel {
+        let b = RenderFixtures.budget
+        switch screen {
+        case "budget-sheet-session":
+            let p = b.projects[1]
+            return BudgetSheetModel(scope: .session, name: p.name, key: "w2", hue: p.hue, used: 6.3, cap: 10, resetsAt: b.resetsAt)
+        case "budget-sheet-default":
+            return BudgetSheetModel(scope: .defaultCap, name: "", key: nil, hue: nil, used: nil, cap: b.defaultCap, resetsAt: b.resetsAt)
+        case "budget-sheet-saving", "budget-sheet-offline", "budget-sheet-refused":
+            // Save was tapped with 30% chosen: the sheet still shows it, over the 25% in force.
+            let p = b.projects[2]
+            return BudgetSheetModel(scope: .project, name: p.name, key: p.key, hue: p.hue, used: p.used, cap: 30, resetsAt: b.resetsAt)
+        default:
+            let p = b.projects[2]
+            return BudgetSheetModel(scope: .project, name: p.name, key: p.key, hue: p.hue, used: p.used, cap: 25, resetsAt: b.resetsAt)
+        }
+    }
+    private var status: BudgetSaveStatus {
+        switch screen {
+        case "budget-sheet-saving": return .saving
+        case "budget-sheet-offline": return .failed(BudgetCopy.macOffline)
+        case "budget-sheet-refused": return .failed(BudgetCopy.refusal(reason: "not_found", detail: nil))
+        default: return .idle
+        }
+    }
+    private var tower: some View {
+        NWTowerScreen(data: { var d = RenderFixtures.tower(scroll: .budget, glow: .off); d.budgetProjects = RenderFixtures.budget; return d }())
+            .padding(.top, 50)
+    }
+    var body: some View {
+        if screen == "budget-sheet-live" {
+            tower.sheet(isPresented: $live) { BudgetSheetContainer(model: model).environmentObject(SessionStore.shared) }
+        } else {
+            ZStack(alignment: .bottom) {
+                tower.overlay(Color.black.opacity(0.45))
+                NWBudgetSheet(model: model, timeZone: RenderHarness.timeZone, status: status)
+            }
+            .ignoresSafeArea(edges: .bottom)
+        }
     }
 }
 

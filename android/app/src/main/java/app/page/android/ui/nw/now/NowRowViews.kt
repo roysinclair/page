@@ -126,7 +126,7 @@ class RowActions(
  * says "waiting", so the chip holds the time alone: [WaitChip.text]).
  */
 @Composable
-private fun CardTopLine(row: NowRow, now: Instant) {
+internal fun CardTopLine(row: NowRow, now: Instant) {
     val large = LocalDensity.current.fontScale > 1.3f
     val age = row.waitingText(now)
     val name = NW.Typo.name

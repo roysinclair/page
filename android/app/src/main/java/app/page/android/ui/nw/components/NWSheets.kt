@@ -38,6 +38,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -59,6 +60,8 @@ fun NWSheetHost(
     heightFraction: Float = 0.88f,
     /** The panel's fill (the Decision sheet tints it by the card's class). */
     containerColor: Color = NW.Palette.background.color,
+    /** The panel is as tall as its content (up to [heightFraction] of the screen) instead of filling it: a sheet with one short form. */
+    fitContent: Boolean = false,
     @Suppress("UNUSED_PARAMETER") originBounds: Rect? = null,
     content: @Composable () -> Unit,
 ) {
@@ -83,7 +86,13 @@ fun NWSheetHost(
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(heightFraction)
+                    .then(
+                        if (!fitContent) Modifier.fillMaxHeight(heightFraction)
+                        else Modifier.layout { measurable, constraints ->
+                            val placeable = measurable.measure(constraints.copy(minHeight = 0, maxHeight = (constraints.maxHeight * heightFraction).roundToInt()))
+                            layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+                        },
+                    )
                     .offset { IntOffset(0, dragY.roundToInt()) }
                     .clip(shape)
                     .background(containerColor, shape)

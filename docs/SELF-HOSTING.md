@@ -221,7 +221,15 @@ push troubleshooting.
 6. **Optional agent hooks.** To get phone approvals from any Claude Code or
    Codex surface (not only tmux and Terminal.app), use the menu:
    **Integrations ▸ Install agent hooks…**. It shows the exact diff and asks
-   before writing.
+   before writing. For Claude Code it also adds the budget gate, which stops a
+   project's tool calls once it has used its budget. Run it again after
+   upgrading Page Studio.
+
+7. **Optional project budgets.** To give each project a share of your weekly
+   Claude limit, turn on **Show my Claude usage** in Preferences ▸ Budget,
+   then set budgets there, from **Set budget** on a session card in the menu
+   bar, or on your phone. See
+   [Project budgets](../README.md#project-budgets).
 
 ## Step 3: The iPhone app
 

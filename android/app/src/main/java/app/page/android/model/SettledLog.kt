@@ -82,6 +82,13 @@ data class SettledLog(val today: List<SettledLine>, val days: List<SettledDay>) 
                 return SettledLine(iv.id, SettledLine.Tone.NEUTRAL, CloseReason.description(iv.closeReason), age, null, at)
             }
             val subject = NowRowBuilder.summaryLine(iv)
+            // A budget page's answers read as what they did, not as an approval of its numbers.
+            if (iv.kind == InterventionKind.RATE_LIMIT && PageSubtype.isBudget(iv.subtype)) {
+                BudgetCopy.answered(iv.repliedAction, iv.projectName)?.let { said ->
+                    val tone = when (iv.repliedAction) { "approve" -> SettledLine.Tone.APPROVED; "carry_on" -> SettledLine.Tone.SENT; else -> SettledLine.Tone.NEUTRAL }
+                    return SettledLine(iv.id, tone, said, age, status, at)
+                }
+            }
             return when (iv.repliedAction) {
                 "approve" -> SettledLine(iv.id, SettledLine.Tone.APPROVED, "Approved $subject", age, status, at)
                 "deny" -> SettledLine(iv.id, SettledLine.Tone.NEUTRAL, (if (PageSubtype.canStop(iv.subtype)) "Stopped " else "Denied ") + subject, age, status, at)

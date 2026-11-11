@@ -23,6 +23,8 @@ data class DeliveryReceipt(
     val route: String,
     val at: Instant,
     val outcome: Outcome = Outcome.Delivered,
+    /** What a budget page's answer did, in words ("Raised Night Owl's budget"): it stands in for the verb and the subject. */
+    val said: String? = null,
 ) {
     enum class Verb(val raw: String) { APPROVED("Approved"), DENIED("Denied"), REPLIED("Replied to"), STOPPED("Stopped") }
 
@@ -64,9 +66,11 @@ data class DeliveryReceipt(
      * "<subject> · <what went wrong and what to do>".
      */
     fun line(zone: ZoneId = ZoneId.systemDefault()): String {
-        outcome.failureMessage?.let { return "$subject · $it" }
+        outcome.failureMessage?.let { return "${said ?: subject} · $it" }
+        val clock = NowFormat.clock(at, seconds = true, zone = zone)
+        if (said != null) return "$said · verified $clock"
         val to = if (route.isEmpty()) "" else " → $route"
-        return "${verb.raw} $subject$to · verified ${NowFormat.clock(at, seconds = true, zone = zone)}"
+        return "${verb.raw} $subject$to · verified $clock"
     }
 }
 
@@ -86,7 +90,9 @@ object ReceiptBuilder {
             else -> DeliveryReceipt.Verb.REPLIED
         }
         val subject = if (verb == DeliveryReceipt.Verb.REPLIED && iv.kind != InterventionKind.APPROVAL) iv.projectName else NowRowBuilder.summaryLine(iv)
-        fun make(outcome: DeliveryReceipt.Outcome, at: Instant) = DeliveryReceipt(verb, subject, route ?: "", at, outcome)
+        // A budget page's answers say what they did ("Raised Night Owl's budget"), not that its numbers were approved.
+        val said = if (iv.kind == InterventionKind.RATE_LIMIT && PageSubtype.isBudget(iv.subtype)) BudgetCopy.answered(iv.repliedAction, iv.projectName) else null
+        fun make(outcome: DeliveryReceipt.Outcome, at: Instant) = DeliveryReceipt(verb, subject, route ?: "", at, outcome, said)
         val stamp = iv.repliedAt ?: changedAt ?: now
         return when (delivery) {
             ReplyDelivery.Sending -> null

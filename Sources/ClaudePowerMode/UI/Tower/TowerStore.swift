@@ -24,6 +24,9 @@ struct TowerEnvironment {
     /// `UsageCapture().set(_:)`; returns the settings backup's file name.
     var setUsageCapture: (Bool) throws -> String? = { _ in nil }
     var localModelLines: () -> [String] = { [] }
+    /// Sets or clears a budget: a project's, or the default (`Coordinator.setBudget`, the one path
+    /// the phone's op and the panel take too). Applies at once, outside the page's Apply button.
+    var setBudget: (_ op: BudgetOp) -> Void = { _ in }
     /// GET `<relay>/health`; calls back on the main queue.
     var probeRelay: (_ base: URL, _ done: @escaping (_ message: String, _ ok: Bool) -> Void) -> Void = { _, _ in }
     var showAlert: (_ title: String, _ text: String) -> Void = { _, _ in }
@@ -122,6 +125,8 @@ final class TowerStore: ObservableObject {
     @Published private(set) var helperInstalling = false
     @Published private(set) var relayTest: RelayTest = .idle
     @Published private(set) var usageCapture = UsageCaptureStatus()
+    /// Each project's share of the week and its budget; nil until the Mac has measured (Designs/budget-caps.md).
+    @Published private(set) var budgetBoard: BudgetBoard?
     @Published private(set) var localLines: [String] = []
     /// config.json had a problem when the window opened.
     @Published private(set) var problem: String?
@@ -168,7 +173,14 @@ final class TowerStore: ObservableObject {
     /// A new snapshot and model from the app (each tick).
     func update(snapshot: Coordinator.Snapshot?, model: NowModel?) {
         let before = liveSessionIDs
-        if let snapshot { self.snapshot = snapshot }
+        if let snapshot {
+            self.snapshot = snapshot
+            // Only when the app reported budgets: a fixture's board is not wiped by a snapshot without them.
+            if let b = snapshot.budget {
+                let board = b.board(timeZone: timeZone)
+                if board != budgetBoard { budgetBoard = board }
+            }
+        }
         if let model, self.model != model { self.model = model }
         // A session that starts or ends changes the Terminals page's counts:
         // look again now, not at the next timer tick.
@@ -189,7 +201,9 @@ final class TowerStore: ObservableObject {
     func preview(helper: SleepGuard.HelperStatus? = nil, installing: Bool = false, localLines: [String]? = nil,
                  usageCapture: UsageCaptureStatus? = nil, relayTest: RelayTest? = nil, problem: String? = nil,
                  terminals: TerminalProbe.Snapshot? = nil, terminalsUnprobed: Bool = false, terminalNotice: TowerStatusLine? = nil,
-                 widgetStatus: WidgetRegistration.Status? = nil, widgetGuideOpen: Bool? = nil, widgetPreviewsExample: Bool? = nil) {
+                 widgetStatus: WidgetRegistration.Status? = nil, widgetGuideOpen: Bool? = nil, widgetPreviewsExample: Bool? = nil,
+                 budgetBoard: BudgetBoard? = nil) {
+        if let budgetBoard { self.budgetBoard = budgetBoard }
         if let helper { helperStatus = helper }
         helperInstalling = installing
         if let localLines { self.localLines = localLines }
@@ -202,6 +216,30 @@ final class TowerStore: ObservableObject {
         if let widgetStatus { self.widgetStatus = widgetStatus }
         if let widgetGuideOpen { self.widgetGuideOpen = widgetGuideOpen }
         if let widgetPreviewsExample { self.widgetPreviewsExample = widgetPreviewsExample }
+    }
+
+    /// Sets a project's budget (`key`), or the default (`key` nil); nil `pct` clears it. It is saved
+    /// at once (the Coordinator writes config.json and applies it), not by Apply; the board shows
+    /// the new value now and the next snapshot confirms it.
+    func setBudget(key: String?, pct: Int?) {
+        if let pct, !BudgetPercent.isValid(pct) { return }
+        env.setBudget(key.map { BudgetOp(target: .project($0), pct: pct) } ?? BudgetOp(target: .defaultCap, pct: pct))
+        guard var b = budgetBoard else { return }
+        if let key {
+            if let i = b.rows.firstIndex(where: { $0.key == key }) {
+                let r = b.rows[i]
+                let state = BudgetBoardRow.State(rawValue: BudgetState(used: r.used, cap: pct ?? b.defaultCap).rawValue) ?? .ok
+                b.rows[i] = BudgetBoardRow(key: r.key, name: r.name, used: r.used, cap: pct, state: state)
+            }
+        } else {
+            b.defaultCap = pct
+            b.rows = b.rows.map { r in
+                guard r.cap == nil else { return r }
+                let state = BudgetBoardRow.State(rawValue: BudgetState(used: r.used, cap: pct).rawValue) ?? .ok
+                return BudgetBoardRow(key: r.key, name: r.name, used: r.used, cap: nil, state: state)
+            }
+        }
+        budgetBoard = b
     }
 
     // MARK: opening

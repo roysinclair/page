@@ -171,6 +171,16 @@ app/src/main/java/app/page/android/
 app/src/debug/    demo fixtures        app/src/release/  empty demo stub
 ```
 
+## Budgets
+
+The same as iOS (see [`iOS/README.md`](../iOS/README.md#budgets) and the main
+README's [Project budgets](../README.md#project-budgets)): Tower ▸ Budget
+lists each project's share of the week, the budget chip in a session sets one
+for its project or that session, and "Near its budget" / "Stopped at its
+budget" pages come up as cards with Raise to N% and Let this turn finish.
+Their notifications have no actions, because a typed reply would only mean
+"keep stopped". Shown only when the Mac advertises `budget-v1`.
+
 ## Differences from iOS
 
 - No push: Stay connected and the 15-minute check stand in (above); no device

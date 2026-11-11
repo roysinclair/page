@@ -124,6 +124,11 @@ struct Config: Codable, Equatable {
     /// Welcome back, the Tower) get along their bottom edge. Off by default.
     var cardGlow: CardGlow = .off
 
+    // Budget caps (Designs/budget-caps.md).
+    /// A share of the weekly limit per project, and a default for the rest.
+    /// Session caps live in budget-session-caps.json.
+    var budget = BudgetConfig()
+
     init() {}
 
     // `interventionScanIntervalSeconds` used to live here but nothing ever
@@ -148,6 +153,7 @@ struct Config: Codable, Equatable {
         case stuckAlertsEnabled, stuckAfterMinutes, turnSummaryEnabled, phoneStartSessionsEnabled
         case batteryForecastPageEnabled, earlyBatteryPause, usageForecastPageEnabled
         case cardGlow
+        case budget
     }
 
     /// Collects per-key decode problems. Passed through `decoder.userInfo`
@@ -216,6 +222,7 @@ struct Config: Codable, Equatable {
         earlyBatteryPause = field(.earlyBatteryPause, d.earlyBatteryPause)
         usageForecastPageEnabled = field(.usageForecastPageEnabled, d.usageForecastPageEnabled)
         cardGlow = field(.cardGlow, d.cardGlow)
+        budget = field(.budget, d.budget)
     }
 
     // MARK: validation
@@ -310,6 +317,9 @@ struct Config: Codable, Equatable {
             .filter { !$0.isEmpty }
         c.relayURL = c.relayURL.trimmingCharacters(in: .whitespacesAndNewlines)
         c.codexPath = c.codexPath.trimmingCharacters(in: .whitespacesAndNewlines)
+        let (budget, budgetNotes) = c.budget.validated()
+        c.budget = budget
+        notes += budgetNotes
         return (c, notes)
     }
 
@@ -545,6 +555,62 @@ struct Config: Codable, Equatable {
         default:
             return error.localizedDescription
         }
+    }
+}
+
+/// `budget` in config.json: a cap per project folder and a default for the
+/// rest, whole percent of the week, 1...100. Each entry decodes on its own, so
+/// one mistyped value drops only itself.
+struct BudgetConfig: Codable, Equatable {
+    var projects: [String: Int] = [:]
+    var defaultPct: Int?
+
+    init() {}
+
+    enum CodingKeys: String, CodingKey { case projects, defaultPct }
+
+    /// An integer, or nothing: a bad entry must not lose its neighbours.
+    private struct LenientInt: Decodable {
+        let value: Int?
+        init(from decoder: Decoder) throws { value = try? decoder.singleValueContainer().decode(Int.self) }
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let issues = decoder.userInfo[Config.decodeIssuesKey] as? Config.DecodeIssues
+        do {
+            for (key, v) in try c.decodeIfPresent([String: LenientInt].self, forKey: .projects) ?? [:] {
+                if let n = v.value { projects[key] = n } else {
+                    issues?.messages.append("“budget.projects” has a value that isn’t a whole number for \(key) — ignoring it")
+                }
+            }
+        } catch {
+            issues?.messages.append("“budget.projects” has the wrong type — using none")
+        }
+        do { defaultPct = try c.decodeIfPresent(Int.self, forKey: .defaultPct) } catch {
+            issues?.messages.append("“budget.defaultPct” has the wrong type — using none")
+        }
+    }
+
+    /// Entries out of range, or whose key isn't an absolute folder, are dropped.
+    func validated() -> (budget: BudgetConfig, notes: [String]) {
+        var out = BudgetConfig()
+        var notes: [String] = []
+        for (key, pct) in projects {
+            guard BudgetProjectKey.isValid(key) else {
+                notes.append("budget.projects: “\(key.prefix(60))” isn’t an absolute folder path — ignoring it")
+                continue
+            }
+            guard BudgetPercent.isValid(pct) else {
+                notes.append("budget.projects: \(pct) for \(key) is outside 1…100 — ignoring it")
+                continue
+            }
+            out.projects[key] = pct
+        }
+        if let d = defaultPct {
+            if BudgetPercent.isValid(d) { out.defaultPct = d } else { notes.append("budget.defaultPct \(d) is outside 1…100 — using none") }
+        }
+        return (out, notes.sorted())
     }
 }
 

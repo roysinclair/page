@@ -203,6 +203,16 @@ enum RenderFixtures3 {
             i.session = session("room-local", "tokenizer-lab", backend: "opencode", provider: "ollama", state: .active, preview: "Generating…")
             i.transcript = SessionTranscript(sessionId: "room-local", entries: localEntries, truncated: false)
             i.screen = nil; i.runs = []; i.fiveHourPct = nil; i.sent = []; i.diff = nil
+        case "room-budget", "room-budget-warn", "room-budget-none":
+            // A Mac that does budgets (budget-v1): the "Budget 18/25%" chip, amber from the warning, and "Session budget…".
+            i.caps = ["hold-v1", "retract-v1", BudgetWire.capability]
+            i.budgetControls = true
+            let key = RenderFixtures.budgetKey("mac-on-claude-code")
+            switch screen {
+            case "room-budget": i.session.budget = SessionBudget(projectKey: key, used: 18.4, cap: 25, scope: .project, state: .ok, sessionUsed: 6.1, sessionCap: nil)
+            case "room-budget-warn": i.session.budget = SessionBudget(projectKey: key, used: 21.2, cap: 25, scope: .project, state: .warn, sessionUsed: 9.4, sessionCap: nil)
+            default: i.session.budget = SessionBudget(projectKey: key, used: 3.1, cap: nil, scope: .project, state: .ok)
+            }
         case "room-yesno", "room-yesno-draft", "room-yesno-arm":
             // Idle, and Claude's last message asks a yes/no question: Yes and No lead the quick replies.
             i.session = session("room-claude", "mac-on-claude-code", state: .idle, ago: 120)

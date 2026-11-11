@@ -406,6 +406,8 @@ fun NowScreen(modifier: Modifier = Modifier) {
                         screen.inFlight, tip = tip?.takeIf { it.tip == NWTip.IN_FLIGHT }, biometry = biometry, epoch = flightEpoch,
                         onOpen = { id, entry -> TipStore.retire(NWTip.IN_FLIGHT); AppRouter.openSession(id, entry) },
                         onToggle = NowStore::toggleInFlightExpanded, onHeader = { AppRouter.selectDestination(NWDestination.LANES) }, onDismissTip = { TipStore.retire(it) },
+                        // "Session budget...": only for a Mac that does budgets, with the session's own budget and share (never the binding cap).
+                        onBudget = if (sessionState.canBudget) { id -> sessionState.session(id)?.let { AppRouter.openBudget(app.page.android.model.BudgetSheetModel.session(it, sessionState.budget?.resetsAt)) }; Unit } else null,
                     )
                 })
             }
@@ -492,6 +494,8 @@ private fun QueuedReceipt(line: String, failed: Boolean, appearedAt: Double?) {
 @Composable
 private fun RowCard(row: NowRow, now: Instant, status: RowStatus, actions: RowActions, answerable: Set<String>, spec: app.page.android.ui.nw.shell.RenderHarness.Spec? = null) {
     when {
+        // A budget page is a card of its own (the bar, Raise, Let this turn finish), never a command in a well.
+        row.chip == ChipKind.BUDGET -> app.page.android.ui.nw.budget.NWBudgetCard(row, now, status, actions)
         row.section == NowRow.Section.DECIDE && row.canSwipeApprove -> NWUndoableRow(row, now, status, actions, fixedDrag = spec?.dragDp?.let { with(androidx.compose.ui.platform.LocalDensity.current) { it.dp.toPx() } })
         row.section == NowRow.Section.DECIDE && row.chip == ChipKind.QUESTION -> NWQuestionCard(row, now, row.id in answerable, actions.open)
         row.section == NowRow.Section.DECIDE -> NWDecideCard(row, now, status, actions, fixedHold = spec?.hold)

@@ -50,6 +50,8 @@ enum NWSheet: Equatable, Identifiable {
     case dispatch
     /// Everything Page has settled, and the day stats.
     case history
+    /// A budget's sheet, asked for from Now (the Tower and the room present theirs over themselves).
+    case budget(BudgetSheetModel)
 
     var id: String {
         switch self {
@@ -58,6 +60,7 @@ enum NWSheet: Equatable, Identifiable {
         case .tower(let s): return "tower:\(s?.rawValue ?? "-")"
         case .dispatch: return "dispatch"
         case .history: return "history"
+        case .budget(let m): return "budget:\(m.id)"
         }
     }
 }

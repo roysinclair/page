@@ -365,6 +365,8 @@ fun RoomContainer(sessionId: String, entry: RoomEntry, modifier: Modifier = Modi
             else SessionStore.interrupt(sessionId, data.target)
         },
         dismissReceipt = { if (it == "restored") restoredNote = null else dismissedReceipt = it },
+        // The session's own budget and share (never the binding cap), over the room.
+        budget = { session?.let { AppRouter.openBudget(app.page.android.model.BudgetSheetModel.session(it, sessionState.budget?.resetsAt)) } },
         // The answers go with what the room showed (folder, terminal, Mac): the Mac refuses on a mismatch.
         submitAnswers = { sheet ->
             // A page Claude's question hook holds takes the answers as text, which the hook maps: nothing is pressed.

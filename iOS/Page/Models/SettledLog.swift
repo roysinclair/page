@@ -85,6 +85,15 @@ struct SettledLog: Equatable {
             return SettledLine(id: iv.id, tone: .neutral, text: CloseReason.description(iv.closeReason), age: age, status: nil, at: at)
         }
         let subject = NowRowBuilder.summaryLine(for: iv)
+        // A budget page's three answers, in what they did (Designs/budget-caps.md §4), not the page's numbers.
+        if PageSubtype.isBudget(iv.subtype) {
+            switch iv.repliedAction {
+            case "approve": return SettledLine(id: iv.id, tone: .approved, text: "Raised \(iv.projectName)\u{2019}s budget", age: age, status: status, at: at)
+            case "carry_on": return SettledLine(id: iv.id, tone: .sent, text: "Let \(iv.projectName)\u{2019}s turn finish", age: age, status: status, at: at)
+            // Typed text means the same as deny: nothing is typed into a session.
+            default: return SettledLine(id: iv.id, tone: .neutral, text: "Kept \(iv.projectName) stopped", age: age, status: status, at: at)
+            }
+        }
         switch iv.repliedAction {
         case "approve":
             return SettledLine(id: iv.id, tone: .approved, text: "Approved \(subject)", age: age, status: status, at: at)

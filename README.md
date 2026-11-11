@@ -66,6 +66,11 @@ separate apps that work with Page Relay too.
 - **Pairing and end-to-end encryption.** Pair a phone with a QR code;
   live-session content is end-to-end encrypted between your computer and your
   phone.
+- **Budgets for runaway projects.** Give each project, or a single session,
+  a share of your weekly Claude limit. Page Studio warns at 80% and stops the
+  project at 100%, then pages your phone: raise the budget, let this turn
+  finish, or keep it stopped. Set budgets in Page Studio, from each session
+  card in the menu bar, or on your phone. See [Project budgets](#project-budgets).
 - **Attention, agents, widgets and shortcuts.** Decide what is worth
   interrupting you for, see every agent at a glance, and keep widgets on the
   Mac, iPhone and Android.
@@ -99,8 +104,12 @@ together, your phone hears from all of them.
 
 <table>
   <tr>
-    <td width="50%" valign="top"><img src="docs/images/feature-battery.png" alt="Keep-awake and battery pause" width="100%"><br><b>Page Power: stays awake, pauses gracefully.</b> Keeps the computer awake while agents work, lid closed too, and asks them to stop and summarise at your battery cutoff.</td>
-    <td width="50%" valign="top"><img src="docs/images/feature-lock-screen.png" alt="Answer from the lock screen" width="100%"><br><b>Page Relay: answer from the lock screen.</b> Approve, deny or reply from the notification. Anything riskier than an undoable command opens the decision sheet.</td>
+    <td width="50%" valign="top"><img src="docs/images/feature-budgets.png" alt="Project budgets in Page Studio and the menu bar" width="100%"><br><b>Budgets: a share of the week, per project.</b> Give a project, or one session, its share of your weekly Claude limit, so a runaway can't eat the week your important work needs.</td>
+    <td width="50%" valign="top"><img src="docs/images/feature-budget-stop.png" alt="Stopped at its budget, on iPhone and Android" width="100%"><br><b>Stopped at its budget. Your call.</b> At the budget Page Studio stops the project's sessions and blocks their tool calls. Raise the budget, let this turn finish, or keep it stopped.</td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="docs/images/feature-battery.png" alt="Keep-awake and battery pause" width="100%"><br><b>Page Power: stays awake, pauses gracefully.</b> Keeps the computer awake while agents work, lid closed too, and asks them to stop and summarise at your battery cutoff.</td>
+    <td valign="top"><img src="docs/images/feature-lock-screen.png" alt="Answer from the lock screen" width="100%"><br><b>Page Relay: answer from the lock screen.</b> Approve, deny or reply from the notification. Anything riskier than an undoable command opens the decision sheet.</td>
   </tr>
   <tr>
     <td valign="top"><img src="docs/images/feature-sessions.png" alt="Live sessions on your phone" width="100%"><br><b>Live sessions in your pocket.</b> Story, screen and changes for Claude Code, Codex and local models, end-to-end encrypted.</td>
@@ -141,8 +150,9 @@ claude
 Everything below is the detailed reference.
 
 - [Overview](#overview)
-- [Features](#features): keep-awake, alerts, battery pause, phone pages,
-  approvals everywhere, reply delivery, live sessions, Codex, local models, rate limits
+- [Features](#features): keep-awake, alerts, project budgets, battery pause,
+  phone pages, approvals everywhere, reply delivery, live sessions, Codex,
+  local models, rate limits
 - [Linux](#linux): `paged`, the headless daemon
 - [Getting started](#getting-started): the short version of the setup guide
 - [Configuration](#configuration)
@@ -248,9 +258,101 @@ Settings live in **Preferences ▸ Attention**.
   the numbers, then runs your own status line command unchanged. Turning it
   off restores `~/.claude/settings.json` exactly. The menu and phone then
   show your usage, and you get a page about 30 minutes before you'd hit the
-  5-hour limit at the current pace.
+  5-hour limit at the current pace. [Project budgets](#project-budgets) are
+  measured from the same numbers.
 - **Send at reset.** Reply to a rate-limit page with a message, and Page Studio
   types it into the session when the limit resets.
+
+### Project budgets
+
+Some projects run away with the weekly Claude limit, and the work that
+matters runs out of room. A budget gives a project, or a single session, a
+share of the week: a whole percentage of your 7-day limit.
+
+**Setting a budget.** Every change goes to the Mac, which stores and
+enforces it:
+
+- **Preferences ▸ Budget** lists every project with spend or a budget this
+  week, how much of the week each has used, and a stepper for each. A default
+  budget covers every project without one of its own.
+- **The menu bar.** Each Claude session card has a **Set budget** row under
+  Open and Steer: choose the project (all its sessions) or this session only,
+  then Off, 10, 25, 50 or any whole percent.
+- **The phone.** Budget in the Tower lists the projects; the budget chip in a
+  session sets a budget for its project or for that session only.
+
+A session's own budget applies to that session alone. When a session has
+both, the one further along decides.
+
+**What happens.**
+
+- **At 80%** of a budget your phone gets a **Near its budget** page, once per
+  budget and week, with **Raise to N%**.
+- **At 100%** Page Studio stops the project:
+  1. It writes a marker for the project (or session).
+  2. It presses Esc in the project's working sessions, as the phone's Stop
+     does. Where Esc can't be sent (Terminal.app, for one), the gate stops
+     the session at its next tool call instead.
+  3. The budget gate stops every later tool call from those sessions with
+     "Page: payments-api reached its budget (25% of the week). Raise it in
+     Page, or wait for the reset on Mon 09:00." A typed prompt still reaches
+     Claude, but its turn stops at the first tool call.
+  4. Your phone gets a **Stopped at its budget** page: "payments-api reached
+     its budget: about 26% of the week (budget 25%). Page stopped 2 sessions."
+- **Your answer.** Budget pages open in the app; their notifications have no
+  buttons.
+
+  | Answer | What happens |
+  |---|---|
+  | **Raise to N%** | The budget goes up 10 points (at most 100%), for good. When the project ran on the default, it gets its own budget of default + 10. The sessions Page Studio stopped are told "Page: budget raised to 35% — carry on where you left off." If the project has already used more than the new budget, it stays stopped and the reply says so |
+  | **Let this turn finish** | The stopped sessions get "Page: you can finish this turn — carry on where you left off." and may run until that turn ends. Their next turn is stopped again |
+  | **Keep it stopped**, or a typed reply | Nothing changes. A typed reply is never sent to the session |
+
+- **The week resets.** At the weekly reset every project starts again from
+  zero, the markers go and the budget pages close. A page also closes when it
+  no longer applies: its budget removed, or raised above what the project has
+  used.
+- **Nested projects.** Claude Code run from `~/projects` is its own project,
+  the parent of `~/projects/payments-api`. A budget on `~/projects` stops the
+  sessions that belong to it, wherever they have cd'd, and never a project
+  nested inside it.
+
+**How the share is measured.** Claude Code reports the weekly usage only to
+the status line, and only as a whole percentage. With **Show my Claude
+usage** on, Page Studio's status-line wrapper also saves each session's
+numbers, including its running cost. Each project then gets its share of the
+rise in the week since Page Studio started watching, weighted by what its
+sessions spent:
+
+```
+used = (week % now − week % when Page Studio started watching) × project's spend / all spend
+```
+
+- **"Measuring…"** Until the week has risen one whole point since Page Studio
+  started watching (just after you install, or early in a new week), there's
+  nothing to share out. Projects read "Measuring…" and no budget can warn or
+  stop. A point of the week can take a while of work. Spend is recorded
+  meanwhile, so the first figures are already split correctly.
+- **The cost is only a weight.** Dollars are never shown and never leave the
+  Mac. Usage from before Page Studio started watching belongs to no one.
+- **Shares can read a little high.** Page Studio sees only Claude Code
+  sessions on this Mac that draw a status line. Chats on claude.ai, other
+  computers, `claude -p` and SDK runs still count toward the week, and their
+  part is spread over the projects Page Studio can see. That is the safe side
+  for a budget.
+- **Not covered:** Codex (a different plan, and no hook that can stop a tool
+  call), and Linux, where `paged` has no budgets yet.
+
+**What it needs.**
+
+1. **Show my Claude usage** on (Preferences ▸ Budget). With it off, nothing is
+   measured or stopped, and every budget screen says how to turn it on.
+2. **The budget gate**, installed with the agent hooks: menu ▸ Integrations ▸
+   Install agent hooks… (see [Phone approvals in every
+   surface](#phone-approvals-in-every-surface-opt-in-hooks)). After upgrading,
+   run it again; the hook window shows the hooks as outdated until you do.
+   Without the gate, Page Studio still warns, presses Esc and pages you, but a
+   stopped session can start its next turn.
 
 ### Low-battery pause and resume
 
@@ -292,9 +394,11 @@ How a pause is delivered depends on the terminal:
 | Idle | The turn finished and nothing has been typed for `idlePageDelaySeconds`, while you've been away for `idlePageOnlyWhenAwaySeconds` | Carry on, typed reply |
 | Rate limit | A usage limit was hit | Information only |
 | Low battery (`idle` + subtype `low_battery`) | Page Studio paused the session at the cutoff | Carry on (resume), Deny (stay paused), typed instructions |
+| Near its budget (`rate_limit` + subtype `budget_warning`) | A project or session has used 80% of its [budget](#project-budgets) | Raise to N%; anything else dismisses it. In the app |
+| Stopped at its budget (`rate_limit` + subtype `budget_reached`) | It reached its budget and Page Studio stopped it | Raise to N%, Let this turn finish, keep stopped. In the app |
 
 Approvals and questions page at once. Idle and rate-limit pages wait until
-you've stepped away.
+you've stepped away. Budget pages are sent at once.
 
 A session has one current page. A newer page replaces the older one, and
 resolving one at the Mac clears its card from the phone. The phone shows
@@ -318,6 +422,7 @@ confirmation before writing. It backs up the file as
 | `PreToolUse` on `AskUserQuestion\|ExitPlanMode` (blocking) | Claude Code | Answers a multiple-choice question by option number or label (one line per question), or approves a plan / sends it back with feedback |
 | `Notification` (fire-and-forget) | Claude Code | Pages only. The Mac app types the reply. It stays quiet while the Mac app's own detector is running |
 | `Stop` (blocking, opt-in checkbox) | Codex | While you're away, a typed reply becomes Codex's next prompt. No reply or Deny lets it stop |
+| `PreToolUse` on `*` (the budget gate, 5 s timeout) | Claude Code | [`hooks/page-budget-gate.sh`](hooks/page-budget-gate.sh): stops a tool call from a project or session that has reached its [budget](#project-budgets), with a message that says why. Plain bash, no network, about 20 ms per call. It never pages and never approves |
 
 Because hooks run wherever the agent runs, this covers:
 
@@ -339,6 +444,12 @@ The hooks are **away-only** and **never decide on their own**:
 - While it waits, touching the Mac hands the prompt back to the dialog.
 - A timeout (540 s by default), a dead relay, a missing token, or an answer
   that isn't a decision all print nothing, so the agent shows its own dialog.
+
+The budget gate is the exception to "away-only": a budget applies whether or
+not you're at the Mac. It only ever stops a call, and only while a budget you
+set is reached; it never approves anything. It reads the markers Page Studio
+writes and nothing else, and every error, missing file or unreadable marker
+lets the call through.
 
 The hook script's header
 ([`hooks/page-notify.sh`](hooks/page-notify.sh)) documents every mode and
@@ -488,7 +599,8 @@ as the Mac app. It runs as a systemd user service and pairs with the same
 phone apps and relay. It provides pages, approvals through the hook, typed
 replies and live sessions in tmux, WezTerm, kitty, Herdr and Claude Squad,
 logind keep-awake (lid included), the battery pause, rate-limit resume with
-systemd timers, and the Page Aura and Orbit link. It has no tray yet.
+systemd timers, and the Page Aura and Orbit link. It has no tray yet, and no
+project budgets.
 
 ```sh
 ./install-linux.sh                                  # builds, installs to ~/.local/bin, enables paged.service; no sudo
@@ -736,6 +848,8 @@ Apply hand edits with **Reload Config** in the menu.
 | `wakeViaPmsetEnabled` | `false` | Schedule a system wake before a scheduled resume. Needs the power helper |
 | `codexBackendEnabled` | `false` | Watch Codex sessions as well |
 | `codexPath` | `""` | Absolute path to `codex`. Empty = auto-discover (`~/.local/bin`, Homebrew, `/usr/local/bin`, npm-global, nvm) |
+| `budget.projects` | `{}` | [Project budgets](#project-budgets): whole percent of the week (1–100) per project folder, e.g. `{"/Users/me/projects/payments-api": 25}`. The key is an absolute path with symlinks resolved. Entries out of range or not absolute are dropped with a note |
+| `budget.defaultPct` | none | A budget for every project without one of its own (1–100) |
 
 The hook reads its own environment variables:
 
@@ -758,6 +872,18 @@ Other files in `~/Library/Application Support/ClaudePowerMode/`:
 - `battery-paused.json`.
 - `disablesleep.active`: marker while lid-closed-on-battery is on.
 - `scheduled/`: rate-limit resume jobs.
+- Budgets (all 0600, written atomically):
+  - `statusline/<session id>.json`: each session's latest status-line
+    numbers, saved by the usage wrapper; removed after 8 days untouched.
+  - `budget-ledger.json`: what each session and project spent this week, and
+    the weekly percentage when Page Studio started watching.
+  - `budget-session-caps.json`: per-session budgets, dropped 8 days after the
+    session is gone.
+  - `budget-state.json`: the markers, open budget pages and the sessions Page
+    Studio stopped, so a restart changes nothing.
+  - `budget-over/`: one marker per budget reached (`<hash>.json`, and the
+    `<hash>.gate` the budget gate reads).
+  - `budget-allow/`: sessions allowed to finish their current turn.
 
 ## How it works
 
@@ -886,6 +1012,12 @@ enforced in code and covered by tests:
   for an explicit phone answer. Every error, timeout, or sign that you're back
   at the Mac hands the prompt to the agent's own dialog. The one exception is
   the legacy opt-in `PAGE_HOOK_AUTO`; see [SECURITY.md](SECURITY.md).
+- **The budget gate only stops, and fails open.** It stops a tool call only
+  while a budget you set is reached, never approves one, and lets the call
+  through on any error. A reply to a budget page never types anything into a
+  session: Page Studio routes budget page ids before reply delivery. The only
+  text a budget types is Page Studio's own "carry on" line into a session it
+  stopped itself, and only when that session is idle and untouched since.
 - **Headless resume only for ended sessions.** `claude --resume --print` runs
   only when no process, cmux record or recent transcript write suggests the
   session is still alive.
@@ -908,6 +1040,11 @@ travel, so "nothing leaves your devices" isn't true. What leaves your devices:
 - **To Apple's push service (APNs).** Each push carries the project name, the
   session id, the page kind and up to 180 characters of the context as the
   notification body.
+- **Budgets.** A budget page is a page like any other: the project name and
+  percentages, such as "payments-api reached its budget: about 26% of the
+  week (budget 25%)". Each project's folder, share and budget reach the phone
+  only inside the end-to-end encrypted session list. What sessions cost in
+  dollars never leaves the Mac.
 - **Redaction.** Before context leaves the Mac, Page Studio masks common secret
   shapes: `KEY=value` with secret-like names, bearer and basic credentials,
   PEM blocks, `user:pass@` in URLs, and `sk-`, `ghp_`, `github_pat_`, `xox*`,
@@ -934,6 +1071,9 @@ travel, so "nothing leaves your devices" isn't true. What leaves your devices:
 | Lid-closed-on-battery won't turn on | Preferences ▸ Power shows whether the sudo helper and watchdog are installed. It needs a charge more than 5 points above your cutoff and agents mid-turn |
 | Mac won't sleep after Page Studio quit | `pmset -g` shows `SleepDisabled`; run `sudo pmset -a disablesleep 0`. The menu warns when a clear fails |
 | config.json edits ignored | The menu shows a config problem. Look for `config.json.bad-<timestamp>` |
+| Budgets say "Measuring…" | Normal just after installing and early in each week: shares appear once the week has risen one whole point since Page Studio started watching. See [How the share is measured](#project-budgets) |
+| Budget screens say to turn on usage tracking | Preferences ▸ Budget ▸ Show my Claude usage. Budgets need it |
+| A project went past its budget and kept working | Install the agent hooks again (Integrations ▸ Install agent hooks…) so the budget gate is in `~/.claude/settings.json`; the hook window shows outdated hooks. A session you allowed to finish its turn runs until that turn ends |
 
 Logs:
 
@@ -962,6 +1102,7 @@ Logs:
 │   ├── HookInstaller.swift      settings.json / hooks.json merge (+ HookInstallerWindow)
 │   ├── PowerManager.swift, PowerBatteryPolicy.swift, SleepGuard.swift
 │   ├── RateLimitWatcher.swift, TranscriptParser.swift, ResumeScheduler.swift
+│   ├── Budget.swift, BudgetStore.swift, BudgetController.swift  project budgets: books, caps, gate markers, pages
 │   └── RelayClient.swift, PairingTokenManager.swift, ProcessRunner.swift, …
 ├── Tests/PageCoreTests/        portable XCTest suites (run on macOS and Linux)
 ├── Tests/ClaudePowerModeTests/  Mac UI suites; Tests/PageLinuxTests/ Linux suites with fixtures
@@ -975,7 +1116,7 @@ Logs:
 │   └── project.yml              XcodeGen spec (edit this, not the .xcodeproj)
 ├── android/                     Android app, Kotlin + Compose (see its README)
 │   └── app/src/main/java/app/page/android/  model/ (pure, JUnit-tested), data/, notify/, ui/
-├── hooks/                       page-notify.sh + page-extract-context.py (bundled into Page Studio.app)
+├── hooks/                       page-notify.sh, page-budget-gate.sh, page-extract-context.py (bundled into Page Studio.app)
 ├── docs/                        SELF-HOSTING.md, PROTOCOL.md, SESSIONS-PROTOCOL.md, AURA-LINK.md, ROADMAP.md, images/
 ├── Tools/                       icon generator, parser test pointer
 ├── Resources/                   Mac app icon and entitlements
@@ -995,6 +1136,7 @@ swift test                          # unit tests (XCTest; PageCoreTests run on b
 (cd Cloudflare && npm run typecheck)
 ./iOS/Tests/run-logic-tests.sh      # iOS model/logic tests, no simulator needed
 bash -n hooks/page-notify.sh
+bash -n hooks/page-budget-gate.sh
 ```
 
 **Never test reply delivery against real agent sessions.** Use a private tmux

@@ -4,6 +4,7 @@ import app.page.android.model.DeepLink
 import app.page.android.model.NWDeepLink
 import app.page.android.model.NWDestination
 import app.page.android.model.NWSheet
+import app.page.android.model.BudgetSheetModel
 import app.page.android.model.RoomEntry
 import app.page.android.model.SessionIntent
 import app.page.android.model.SheetQueue
@@ -36,6 +37,12 @@ object AppRouter {
         val confirmingUnpair: Boolean = false,
         /** The Paired screen is up after a first pairing; while it is, nothing else asks for notification permission. */
         val pairedWelcome: Boolean = false,
+        /**
+         * The budget sheet (Designs/budget-caps.md): a project's, one session's, or the default. It is not one of the
+         * [sheets]: it comes up over whatever is showing (the Tower's list, a room, Now's In flight menu) and leaves
+         * back to it, like a dialog.
+         */
+        val budgetSheet: BudgetSheetModel? = null,
     )
 
     private val _state = MutableStateFlow(State())
@@ -111,6 +118,18 @@ object AppRouter {
     /** Opens the Tower, optionally scrolled to a section. */
     fun openTower(section: TowerSection? = null) = update { it.copy(sheets = it.sheets.request(NWSheet.Tower(section))) }
 
+    /** Opens the budget sheet over whatever is showing. Nothing is left of an earlier change's line. */
+    fun openBudget(model: BudgetSheetModel) {
+        SessionStore.clearBudgetSave()
+        update { it.copy(budgetSheet = model) }
+    }
+
+    /** The budget sheet closed (Cancel, back, the scrim, or a saved change). */
+    fun closeBudget() {
+        SessionStore.clearBudgetSave()
+        update { it.copy(budgetSheet = null) }
+    }
+
     fun openDispatch() = update { it.copy(sheets = it.sheets.request(NWSheet.Dispatch)) }
     fun openHistory() = update { it.copy(sheets = it.sheets.request(NWSheet.History)) }
     fun requestUnpair() = update { it.copy(confirmingUnpair = true) }
@@ -141,7 +160,7 @@ object AppRouter {
     fun reset() {
         roomEntry = null
         sheetComposer = null
-        update { it.copy(destination = NWDestination.NOW, sheets = SheetQueue(), confirmingUnpair = false) }
+        update { it.copy(destination = NWDestination.NOW, sheets = SheetQueue(), confirmingUnpair = false, budgetSheet = null) }
     }
 
     // region Legacy entry points (the first-generation screens, until the screens stage replaces them)

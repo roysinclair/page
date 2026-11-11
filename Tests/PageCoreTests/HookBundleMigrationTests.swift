@@ -76,8 +76,11 @@ final class HookBundleMigrationTests: XCTestCase {
         XCTAssertEqual(try read(URL(fileURLWithPath: backup)), original, "the old file is backed up first")
         XCTAssertEqual(try backups(in: home.appendingPathComponent(".claude")).count, 1)
 
-        // Exactly the three Page commands changed; every other byte is the same.
+        // Exactly the Page commands changed (the three scripts and the budget gate beside them);
+        // every other byte is the same.
         let expected = original.replacingOccurrences(of: "\"'\(oldScript)'", with: "\"'\(newScript)'")
+            .replacingOccurrences(of: "\"'\(HookInstaller.gateSibling(ofScript: oldScript))'",
+                                  with: "\"'\(installer.gateScriptPath)'")
         XCTAssertEqual(try read(settings), expected)
         XCTAssertEqual(try read(settings).components(separatedBy: newScript).count - 1, 3)
         XCTAssertTrue(try read(settings).contains("Bash(\(oldScript))"))

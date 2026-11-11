@@ -113,6 +113,10 @@ struct NWInFlightSection: View {
     var tip: NowTipTarget? = nil
     var biometry = "Face ID"
     var onOpen: (String, RoomEntry) -> Void = { _, _ in }
+    /// "Session budget…" on a card (the context menu and VoiceOver's actions), by the session's id. Only where the
+    /// Mac does budgets and usage tracking is on (`budgetControls`) and the row carries a budget.
+    var onBudget: (String) -> Void = { _ in }
+    var budgetControls = false
     var onToggle: () -> Void = {}
     var onHeader: () -> Void = {}
     var onDismissTip: (NWTip) -> Void = { _ in }
@@ -156,7 +160,8 @@ struct NWInFlightSection: View {
             }
             ForEach(Array(section.rows.enumerated()), id: \.element.id) { i, row in
                 NWInFlightCardView(row: row, index: i, extra: section.isExpanded && i >= InFlightSection.collapsedLimit, motion: m,
-                                   onOpen: { onOpen(row.id, $0) })
+                                   onOpen: { onOpen(row.id, $0) },
+                                   onBudget: budgetControls && row.budget != nil ? { onBudget(row.id) } : nil)
                     .nwRecedes()
                     .id("row-inflight-\(row.id)")
                     // Arriving is the card's own rise; leaving, a fade as the cards below close up.
@@ -336,6 +341,8 @@ struct NWInFlightCardView: View {
     var extra = false
     var motion = NWFlightMotion()
     var onOpen: (RoomEntry) -> Void = { _ in }
+    /// "Session budget…": nil when the Mac sets no budgets here.
+    var onBudget: (() -> Void)? = nil
     @State private var visible = true
     /// One earlier step's row, and the gap under it: how far the timeline moves when a step joins it.
     @ScaledMetric(relativeTo: .caption2) private var stepPitch: CGFloat = 19.5
@@ -362,6 +369,7 @@ struct NWInFlightCardView: View {
                     if let time = card.timeText {
                         fact("TIME") { text(time, NightWatch.Palette.textPrimary).nwRolls(time, reduceMotion: reduceMotion) }
                     }
+                    if let b = row.budget { fact("BUDGET") { budgetBlock(b.meter) } }
                     if card.workflowHeading != nil || !card.closing.isEmpty { workflows(at: t) }
                     fact("HEALTH") { healthBlock(f) }
                 }
@@ -386,12 +394,16 @@ struct NWInFlightCardView: View {
         .contextMenu {
             Button { onOpen(.screen) } label: { Label("Open", systemImage: "display") }
             Button { onOpen(.type) } label: { Label("Steer", systemImage: "arrow.turn.down.right") }
+            if let onBudget { Button(action: onBudget) { Label("Session budget…", systemImage: "chart.pie") } }
             if row.canStop { Button(role: .destructive) { onOpen(.stop) } label: { Label("Stop…", systemImage: "stop.circle") } }
         }
         .accessibilityElement(children: .contain)
         .accessibilityAction(named: Text("Open")) { onOpen(.screen) }
         .accessibilityAction(named: Text("Steer")) { onOpen(.type) }
-        .accessibilityActions { if row.canStop { Button("Stop") { onOpen(.stop) } } }
+        .accessibilityActions {
+            if let onBudget { Button("Session budget") { onBudget() } }
+            if row.canStop { Button("Stop") { onOpen(.stop) } }
+        }
         .offset(y: CGFloat(f.rise.offset))
         .opacity(f.rise.opacity)
     }
@@ -566,6 +578,14 @@ struct NWInFlightCardView: View {
         card.health == .longRunning ? NightWatch.Palette.sky : NightWatch.Palette.green
     }
 
+    /// "18% of 25% this week", and the bar under it (amber from the warning).
+    private func budgetBlock(_ m: BudgetMeter) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            text(m.line + " this week", m.tone == .warm ? NightWatch.Palette.amber : NightWatch.Palette.textPrimary)
+            NWBudgetBar(meter: m, height: 6).frame(maxWidth: 200)
+        }
+    }
+
     private func text(_ s: String, _ c: NightWatch.RGBA) -> some View {
         Text(s).font(NightWatch.Typo.meta.monospacedDigit()).foregroundColor(c.color).lineLimit(2)
     }
@@ -587,6 +607,7 @@ struct NWInFlightCardView: View {
         case "NOW": return "waveform"
         case "TIME": return "clock.fill"
         case "WORKFLOWS": return "square.stack.3d.up.fill"
+        case "BUDGET": return ChipKind.budget.symbol
         default: return "heart.fill"
         }
     }
@@ -596,6 +617,7 @@ struct NWInFlightCardView: View {
         case "NOW": return NightWatch.Palette.teal
         case "TIME": return NightWatch.Palette.sky
         case "WORKFLOWS": return NightWatch.Palette.violet
+        case "BUDGET": return row.budget?.meter.tone == .warm ? NightWatch.Palette.amber : NightWatch.Palette.teal
         default:
             return card.health.needsAttention ? NightWatch.Palette.amber
                 : (card.health == .longRunning ? NightWatch.Palette.sky : NightWatch.Palette.green)

@@ -66,7 +66,7 @@ fun TowerContainer(scrollTo: TowerSection?, onRequestNotifications: () -> Unit, 
         else -> SessionAvailabilityCopy.of(availability).shortStatus
     }
     val data = TowerScreenData(
-        macName = name, power = TowerPower.build(status), budget = TowerBudget.build(status?.usage, now),
+        macName = name, power = TowerPower.build(status), budget = TowerBudget.build(status?.usage, now), budgetProjects = sessionState.budget,
         macs = TowerMacRow.build(name, mac?.pairedAt, status, now), macLine = line.joinToString(" · "), relayHost = relayHost,
         relayText = RelayConnectionText.text(connection == RelayClient.ConnectionState.CONNECTED, connection == RelayClient.ConnectionState.CONNECTING, inboxLoad.failureMessage),
         notifications = when (notif) {
@@ -75,7 +75,8 @@ fun TowerContainer(scrollTo: TowerSection?, onRequestNotifications: () -> Unit, 
             NotificationAccess.Authorization.NOT_DETERMINED -> NotificationsState.NOT_SET
             NotificationAccess.Authorization.UNKNOWN -> NotificationsState.CHECKING
         },
-        stayConnected = stay, liveSessionsText = live, glow = glow, version = AppGraph.appVersion, now = now, scrollTo = scrollTo,
+        stayConnected = stay, liveSessionsText = live, glow = glow, version = AppGraph.appVersion, now = now, zone = NowStore.zone, scrollTo = scrollTo,
+        scrollToProjects = app.page.android.ui.nw.shell.RenderHarness.spec.value?.towerProjects == true,
         feedbackUrl = FEEDBACK_URL, isDemo = PairingStore.isDemoPairing,
     )
     val actions = TowerScreenActions(
@@ -86,6 +87,7 @@ fun TowerContainer(scrollTo: TowerSection?, onRequestNotifications: () -> Unit, 
         setStayConnected = { BackgroundConnection.setStayConnected(context, it) },
         setGlow = CardGlowStore::set,
         openHistory = AppRouter::openHistory,
+        openBudget = AppRouter::openBudget,
         resetTips = TipStore::reset,
         openFeedback = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(FEEDBACK_URL)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } },
     )

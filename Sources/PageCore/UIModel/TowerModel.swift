@@ -446,6 +446,60 @@ struct BudgetModel: Equatable {
     }
 }
 
+// MARK: - Budget caps (Designs/budget-caps.md)
+
+/// One project's week on the Budget page: its share of the weekly limit, its
+/// budget and where it stands. The Mac's own numbers (the phones get the same).
+struct BudgetBoardRow: Equatable, Identifiable {
+    enum State: String, Equatable { case ok, warn, over }
+    /// The project's folder: the key every budget is stored under.
+    let key: String
+    let name: String
+    /// Share of the week, 0–100.
+    let used: Double
+    /// Its own budget, whole percent; nil = none (the default may apply).
+    let cap: Int?
+    let state: State
+    var id: String { key }
+}
+
+struct BudgetBoard: Equatable {
+    var rows: [BudgetBoardRow]
+    /// The budget for every project without its own; nil = none.
+    var defaultCap: Int?
+    /// "resets Mon 09:00".
+    var resetText: String?
+    /// Too early in the week to share it out.
+    var measuring: Bool
+    /// Usage capture is on: without it nothing is measured, and the card says so.
+    var captureOn = true
+
+    /// "18%", "<1%". Pure.
+    static func pct(_ v: Double) -> String { v > 0 && v < 1 ? "<1%" : "\(Int(v.rounded()))%" }
+
+    /// "18% of 25%", "11% of 15% · default budget", "2% · no budget", "26% of 25% · stopped". Pure.
+    static func line(_ row: BudgetBoardRow, defaultCap: Int?) -> String {
+        guard let cap = row.cap ?? defaultCap else { return "\(pct(row.used)) · no budget" }
+        let base = "\(pct(row.used)) of \(cap)%"
+        if row.state == .over { return base + " · stopped" }
+        return row.cap == nil ? base + " · default budget" : base
+    }
+
+    /// The bar's fill: against the budget (full = stopped), or the whole week with none. Pure.
+    static func fraction(_ row: BudgetBoardRow, defaultCap: Int?) -> Double {
+        guard let cap = row.cap ?? defaultCap, cap > 0 else { return min(1, max(0, row.used / 100)) }
+        return min(1, max(0, row.used / Double(cap)))
+    }
+
+    /// One step of the inline control: Off → 5 → 10 … 100, and back. Pure.
+    static func step(_ v: Int?, up: Bool) -> Int? {
+        if up { return min(100, ((v ?? 0) / 5 + 1) * 5) }
+        guard let v else { return nil }
+        let next = v % 5 == 0 ? v - 5 : (v / 5) * 5
+        return next < 1 ? nil : next
+    }
+}
+
 // MARK: - Shortcuts
 
 /// One line on the Shortcuts page.

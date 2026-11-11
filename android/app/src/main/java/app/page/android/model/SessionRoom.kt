@@ -160,6 +160,8 @@ object RoomHeader {
     fun chips(
         session: LiveSession, character: AgentCharacter, ended: Boolean, waitingSince: Instant?,
         hasReviewPage: Boolean, fiveHourPct: Double?, now: Instant,
+        /** Designs/budget-caps.md: "Budget 18/25%", teal until the warning and amber from it. Only a session with a budget has one. */
+        budget: SessionBudget? = session.budget,
     ): List<RoomChip> {
         val out = ArrayList<RoomChip>()
         val since: Int? = session.lastActivityAt?.let { maxOf(0, now.secondsSince(it).toInt()) }
@@ -196,6 +198,9 @@ object RoomHeader {
             out.add(RoomChip("on-device", RoomChip.Tone.LOCAL, "lock"))
         } else if (character.kind == AgentCharacter.Kind.CLAUDE && fiveHourPct != null) {
             out.add(RoomChip("5h ${Math.round(fiveHourPct).toInt()}%", if (fiveHourPct >= 80) RoomChip.Tone.WARM else RoomChip.Tone.QUIET, "gauge.with.needle"))
+        }
+        if (!ended && budget != null) {
+            BudgetCopy.chip(budget)?.let { out.add(RoomChip(it, if (budget.state == BudgetState.OK) RoomChip.Tone.WORKING else RoomChip.Tone.WARM, BudgetCopy.SYMBOL)) }
         }
         return out
     }

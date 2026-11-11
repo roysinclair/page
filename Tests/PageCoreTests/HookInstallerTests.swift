@@ -129,9 +129,14 @@ final class HookInstallerTests: XCTestCase {
         XCTAssertEqual(out["hooks"]?.objectMembers?.map(\.key), ["Notification", "PreToolUse", "PermissionRequest"])
         // The other tool's PreToolUse group is untouched and stays first.
         let pre = try XCTUnwrap(out["hooks"]?["PreToolUse"]?.arrayValue)
-        XCTAssertEqual(pre.count, 2)
+        XCTAssertEqual(pre.count, 3)
         XCTAssertEqual(pre[0]["hooks"]?.arrayValue?.first?["command"]?.stringValue, "/usr/local/bin/other-guard")
         XCTAssertEqual(pre[1]["matcher"]?.stringValue, "AskUserQuestion|ExitPlanMode")
+        // The budget gate: every tool, a short timeout, a sibling of the script.
+        XCTAssertEqual(pre[2]["matcher"]?.stringValue, "*")
+        let gate = try XCTUnwrap(pre[2]["hooks"]?.arrayValue?.first)
+        XCTAssertEqual(gate["command"]?.stringValue, "'\(installer.gateScriptPath)'")
+        XCTAssertEqual(gate["timeout"], .number("5"))
         // Legacy path migrated: exactly one Notification entry, pointing at the bundle.
         let notif = try XCTUnwrap(out["hooks"]?["Notification"]?.arrayValue)
         XCTAssertEqual(notif.count, 1)
@@ -159,11 +164,15 @@ final class HookInstallerTests: XCTestCase {
         }
         let n = try XCTUnwrap(out["hooks"]?["Notification"]?.arrayValue?.first?["hooks"]?.arrayValue?.first)
         XCTAssertEqual(n["command"]?.stringValue, "'\(script)'")
+        // The budget gate never waits on a phone: no agent-timeout argument, and a 5 s timeout.
+        let g = try XCTUnwrap(out["hooks"]?["PreToolUse"]?.arrayValue?.last?["hooks"]?.arrayValue?.first)
+        XCTAssertEqual(g["command"]?.stringValue, "'\(installer.gateScriptPath)'")
+        XCTAssertEqual(g["timeout"], .number("5"))
 
         let old = try read().replacingOccurrences(of: " --agent-timeout \(HookInstaller.blockingTimeout)", with: "")
         try write(old)
         XCTAssertEqual(installer.status(.claude).state, .needsUpdate)
-        XCTAssertEqual(installer.status(.claude).pageCommands.count, 3)
+        XCTAssertEqual(installer.status(.claude).pageCommands.count, 4)
         try installer.apply(try installer.planUninstall(.claude))
         XCTAssertEqual(installer.status(.claude).state, .notInstalled)
     }

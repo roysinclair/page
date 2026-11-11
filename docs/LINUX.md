@@ -167,6 +167,11 @@ Mac, so a headless server needs no keyring.
 - **Local models.** Ollama, LM Studio and llama.cpp servers are found through
   `/proc`. The GPU sampler is Apple-only, so on Linux it shows no GPU
   utilisation.
+- **No project budgets yet.** `paged` has no way to turn on usage tracking
+  (the status-line wrapper the Mac installs from Preferences ▸ Budget), so
+  budgets stay off and the phone's budget screens say so. `paged
+  install-hooks` also leaves the budget gate out, because `install-linux.sh`
+  doesn't ship it yet.
 - **Wire names.** The phone apps and the relay say "your computer", but the
   wire names (`role: "mac"`, `mac.status`, the `page-mac` User-Agent) stay as
   they are for compatibility. `paged` sends `page-mac/<version> (Linux …;

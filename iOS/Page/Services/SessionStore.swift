@@ -53,6 +53,15 @@ final class SessionStore: ObservableObject {
     /// What the Mac accepts beyond the basic ops (the last `list`'s `caps`): `hold-v1`, `retract-v1`, `images-v1`.
     /// Empty from an older Mac, so nothing newer is offered to it.
     @Published private(set) var macCaps: Set<String> = []
+    /// The Mac's budget block for the week (Designs/budget-caps.md), read off its last `list`; nil from a Mac that
+    /// doesn't say `budget-v1` (see `BudgetWire.gated`) and until a list has arrived.
+    @Published private(set) var macBudget: MacBudget?
+    /// Where each budget change stands, by the sheet's id (`BudgetSheetModel.id`). The sheet keeps its old value until
+    /// the Mac answers; the list that follows echoes the new one.
+    @Published private(set) var budgetSaves: [String: BudgetSaveStatus] = [:]
+    /// `budget` ops waiting for the Mac's `result`, by clientId -> the sheet's id.
+    private var budgetClients: [String: String] = [:]
+    private var budgetTimeouts: [String: Task<Void, Never>] = [:]
     /// Where each Delete stands, by what it takes back (a held message's clientId, or a reply's page id).
     @Published private(set) var retractNotes: [String: RetractNote] = [:]
     /// Drafts a countdown the app was killed on, back for their screen (see `takeRestoredDraft`).
@@ -194,6 +203,11 @@ final class SessionStore: ObservableObject {
         chainedRetracts = []
         retractNotes = [:]
         macCaps = []
+        macBudget = nil
+        budgetSaves = [:]
+        budgetClients = [:]
+        for task in budgetTimeouts.values { task.cancel() }
+        budgetTimeouts = [:]
         waitTask?.cancel()
         waitTask = nil
         gate.reset()
@@ -348,6 +362,8 @@ final class SessionStore: ObservableObject {
             macDisabled = plaintext.macDisabled
             let caps = plaintext.caps ?? []
             if macCaps != caps { macCaps = caps }
+            // Already gated on this frame's own caps: a Mac without `budget-v1` leaves no block and no row budget.
+            if macBudget != plaintext.budget { macBudget = plaintext.budget }
         }
         apply(plaintext.update)
     }
@@ -410,6 +426,11 @@ final class SessionStore: ObservableObject {
         case .result(let r):
             // An `inputImages` sent again after `attachment_missing`, or answered late, belongs to the first message.
             let key = photoRoutes.bubble(for: r.clientId, now: Date()) ?? r.clientId
+            // A budget change's answer: the sheet's own line, never a message bubble.
+            if budgetClients[r.clientId] != nil {
+                settleBudget(clientId: r.clientId, BudgetSaveStatus.from(result: r))
+                return
+            }
             if let sid = diffClients.removeValue(forKey: r.clientId) {
                 diffErrors[sid] = r.detail ?? "Your computer couldn't read the changes."
                 return
@@ -1040,6 +1061,73 @@ final class SessionStore: ObservableObject {
 
     func clearStartedSession() { startedSessionId = nil }
 
+    // MARK: Budgets (budget-v1)
+
+    /// Whether this Mac measures and enforces budgets: its last `list` said `budget-v1`.
+    var budgetAvailable: Bool { macCaps.contains(BudgetWire.capability) }
+
+    /// Budget controls are worth drawing: the Mac does budgets and usage tracking is on there (without it nothing
+    /// is measured or enforced).
+    var budgetControls: Bool { budgetAvailable && (macBudget?.capture ?? false) }
+
+    /// Saves a budget (`pct` nil = Off) through the encrypted command path. The sheet keeps the old value until the
+    /// Mac answers: `budgetSaves[model.id]` goes saving, then saved (its list echoes the new value) or failed, with
+    /// the reason in words. Nothing about `macBudget` changes here.
+    func saveBudget(_ model: BudgetSheetModel, pct: Int?) {
+        let id = model.id
+        guard budgetSaves[id]?.isSaving != true else { return }
+        guard budgetAvailable else {
+            budgetSaves[id] = .failed("Your Mac doesn't set budgets yet. Update Page Studio on it.")
+            return
+        }
+        guard let command = model.command(pct: pct) else {
+            budgetSaves[id] = .failed("That budget can't be sent. Pick a percentage from 1 to 100, or Off.")
+            return
+        }
+        #if DEBUG
+        if isDevMode {
+            simulateDevBudget(model, pct: pct)
+            return
+        }
+        #endif
+        let clientId = UUID().uuidString.lowercased()
+        guard let body = encrypt(command, clientId: clientId) else {
+            budgetSaves[id] = .failed("This iPhone has no session key. Re-pair with your computer.")
+            return
+        }
+        budgetSaves[id] = .saving
+        budgetClients[clientId] = id
+        // The wait for the Mac's `result`; an answer first (a result, a refusal) cancels it.
+        budgetTimeouts[clientId] = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(BudgetSaveStatus.resultTimeout * 1_000_000_000))
+            guard !Task.isCancelled, let self else { return }
+            self.settleBudget(clientId: clientId, BudgetSaveStatus.noAnswer)
+        }
+        // Not `deliver`: that is for commands tracked in `commands`, and would never see a refusal for this one.
+        Task {
+            let outcome = await APIClient.shared.postSessionCommand(body: body)
+            noteOutcome(outcome)
+            // A `result` that beat the HTTP answer already settled it.
+            guard budgetClients[clientId] != nil, let failed = BudgetSaveStatus.afterPost(outcome) else { return }
+            settleBudget(clientId: clientId, failed)
+        }
+    }
+
+    /// The sheet is done with its line (closed, or it showed it): a change still on its way keeps its word.
+    func clearBudgetStatus(_ sheetId: String) {
+        if budgetSaves[sheetId]?.isSaving != true { budgetSaves[sheetId] = nil }
+    }
+
+    private func settleBudget(clientId: String, _ status: BudgetSaveStatus) {
+        guard let sheet = budgetClients.removeValue(forKey: clientId) else { return }
+        budgetTimeouts[clientId]?.cancel()
+        budgetTimeouts[clientId] = nil
+        budgetSaves[sheet] = status
+        print("[SessionStore] budget \(clientId.prefix(8)) -> \(status)")
+        // Ask for the list that echoes the new value, rather than wait for the Mac's next one.
+        if status == .saved { post(.refresh) }
+    }
+
     /// Starts a new Claude session. Returns the clientId whose delivery
     /// state appears in `commands`.
     @discardableResult
@@ -1203,7 +1291,8 @@ final class SessionStore: ObservableObject {
         self.macName = macName
         sessions = list
         hasList = true
-        macCaps = [SendChoicePlan.holdCap, SendChoicePlan.retractCap, PhotoLimits.capability]
+        macCaps = [SendChoicePlan.holdCap, SendChoicePlan.retractCap, PhotoLimits.capability, BudgetWire.capability]
+        macBudget = RenderFixtures.budget
         lastListAt = Date()
         for t in seeded { transcripts[t.sessionId] = t }
     }
@@ -1287,6 +1376,22 @@ final class SessionStore: ObservableObject {
             let entry = TranscriptEntry(id: "dev-\(clientId)", role: .user,
                                         text: (0..<count).map { "[Image #\($0 + 1)]" }.joined(separator: " ") + text, at: Date(), tool: nil, images: count)
             self.transcripts[sessionId] = SessionTranscript(sessionId: sessionId, entries: (old?.entries ?? []) + [entry], truncated: old?.truncated ?? false)
+        }
+    }
+
+    /// A budget saved in DEV mode: the Mac "answers" after a moment and its list echoes the value.
+    private func simulateDevBudget(_ model: BudgetSheetModel, pct: Int?) {
+        budgetSaves[model.id] = .saving
+        Task {
+            try? await Task.sleep(nanoseconds: 700_000_000)
+            guard self.isDevMode, var b = self.macBudget else { return }
+            switch model.scope {
+            case .defaultCap: b.defaultCap = pct
+            case .project: if let i = b.projects.firstIndex(where: { $0.key == model.key }) { b.projects[i].cap = pct }
+            case .session: break
+            }
+            self.macBudget = b
+            self.budgetSaves[model.id] = .saved
         }
     }
 

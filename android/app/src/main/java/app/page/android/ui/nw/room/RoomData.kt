@@ -47,6 +47,8 @@ data class SessionRoomData(
     val character: AgentCharacter,
     val subtitle: String,
     val chips: List<RoomChip>,
+    /** The room offers "Session budget..." (the Mac does budgets, `budget-v1`, and the session is live). */
+    val canBudget: Boolean = false,
     val lenses: List<RoomLens>,
     val badges: Map<RoomLens, Int> = emptyMap(),
     val banners: List<RoomBanner> = emptyList(),
@@ -222,6 +224,7 @@ data class SessionRoomData(
             return SessionRoomData(
                 session = s, character = character, subtitle = character.subtitle(s.backend, s.provider, s.hostLabel),
                 chips = RoomHeader.chips(s, character, i.ended, i.pageRow?.waitingSince, review != null, i.fiveHourPct, i.now),
+                canBudget = SessionCaps.canBudget(i.caps) && !i.ended,
                 lenses = lenses, badges = badges,
                 banners = RoomBanner.build(i.ended, i.availability, s, character.name, pinned != null),
                 now = i.now, macName = i.macName, story = story, truncated = i.transcript?.truncated ?: false, emptyStory = emptyStory, storyLoading = loading,

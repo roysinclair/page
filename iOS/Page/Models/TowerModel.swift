@@ -244,7 +244,7 @@ struct TowerBudget: Equatable {
 
     static func build(usage: MacUsage?, now: Date) -> TowerBudget {
         TowerBudget(model: UsageCardModel(usage, now: now),
-                    emptyNote: "Turn on usage tracking in Page Studio on your computer to see your 5-hour and 7-day limits here.")
+                    emptyNote: "Turn on usage tracking in Page Studio on your computer to see your 5-hour and 7-day limits and set project budgets here.")
     }
 }
 

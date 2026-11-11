@@ -14,7 +14,10 @@ import java.util.regex.Pattern
 /** The label on a row: how reversible a pending action is, or why it is here. */
 enum class ChipKind(val raw: String) {
     IRREVERSIBLE("irreversible"), CONSIDERED("considered"), UNDOABLE("undoable"),
-    LOOKS_STUCK("looksStuck"), QUESTION("question"), FORECAST("forecast"), RATE_LIMITED("rateLimited"), REVIEW("review");
+    LOOKS_STUCK("looksStuck"), QUESTION("question"), FORECAST("forecast"), RATE_LIMITED("rateLimited"), REVIEW("review"),
+
+    /** A project at or near its share of the week (Designs/budget-caps.md). */
+    BUDGET("budget");
 
     /** All caps, as drawn. */
     val title: String
@@ -27,6 +30,7 @@ enum class ChipKind(val raw: String) {
             FORECAST -> "HEADS UP"
             RATE_LIMITED -> "RATE LIMITED"
             REVIEW -> "FINISHED"
+            BUDGET -> "BUDGET"
         }
 
     companion object {
@@ -215,6 +219,8 @@ data class NowRow(
     val reversibility: Reversibility?,
     val tags: List<Reversibility.Tag>,
     val reason: String,
+    /** A budget page's numbers (Designs/budget-caps.md); null on every other page. */
+    val budget: BudgetPage? = null,
 ) {
     enum class Section(val rank: Int) {
         /** Approvals, plan approvals, questions: the agent is blocked on you. */
@@ -251,7 +257,8 @@ object NowRowBuilder {
     /** Which section a page belongs to. */
     fun section(iv: Intervention): NowRow.Section = when (iv.kind) {
         InterventionKind.APPROVAL, InterventionKind.USER_INPUT -> NowRow.Section.DECIDE
-        InterventionKind.RATE_LIMIT -> NowRow.Section.LOOK
+        // A project Page stopped at its budget needs you; nearing it is a look.
+        InterventionKind.RATE_LIMIT -> if (iv.subtype == PageSubtype.BUDGET_REACHED) NowRow.Section.DECIDE else NowRow.Section.LOOK
         InterventionKind.IDLE ->
             if (PageSubtype.isStuck(iv.subtype) || iv.subtype == "low_battery") NowRow.Section.LOOK else NowRow.Section.REVIEW
     }
@@ -362,7 +369,16 @@ object NowRowBuilder {
                 }
             }
             InterventionKind.RATE_LIMIT -> {
-                if (PageSubtype.isForecast(iv.subtype)) {
+                if (PageSubtype.isBudget(iv.subtype)) {
+                    // Approve raises the budget by ten; Carry on lets the stopped turn finish. Both are the Mac's to do.
+                    chip = ChipKind.BUDGET
+                    val raise = BudgetPage.parse(iv.context).cap?.let { "Raise to ${BudgetPercent.raised(it)}%" } ?: "Raise by 10%"
+                    val l = arrayListOf(act(RowAction.Kind.APPROVE, raise, DeliveryPreview.line("Page Studio raises $projectName's budget", null, mac)))
+                    if (iv.subtype == PageSubtype.BUDGET_REACHED) {
+                        l.add(act(RowAction.Kind.CARRY_ON, "Let this turn finish", DeliveryPreview.line("Page lets the stopped turn finish, then stops it again", null, mac)))
+                    }
+                    actions = l
+                } else if (PageSubtype.isForecast(iv.subtype)) {
                     chip = ChipKind.FORECAST
                     actions = emptyList()
                 } else {
@@ -380,6 +396,7 @@ object NowRowBuilder {
             actions = actions, commit = commit, waitingSince = iv.openedAt,
             reversibility = if (iv.kind == InterventionKind.APPROVAL) (verdict?.level ?: Reversibility.CONSIDERED) else null,
             tags = verdict?.tags ?: emptyList(), reason = verdict?.reason ?: "",
+            budget = if (chip == ChipKind.BUDGET) BudgetPage.parse(iv.context) else null,
         )
     }
 
@@ -412,6 +429,9 @@ object NowRowBuilder {
      */
     fun headline(iv: Intervention): String {
         if (iv.kind == InterventionKind.IDLE && iv.subtype == "low_battery") return "Paused for battery"
+        // The card's top line already names the project.
+        if (iv.subtype == PageSubtype.BUDGET_REACHED) return "Stopped at its budget"
+        if (iv.subtype == PageSubtype.BUDGET_WARNING) return "Near its budget"
         // A finished turn waiting for review.
         if (iv.kind == InterventionKind.IDLE && !PageSubtype.isStuck(iv.subtype) && iv.subtype != "workflow_stalled") {
             return "${(iv.backend ?: InterventionBackend.CLAUDE).displayName} finished a turn"
@@ -451,6 +471,8 @@ object NowRowBuilder {
                 if (m.find()) return "no progress for" + m.group().substring("No progress for".length)
             }
             "plan" -> return "plan ready for review"
+            PageSubtype.BUDGET_REACHED, PageSubtype.BUDGET_WARNING ->
+                BudgetPage.parse(text).line(reached = iv.subtype == PageSubtype.BUDGET_REACHED)?.let { return it }
             else -> Unit
         }
         if (iv.kind == InterventionKind.IDLE || iv.kind == InterventionKind.RATE_LIMIT || iv.kind == InterventionKind.USER_INPUT) {

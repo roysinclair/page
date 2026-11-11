@@ -125,4 +125,5 @@ export const kinds = [
   { name: 'Looks stuck', tone: 'amber', when: 'The same command failed three times in a row, or nothing was written for 15 minutes.', actions: 'Steer · Stop it (Esc)', note: 'Read from the transcript.' },
   { name: 'Rate limit', tone: 'red', when: 'A usage limit was hit. Page Studio shows the reset time.', actions: 'Information, or send a message at reset', note: 'Can hold the computer awake until the reset.' },
   { name: 'Low battery', tone: 'amber', when: 'Page Power paused the session at your cutoff.', actions: 'Carry on · stay paused · typed instructions', note: 'One page per paused session.' },
+  { name: 'Budget reached', tone: 'amber', when: 'A project used its share of your weekly Claude limit, so its sessions were stopped.', actions: 'Raise the budget · Let this turn finish', note: 'A warning comes first, at 80%.' },
 ] as const;

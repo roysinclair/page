@@ -39,7 +39,7 @@ enum JewelTone: String, CaseIterable, Equatable {
         case .considered: self = .sky
         case .undoable: self = .green
         case .review: self = .teal
-        case .looksStuck, .question, .forecast, .rateLimited: self = .amber
+        case .looksStuck, .question, .forecast, .rateLimited, .budget: self = .amber
         }
     }
 

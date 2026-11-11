@@ -150,9 +150,11 @@ if [[ -f "$ICON_CAR" ]]; then cp "$ICON_CAR" "$APP/Contents/Resources/Assets.car
 
 # Claude Code / Codex hook scripts. "Phone approvals…" in the app writes
 # hook entries that point at these copies, so they ship inside the bundle.
+# page-budget-gate.sh (the budget gate) must stay beside page-notify.sh: the
+# installer finds it as a sibling.
 # Explicit list (no __pycache__ / .DS_Store), executable, and copied before
 # signing so the code signature seals them.
-HOOK_FILES=(hooks/page-notify.sh hooks/page-extract-context.py)
+HOOK_FILES=(hooks/page-notify.sh hooks/page-budget-gate.sh hooks/page-extract-context.py)
 mkdir -p "$APP/Contents/Resources/hooks"
 for f in "${HOOK_FILES[@]}"; do
     [[ -f "$f" ]] || { echo "!! Missing $f" >&2; exit 1; }

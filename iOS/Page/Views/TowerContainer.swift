@@ -19,6 +19,8 @@ struct TowerContainer: View {
     @State private var addingMac = false
     @State private var removingMac: SavedMac?
     @State private var confirmingUnpair = false
+    /// A project's (or the default) budget sheet, over the Tower: the Tower is already a sheet, so this one stacks on it.
+    @State private var budgetSheet: BudgetSheetModel?
 
     static let feedbackURL = URL(string: "https://github.com/roysinclair/page/issues")!
 
@@ -46,6 +48,9 @@ struct TowerContainer: View {
             })
             .environmentObject(pairing)
             .environmentObject(api)
+        }
+        .sheet(item: $budgetSheet) { model in
+            BudgetSheetContainer(model: model)
         }
         .confirmationDialog(UnpairCopy.title(mac: pairing.pairedMac?.name), isPresented: $confirmingUnpair, titleVisibility: .visible) {
             Button("Unpair", role: .destructive) { pairing.unpair() }
@@ -109,6 +114,8 @@ struct TowerContainer: View {
         }
         return TowerScreenData(
             macName: name, power: TowerPower.build(status: api.macStatus), budget: TowerBudget.build(usage: api.macStatus?.usage, now: now),
+            // Projects this week: only from a Mac that says `budget-v1` (nil otherwise, so the section isn't there).
+            budgetProjects: sessions.macBudget,
             macs: TowerMacRow.build(saved: pairing.savedMacs, activeId: pairing.activeMacId, activeStatus: api.macStatus, others: pairing.otherStatus, now: now),
             macLine: line.joined(separator: " · "), relayHost: pairing.relayHost,
             relayText: RelayConnectionText.text(connected: api.connection == .connected, connecting: api.connection == .connecting, failure: api.inboxLoad.failureMessage),
@@ -128,6 +135,7 @@ struct TowerContainer: View {
         a.turnOnNotifications = { Task { await notifications.requestAuthorizationIfNeeded() } }
         a.setGlow = { glowStore.glow = $0 }
         a.openHistory = { router.openHistory() }
+        a.openBudget = { budgetSheet = $0 }
         a.resetTips = { tips.resetAll() }
         a.refresh = {
             await api.refreshAll()

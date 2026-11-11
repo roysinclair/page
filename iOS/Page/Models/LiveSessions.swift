@@ -116,6 +116,8 @@ struct LiveSession: Identifiable, Hashable {
     /// an optional field of the Mac's list (docs/SESSIONS-PROTOCOL.md); an
     /// older Mac sends none and the card shows what it has.
     var flight: SessionFlight? = nil
+    /// Its budget (Designs/budget-caps.md): the binding cap and how much of it is used; nil when the Mac sends none.
+    var budget: SessionBudget? = nil
     /// `hold-v1`: Page can type here once the turn ends, so "When it finishes" may be offered.
     var canHold = false
     /// Messages the Mac is holding for this session, or settled in the last 15 minutes, oldest first.
@@ -147,7 +149,7 @@ extension LiveSession: Decodable {
         case id, backend, title, cwd, state, host, canType, typeBlocker, canInterrupt
         case provider, lastActivityAt, interventionId, preview, ask
         case busySince, startedAt, model, recentSteps, health, healthDetail, healthNote, workflows, workflowsRunning, resetsAt, stepSince
-        case canHold, held, attach, attachBlocker
+        case canHold, held, attach, attachBlocker, budget
     }
 
     /// Lenient like `Intervention`: only `id` is required. A malformed
@@ -195,6 +197,8 @@ extension LiveSession: Decodable {
         attach = c.lenientString(.attach).flatMap { $0 == "image" || $0 == "path" ? $0 : nil }
         let why = (c.lenientString(.attachBlocker) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         attachBlocker = why.isEmpty ? nil : String(why.prefix(200))
+        // Designs/budget-caps.md: a row's budget that doesn't read is no budget, never a failed list.
+        budget = (try? c.decodeIfPresent(SessionBudget.self, forKey: .budget)) ?? nil
     }
 }
 
@@ -586,13 +590,16 @@ struct SessionsPlaintext: Equatable {
     let seq: Int
     /// Mac clock.
     let ts: Date
-    let update: SessionsUpdate
+    var update: SessionsUpdate
     /// A `list` from a Mac with live sessions turned off in its settings
     /// (an optional field the Mac adds; others never send it).
     var macDisabled: Bool = false
     /// A `list`'s `caps`: what the Mac accepts beyond the basic ops (`hold-v1`, `retract-v1`, `images-v1`).
     /// An older Mac sends none, which reads as none. Nil for any other kind.
     var caps: Set<String>? = nil
+    /// A `list`'s budget block (Designs/budget-caps.md), kept only when the Mac's `caps` say `budget-v1`
+    /// (`BudgetWire.gated`); nil for any other kind, for a Mac without budgets and for a block that doesn't read.
+    var budget: MacBudget? = nil
 
     static let maxSessions = 100
     static let maxEntries = 40
@@ -632,11 +639,12 @@ struct SessionsPlaintext: Equatable {
         let enabled: Bool?
         let files: [[String: AnyDecodable]]?
         let folders: [[String: AnyDecodable]]?
+        let budget: MacBudget?
 
         private enum CodingKeys: String, CodingKey {
             case kind, seq, ts, boot, macName, sessions, sessionId, entries, truncated
             case clientId, ok, code, reason, detail, interventionId, held, fromHold, retract, attached, missing, draft, caps, disabled, lines, runs, runId, agentId
-            case scope, repo, patch, note, enabled, files, folders
+            case scope, repo, patch, note, enabled, files, folders, budget
         }
 
         init(from decoder: Decoder) throws {
@@ -675,6 +683,7 @@ struct SessionsPlaintext: Equatable {
             enabled = c.lenientBool(.enabled)
             files = try? c.decodeIfPresent([[String: AnyDecodable]].self, forKey: .files)
             folders = try? c.decodeIfPresent([[String: AnyDecodable]].self, forKey: .folders)
+            budget = (try? c.decodeIfPresent(MacBudget.self, forKey: .budget)) ?? nil
         }
     }
 
@@ -747,9 +756,14 @@ struct SessionsPlaintext: Equatable {
         }
         var out = SessionsPlaintext(boot: raw.boot ?? "", seq: Int(raw.seq),
                                     ts: Date(timeIntervalSince1970: raw.ts / 1000), update: update)
-        if case .list = update {
+        if case .list(let name, let rows) = update {
             out.macDisabled = raw.disabled ?? false
-            out.caps = Set((raw.caps ?? []).prefix(40).map { String($0.prefix(40)) })
+            let caps = Set((raw.caps ?? []).prefix(40).map { String($0.prefix(40)) })
+            out.caps = caps
+            // Budgets only from a Mac that says it does them: otherwise no block and no row budget survives.
+            let gated = BudgetWire.gated(budget: raw.budget, sessions: rows, caps: caps)
+            out.budget = gated.budget
+            out.update = .list(macName: name, sessions: gated.sessions)
         }
         return out
     }
@@ -883,6 +897,9 @@ enum SessionCommand: Equatable {
     case start(folder: String, prompt: String)
     /// Esc in every working session (Siri / Shortcuts).
     case interruptAll
+    /// Sets (or, with a nil `pct`, clears) a budget on the Mac (`budget-v1`; Designs/budget-caps.md §5).
+    /// `key` is the Mac's project key, sent back verbatim; `sessionId` names a session's own budget.
+    case budget(scope: BudgetOpScope, key: String?, sessionId: String?, pct: Int?)
 
     var op: String {
         switch self {
@@ -900,6 +917,7 @@ enum SessionCommand: Equatable {
         case .folders:   return "folders"
         case .start:     return "start"
         case .interruptAll: return "interruptAll"
+        case .budget:    return "budget"
         }
     }
 
@@ -943,6 +961,12 @@ enum SessionCommand: Equatable {
         case .folders:                 break
         case .start(let folder, let prompt): body["folder"] = folder; body["text"] = prompt
         case .interruptAll:            break
+        case .budget(let scope, let key, let sessionId, let pct):
+            // Keys that don't apply are absent (not null); an absent `pct` would not clear, so that one is explicit.
+            body["scope"] = scope.rawValue
+            if let key { body["key"] = key }
+            if let sessionId { body["sessionId"] = sessionId }
+            body["pct"] = pct.map { $0 as Any } ?? NSNull()
         }
         return (try? JSONSerialization.data(withJSONObject: body, options: [.sortedKeys, .withoutEscapingSlashes])) ?? Data()
     }

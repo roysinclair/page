@@ -13,6 +13,8 @@ import Foundation
 enum ChipKind: String, Equatable, CaseIterable {
     case irreversible, considered, undoable
     case looksStuck, question, forecast, rateLimited, review
+    /// A project at or near its share of the week (Designs/budget-caps.md).
+    case budget
 
     /// All caps, as drawn.
     var title: String {
@@ -25,6 +27,7 @@ enum ChipKind: String, Equatable, CaseIterable {
         case .forecast: return "HEADS UP"
         case .rateLimited: return "RATE LIMITED"
         case .review: return "FINISHED"
+        case .budget: return "BUDGET"
         }
     }
 
@@ -222,6 +225,8 @@ struct NowRow: Equatable, Identifiable {
     let reversibility: Reversibility?
     let tags: [Reversibility.Tag]
     let reason: String
+    /// A budget page's numbers (Designs/budget-caps.md); nil on every other page.
+    var budget: BudgetPage? = nil
 
     func action(_ kind: RowAction.Kind) -> RowAction? { actions.first { $0.kind == kind } }
 
@@ -243,7 +248,8 @@ enum NowRowBuilder {
     static func section(of iv: Intervention) -> NowRow.Section {
         switch iv.kind {
         case .approval, .userInput: return .decide
-        case .rateLimit: return .look
+        // A project Page stopped at its budget needs you; nearing it is a look.
+        case .rateLimit: return iv.subtype == PageSubtype.budgetReached ? .decide : .look
         case .idle:
             if PageSubtype.isStuck(iv.subtype) || iv.subtype == "low_battery" { return .look }
             return .review
@@ -342,6 +348,15 @@ enum NowRowBuilder {
                 actions = [act(.carryOn, "Carry on", DeliveryPreview.carryOn(route: route, mac: mac)),
                            act(.tellInstead, "Steer", DeliveryPreview.message(route: route, mac: mac))]
             }
+        case .rateLimit where PageSubtype.isBudget(iv.subtype):
+            // Approve raises the budget by ten; Carry on lets the stopped turn finish. Both are the Mac's to do.
+            chip = .budget
+            let page = BudgetPage.parse(iv.context)
+            let raise = page.cap.map { "Raise to \(BudgetPercent.raised($0))%" } ?? "Raise by 10%"
+            actions = [act(.approve, raise, DeliveryPreview.line("Page Studio raises \(projectName)'s budget", route: nil, mac: mac))]
+            if iv.subtype == PageSubtype.budgetReached {
+                actions.append(act(.carryOn, "Let this turn finish", DeliveryPreview.line("Page lets the stopped turn finish, then stops it again", route: nil, mac: mac)))
+            }
         case .rateLimit:
             if PageSubtype.isForecast(iv.subtype) {
                 chip = .forecast
@@ -354,12 +369,14 @@ enum NowRowBuilder {
             }
         }
 
-        return NowRow(
+        var row = NowRow(
             id: iv.id, sessionId: iv.sessionId, projectName: projectName, agentName: iv.agentName,
             section: section, chip: chip, headline: headline(for: iv), summary: summaryLine(for: iv),
             actions: actions, commit: commit, waitingSince: iv.openedAt,
             reversibility: iv.kind == .approval ? (verdict?.level ?? .considered) : nil,
             tags: verdict?.tags ?? [], reason: verdict?.reason ?? "")
+        if chip == .budget { row.budget = BudgetPage.parse(iv.context) }
+        return row
     }
 
     /// Decide rows first, Irreversible before anything else, then the
@@ -384,6 +401,9 @@ enum NowRowBuilder {
     /// description when the page carries one ("Delete every Dev build?").
     static func headline(for iv: Intervention) -> String {
         if iv.kind == .idle, iv.subtype == "low_battery" { return "Paused for battery" }
+        // The card's top line already names the project.
+        if iv.subtype == PageSubtype.budgetReached { return "Stopped at its budget" }
+        if iv.subtype == PageSubtype.budgetWarning { return "Near its budget" }
         // A finished turn waiting for review.
         if iv.kind == .idle, !PageSubtype.isStuck(iv.subtype), iv.subtype != "workflow_stalled" { return "\((iv.backend ?? .claude).displayName) finished a turn" }
         if iv.kind == .approval, iv.subtype != "plan" {
@@ -407,6 +427,8 @@ enum NowRowBuilder {
 
         if let sub = iv.subtype {
             switch sub {
+            case PageSubtype.budgetReached, PageSubtype.budgetWarning:
+                if let line = BudgetPage.parse(text).line(reached: sub == PageSubtype.budgetReached) { return line }
             case "looping":
                 // "Looks stuck in a loop: this has failed 6 times.\n<label>"
                 let count = first.range(of: #"failed (\d+) times"#, options: .regularExpression)

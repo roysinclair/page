@@ -67,6 +67,8 @@ rather than infers.
 | No headless `--resume --print` for sessions that are still live | Done |
 | Status-aware keystrokes, exact targeting, delivery confirmation, token retirement | Done |
 | Lid closed on AC, opt-in lid closed on battery with watchdog, low-battery pause and resume | Done |
+| Project budgets: a share of the weekly Claude limit per project or session, warn at 80%, stop at 100% (Esc, the `PreToolUse` budget gate, a page with Raise / Let this turn finish), set from Page Studio, the menu bar and both phones | Done |
+| Budgets on Linux (usage tracking and `paged config set` for budgets, the gate shipped by `install-linux.sh`) and for Codex (a different plan, and no hook that can stop a tool call) | Not started |
 | Claude desktop app session detection (reading its local session records) | Not started |
 | Skip sessions controlled remotely by Anthropic's apps; publish client presence so Claude doesn't double-notify | Not started |
 | `Elicitation` (MCP forms) and `StopFailure` (rate limits) hooks | Not started |

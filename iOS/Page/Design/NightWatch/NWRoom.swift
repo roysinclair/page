@@ -112,6 +112,8 @@ struct SessionRoomData {
     // Stop
     var stop: SessionStopPlan
     var stopping = false
+    /// "Session budget…" is offered next to the chips (the Mac sets budgets, usage tracking is on, the session has a budget).
+    var budgetControls = false
 
     /// Draws the Stop ring part-way (the render harness).
     var fixedStop: Double? = nil
@@ -130,6 +132,8 @@ struct SessionRoomActions {
     var openRun: (String) -> Void = { _ in }
     var openAgent: (String, String) -> Void = { _, _ in }
     var openDecision: (String) -> Void = { _ in }
+    /// "Session budget…": this session's own budget, in a sheet.
+    var openBudget: () -> Void = {}
     var banner: (RoomBanner.Action) -> Void = { _ in }
     var approve: (NowRow) -> Void = { _ in }
     var holdComplete: (NowRow) -> Void = { _ in }
@@ -294,7 +298,19 @@ struct NWSessionRoom: View {
     private var chips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                ForEach(data.chips) { c in NWRoomChipView(chip: c) }
+                ForEach(data.chips) { c in
+                    if c.budget && data.budgetControls {
+                        // "Budget 18/25%" is the way to this session's own budget (44 pt, as a button must be).
+                        Button(action: actions.openBudget) { NWRoomChipView(chip: c, height: 44) }
+                            .buttonStyle(.plain)
+                            .accessibilityHint(Text("Sets a budget for this session only"))
+                            .accessibilityAction(named: Text("Session budget")) { actions.openBudget() }
+                    } else {
+                        NWRoomChipView(chip: c)
+                    }
+                }
+                // No budget yet: the same way in, as a button after the chips.
+                if data.budgetControls && !data.chips.contains(where: \.budget) { NWRoomBudgetButton(action: actions.openBudget) }
             }
             .padding(.horizontal, NightWatch.Space.lg)
         }
@@ -397,8 +413,31 @@ struct NWAgentGlyph: View {
     }
 }
 
+/// "Session budget…": the way to a session's own budget, after the chips. A button (44 pt), not a chip.
+struct NWRoomBudgetButton: View {
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 7) {
+                Image(systemName: "slider.horizontal.3").font(.system(.caption, weight: .semibold))
+                Text("Session budget…").font(.system(.footnote, weight: .bold)).lineLimit(1)
+            }
+            .foregroundColor(NightWatch.Palette.textSecondary.color)
+            .padding(.horizontal, 14).frame(minHeight: 44)
+            .background(Capsule().fill(Color.white.opacity(0.07)))
+            .overlay(Capsule().strokeBorder(Color.white.opacity(0.22), lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Session budget"))
+        .accessibilityHint(Text("Sets a budget for this session only"))
+    }
+}
+
 struct NWRoomChipView: View {
     var chip: RoomChip
+    var height: CGFloat = 40
 
     var body: some View {
         let c = chip.tone.color
@@ -411,7 +450,7 @@ struct NWRoomChipView: View {
             Text(chip.text).font(.system(.footnote, weight: .bold)).lineLimit(1)
         }
         .foregroundColor(c.color)
-        .padding(.horizontal, 14).frame(minHeight: 40)
+        .padding(.horizontal, 14).frame(minHeight: height)
         .background(Capsule().fill(c.opacity(chip.tone == .quiet ? 0.07 : 0.12).color))
         .overlay(Capsule().strokeBorder(c.opacity(chip.tone == .quiet ? 0.22 : 0.45).color, lineWidth: 1))
         .accessibilityElement(children: .ignore)

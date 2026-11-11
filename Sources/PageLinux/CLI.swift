@@ -205,7 +205,9 @@ public enum PagedCLI {
             agents = [a]
         }
         let uninstall = args.contains("--uninstall")
-        let installer = HookInstaller(homeDirectory: files.paths.home, scriptPath: script)
+        var installer = HookInstaller(homeDirectory: files.paths.home, scriptPath: script)
+        // install-linux.sh doesn't ship the budget gate yet: no entry that would error on every tool call.
+        installer.budgetGate = false
         var failed = false
         for agent in agents {
             do {

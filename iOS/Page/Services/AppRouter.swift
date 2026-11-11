@@ -74,6 +74,9 @@ final class AppRouter: ObservableObject {
     func openTower(_ section: TowerSection? = nil) { sheets.request(.tower(section)) }
     func openDispatch() { sheets.request(.dispatch) }
     func openHistory() { sheets.request(.history) }
+    /// A budget's sheet over Now (the in-flight card's "Session budget…"). Where a sheet is already up (the Tower,
+    /// a room) its own screen presents it over itself instead, so nothing is closed.
+    func openBudget(_ model: BudgetSheetModel) { sheets.request(.budget(model)) }
     func requestUnpair() { confirmingUnpair = true }
 
     /// A sheet finished dismissing: present whatever was waiting.

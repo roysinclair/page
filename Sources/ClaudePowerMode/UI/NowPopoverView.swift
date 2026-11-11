@@ -129,6 +129,10 @@ struct NWDecideRowView: View {
     var unwind: NowMotion.Unwind? = nil
     /// Touch ID passed for this row: the cap's ring bursts.
     var burst: NowMotion.Burst? = nil
+    /// Drawn in the card under the action buttons (the budget line and its editor).
+    var extra: AnyView? = nil
+    /// The line that says what a key will do under a selected row; off while an editor is open in it.
+    var showsPreview = true
     var onKey: (KeyHint.Action) -> Void = { _ in }
     var onHoldBegan: () -> Void = {}
     var onHoldEnded: () -> Void = {}
@@ -209,7 +213,10 @@ struct NWDecideRowView: View {
                 actionStrip(authenticating: authenticating)
                     .padding(.leading, 15)
             }
-            if f == nil, focused, let preview = row.focusPreview {
+            if f == nil, !sending, let extra {
+                extra.padding(.leading, 15)
+            }
+            if f == nil, focused, showsPreview, let preview = row.focusPreview {
                 // While held, a short lead-in; the end of the line is what gets cut, so
                 // "Will type 1 · <route>" always stays readable.
                 Text(holdProgress != nil ? "Hold · Touch ID · \(preview)" : preview)
@@ -518,6 +525,10 @@ struct NWNowPopover: View {
                 row: row, focused: row.id == store.selectedId, sending: store.sending.contains(row.id),
                 holdProgress: holdProgress(for: row), thread: store.motion.threads[row.id],
                 unwind: store.motion.unwind, burst: store.motion.burst,
+                // A finished turn is a session card too: budgets sit under its Steer and Open.
+                extra: row.chip == .review
+                    ? AnyView(NWBudgetSlot(store: store, rowId: row.id, sessionId: row.sessionId, backend: row.backend)) : nil,
+                showsPreview: store.budgetEditor?.rowId != row.id,
                 onKey: { store.click($0, on: row) },
                 onHoldBegan: { store.mouseHoldBegan(.approve(rowId: row.id)) },
                 onHoldEnded: { store.mouseHoldEnded() })

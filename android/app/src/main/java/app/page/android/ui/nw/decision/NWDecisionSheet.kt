@@ -73,6 +73,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import app.page.android.model.ActionGate
 import app.page.android.model.AnswerSheet
+import app.page.android.model.BudgetCopy
 import app.page.android.model.CardOutcome
 import app.page.android.model.ChipKind
 import app.page.android.model.DecisionContent
@@ -93,6 +94,7 @@ import app.page.android.model.SessionAsk
 import app.page.android.model.TurnSummaryChips
 import app.page.android.model.YesNoReply
 import app.page.android.model.waitingText
+import app.page.android.ui.nw.budget.NWBudgetBar
 import app.page.android.ui.nw.components.NWAnswerHost
 import app.page.android.ui.nw.components.NWButton
 import app.page.android.ui.nw.components.NWButtonKind
@@ -355,8 +357,24 @@ private class DecisionView(
         }
     }
 
+    /** A budget page: the project's bar and the numbers in a line, then the Mac's own sentence. Nothing is a command. */
+    @Composable
+    private fun BudgetAsk() {
+        val shape = RoundedCornerShape(NW.Radius.inset)
+        Column(
+            Modifier.fillMaxWidth().clip(shape).background(NW.Palette.inset.color).border(1.dp, Color.White.copy(alpha = 0.07f), shape).padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            c.budgetMeter?.let { m -> NWBudgetBar(m, height = 10.dp) }
+            Text(row.summary, style = NW.Typo.bodyStrong.copy(fontFeatureSettings = "tnum"), color = NW.Palette.amber.color)
+            SelectionContainer { Text(c.ask.ifEmpty { "No details were sent with this page." }, style = NW.Typo.body, color = NW.Palette.textSecondary.color) }
+            c.cwd?.let { Text(it, style = NW.Typo.monoMicro, color = NW.Palette.textQuiet.color) }
+        }
+    }
+
     @Composable
     private fun AskBlock() {
+        if (c.budget != null) { BudgetAsk(); return }
         val shape = RoundedCornerShape(NW.Radius.inset)
         when (c.askKind) {
             DecisionContent.AskKind.COMMAND, DecisionContent.AskKind.EDIT -> Column(
@@ -457,6 +475,8 @@ private class DecisionView(
             if (composerOpen) row.action(RowAction.Kind.TELL_INSTEAD)?.preview?.let { return it }
             // The answer picker carries its own preview (the review step names exactly what will be chosen).
             if (state.ask != null && c.chip == ChipKind.QUESTION) return null
+            // A budget page types nothing: the footer says what the Mac does, so no keyboard line stands over it.
+            if (c.budget != null) return null
             // Nothing will be typed: the controls below already say why, so a second line adds nothing.
             if (row.action(RowAction.Kind.OPEN_ON_MAC) != null) return null
             return row.focusPreview
@@ -472,7 +492,7 @@ private class DecisionView(
             OutcomeStrip()
         }
         // The line adds the detail ("typed into tmux pane %3"); a failure the thread already says is not said twice.
-        val s = state.phase.statusLine(state.legacyRelay)
+        val s = if (c.budget != null) state.phase.statusLine(state.legacyRelay, BudgetCopy.deliveredFallback) else state.phase.statusLine(state.legacyRelay)
         if (s != null && !(receipt?.frame(state.now)?.word == s.text)) {
             NWReceiptLine(s.text, failed = s.tone == DecisionPhase.Tone.PROBLEM || s.tone == DecisionPhase.Tone.WARN)
         }
@@ -576,12 +596,30 @@ private class DecisionView(
                 Text("Approved with ${state.biometry}", style = NW.Typo.bodyStrong, color = NW.Palette.textSecondary.color)
             }
             !busy || state.phase == DecisionPhase.Unconfirmed -> when {
+                c.budget != null -> BudgetControls()
                 c.section == NowRow.Section.DECIDE && c.chip == ChipKind.QUESTION -> QuestionControls()
                 c.section == NowRow.Section.DECIDE -> ApprovalControls()
                 c.section == NowRow.Section.LOOK -> LookControls()
                 else -> ReviewControls()
             }
         }
+    }
+
+    /**
+     * A budget page's two answers: Raise to N% (approve: the Mac raises the cap, for good) and, once Page has stopped the project,
+     * Let this turn finish (carry on: the stopped turn ends, then it is stopped again). Never a typed reply.
+     */
+    @Composable
+    private fun BudgetControls() {
+        val raise = row.action(RowAction.Kind.APPROVE)
+        val finish = row.action(RowAction.Kind.CARRY_ON)
+        raise?.let { NWButton(it.label, actions.approve, Modifier.fillMaxWidth().heightIn(min = 48.dp), kind = NWButtonKind.AMBER) }
+        finish?.let { NWButton(it.label, actions.carryOn, Modifier.fillMaxWidth().heightIn(min = 48.dp), kind = NWButtonKind.QUIET) }
+        Text(
+            if (finish != null) "Raising the budget changes it for good: lower it again any time from Budget in the Tower. Letting this turn finish stops the project again afterwards."
+            else "Raising the budget changes it for good: lower it again any time from Budget in the Tower.",
+            style = NW.Typo.caption, color = NW.Palette.textTertiary.color, modifier = Modifier.fillMaxWidth(),
+        )
     }
 
     @Composable

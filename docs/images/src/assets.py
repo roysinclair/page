@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Crops the real renders (and the few design boards) the compositions use into ./assets/*.webp.
 
-    python3 assets.py --mac <dir> --ios <dir> --android <dir> [--aura ~/projects/page-studio-apps/docs]
+    python3 assets.py --mac <dir> --ios <dir> --android <dir> [--aura ~/projects/page-studio-apps/docs] [--only budget]
 
 --mac      output of `.build/debug/ClaudePowerMode --render-ui <dir> --card-glow full`
 --ios      output of `iOS/Tools/render-screens.sh <dir> full` (files named <screen>-glow-full.png or <screen>-full.png)
 --android  output of `android/tools/screens.sh <dir> --glow full` (files named <screen>.png)
 --aura     the Page Aura repo's docs/ folder (approval.png)
+--only     budget: write only the budget crops (needs only the budget renders:
+           Mac tower-budget and popover-budget-editor, iOS decision-budget and now-budget,
+           Android decision-budget and now-budget)
 
 Design boards come from Designs/v4 in this repo. Every crop below was checked by eye for demo data only.
 Needs Pillow with WebP support.
@@ -44,11 +47,40 @@ def main():
     ap.add_argument("--ios", required=True)
     ap.add_argument("--android", required=True)
     ap.add_argument("--aura", default=os.path.expanduser("~/projects/page-studio-apps/docs"))
+    ap.add_argument("--only", choices=["budget"])
     a = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
-    rgba = lambda p: Image.open(p).convert("RGBA")
-    rgb = lambda p: Image.open(p).convert("RGB")
+    if a.only != "budget":
+        everything_else(a)
+    budget(a)
 
+
+def rgba(p):
+    return Image.open(p).convert("RGBA")
+
+
+def rgb(p):
+    return Image.open(p).convert("RGB")
+
+
+def ios_screen(a, s):
+    return rgb(find(a.ios, f"{s}-glow-full.png", f"{s}-full.png"))
+
+
+def budget(a):
+    """Budgets (feature-budgets, feature-budget-stop). Fixture names only: payments-api, sensor-hub, llm-play."""
+    # Tower > Budget: the rings and the first three project rows (payments-api stopped, sensor-hub near, tokenizer-lab).
+    save(rgb(find(a.mac, "tower-budget.png")).crop((56, 56, 2296, 1300)), "mac-tower-budget", width=1600)
+    # The popover's payments-api card with its Set budget editor open (popover x 56..816).
+    save(rgba(find(a.mac, "popover-budget-editor.png")).crop((74, 1172, 798, 1970)), "mac-popover-budget")
+    # The phones: the "Stopped at its budget" sheet, and Now with the budget card under Decide.
+    save(ios_screen(a, "decision-budget"), "ios-decision-budget", width=900)
+    save(ios_screen(a, "now-budget"), "ios-now-budget", width=900)
+    for screen in ("decision-budget", "now-budget"):
+        save(rgb(find(a.android, f"{screen}-full.png", f"{screen}.png")), f"android-{screen}", width=900)
+
+
+def everything_else(a):
     # ---- Mac (render harness, 2x; surfaces sit on a stand-in backdrop with 56 px of padding) ----
     # Popover cards: x 56..816; their radius is 40 px. The CSS masks the corners.
     save(rgba(find(a.mac, "popover-needs-you.png")).crop((56, 56, 816, 1964)), "mac-popover-needs")
@@ -64,7 +96,7 @@ def main():
     save(faces.crop((50, 513, 776, 852)), "mac-widget-medium-page")
 
     # ---- iPhone (simulator, 1179x2556) ----
-    ios = lambda s: rgb(find(a.ios, f"{s}-glow-full.png", f"{s}-full.png"))
+    ios = lambda s: ios_screen(a, s)
     for screen, name in [("now", "ios-now"), ("decision-undoable", "ios-decision-undoable"),
                          ("room-codex", "ios-room-codex"), ("room-local", "ios-room-local")]:
         save(ios(screen), name, width=900)

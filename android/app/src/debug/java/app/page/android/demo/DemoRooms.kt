@@ -287,6 +287,17 @@ object DemoRooms {
                     sent = listOf(photoSent.copy(target = SessionTarget.of(s, mac))), latestInput = photoSent.copy(target = SessionTarget.of(s, mac)),
                 )
             }
+            // A session under its project's budget: the "Budget 21/25%" chip (amber from the warning) and "Session budget...".
+            "room-budget" -> {
+                val b = DemoFixtures.budget()
+                val p = b.projects[1]
+                i = i.copy(
+                    session = session("room-claude", "sensor-hub", state = LiveSessionState.ACTIVE, preview = "Bash: pio run").copy(
+                        budget = app.page.android.model.SessionBudget(p.key, p.used, 25, app.page.android.model.SessionBudget.Scope.PROJECT, app.page.android.model.BudgetState.WARN, 6.3, null),
+                    ),
+                    caps = holdCaps + SessionCaps.BUDGET,
+                )
+            }
             "room-ended" -> i = i.copy(session = session("room-claude", "mac-on-claude-code", state = LiveSessionState.IDLE, ago = 400), ended = true)
             "room-blocked" -> i = i.copy(
                 session = session("room-claude", "mac-on-claude-code", state = LiveSessionState.IDLE, host = "Ghostty", canType = false, blocker = "Page Studio can't type into Ghostty yet", ago = 300),

@@ -79,6 +79,8 @@ enum class NotificationCategory {
             PageSubtype.isStuck(kind, subtype) -> STALLED
             kind == InterventionKind.IDLE -> IDLE
             PageSubtype.isForecast(kind, subtype) -> INFO
+            // A budget page is answered in the app (Raise, Let this turn finish): "Send after reset" would be a lie, and typed text means "keep stopped".
+            kind == InterventionKind.RATE_LIMIT && PageSubtype.isBudget(subtype) -> INFO
             else -> LIMIT
         }
     }

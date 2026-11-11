@@ -71,8 +71,19 @@ enum TowerFixtures {
         st.update(snapshot: scene.snapshot, model: scene.model)
         st.now = { NightWatchFixtures.boardNow() }
         st.preview(helper: .available, localLines: ["Ollama — generating · exact", "LM Studio — idle"],
-                   usageCapture: TowerStore.UsageCaptureStatus(on: true), terminals: terminals())
+                   usageCapture: TowerStore.UsageCaptureStatus(on: true), terminals: terminals(), budgetBoard: budgetBoard())
         return st
+    }
+
+    /// The week three days from its reset: one project stopped, one near its budget, one on the default.
+    static func budgetBoard() -> BudgetBoard {
+        func r(_ name: String, _ used: Double, _ cap: Int?, _ s: BudgetBoardRow.State) -> BudgetBoardRow {
+            BudgetBoardRow(key: "/Users/studio/projects/\(name)", name: name, used: used, cap: cap, state: s)
+        }
+        // Shares add up to under the fixture's 30% week.
+        return BudgetBoard(rows: [r("payments-api", 10.4, 10, .over), r("sensor-hub", 8.4, 10, .warn), r("tokenizer-lab", 6.1, nil, .ok),
+                                  r("bottle-flip", 3.1, 10, .ok), r("llm-play", 1.4, nil, .ok)],
+                           defaultCap: 15, resetText: "resets Fri 05:12", measuring: false)
     }
 
     /// The Terminals page with a bit of everything: in use, ready, a blocked

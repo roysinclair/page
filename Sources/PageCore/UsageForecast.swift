@@ -185,25 +185,33 @@ struct UsageCapture {
 
     var wrapperCommand: String { HookInstaller.shellQuote(wrapperURL.path) }
 
-    static let script = """
+    static let script = #"""
     #!/bin/sh
     # Page Studio: saves the usage numbers Claude Code gives the status line
     # (rate_limits), then runs your own status line command unchanged.
     # Installed from Page Studio → Preferences → Rate limits; turning that option
-    # off puts your original command back.
+    # off puts your original command back. Also keeps one copy per session in
+    # statusline/, which Budget caps read.
     dir="$(cd "$(dirname "$0")" && pwd)"
     input=$(cat)
     (
       umask 077
       tmp="$dir/.statusline-input.$$"
       if printf '%s' "$input" > "$tmp" 2>/dev/null; then mv -f "$tmp" "$dir/statusline-input.json"; else rm -f "$tmp"; fi
+      # One copy per session, for budgets: the session id, kept to letters, digits and "-".
+      sid=$(printf '%s' "$input" | tr -d '\n\r' | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | tr -cd 'A-Za-z0-9-' | cut -c1-128)
+      if [ -n "$sid" ]; then
+        mkdir -p "$dir/statusline" 2>/dev/null
+        stmp="$dir/statusline/.$sid.$$"
+        if printf '%s' "$input" > "$stmp" 2>/dev/null; then mv -f "$stmp" "$dir/statusline/$sid.json"; else rm -f "$stmp"; fi
+      fi
     )
     orig="$dir/statusline-original.txt"
     if [ -s "$orig" ]; then
       printf '%s' "$input" | /bin/sh -c "$(cat "$orig")"
     fi
 
-    """
+    """#
 
     enum State: Equatable { case off, on, unreadable(String) }
 
@@ -295,6 +303,26 @@ struct UsageCapture {
     private func writeOwnerOnly(_ data: Data, to url: URL, permissions: Int = 0o600) throws {
         try data.write(to: url, options: .atomic)
         try fileManager.setAttributes([.posixPermissions: permissions], ofItemAtPath: url.path)
+    }
+
+    /// Existing installs keep the script they were given: `set(true)` returns early when
+    /// settings are already wrapped. At app start, with capture on, rewrite the wrapper if
+    /// it differs from the current `script` (0700), so new measurements reach the user's
+    /// Mac without turning capture off and on. True when it rewrote the file.
+    @discardableResult
+    func refreshWrapper() -> Bool {
+        guard state() == .on else { return false }
+        let current = fileManager.fileExists(atPath: wrapperURL.path) ? try? String(contentsOf: wrapperURL, encoding: .utf8) : nil
+        guard current != Self.script else { return false }
+        do {
+            try fileManager.createDirectory(at: supportDirectory, withIntermediateDirectories: true)
+            try writeOwnerOnly(Data(Self.script.utf8), to: wrapperURL, permissions: 0o700)
+            Logger.shared.log("Usage capture: updated the status line wrapper")
+            return true
+        } catch {
+            Logger.shared.log("Usage capture: couldn't update the status line wrapper: \(error.localizedDescription)")
+            return false
+        }
     }
 
     /// The latest numbers, or nil (capture off, or nothing written yet).

@@ -72,7 +72,11 @@ data class CommandResult(
 /** The plaintext kinds this build understands (Mac → phone). */
 sealed interface SessionsUpdate {
     /** [caps] is the header's `caps` (what the Mac accepts beyond the base ops); a Mac that sends none has `[]`. */
-    data class ListUpdate(val macName: String?, val sessions: List<LiveSession>, val caps: Set<String> = emptySet()) : SessionsUpdate
+    data class ListUpdate(
+        val macName: String?, val sessions: List<LiveSession>, val caps: Set<String> = emptySet(),
+        /** The header's budget block (Designs/budget-caps.md), kept only when [caps] say `budget-v1` ([BudgetWire.gated]). */
+        val budget: MacBudget? = null,
+    ) : SessionsUpdate
     data class Transcript(val transcript: SessionTranscript) : SessionsUpdate
     data class Screen(val screen: SessionScreen) : SessionsUpdate
     data class Workflows(val sessionId: String, val runs: List<WorkflowRun>) : SessionsUpdate
@@ -122,10 +126,14 @@ data class SessionsPlaintext(
                 "list" -> {
                     val list = lossyList(raw["sessions"], LiveSession::decode) ?: return null
                     val name = raw.str("macName")?.trim()
+                    val caps = (raw["caps"] as? JsonArray)?.mapNotNull { it.asString()?.trim()?.takeIf { c -> c.isNotEmpty() && c.length <= 64 } }?.take(32)?.toSet() ?: emptySet()
+                    // Budgets only from a Mac that says it does them: otherwise no block and no row budget survives.
+                    val gated = BudgetWire.gated(MacBudget.decode(raw["budget"]), list.elements.take(MAX_SESSIONS), caps)
                     SessionsUpdate.ListUpdate(
                         macName = if (name.isNullOrEmpty()) null else name.capped(60),
-                        sessions = list.elements.take(MAX_SESSIONS),
-                        caps = (raw["caps"] as? JsonArray)?.mapNotNull { it.asString()?.trim()?.takeIf { c -> c.isNotEmpty() && c.length <= 64 } }?.take(32)?.toSet() ?: emptySet(),
+                        sessions = gated.second,
+                        caps = caps,
+                        budget = gated.first,
                     )
                 }
                 "transcript" -> {

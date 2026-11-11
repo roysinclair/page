@@ -79,6 +79,11 @@ struct DecisionContent: Equatable {
     let canTell: Bool
     /// A finished turn's last message ends on a plain yes/no question (`YesNoQuestion`): the sheet offers Yes and No.
     var yesNo: String? = nil
+    /// A budget page's numbers (Designs/budget-caps.md): the sheet draws the project's bar and the two budget buttons.
+    var budget: BudgetPage? = nil
+
+    /// The bar a budget page draws; nil on every other page and when the text named no share.
+    var budgetMeter: BudgetMeter? { budget?.meter(reached: section == .decide) }
 
     /// What undoing would look like, per class. A hint, never a "safe" badge. Pure.
     static func undoNote(level: Reversibility?, tags: [Reversibility.Tag]) -> String? {
@@ -135,6 +140,8 @@ struct DecisionContent: Equatable {
 
         let isInfo: String?
         switch (iv.kind, iv.subtype) {
+        // A budget page is a decision (Raise, Let this turn finish), whichever agent's sessions it stopped.
+        case (.rateLimit, _) where PageSubtype.isBudget(iv.subtype): isInfo = nil
         case (.rateLimit, "battery_forecast"?): isInfo = "Nothing to answer. Plug your computer in to keep the agents going."
         case (.rateLimit, "usage_forecast"?): isInfo = "Nothing to answer. Page Power keeps your computer awake through the reset and can resume sessions when it resets."
         case (.rateLimit, _) where iv.backend == .codex: isInfo = "Nothing to answer. Codex picks up again once the limit resets."
@@ -144,7 +151,10 @@ struct DecisionContent: Equatable {
 
         let cwd = iv.cwd.isEmpty ? nil : PathDisplay.abbreviatingHome(iv.cwd)
         let footer: String
-        if iv.isBlockingHook {
+        if PageSubtype.isBudget(iv.subtype) {
+            // The page's session is Page's own (`page-budget-…`): nothing is typed anywhere, the Mac changes a number.
+            footer = "Page Studio changes the budget on \(mac). Nothing is typed into a session."
+        } else if iv.isBlockingHook {
             footer = "Your answer goes straight to \(backendLabel)'s permission hook in session \(iv.sessionId.prefix(8)) on \(mac)."
         } else {
             var where_ = "session \(iv.sessionId.prefix(8))"
@@ -161,6 +171,7 @@ struct DecisionContent: Equatable {
             options: iv.kind == .approval ? PromptOption.parse(iv.context) : [],
             screenNote: unknownAgent ? DeliveryPreview.unreadableNote : nil,
             decisionsOnly: iv.acceptsDecisionsOnly, isHook: iv.isBlockingHook, footer: footer, rawContext: iv.context,
-            informational: isInfo, stoppable: PageSubtype.canStop(iv.subtype), canTell: !iv.acceptsDecisionsOnly, yesNo: yesNo)
+            informational: isInfo, stoppable: PageSubtype.canStop(iv.subtype), canTell: !iv.acceptsDecisionsOnly, yesNo: yesNo,
+            budget: row.chip == .budget ? row.budget : nil)
     }
 }

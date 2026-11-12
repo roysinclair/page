@@ -41,7 +41,8 @@ struct NWBudgetLineView: View {
 
     var body: some View {
         HStack(spacing: 9) {
-            Text("BUDGET").nwLabel()
+            // One word, never wrapped: the bar and the numbers give way first.
+            Text("BUDGET").nwLabel().lineLimit(1).fixedSize()
             if line.captureOn {
                 NWBudgetBoardBar(fraction: line.fraction, warm: line.warm, hasBudget: line.hasBudget)
                     .frame(width: 64)

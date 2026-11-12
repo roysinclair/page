@@ -256,6 +256,14 @@ final class InterventionDetector {
 
     private let lock = NSLock()
     private var pending: [String: InterventionEvent] = [:]
+    /// Finished-turn pages the person put away at the Mac (page id → session id; under
+    /// `lock`). The next scan proposes the same page again while the session stays in that
+    /// state, so each is kept out until its session works again or goes.
+    private var dismissed: [String: String] = [:]
+    /// Sessions put away at the Mac before their finished-turn page opened (under `lock`):
+    /// that turn's page never opens, so a session you are done with doesn't page your phone.
+    /// Forgotten, like `dismissed`, once the session works again or goes.
+    private var quietSessions: Set<String> = []
     /// Serialises scans and guards `tailCache` / `promptStarts`.
     private let scanLock = NSLock()
     /// Transcript path → parsed tail, keyed by (size, mtime) so an unchanged
@@ -284,6 +292,34 @@ final class InterventionDetector {
         lock.lock()
         defer { lock.unlock() }
         return pending
+    }
+
+    /// The person put a finished-turn page away at the Mac: it leaves `pending` now, and the
+    /// scans that follow do not open it again (no new banner, no new page on the relay) for as
+    /// long as its session stays in that state. Only a finished-turn page: an approval, a
+    /// question or a stuck page is never dismissed this way. Returns the page, nil when there
+    /// was none to dismiss. Waits for a scan in progress, so that scan cannot put it back.
+    @discardableResult
+    func dismiss(id: String) -> InterventionEvent? {
+        scanLock.lock()
+        defer { scanLock.unlock() }
+        lock.lock()
+        defer { lock.unlock() }
+        guard let e = pending[id], e.kind == .idle, e.subtype == nil else { return nil }
+        pending[id] = nil
+        dismissed[id] = e.sessionId
+        return e
+    }
+
+    /// The person put an idle session away at the Mac while it had no finished-turn page
+    /// yet: the page for this turn is not opened later (no banner, no relay page). Only
+    /// finished-turn pages are held back; an approval, a question or a stuck page still opens.
+    func quietFinishedTurn(sessionId: String) {
+        scanLock.lock()
+        defer { scanLock.unlock() }
+        lock.lock()
+        defer { lock.unlock() }
+        quietSessions.insert(sessionId)
     }
 
     func pendingEvent(id: String) -> InterventionEvent? {
@@ -336,11 +372,20 @@ final class InterventionDetector {
         var heldBack = Set<String>()
         var notForeground = Set<Int32>()
         var autoApproved = Set<String>()
+        // Pages the person dismissed stay out; one whose session works again, or is gone, is forgotten.
+        lock.lock()
+        let dismissedNow = dismissed
+        let quietNow = quietSessions
+        lock.unlock()
+        var workingSessionIds = Set<String>()
+        var liveSessionIds = Set<String>()
 
         for session in sessions {
             livePids.insert(session.pid)
+            liveSessionIds.insert(session.sessionId)
             if session.status == .busy {
                 promptStarts.removeValue(forKey: session.pid)
+                workingSessionIds.insert(session.sessionId)
                 continue
             }
             let url = transcriptFor(session)
@@ -366,6 +411,11 @@ final class InterventionDetector {
                 let start = effectiveStart(for: session, proposal: p, now: now)
                 let event = makeEvent(session: session, proposal: p, start: start,
                                       tail: tail, transcriptPath: url?.path ?? "")
+                if dismissedNow[event.id] != nil
+                    || (quietNow.contains(session.sessionId) && event.kind == .idle && event.subtype == nil && previous[event.id] == nil) {
+                    // Put away at the Mac: not opened (again) for this turn.
+                    break
+                }
                 if previous[event.id] != nil {
                     desired[event.id] = previous[event.id]
                 } else if isHeld(session.sessionId) {
@@ -424,6 +474,8 @@ final class InterventionDetector {
 
         var result = ScanResult()
         lock.lock()
+        dismissed = dismissed.filter { _, sessionId in liveSessionIds.contains(sessionId) && !workingSessionIds.contains(sessionId) }
+        quietSessions = quietSessions.filter { liveSessionIds.contains($0) && !workingSessionIds.contains($0) }
         for (id, e) in desired where pending[id] == nil { result.opened.append(e) }
         for (id, e) in pending where desired[id] == nil { result.resolved.append(e) }
         pending = desired

@@ -354,7 +354,7 @@ struct NWBudgetPage: View {
             } else if let board = store.budgetBoard {
                 NWCard(title: "PROJECT BUDGETS · THIS WEEK") {
                     if board.measuring {
-                        NWNote(text: "Measuring… shares appear once the week has moved a little.").padding(16)
+                        NWNote(text: BudgetCopy.measuring).padding(16)
                     }
                     ForEach(board.rows) { row in
                         NWBudgetBoardRowView(row: row, defaultCap: board.defaultCap, measuring: board.measuring,
@@ -408,9 +408,11 @@ struct NWBudgetBoardRowView: View {
                 Text(row.name).font(Font.system(size: 13.5, weight: .semibold)).foregroundColor(P.textPrimary.color).lineLimit(1)
                 if !measuring { NWBudgetBoardBar(fraction: BudgetBoard.fraction(row, defaultCap: defaultCap), warm: warm,
                                                  hasBudget: (row.cap ?? defaultCap) != nil) }
-                Text(measuring ? "Measuring…" : BudgetBoard.line(row, defaultCap: defaultCap))
+                // While measuring: the share of the work so far, never a bar or a warning.
+                Text(measuring ? BudgetCopy.measuringLong(work: row.work) : BudgetBoard.line(row, defaultCap: defaultCap))
                     .font(Font.system(size: 11.5).monospacedDigit())
-                    .foregroundColor((warm ? P.amber : P.textTertiary).color)
+                    .foregroundColor((warm && !measuring ? P.amber : P.textTertiary).color)
+                    .help(measuring ? BudgetCopy.measuringHelp : "")
             }
             Spacer(minLength: 12)
             NWBudgetStepper(value: row.cap, placeholder: row.cap == nil && defaultCap != nil ? "Default" : "Off", set: set)

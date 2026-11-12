@@ -72,6 +72,9 @@ enum NowKeyTranslator {
         case kVK_DownArrow: return .down
         case kVK_Return, kVK_ANSI_KeypadEnter: return .ret
         case kVK_Escape: return .esc
+        // ⌫ (and fn-⌫): dismiss a finished or idle session. Before the character fallback, which
+        // would turn it into a control character.
+        case kVK_Delete, kVK_ForwardDelete: return .delete
         default:
             if let c = characters?.lowercased().first { return .char(c) }
             switch Int(keyCode) {
@@ -162,7 +165,11 @@ final class NowPanelController: NSObject {
     private let host: NSHostingView<AnyView>
     private var keyMonitor: Any?
     private var clickMonitor: Any?
+    private var scrollMonitor: Any?
     private var appObserver: NSObjectProtocol?
+    /// A two-finger sideways swipe on a dismissable card: the card being moved, how far, and how
+    /// fast. The ScrollView never sees these events while it is captured.
+    private var swipe = TrackpadSwipe()
     private var storeObserver: AnyObject?
     private var refitScheduled = false
     private var previousApp: NSRunningApplication?
@@ -268,6 +275,12 @@ final class NowPanelController: NSObject {
             if let a = self.anchorFrame(), a.contains(NSEvent.mouseLocation) { return }
             self.close(restoreFocus: false)
         }
+        // Two fingers sideways on a finished or idle card put it away. Only while the panel is shown.
+        swipe = TrackpadSwipe()
+        scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: [.scrollWheel]) { [weak self] event in
+            guard let self, event.window === self.panel else { return event }
+            return self.route(scroll: event)
+        }
         appObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
         ) { [weak self] note in
@@ -280,8 +293,37 @@ final class NowPanelController: NSObject {
     private func removeMonitors() {
         if let m = keyMonitor { NSEvent.removeMonitor(m) }
         if let m = clickMonitor { NSEvent.removeMonitor(m) }
+        if let m = scrollMonitor { NSEvent.removeMonitor(m) }
         if let o = appObserver { NSWorkspace.shared.notificationCenter.removeObserver(o) }
-        keyMonitor = nil; clickMonitor = nil; appObserver = nil
+        keyMonitor = nil; clickMonitor = nil; scrollMonitor = nil; appObserver = nil
+        // A swipe cut off by the panel closing puts the card back (nothing is dismissed).
+        if swipe.rowId != nil { store.swipeCancelled() }
+        swipe = TrackpadSwipe()
+    }
+
+    /// A scroll event over the panel. nil when the swipe took it (the ScrollView must not move);
+    /// the event itself when it is the list's to scroll. Vertical gestures pass through untouched.
+    private func route(scroll event: NSEvent) -> NSEvent? {
+        // A wheel mouse has no phases: not a gesture.
+        guard !event.phase.isEmpty || !event.momentumPhase.isEmpty else { return event }
+        let dx = Double(event.scrollingDeltaX) * (event.isDirectionInvertedFromDevice ? 1 : -1)
+        let dy = Double(event.scrollingDeltaY)
+        let action = swipe.step(
+            phase: .init(event.phase), momentum: !event.momentumPhase.isEmpty, deltaX: dx, deltaY: dy,
+            at: event.timestamp, over: store.hoveredCard.flatMap { store.canDismiss($0) ? $0 : nil })
+        switch action {
+        case .pass: return event
+        case .swallow: return nil
+        case .move(let id, let offset):
+            store.swipe = NowStore.Swipe(rowId: id, offset: offset)
+            return nil
+        case .finish(let id, let offset, let velocity):
+            store.swipeEnded(rowId: id, offset: offset, velocity: velocity)
+            return nil
+        case .cancel:
+            store.swipeCancelled()
+            return nil
+        }
     }
 
     /// True when the event was ours (and must not reach the responder chain).
@@ -307,6 +349,116 @@ final class NowPanelController: NSObject {
         default:
             return false
         }
+    }
+}
+
+// MARK: - Trackpad swipe
+
+/// The state of one two-finger trackpad gesture over the Now panel, as the controller's scroll
+/// monitor feeds it. It decides at the start whether the gesture is sideways over a card that can be
+/// dismissed (|Δx| > 1.5 × |Δy|, per `SwipeDismissModel.isSideways`); from then on it captures every
+/// event, momentum included, until the gesture and its momentum end. Anything else is left to the
+/// list. No AppKit inside: events are reduced to a phase, deltas and a timestamp, so it is testable.
+struct TrackpadSwipe {
+    enum Phase: Equatable {
+        case none, began, changed, ended, cancelled
+
+        init(_ p: NSEvent.Phase) {
+            if p.contains(.began) { self = .began }
+            else if p.contains(.cancelled) { self = .cancelled }
+            else if p.contains(.ended) { self = .ended }
+            else if p.contains(.changed) || p.contains(.stationary) { self = .changed }
+            else { self = .none }
+        }
+    }
+
+    enum Action: Equatable {
+        case pass
+        case swallow
+        case move(rowId: String, offset: Double)
+        case finish(rowId: String, offset: Double, velocity: Double)
+        case cancel
+    }
+
+    private enum Mode: Equatable { case idle, deciding, passing, capturing, momentum }
+
+    private var mode = Mode.idle
+    private(set) var rowId: String?
+    private var offset = 0.0
+    private var velocity = 0.0
+    private var last: (x: Double, at: TimeInterval)?
+
+    /// Feeds one scroll event. `over` is the dismissable card under the pointer, if any.
+    mutating func step(phase: Phase, momentum: Bool, deltaX: Double, deltaY: Double, at time: TimeInterval,
+                       over card: String?) -> Action {
+        // The momentum that follows a captured swipe is swallowed too, so the list does not jump.
+        if momentum, phase == .none {
+            if mode == .momentum { return .swallow }
+            return .pass
+        }
+        switch phase {
+        case .began:
+            mode = .idle
+            rowId = nil
+            guard let card else { mode = .passing; return .pass }
+            if deltaX == 0, deltaY == 0 {
+                // The gesture's first event carries no motion yet: the first one that does decides.
+                mode = .deciding
+                rowId = card
+                return .pass
+            }
+            return begin(card: card, deltaX: deltaX, deltaY: deltaY, at: time)
+        case .changed:
+            switch mode {
+            case .deciding:
+                guard deltaX != 0 || deltaY != 0, let card = rowId else { return .pass }
+                return begin(card: card, deltaX: deltaX, deltaY: deltaY, at: time)
+            case .capturing:
+                return moved(by: deltaX, at: time)
+            case .momentum:
+                return .swallow
+            default:
+                return .pass
+            }
+        case .ended:
+            defer { if mode == .capturing { mode = .momentum } else { mode = .idle } }
+            guard mode == .capturing, let id = rowId else { return .pass }
+            rowId = nil
+            let result = Action.finish(rowId: id, offset: offset, velocity: velocity)
+            offset = 0
+            return result
+        case .cancelled:
+            let was = mode
+            mode = .idle
+            rowId = nil
+            offset = 0
+            return was == .capturing ? .cancel : .pass
+        case .none:
+            // A plain event with no phase (a wheel mouse): the list's.
+            if mode == .momentum { mode = .idle }
+            return .pass
+        }
+    }
+
+    private mutating func begin(card: String, deltaX: Double, deltaY: Double, at time: TimeInterval) -> Action {
+        guard SwipeDismissModel.isSideways(deltaX: deltaX, deltaY: deltaY) else {
+            mode = .passing
+            rowId = nil
+            return .pass
+        }
+        mode = .capturing
+        rowId = card
+        offset = 0
+        velocity = 0
+        last = nil
+        return moved(by: deltaX, at: time)
+    }
+
+    private mutating func moved(by dx: Double, at time: TimeInterval) -> Action {
+        offset += dx
+        if let l = last { velocity = SwipeDismissModel.velocity(delta: offset - l.x, seconds: time - l.at) }
+        last = (offset, time)
+        return .move(rowId: rowId ?? "", offset: offset)
     }
 }
 

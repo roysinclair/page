@@ -77,8 +77,31 @@ enum BudgetCopy {
     /// Budget with usage tracking off.
     static let captureOff = "Turn on usage tracking in Page Studio ▸ Budget to set budgets."
 
-    /// Early in the week, before shares mean anything.
-    static let measuring = "Measuring… shares appear once the week has moved a little."
+    /// The Budget page's note while the week is still being measured.
+    static let measuring = "Measuring until the week rises one whole point. Meanwhile each project shows its share of the work so far."
+
+    /// Plain words while measuring with no work to show yet (no spend this window).
+    static let measuringPlain = "Measuring…"
+
+    /// What the share of work means: the Mac's tooltip on the card's line, the phones' accessibility hint.
+    static let measuringHelp = "Its share of the work this week's sessions have done so far. It becomes a share of your week once the week has risen one whole point."
+
+    /// "63%", "<1%": a whole percent of the work so far; nil for no work (nil, zero, or not a number).
+    static func workPct(_ work: Double?) -> String? {
+        guard let work, work.isFinite, work > 0 else { return nil }
+        return pct(min(100, work))
+    }
+
+    /// Long form (the Budget page's rows, the phones' rows): "Measuring · 63% of the work so far".
+    /// Plain "Measuring…" when there is no work yet.
+    static func measuringLong(work: Double?) -> String {
+        workPct(work).map { "Measuring · \($0) of the work so far" } ?? measuringPlain
+    }
+
+    /// Short form (a menu-bar card's budget line): "Measuring · 63% of work".
+    static func measuringShort(work: Double?) -> String {
+        workPct(work).map { "Measuring · \($0) of work" } ?? measuringPlain
+    }
 
     /// "18% of 25%", "18% · no budget", with "· stopped" once over. Pure.
     static func line(used: Double, cap: Int?, state: BudgetState, isDefault: Bool = false) -> String {
@@ -376,6 +399,10 @@ struct BudgetLedger: Codable, Equatable {
     func used(project key: String) -> Double { estimate.share(of: spent(project: key)) }
     func used(session id: String) -> Double { estimate.share(of: sessions[id]?.spent ?? 0) }
 
+    /// A project's share of the work watched so far; nil unless the week is still being measured and it has spend.
+    func work(project key: String) -> Double? { estimate.workShare(of: spent(project: key)) }
+    func work(session id: String) -> Double? { estimate.workShare(of: sessions[id]?.spent ?? 0) }
+
     /// Every project with spend this window (the keys; caps add theirs).
     var projectKeys: Set<String> {
         Set(sessions.values.map(\.projectKey)).union(closedSpent.keys)
@@ -400,6 +427,15 @@ struct BudgetEstimate: Equatable {
     func share(of spent: Double) -> Double {
         guard !measuring, total > 0, spent > 0 else { return 0 }
         return min(100, rise * min(1, spent / total))
+    }
+
+    /// `work = 100 × S / C` (Designs/budget-caps.md §2, "The work so far, while measuring"): `spent`'s
+    /// share of all the spend this window, 0–100. nil unless the week is still being measured and both
+    /// `C` and `spent` are above 0. It is a share of the work watched, not of the week: it never fills
+    /// a bar and never warns or stops, and it goes away when `measuring` ends.
+    func workShare(of spent: Double) -> Double? {
+        guard measuring, total > 0, spent > 0 else { return nil }
+        return min(100, max(0, 100 * spent / total))
     }
 }
 
@@ -463,6 +499,8 @@ struct BudgetStatus: Equatable {
         let cap: Int?
         /// Against its own cap, else the default.
         let state: BudgetState
+        /// While measuring: its share of the work watched so far, 0–100 (not of the week). nil otherwise.
+        var work: Double? = nil
         var id: String { key }
     }
 
@@ -480,6 +518,9 @@ struct BudgetStatus: Equatable {
         /// The project's own cap, and the default that applies when it has none.
         let projectCap: Int?
         let defaultCap: Int?
+        /// While measuring: the binding scope's share of the work watched so far, 0–100 (the session's own
+        /// when `scope` is session, else the project's). nil otherwise.
+        var work: Double? = nil
 
         /// The line a card shows: "21% of 25%", "2% · no budget".
         var line: String { BudgetCopy.line(used: used, cap: cap, state: state, isDefault: scope == .project && projectCap == nil && cap != nil) }
@@ -511,7 +552,7 @@ struct BudgetStatus: Equatable {
             let used = ledger.used(project: key)
             let cap = caps.projects[key]
             return Project(key: key, name: ledger.name(of: key), used: used, cap: cap,
-                           state: BudgetState(used: used, cap: cap ?? caps.defaultPct))
+                           state: BudgetState(used: used, cap: cap ?? caps.defaultPct), work: ledger.work(project: key))
         }.sorted { a, b in a.used != b.used ? a.used > b.used : a.name.localizedCompare(b.name) == .orderedAscending }
         var rows: [String: Row] = [:]
         for (id, k) in live where BudgetProjectKey.isValid(k) {
@@ -531,9 +572,11 @@ struct BudgetStatus: Equatable {
         let pc = caps.projectCap(projectKey)
         let sc = caps.sessions[sessionId]
         let bind = BudgetCaps.binding(project: pc.map { ($0.cap, pUsed) }, session: sc.map { ($0, sUsed) })
+        let scope = bind?.scope ?? .project
         return Row(projectKey: projectKey, projectName: ledger.name(of: projectKey),
-                   used: bind?.used ?? pUsed, cap: bind?.cap, scope: bind?.scope ?? .project, state: bind?.state ?? .ok,
-                   sessionUsed: sUsed, sessionCap: sc, projectCap: own, defaultCap: caps.defaultPct)
+                   used: bind?.used ?? pUsed, cap: bind?.cap, scope: scope, state: bind?.state ?? .ok,
+                   sessionUsed: sUsed, sessionCap: sc, projectCap: own, defaultCap: caps.defaultPct,
+                   work: scope == .session ? ledger.work(session: sessionId) : ledger.work(project: projectKey))
     }
 
     func project(_ key: String) -> Project? { projects.first { $0.key == key } }
@@ -543,6 +586,10 @@ struct BudgetStatus: Equatable {
     /// 18.4 → 18.4; 0.0123 → 0 (one decimal).
     static func rounded1(_ v: Double) -> Double { (v * 10).rounded() / 10 }
 
+    /// Pure. A work share on the wire: one decimal, but never 0 for a share above 0 (a phone reads
+    /// 0 as "nothing spent yet" and would say plain "Measuring…" where the Mac says "<1%").
+    static func workWire(_ v: Double) -> Double { v > 0 ? max(0.1, rounded1(v)) : 0 }
+
     /// The `list` header's `budget` block (Designs/budget-caps.md §5).
     var headerWire: [String: Any] {
         var o: [String: Any] = ["window": "week", "capture": capture, "measuring": measuring,
@@ -550,8 +597,11 @@ struct BudgetStatus: Equatable {
         if let resetsAt { o["resetsAt"] = Int(resetsAt.timeIntervalSince1970) }
         if let weekPct { o["weekPct"] = Self.rounded1(weekPct) }
         o["projects"] = projects.prefix(Self.maxWireProjects).map { p -> [String: Any] in
-            ["key": p.key, "name": p.name, "used": Self.rounded1(p.used),
-             "cap": p.cap.map { $0 as Any } ?? NSNull(), "state": p.state.rawValue]
+            var w: [String: Any] = ["key": p.key, "name": p.name, "used": Self.rounded1(p.used),
+                                    "cap": p.cap.map { $0 as Any } ?? NSNull(), "state": p.state.rawValue]
+            // The work so far goes only while measuring (older phones ignore it).
+            if measuring, let work = p.work { w["work"] = Self.workWire(work) }
+            return w
         }
         return o
     }
@@ -561,16 +611,18 @@ struct BudgetStatus: Equatable {
     /// A `list` row's `budget` object; nil for a session the ledger hasn't seen.
     func rowWire(sessionId: String) -> [String: Any]? {
         guard capture, let r = sessions[sessionId] else { return nil }
-        return ["projectKey": r.projectKey, "used": Self.rounded1(r.used), "cap": r.cap.map { $0 as Any } ?? NSNull(),
-                "scope": r.scope.rawValue, "state": r.state.rawValue, "sessionUsed": Self.rounded1(r.sessionUsed),
-                "sessionCap": r.sessionCap.map { $0 as Any } ?? NSNull()]
+        var o: [String: Any] = ["projectKey": r.projectKey, "used": Self.rounded1(r.used), "cap": r.cap.map { $0 as Any } ?? NSNull(),
+                                "scope": r.scope.rawValue, "state": r.state.rawValue, "sessionUsed": Self.rounded1(r.sessionUsed),
+                                "sessionCap": r.sessionCap.map { $0 as Any } ?? NSNull()]
+        if measuring, let work = r.work { o["work"] = Self.workWire(work) }
+        return o
     }
 
     /// The Page Studio Budget page's board.
     func board(timeZone: TimeZone = .current) -> BudgetBoard {
         BudgetBoard(rows: projects.map {
             BudgetBoardRow(key: $0.key, name: $0.name, used: $0.used, cap: $0.cap,
-                           state: BudgetBoardRow.State(rawValue: $0.state.rawValue) ?? .ok)
+                           state: BudgetBoardRow.State(rawValue: $0.state.rawValue) ?? .ok, work: measuring ? $0.work : nil)
         }, defaultCap: defaultCap, resetText: resetsAt.map { "resets " + BudgetCopy.resets($0, timeZone: timeZone) },
            measuring: measuring, captureOn: capture)
     }

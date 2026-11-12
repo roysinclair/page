@@ -6243,5 +6243,217 @@ do {
           "settled: today's log carries the budget words")
 }
 
+// MARK: - Budget caps: the work so far, while measuring (Designs/budget-caps.md §2)
+// BudgetWire.work, the decoded `work` on projects and rows, SessionBudget.measuring, BudgetWire.gated's stamp,
+// BudgetCopy's measuring words, and the chip and sheet models that show them.
+do {
+    let wKey = "/Users/me/projects/night-owl"
+    let wMon = PageDate.parse("2026-11-09T09:00:00Z")!
+
+    func wProj(_ json: String) -> BudgetProject? { try? JSONDecoder.page().decode(BudgetProject.self, from: Data(json.utf8)) }
+    func wRow(_ json: String) -> SessionBudget? { try? JSONDecoder.page().decode(SessionBudget.self, from: Data(json.utf8)) }
+    func wMac(_ json: String) -> MacBudget? { try? JSONDecoder.page().decode(MacBudget.self, from: Data(json.utf8)) }
+    func wSB(_ used: Double, _ cap: Int?, scope: SessionBudget.Scope = .project, work: Double? = nil,
+             sessionUsed: Double? = nil, sessionCap: Int? = nil) -> SessionBudget {
+        var b = SessionBudget(projectKey: wKey, used: used, cap: cap, scope: scope, state: BudgetState(used: used, cap: cap),
+                              sessionUsed: sessionUsed, sessionCap: sessionCap)
+        b.work = work
+        return b
+    }
+    func wLive(_ id: String, _ b: SessionBudget?) -> LiveSession {
+        var s = nwSession(id, cwd: "~/code/bottle-flip")
+        s.budget = b
+        return s
+    }
+
+    // BudgetWire.work: a finite number in 0–100, never clamped.
+    check(BudgetWire.work(nil) == nil, "work: nil is none")
+    check(BudgetWire.work(0) == 0 && BudgetWire.work(100) == 100, "work: the ends 0 and 100 are kept")
+    check(BudgetWire.work(63.4) == 63.4, "work: a fraction is kept as sent")
+    check(BudgetWire.work(-0.01) == nil && BudgetWire.work(100.01) == nil, "work: just outside 0–100 is none")
+    check(BudgetWire.work(-5) == nil && BudgetWire.work(150) == nil, "work: out of range is none, not clamped to the ends")
+    check(BudgetWire.work(.nan) == nil && BudgetWire.work(.infinity) == nil && BudgetWire.work(-.infinity) == nil,
+          "work: NaN and infinities are none")
+    check(BudgetWire.share(150) == 100 && BudgetWire.work(150) == nil, "work vs share: share clamps, work does not")
+
+    // Decoding a project's work: a bad value drops the number, never the project.
+    let wp = wProj(#"{"key": "/Users/me/projects/night-owl", "used": 18.4, "cap": 25, "state": "ok", "work": 63}"#)
+    check(wp?.work == 63 && wp?.used == 18.4, "decode project: a number work is read (\(String(describing: wp?.work)))")
+    let wpNull = wProj(#"{"key": "/Users/me/projects/night-owl", "used": 18.4, "work": null}"#)
+    check(wpNull != nil && wpNull?.work == nil, "decode project: null work is none, the project stays")
+    let wpStr = wProj(#"{"key": "/Users/me/projects/night-owl", "used": 18.4, "work": "63"}"#)
+    check(wpStr != nil && wpStr?.work == nil && wpStr?.used == 18.4, "decode project: a string work is none, the project stays")
+    let wpBool = wProj(#"{"key": "/Users/me/projects/night-owl", "used": 18.4, "work": true}"#)
+    check(wpBool != nil && wpBool?.work == nil, "decode project: a boolean work is none")
+    let wpHigh = wProj(#"{"key": "/Users/me/projects/night-owl", "used": 18.4, "work": 101}"#)
+    check(wpHigh != nil && wpHigh?.work == nil, "decode project: work 101 is none, the project stays")
+    let wpLow = wProj(#"{"key": "/Users/me/projects/night-owl", "used": 18.4, "work": -1}"#)
+    check(wpLow != nil && wpLow?.work == nil, "decode project: work -1 is none, the project stays")
+    let wpZero = wProj(#"{"key": "/Users/me/projects/night-owl", "used": 18.4, "work": 0}"#)
+    check(wpZero?.work == 0, "decode project: work 0 is a figure, not none")
+    let wpMissing = wProj(#"{"key": "/Users/me/projects/night-owl", "used": 18.4}"#)
+    check(wpMissing != nil && wpMissing?.work == nil, "decode project: no work key is none")
+
+    // Decoding a row's work: the same rules; the row stays whatever `work` says.
+    let wr = wRow(#"{"projectKey": "/Users/me/projects/night-owl", "used": 18.4, "cap": 25, "scope": "session", "state": "ok", "work": 40}"#)
+    check(wr?.work == 40 && wr?.scope == .session && wr?.used == 18.4, "decode row: a number work is read, scope kept")
+    let wrHigh = wRow(#"{"projectKey": "/Users/me/projects/night-owl", "used": 18.4, "cap": 25, "work": 150}"#)
+    check(wrHigh != nil && wrHigh?.work == nil && wrHigh?.used == 18.4 && wrHigh?.cap == 25, "decode row: work 150 is none, the row keeps its figures")
+    let wrStr = wRow(#"{"projectKey": "/Users/me/projects/night-owl", "used": 18.4, "work": "x"}"#)
+    check(wrStr != nil && wrStr?.work == nil, "decode row: a string work is none, the row stays")
+    let wrZero = wRow(#"{"projectKey": "/Users/me/projects/night-owl", "used": 18.4, "work": 0}"#)
+    check(wrZero?.work == 0 && wrZero?.measuring == true, "decode row: work 0 is a figure, so the row is measuring")
+    let wrHeader = wRow(#"{"projectKey": "/Users/me/projects/night-owl", "used": 18.4, "measuringHeader": true}"#)
+    check(wrHeader != nil && wrHeader?.measuringHeader == false && wrHeader?.measuring == false,
+          "decode row: measuringHeader is never read off the wire")
+
+    // A bad work in a `list` never drops a project from the block.
+    let wm = wMac(#"{"projects": [{"key": "/a", "used": 5, "work": "x"}, {"key": "/b", "used": 6, "work": 70}]}"#)
+    check(wm?.projects.map(\.key) == ["/a", "/b"] && wm?.projects[0].work == nil && wm?.projects[1].work == 70,
+          "decode block: a bad work keeps its project, a good one is read")
+
+    // SessionBudget.measuring: the header stamp or any work.
+    check(wSB(18, 25).measuring == false && wSB(18, 25).measuringHeader == false, "measuring: no work and no stamp is not measuring")
+    check(wSB(18, 25, work: 0).measuring == true, "measuring: work 0 counts as measuring")
+    var wStamped = wSB(18, 25)
+    wStamped.measuringHeader = true
+    check(wStamped.measuring == true && wStamped.work == nil, "measuring: the header alone counts, with no work")
+
+    // BudgetWire.gated: the header stamps every row that has a budget.
+    let wMeasuring = MacBudget(resetsAt: wMon, capture: true, measuring: true, weekPct: 3, defaultCap: nil, projects: [])
+    let wNotMeasuring = MacBudget(resetsAt: wMon, capture: true, measuring: false, weekPct: 34, defaultCap: nil, projects: [])
+    let wCaptureOff = MacBudget(resetsAt: wMon, capture: false, measuring: true, weekPct: nil, defaultCap: nil, projects: [])
+    let wRows = [wLive("w1", wSB(18.4, 25)), wLive("w2", nil), wLive("w3", wSB(3, nil, work: 63))]
+    let wCaps = Set(["budget-v1"])
+
+    let g1 = BudgetWire.gated(budget: wMeasuring, sessions: wRows, caps: wCaps)
+    check(g1.sessions.map(\.id) == ["w1", "w2", "w3"], "gated measuring: every row kept, in order")
+    check(g1.sessions[0].budget?.measuringHeader == true && g1.sessions[0].budget?.measuring == true,
+          "gated measuring: a row with a budget is stamped and reads measuring")
+    check(g1.sessions[0].budget?.used == 18.4 && g1.sessions[0].budget?.cap == 25 && g1.sessions[0].budget?.state == .ok,
+          "gated measuring: the stamp changes nothing else on the row")
+    check(g1.sessions[1].budget == nil, "gated measuring: a row with no budget stays nil")
+    check(g1.sessions[2].budget?.measuringHeader == true && g1.sessions[2].budget?.work == 63 && g1.sessions[2].budget?.cap == nil,
+          "gated measuring: a stamped row keeps its work and its missing cap")
+    check(g1.budget == wMeasuring, "gated measuring: the header is passed on unchanged")
+
+    let g2 = BudgetWire.gated(budget: wNotMeasuring, sessions: wRows, caps: wCaps)
+    check(g2.sessions[0].budget?.measuringHeader == false && g2.sessions[0].budget?.measuring == false,
+          "gated not measuring: no row is stamped")
+    check(g2.sessions[0].budget == wRows[0].budget && g2.budget == wNotMeasuring, "gated not measuring: rows and header untouched")
+
+    let g3 = BudgetWire.gated(budget: wCaptureOff, sessions: wRows, caps: wCaps)
+    check(g3.sessions[0].budget == wRows[0].budget && g3.sessions[0].budget?.measuringHeader == false,
+          "gated capture off: a measuring header stamps nothing")
+
+    let g4 = BudgetWire.gated(budget: wMeasuring, sessions: wRows, caps: ["hold-v1"])
+    check(g4.budget == nil && g4.sessions.allSatisfy { $0.budget == nil }, "gated measuring without budget-v1: no header, no row budgets")
+    let g4b = BudgetWire.gated(budget: wMeasuring, sessions: wRows, caps: [])
+    check(g4b.budget == nil && g4b.sessions.allSatisfy { $0.budget == nil }, "gated measuring with no caps at all: nothing drawn")
+
+    let g5 = BudgetWire.gated(budget: nil, sessions: wRows, caps: wCaps)
+    check(g5.budget == nil && g5.sessions[0].budget == wRows[0].budget && g5.sessions[0].budget?.measuringHeader == false,
+          "gated no header: rows untouched")
+
+    // BudgetCopy.measuringLine: a whole percent, <1% above 0, Measuring… with no work.
+    check(BudgetCopy.measuringLine(work: 63) == "Measuring · 63% of the work so far", "line: the long form")
+    check(BudgetCopy.measuringLine(work: 63, short: true) == "Measuring · 63% of work", "line: the short form")
+    check(BudgetCopy.measuringLine(work: 62.5) == "Measuring · 63% of the work so far", "line: 62.5 rounds up to 63")
+    check(BudgetCopy.measuringLine(work: 62.4) == "Measuring · 62% of the work so far", "line: 62.4 rounds down to 62")
+    check(BudgetCopy.measuringLine(work: 99.6) == "Measuring · 100% of the work so far", "line: 99.6 rounds to 100")
+    check(BudgetCopy.measuringLine(work: 100) == "Measuring · 100% of the work so far", "line: exactly 100 is 100%")
+    check(BudgetCopy.measuringLine(work: 1) == "Measuring · 1% of the work so far", "line: exactly 1 is 1%, not <1%")
+    check(BudgetCopy.measuringLine(work: 0.6) == "Measuring · <1% of the work so far", "line: above 0 and below 1 is <1%")
+    check(BudgetCopy.measuringLine(work: 0.0004, short: true) == "Measuring · <1% of work", "line: a tiny share in the short form is <1%")
+    check(BudgetCopy.measuringLine(work: 0) == "Measuring…" && BudgetCopy.measuringLine(work: 0, short: true) == "Measuring…",
+          "line: zero is Measuring… in both forms")
+    check(BudgetCopy.measuringLine(work: nil) == "Measuring…" && BudgetCopy.measuringLine(work: nil, short: true) == "Measuring…",
+          "line: nil is Measuring…")
+    check(BudgetCopy.measuringLine(work: -1) == "Measuring…" && BudgetCopy.measuringLine(work: 100.5) == "Measuring…"
+          && BudgetCopy.measuringLine(work: .nan) == "Measuring…", "line: out-of-range and NaN are Measuring…")
+
+    // BudgetCopy.measuringPhrase and measuringSpoken: the same figures, no "·".
+    check(BudgetCopy.measuringPhrase(work: 63) == "measuring, 63% of the work so far", "phrase: with work")
+    check(BudgetCopy.measuringPhrase(work: 0.2) == "measuring, <1% of the work so far", "phrase: a tiny share is <1%")
+    check(BudgetCopy.measuringPhrase(work: nil) == "measuring" && BudgetCopy.measuringPhrase(work: 0) == "measuring"
+          && BudgetCopy.measuringPhrase(work: 101) == "measuring", "phrase: no usable work is just measuring")
+    check(BudgetCopy.measuringSpoken(name: "payments-api", work: 63) == "payments-api, measuring, 63% of the work so far", "spoken: with work")
+    check(BudgetCopy.measuringSpoken(name: "payments-api", work: nil) == "payments-api, measuring", "spoken: without work")
+
+    // The fixed copy, word for word.
+    check(BudgetCopy.measuring == "Measuring until the week rises one whole point. Meanwhile each project shows its share of the work so far.",
+          "copy: the Budget page's measuring note")
+    check(BudgetCopy.measuringHelp == "Its share of the work this week's sessions have done so far. It becomes a share of your week once the week has risen one whole point.",
+          "copy: the measuring help text")
+
+    // BudgetCopy.chip while measuring.
+    check(BudgetCopy.chip(wSB(63, 25, work: 63)) == "Measuring · 63% of work", "chip: measuring with a cap reads the short work line")
+    check(BudgetCopy.chip(wSB(3, 25, work: 0.4)) == "Measuring · <1% of work", "chip: a tiny share reads <1%")
+    check(BudgetCopy.chip(wSB(0, 25, work: 0)) == "Measuring…", "chip: work 0 reads Measuring…")
+    var wStampedCap = wSB(18, 25)
+    wStampedCap.measuringHeader = true
+    check(BudgetCopy.chip(wStampedCap) == "Measuring…", "chip: the header alone with a cap reads Measuring…")
+    var wStampedWork = wSB(18, 25, work: 50)
+    wStampedWork.measuringHeader = true
+    check(BudgetCopy.chip(wStampedWork) == "Measuring · 50% of work", "chip: header and work read the work line")
+    check(BudgetCopy.chip(wSB(63, nil, work: 63)) == nil, "chip: no cap, no chip, even while measuring")
+    check(BudgetCopy.chip(wSB(18.4, 25)) == "Budget 18/25%", "chip: not measuring keeps the budget figures")
+
+    // BudgetSheetModel.project: measuring || work != nil, and the subtitle.
+    let wNight = BudgetProject(key: wKey, name: "Night Owl", used: 18.4, cap: 25, state: .ok, work: 63)
+    let wNightPlain = BudgetProject(key: wKey, name: "Night Owl", used: 18.4, cap: 25, state: .ok)
+    let pm1 = BudgetSheetModel.project(wNight, resetsAt: wMon)
+    check(pm1.measuring && pm1.work == 63 && pm1.subtitle == "Measuring · 63% of the work so far",
+          "sheet project: a project carrying work is measuring (\(pm1.subtitle))")
+    check(pm1.used == 18.4 && pm1.cap == 25 && pm1.key == wKey, "sheet project: its figures are kept under the words")
+    let pm2 = BudgetSheetModel.project(wNightPlain, resetsAt: wMon)
+    check(!pm2.measuring && pm2.work == nil && pm2.subtitle == "18% of the week so far", "sheet project: not measuring keeps the share of the week")
+    let pm3 = BudgetSheetModel.project(wNightPlain, resetsAt: wMon, measuring: true)
+    check(pm3.measuring && pm3.work == nil && pm3.subtitle == "Measuring…", "sheet project: the header alone says Measuring…, not 18%")
+    let pm4 = BudgetSheetModel.project(wNight, resetsAt: nil, measuring: false)
+    check(pm4.measuring && pm4.work == 63, "sheet project: work alone makes it measuring, even with the header off")
+    let pm5 = BudgetSheetModel.project(BudgetProject(key: wKey, name: "Night Owl", used: 0, cap: nil, state: .ok, work: 0), resetsAt: nil)
+    check(pm5.measuring && pm5.work == 0 && pm5.subtitle == "Measuring…", "sheet project: work 0 is measuring with Measuring… (\(pm5.subtitle))")
+    let pm6 = BudgetSheetModel.project(BudgetProject(key: wKey, name: "Night Owl", used: 0, cap: nil, state: .ok), resetsAt: nil)
+    check(!pm6.measuring && pm6.subtitle == "0% of the week so far", "sheet project: not measuring at 0% keeps the old line (\(pm6.subtitle))")
+
+    // BudgetSheetModel.session: the row's work only when its scope is the session's.
+    let wSess = wLive("w-sess", nil)
+    var sessOwn = wSess
+    sessOwn.budget = wSB(6, 10, scope: .session, work: 40, sessionUsed: 6, sessionCap: 10)
+    let sm1 = BudgetSheetModel.session(sessOwn, resetsAt: wMon)
+    check(sm1.name == "bottle-flip", "sheet session: the name is the project's folder name (\(sm1.name))")
+    check(sm1.measuring && sm1.work == 40, "sheet session: a session-scope row carries its own work")
+    check(sm1.subtitle == "bottle-flip · Measuring · 40% of the work so far", "sheet session: the name, then the measuring line (\(sm1.subtitle))")
+    check(sm1.used == 6 && sm1.cap == 10, "sheet session: its own share and budget are kept")
+
+    var sessProj = wSess
+    sessProj.budget = wSB(18.4, 25, scope: .project, work: 40)
+    let sm2 = BudgetSheetModel.session(sessProj, resetsAt: nil)
+    check(sm2.measuring && sm2.work == nil, "sheet session: a project-scope row's work is not the session's")
+    check(sm2.subtitle == "bottle-flip · Measuring…", "sheet session: project scope with work reads Measuring… (\(sm2.subtitle))")
+
+    var sessHdr = wSess
+    var hdrRow = wSB(6, 10, scope: .session, sessionUsed: 6, sessionCap: 10)
+    hdrRow.measuringHeader = true
+    sessHdr.budget = hdrRow
+    let sm3 = BudgetSheetModel.session(sessHdr, resetsAt: nil)
+    check(sm3.measuring && sm3.work == nil && sm3.subtitle == "bottle-flip · Measuring…", "sheet session: the header alone reads Measuring…, not 6%")
+
+    var sessPlain = wSess
+    sessPlain.budget = wSB(6, 10, scope: .session, sessionUsed: 6, sessionCap: 10)
+    let sm4 = BudgetSheetModel.session(sessPlain, resetsAt: nil)
+    check(!sm4.measuring && sm4.work == nil && sm4.subtitle == "bottle-flip · 6% of the week so far", "sheet session: not measuring keeps the old line (\(sm4.subtitle))")
+
+    let sm5 = BudgetSheetModel.session(wSess, resetsAt: nil)
+    check(!sm5.measuring && sm5.work == nil && sm5.subtitle == "bottle-flip · Nothing used this week yet", "sheet session: no budget keeps the old line (\(sm5.subtitle))")
+
+    // The default's sheet has no work, and its line is its purpose, measuring or not.
+    let dm1 = BudgetSheetModel.forDefault(MacBudget(resetsAt: wMon, capture: true, measuring: true, weekPct: 3, defaultCap: 15, projects: []))
+    check(!dm1.measuring && dm1.work == nil && dm1.subtitle == "For every project without a budget of its own", "sheet default: the purpose line, not measuring")
+    let dm2 = BudgetSheetModel(scope: .defaultCap, name: "", key: nil, hue: nil, used: nil, cap: 15, resetsAt: nil, measuring: true, work: 40)
+    check(dm2.subtitle == "For every project without a budget of its own", "sheet default: measuring never changes the default's line")
+}
+
 print("passes=\(passes) failures=\(failures)")
 exit(failures == 0 ? 0 : 1)

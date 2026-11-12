@@ -72,8 +72,8 @@ object Demo {
         "decision-failed", "decision-tip",
         "hold-stop", "stop-confirm", "stop-result", "stop-none",
         "lanes", "lanes-crowded", "lanes-empty", "lanes-problem", "lanes-paused",
-        "tower", "tower-budget", "tower-budget-projects", "tower-glow", "tower-terminals", "tower-gestures",
-        "budget-sheet", "budget-sheet-session", "budget-sheet-default", "budget-sheet-offline", "now-budget", "now-budget-arming", "now-budget-flight", "decision-budget", "decision-budget-warning", "room-budget",
+        "tower", "tower-budget", "tower-budget-projects", "tower-budget-measuring", "tower-glow", "tower-terminals", "tower-gestures",
+        "budget-sheet", "budget-sheet-session", "budget-sheet-default", "budget-sheet-offline", "now-budget", "now-budget-arming", "now-budget-flight", "now-budget-measuring", "decision-budget", "decision-budget-warning", "room-budget", "room-budget-measuring",
         "dispatch", "dispatch-sending", "dispatch-off",
         "runway", "settled", "gallery", "glow-compare",
         "room-story", "room-screen", "room-changes", "room-workflows", "room-waiting", "room-codex", "room-local", "room-agent",
@@ -284,6 +284,7 @@ object Demo {
             screen in setOf("now-quiet", "now-still", "now-brief-quiet", "now-working", "now-flight-quiet", "now-tip-inflight") -> emptyList()
             screen.startsWith("problem-") || screen == "lanes-empty" -> emptyList()
             screen in setOf("now-budget", "now-budget-arming", "now-budget-flight") -> DemoFixtures.budgetPages()
+            screen == "now-budget-measuring" -> emptyList()
             screen == "lanes-paused" -> listOf(DemoFixtures.iv("pz", "bottle-flip", InterventionKind.IDLE, "Page Power paused your agents at 10% battery.", 600, sub = "low_battery"))
             screen == "now-dusk" -> listOf(DemoFixtures.iv("pz", "bottle-flip", InterventionKind.IDLE, "Page Power paused your agents at 10% battery.", 600, sub = "low_battery"))
             screen.startsWith("decision") -> o + listOfNotNull(DemoFixtures.page(screen).takeIf { p -> o.none { it.id == p.id } })
@@ -327,7 +328,7 @@ object Demo {
         TipStore.overrideForRender(TipBook())
         NowStore.clock = { DemoFixtures.now }
         NowStore.zone = DemoFixtures.zone
-        val jumpTop = if (screen in setOf("now-flight", "now-flight-old", "now-flight-jump", "now-inflight", "now-tip-inflight", "now-flight-two", "now-flight-header", "now-flight-quiet", "now-inflight-long", "now-working", "now-budget-flight")) "section-in flight" else null
+        val jumpTop = if (screen in setOf("now-flight", "now-flight-old", "now-flight-jump", "now-inflight", "now-tip-inflight", "now-flight-two", "now-flight-header", "now-flight-quiet", "now-inflight-long", "now-working", "now-budget-flight", "now-budget-measuring")) "section-in flight" else null
         val scrollTo = when (screen) {
             "now-swipe", "now-receipt", "now-tip-undoable" -> "row-p2"
             "now-arming" -> "row-p2"
@@ -343,7 +344,7 @@ object Demo {
                 hold = if (screen == "now-hold" || screen == "decision-hold") 0.55 else null, dispatchSending = screen == "dispatch-sending",
                 lanesAvailability = if (screen == "lanes-problem") app.page.android.model.SessionAvailability.NeedsRepair(keyMismatch = false) else null,
                 dayTime = dayTime, flightScript = DemoMotion.flightScript(motion), nowScript = DemoMotion.nowScript(motion), reduce = reduce,
-                towerProjects = screen == "tower-budget-projects" || screen.startsWith("budget-sheet"),
+                towerProjects = screen == "tower-budget-projects" || screen == "tower-budget-measuring" || screen.startsWith("budget-sheet"),
             ),
         )
         if (isStandalone(motion) || isUnpaired(screen)) return
@@ -354,7 +355,12 @@ object Demo {
             open, DemoMotion.status(motion, at) ?: statusFor(screen), DemoMotion.sessions(motion, at) ?: sessionsFor(screen), DemoMotion.workflows(motion, at) ?: DemoFixtures.workflows(),
             DemoMotion.history(motion, at) ?: DemoFixtures.history,
             // The Mac says it does budgets (`budget-v1`) and sends its block on the screens that draw it.
-            budget = if (screen.startsWith("tower-budget") || screen.startsWith("budget-sheet") || screen in setOf("now-budget", "now-budget-arming", "now-budget-flight", "decision-budget", "decision-budget-warning")) DemoFixtures.budget() else null,
+            budget = when {
+                // Early in the week: the Mac is still measuring and says each project's share of the work so far.
+                screen == "tower-budget-measuring" || screen == "now-budget-measuring" -> DemoFixtures.budgetMeasuring()
+                screen.startsWith("tower-budget") || screen.startsWith("budget-sheet") || screen in setOf("now-budget", "now-budget-arming", "now-budget-flight", "decision-budget", "decision-budget-warning") -> DemoFixtures.budget()
+                else -> null
+            },
         )
         ActivityStore.overridePowerForRender(DemoMotion.power(motion))
         val extra: Map<String, app.page.android.model.ReplyDelivery> = when (screen) {
@@ -420,7 +426,7 @@ object Demo {
                 if (screen == "budget-sheet-offline") SessionStore.seedDemoBudgetSave(sheet.id, app.page.android.model.BudgetSaveStatus.Failed(app.page.android.model.BudgetCopy.macOffline))
             }
             screen.startsWith("tower") -> AppRouter.openTower(
-                when (screen) { "tower-budget", "tower-budget-projects" -> TowerSection.BUDGET; "tower-glow" -> TowerSection.APPEARANCE; "tower-terminals" -> TowerSection.TERMINALS; "tower-gestures" -> TowerSection.GESTURES; else -> null },
+                when (screen) { "tower-budget", "tower-budget-projects", "tower-budget-measuring" -> TowerSection.BUDGET; "tower-glow" -> TowerSection.APPEARANCE; "tower-terminals" -> TowerSection.TERMINALS; "tower-gestures" -> TowerSection.GESTURES; else -> null },
             )
             screen.startsWith("dispatch") -> AppRouter.openDispatch()
             screen.startsWith("history") -> AppRouter.openHistory()

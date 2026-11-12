@@ -86,6 +86,17 @@ enum TowerFixtures {
                            defaultCap: 15, resetText: "resets Fri 05:12", measuring: false)
     }
 
+    /// The first hours of a week: the weekly % hasn't risen a whole point yet, so no shares and no bars, only each
+    /// project's share of the work watched so far (64% of it in payments-api; tokenizer-lab <1%; docs-site nothing yet).
+    static func budgetBoardMeasuring() -> BudgetBoard {
+        func r(_ name: String, _ cap: Int?, work: Double?) -> BudgetBoardRow {
+            BudgetBoardRow(key: "/Users/studio/projects/\(name)", name: name, used: 0, cap: cap, state: .ok, work: work)
+        }
+        return BudgetBoard(rows: [r("payments-api", 10, work: 64.2), r("sensor-hub", 10, work: 24.9), r("llm-play", nil, work: 10.5),
+                                  r("tokenizer-lab", nil, work: 0.4), r("docs-site", 10, work: nil)],
+                           defaultCap: 15, resetText: "resets Fri 05:12", measuring: true)
+    }
+
     /// The Terminals page with a bit of everything: in use, ready, a blocked
     /// cmux, kitty without remote control, Terminal not checked (not running),
     /// iTerm2 not yet allowed, Herdr missing.

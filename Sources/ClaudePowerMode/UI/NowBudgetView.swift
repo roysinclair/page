@@ -41,16 +41,22 @@ struct NWBudgetLineView: View {
 
     var body: some View {
         HStack(spacing: 9) {
-            Text("BUDGET").nwLabel()
+            // One word, never wrapped: the bar and the numbers give way first.
+            Text("BUDGET").nwLabel().lineLimit(1).fixedSize()
             if line.captureOn {
-                NWBudgetBoardBar(fraction: line.fraction, warm: line.warm, hasBudget: line.hasBudget)
-                    .frame(width: 64)
+                // While measuring there is nothing to fill: no bar (as on the Budget page), and the words get its room,
+                // which "Measuring · 64% of work" needs.
+                if !line.measuring {
+                    NWBudgetBoardBar(fraction: line.fraction, warm: line.warm, hasBudget: line.hasBudget)
+                        .frame(width: 64)
+                }
                 Text(line.text)
                     .font(NightWatch.Typo.monoMicro)
                     .foregroundColor((line.warm ? NightWatch.Palette.amber : NightWatch.Palette.textSecondary).color)
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .layoutPriority(1)
+                    .help(line.help ?? "")
             }
             Spacer(minLength: 4)
             NWActionButton(title: "Set budget", emphasised: open,
@@ -62,6 +68,7 @@ struct NWBudgetLineView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(line.accessibilityText))
+        .accessibilityHint(Text(line.help ?? ""))
     }
 }
 

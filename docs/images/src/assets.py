@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Crops the real renders (and the few design boards) the compositions use into ./assets/*.webp.
 
-    python3 assets.py --mac <dir> --ios <dir> --android <dir> [--aura ~/projects/page-studio-apps/docs] [--only budget]
+    python3 assets.py --mac <dir> --ios <dir> --android <dir> [--aura ~/projects/page-studio-apps/docs] [--only budget|panel]
 
 --mac      output of `.build/debug/ClaudePowerMode --render-ui <dir> --card-glow full`
 --ios      output of `iOS/Tools/render-screens.sh <dir> full` (files named <screen>-glow-full.png or <screen>-full.png)
@@ -10,6 +10,8 @@
 --only     budget: write only the budget crops (needs only the budget renders:
            Mac tower-budget and popover-budget-editor, iOS decision-budget and now-budget,
            Android decision-budget and now-budget)
+           panel: write only the menu-bar panel crops (needs only --mac: popover-sessions-idle-collapsed,
+           popover-sessions-swipe-close, popover-sessions-undo-close and tower-terminals-tall)
 
 Design boards come from Designs/v4 in this repo. Every crop below was checked by eye for demo data only.
 Needs Pillow with WebP support.
@@ -44,15 +46,20 @@ def save(img, name, width=None, quality=90):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mac", required=True)
-    ap.add_argument("--ios", required=True)
-    ap.add_argument("--android", required=True)
+    ap.add_argument("--ios")
+    ap.add_argument("--android")
     ap.add_argument("--aura", default=os.path.expanduser("~/projects/page-studio-apps/docs"))
-    ap.add_argument("--only", choices=["budget"])
+    ap.add_argument("--only", choices=["budget", "panel"])
     a = ap.parse_args()
+    if a.only != "panel" and not (a.ios and a.android):
+        ap.error("--ios and --android are needed unless --only panel")
     os.makedirs(OUT, exist_ok=True)
-    if a.only != "budget":
+    if a.only is None:
         everything_else(a)
-    budget(a)
+    if a.only in (None, "budget"):
+        budget(a)
+    if a.only in (None, "panel"):
+        panel(a)
 
 
 def rgba(p):
@@ -78,6 +85,20 @@ def budget(a):
     save(ios_screen(a, "now-budget"), "ios-now-budget", width=900)
     for screen in ("decision-budget", "now-budget"):
         save(rgb(find(a.android, f"{screen}-full.png", f"{screen}.png")), f"android-{screen}", width=900)
+
+
+def panel(a):
+    """The menu-bar panel (feature-panel, feature-panel-close). Fixture names only: sensor-hub, llm-play,
+    payments-api, tokenizer-lab, docs-site, mobile-shell."""
+    # The whole popover with IDLE collapsed to its names (popover x 56..816, y 56..1952).
+    save(rgba(find(a.mac, "popover-sessions-idle-collapsed.png")).crop((56, 56, 816, 1952)), "mac-popover-sessions")
+    # sensor-hub's FINISHED card mid-swipe, "Dismiss · close tab" uncovered (the setting on).
+    save(rgba(find(a.mac, "popover-sessions-swipe-close.png")).crop((74, 318, 816, 720)), "mac-popover-swipe")
+    # Tower > Terminals, the foot: THE NOW PANEL toggle, Agent hooks, Apply (window content x 600..2296).
+    save(rgb(find(a.mac, "tower-terminals-tall.png")).crop((600, 2506, 2296, 3056)), "mac-tower-terminals-dismiss", width=1400)
+    # The popover's foot: "Closing tokenizer-lab's cmux tab in 5s · Undo" over the footer.
+    undo = rgba(find(a.mac, "popover-sessions-undo-close.png"))
+    save(undo.crop((56, undo.height - 300, 816, undo.height - 56)), "mac-popover-undo-close")
 
 
 def everything_else(a):

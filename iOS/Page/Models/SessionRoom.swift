@@ -215,7 +215,7 @@ enum RoomHeader {
         }
         // Designs/budget-caps.md: "Budget 18/25%", amber from the warning. Only a session with a budget has one.
         if !ended, let b = session.budget, let text = BudgetCopy.chip(b) {
-            out.append(RoomChip(text: text, tone: b.state == .ok ? .working : .warm, symbol: BudgetCopy.symbol, budget: true))
+            out.append(RoomChip(text: text, tone: b.state == .ok || b.measuring ? .working : .warm, symbol: BudgetCopy.symbol, budget: true))
         }
         return out
     }

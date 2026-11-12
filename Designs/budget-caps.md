@@ -109,6 +109,22 @@ Let `W` be the weekly % now, `C` the total `spent` of all sessions this window, 
   would be mostly zeros and lumps.
 - **No figure yet:** until `W − startPct ≥ 1`, Budget shows "Measuring…" for the week and no
   cap can trigger.
+- **The work so far, while measuring** (added 2026-11-12, at the user's request). "Measuring…"
+  alone said nothing for hours early in a week. While measuring, each project (and each session
+  row) also shows its share of the work Page has watched so far: `work = 100 × S / C`. That is its
+  share of all spend this window, not of the week, so it never fills a bar and never warns or
+  stops. Once the week has risen one whole point, `work` goes away and `used` takes over.
+  - **Long form** (the Budget page's rows, the phones' rows): `Measuring · 63% of the work so far`.
+  - **Short form** (a menu-bar card's budget line): `Measuring · 63% of work`.
+  - **Rounding:** a whole percent; `<1%` for anything above 0 and below 1. With no spend yet
+    (`C = 0` or `S = 0`), plain `Measuring…`.
+  - **Help text** (Mac tooltip, phone accessibility): "Its share of the work this week's sessions
+    have done so far. It becomes a share of your week once the week has risen one whole point."
+  - **The Budget page's note** while measuring: "Measuring until the week rises one whole point.
+    Meanwhile each project shows its share of the work so far."
+  - **Wire** (budget-v1, optional, older phones ignore it): `work` on each header project and on
+    a row's `budget`, one decimal, 0–100, sent only while `measuring` and `C > 0`. On a row it
+    is the binding scope's: the session's share when `scope` is `session`, else the project's.
 
 ### Project key
 

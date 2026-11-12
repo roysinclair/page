@@ -73,7 +73,7 @@ data class InFlightRow(
             card.timeText?.let { parts.add(it) }
             val w = card.workflowHeading
             if (w != null) parts.add(w) else if (progress != null) parts.add(progress)
-            budget?.let { parts.add(it.meter.spokenDetail) }
+            budget?.let { parts.add(it.spokenDetail) }
             return parts.joinToString(", ")
         }
 }

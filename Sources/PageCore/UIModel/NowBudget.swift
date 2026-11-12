@@ -12,8 +12,10 @@ struct NowBudgetLine: Equatable {
     let captureOn: Bool
     /// Too early in the week to share it out.
     let measuring: Bool
-    /// "21% of 25%", "2% · no budget", "stopped at 25%", "Measuring…"; empty with capture off.
+    /// "21% of 25%", "2% · no budget", "stopped at 25%", "Measuring · 63% of work" (or plain "Measuring…"); empty with capture off.
     let text: String
+    /// While measuring: the share of the work watched so far the text shows (0–100); nil otherwise or with none yet.
+    var work: Double? = nil
     /// The bar's fill, 0…1: against the budget (full = stopped), or the whole week with none.
     let fraction: Double
     let hasBudget: Bool
@@ -30,14 +32,21 @@ struct NowBudgetLine: Equatable {
         let cap = r.cap.flatMap { $0 > 0 ? $0 : nil }
         let fraction = cap.map { min(1, max(0, r.used / Double($0))) } ?? min(1, max(0, r.used / 100))
         // Stopped reads short, so the card's "Set budget" button keeps its words.
-        let text = status.measuring ? BudgetCopy.measuringShort : (r.state == .over ? cap.map { "stopped at \($0)%" } : nil) ?? r.line
-        return NowBudgetLine(captureOn: true, measuring: status.measuring, text: text,
+        let work = status.measuring ? r.work : nil
+        let text = status.measuring ? BudgetCopy.measuringShort(work: work) : (r.state == .over ? cap.map { "stopped at \($0)%" } : nil) ?? r.line
+        return NowBudgetLine(captureOn: true, measuring: status.measuring, text: text, work: work,
                              fraction: status.measuring ? 0 : fraction, hasBudget: cap != nil && !status.measuring,
                              warm: r.state != .ok && !status.measuring, state: status.measuring ? .ok : r.state)
     }
 
-    /// For VoiceOver: "Budget 21% of 25%".
-    var accessibilityText: String { captureOn ? "Budget, \(text)" : "Budget, usage tracking is off" }
+    /// The tooltip on the text while measuring (what the share of work means); nil otherwise.
+    var help: String? { captureOn && measuring ? BudgetCopy.measuringHelp : nil }
+
+    /// For VoiceOver: "Budget, 21% of 25%"; while measuring "Budget, Measuring · 63% of the work so far".
+    var accessibilityText: String {
+        guard captureOn else { return "Budget, usage tracking is off" }
+        return "Budget, " + (measuring ? BudgetCopy.measuringLong(work: work) : text)
+    }
 }
 
 /// The inline editor in a card: project or this session, a percent, and what Page will do.
@@ -114,9 +123,4 @@ struct BudgetEditor: Equatable {
     func preview(timeZone: TimeZone = .current) -> String {
         BudgetCopy.preview(name: projectName, cap: value, session: scope == .session, resetsAt: resetsAt, timeZone: timeZone)
     }
-}
-
-extension BudgetCopy {
-    /// The card's line early in the week.
-    static let measuringShort = "Measuring…"
 }

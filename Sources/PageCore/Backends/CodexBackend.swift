@@ -1051,6 +1051,27 @@ final class CodexBackend: AgentBackend, @unchecked Sendable {
         }
     }
 
+    /// The person put a finished-turn page away at the Mac. It leaves the panel now, closes on
+    /// the relay ("dismissed_at_mac") and is suppressed like an answered one, so the next scan
+    /// does not open it again for the same turn. Nothing is typed into the thread. False when
+    /// there was no such page (an approval or a question is never closed this way).
+    @discardableResult
+    func dismissIdlePage(id: String) -> Bool {
+        let relay = self.relay
+        let dismissed: Bool = locked {
+            guard id.hasPrefix("codex-idle-"), pendingInterventions[id]?.kind == .idle else { return false }
+            pendingInterventions[id] = nil
+            serverRequests[id] = nil
+            suppressedIdleIds.insert(id)
+            rebuildSnapshotLocked()
+            return true
+        }
+        guard dismissed else { return false }
+        relay?.sendInterventionClosed(id: id, reason: "dismissed_at_mac")
+        Logger.shared.log("CodexBackend: idle page dismissed at the Mac: \(id.prefix(48))")
+        return true
+    }
+
     private func answerServerRequest(_ request: AppServerClient.ServerRequest, reply: RelayReply) -> CodexDeliveryOutcome {
         let method = "codex_app_server"
         let hasText = !reply.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty

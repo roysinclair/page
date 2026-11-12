@@ -66,11 +66,24 @@ object BudgetWire {
     }
 
     /**
+     * The share of the work watched so far, read off the wire (`work`, only while the Mac is measuring): a finite number in
+     * 0-100, else none. Unlike [share] a figure outside the range is ignored, not clamped: it is nothing the Mac would send.
+     */
+    fun work(raw: Double?): Double? {
+        if (raw == null || !raw.isFinite() || raw < 0 || raw > 100) return null
+        return raw
+    }
+
+    /**
      * What a `list` says about budgets once the Mac's capabilities are known: nothing at all without `budget-v1`, so no
      * card, chip or sheet is drawn for a Mac that cannot honour a budget. Pure.
      */
     fun gated(budget: MacBudget?, sessions: List<LiveSession>, caps: Set<String>): Pair<MacBudget?, List<LiveSession>> {
-        if (CAPABILITY in caps) return budget to sessions
+        if (CAPABILITY in caps) {
+            if (budget?.measuring != true) return budget to sessions
+            // The week is still being measured: a row has no flag of its own, so it takes the header's.
+            return budget to sessions.map { s -> val sb = s.budget; if (sb == null || sb.measuring) s else s.copy(budget = sb.copy(measuring = true)) }
+        }
         return null to sessions.map { if (it.budget == null) it else it.copy(budget = null) }
     }
 }
@@ -122,6 +135,11 @@ data class BudgetProject(
     /** Its own budget; null = none (the default may still apply: [effectiveCap]). */
     val cap: Int?,
     val state: BudgetState,
+    /**
+     * Its share of the work watched so far (0-100), sent only while the week is still being measured; null otherwise, and
+     * for a Mac that doesn't send it. Not a share of the week: it never fills a bar. See [BudgetCopy.measuringLine].
+     */
+    val work: Double? = null,
 ) {
     val id: String get() = key
 
@@ -145,6 +163,7 @@ data class BudgetProject(
                 name = Sw.prefix(if (named.isEmpty()) Sw.lastPathComponent(rawKey) else named, 80),
                 used = used, cap = cap,
                 state = BudgetState.fromWire(c.str("state")) ?: BudgetState.of(used, cap),
+                work = BudgetWire.work(c.num("work")),
             )
         }
     }
@@ -164,10 +183,23 @@ data class SessionBudget(
     /** The session's own share and budget, when it has one. */
     val sessionUsed: Double? = null,
     val sessionCap: Int? = null,
+    /**
+     * The binding scope's share of the work watched so far (0-100): the session's when [scope] is session, else the
+     * project's. Sent only while the Mac is measuring (and has spent something); null otherwise, and for an older Mac.
+     */
+    val work: Double? = null,
+    /** The list header says the week is still being measured ([BudgetWire.gated] sets it; a row has no flag of its own on the wire). */
+    val measuring: Boolean = false,
 ) {
     enum class Scope(val wire: String) { PROJECT("project"), SESSION("session") }
 
     val meter: BudgetMeter get() = BudgetMeter(used, cap, state)
+
+    /** The week is still being measured (the header says so, or the row carries [work], which is sent only then): the row says so and draws no bar. */
+    val isMeasuring: Boolean get() = measuring || work != null
+
+    /** What TalkBack says after a name: the meter's words, or while measuring the work so far and what it means. */
+    val spokenDetail: String get() = if (isMeasuring) BudgetCopy.measuringDetail(work) else meter.spokenDetail
 
     companion object {
         /** Needs the project key and the share; a row whose `budget` is anything else has none. */
@@ -183,6 +215,7 @@ data class SessionBudget(
                 state = BudgetState.fromWire(c.str("state")) ?: BudgetState.of(used, cap),
                 sessionUsed = BudgetWire.share(c.num("sessionUsed")),
                 sessionCap = BudgetWire.cap(c.num("sessionCap")),
+                work = BudgetWire.work(c.num("work")),
             )
         }
     }
@@ -306,12 +339,42 @@ object BudgetCopy {
     /** Budget with usage tracking off. */
     const val captureOff = "Turn on usage tracking in Page Studio ▸ Budget to see and set budgets."
 
-    /** Early in the week, before shares mean anything. */
-    const val measuring = "Measuring… shares appear once the week has moved a little."
+    /** The Budget page's note while the week is still being measured. */
+    const val measuring = "Measuring until the week rises one whole point. Meanwhile each project shows its share of the work so far."
 
-    /** The Session room's chip: "Budget 18/25%"; null with no budget. */
+    /** What "Measuring · 63% of the work so far" means: the accessibility help for a project or session row. */
+    const val measuringHelp = "Its share of the work this week's sessions have done so far. It becomes a share of your week once the week has risen one whole point."
+
+    /**
+     * What a project or session says while the week is being measured (Designs/budget-caps.md): its share of the work
+     * watched so far, never of the week.
+     * - [work] known: "Measuring · 63% of the work so far", a whole percent, "<1%" above 0 and below 1.
+     * - [short] (a compact one-line place): "Measuring · 63% of work".
+     * - [work] null, 0 or not a finite number (nothing spent yet, an older Mac): plain "Measuring…".
+     * A figure above 100 reads as 100%. Pure.
+     */
+    fun measuringLine(work: Double?, short: Boolean = false): String {
+        if (work == null || !work.isFinite() || work <= 0) return "Measuring…"
+        return "Measuring · ${pct(minOf(100.0, work))} of ${if (short) "work" else "the work so far"}"
+    }
+
+    /** What TalkBack says after a name for a measuring row: the long form, then [measuringHelp]. */
+    fun measuringDetail(work: Double?): String {
+        val line = measuringLine(work)
+        // "Measuring…" already ends its sentence: no full stop after the ellipsis.
+        return if (line.endsWith("…")) "$line $measuringHelp" else "$line. $measuringHelp"
+    }
+
+    /** "payments-api, Measuring · 63% of the work so far. Its share of the work this week's sessions have done so far. It becomes…". */
+    fun measuringSpoken(name: String, work: Double?): String = "$name, ${measuringDetail(work)}"
+
+    /**
+     * The Session room's chip: "Budget 18/25%"; null with no budget. While the week is being measured ([SessionBudget.isMeasuring]) the
+     * chip is a compact one-liner of the short form: "Measuring · 63% of work".
+     */
     fun chip(b: SessionBudget): String? {
         val cap = b.cap ?: return null
+        if (b.isMeasuring) return measuringLine(b.work, short = true)
         return "Budget ${b.used.roundedHalfAway()}/$cap%"
     }
 
@@ -421,6 +484,10 @@ data class BudgetSheetModel(
     val resetsAt: Instant?,
     /** A session's project key ([SessionBudget.projectKey]): sent with the session's own budget. */
     val projectKey: String? = null,
+    /** The Mac is still measuring the week: [used] is not a share yet, [work] may say what share of the work it did. */
+    val measuring: Boolean = false,
+    /** Its share of the work so far, while measuring ([BudgetProject.work]); null when unknown. */
+    val work: Double? = null,
 ) {
     enum class Scope(val raw: String) { PROJECT("project"), SESSION("session"), DEFAULT_CAP("defaultCap") }
 
@@ -438,7 +505,8 @@ data class BudgetSheetModel(
         get() = when (scope) {
             Scope.DEFAULT_CAP -> "For every project without a budget of its own"
             Scope.PROJECT, Scope.SESSION -> {
-                val u = used?.let { "${BudgetCopy.pct(it)} of the week so far" } ?: "Nothing used this week yet"
+                val u = if (measuring) BudgetCopy.measuringLine(work)
+                else used?.let { "${BudgetCopy.pct(it)} of the week so far" } ?: "Nothing used this week yet"
                 if (scope == Scope.SESSION) "$name · $u" else u
             }
         }
@@ -474,7 +542,7 @@ data class BudgetSheetModel(
     companion object {
         /** A project's sheet: its own budget (not the default it may be using) is what is edited. */
         fun project(p: BudgetProject, resetsAt: Instant?): BudgetSheetModel =
-            BudgetSheetModel(Scope.PROJECT, p.name, p.key, p.hue, p.used, p.cap, resetsAt)
+            BudgetSheetModel(Scope.PROJECT, p.name, p.key, p.hue, p.used, p.cap, resetsAt, measuring = p.work != null, work = p.work)
 
         /** The default for projects with none of their own. */
         fun forDefault(b: MacBudget): BudgetSheetModel = BudgetSheetModel(Scope.DEFAULT_CAP, "", null, null, null, b.defaultCap, b.resetsAt)
@@ -486,6 +554,9 @@ data class BudgetSheetModel(
         fun session(s: LiveSession, resetsAt: Instant?): BudgetSheetModel = BudgetSheetModel(
             Scope.SESSION, SkyModel.projectName(s.cwd, s.title), s.id, ProjectHue.of(if (s.cwd.isEmpty()) s.title else s.cwd),
             s.budget?.sessionUsed, s.budget?.sessionCap, resetsAt, s.budget?.projectKey,
+            measuring = s.budget?.isMeasuring == true,
+            // A row's work is the binding scope's: the session's own only when its own budget binds.
+            work = s.budget?.takeIf { it.scope == SessionBudget.Scope.SESSION }?.work,
         )
     }
 }

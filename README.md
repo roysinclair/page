@@ -72,8 +72,10 @@ separate apps that work with Page Relay too.
   finish, or keep it stopped. Set budgets in Page Studio, from each session
   card in the menu bar, or on your phone. See [Project budgets](#project-budgets).
 - **Attention, agents, widgets and shortcuts.** Decide what is worth
-  interrupting you for, see every agent at a glance, and keep widgets on the
-  Mac, iPhone and Android.
+  interrupting you for, see every session at a glance in the menu bar
+  (working, finished and idle), swipe away the ones you're done with, and
+  keep widgets on the Mac, iPhone and Android. See
+  [The menu-bar panel](#the-menu-bar-panel).
 - **Page Aura joins in.** The chat app (over the API, on your own credits)
   keeps the computer awake while it streams a reply, and pages your phone
   through Page Relay.
@@ -106,6 +108,10 @@ together, your phone hears from all of them.
   <tr>
     <td width="50%" valign="top"><img src="docs/images/feature-budgets.png" alt="Project budgets in Page Studio and the menu bar" width="100%"><br><b>Budgets: a share of the week, per project.</b> Give a project, or one session, its share of your weekly Claude limit, so a runaway can't eat the week your important work needs.</td>
     <td width="50%" valign="top"><img src="docs/images/feature-budget-stop.png" alt="Stopped at its budget, on iPhone and Android" width="100%"><br><b>Stopped at its budget. Your call.</b> At the budget Page Studio stops the project's sessions and blocks their tool calls. Raise the budget, let this turn finish, or keep it stopped.</td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="docs/images/feature-panel.png" alt="The menu-bar panel: every session on one card, a finished one swiped away" width="100%"><br><b>Every session. Put away what's done.</b> Working, finished and idle sessions on one card in the menu bar. Swipe a finished one away until its next turn.</td>
+    <td valign="top"><img src="docs/images/feature-panel-close.png" alt="Preferences, Terminals: dismissing a session also closes its terminal tab" width="100%"><br><b>Close its tab too. Only that one.</b> Optionally, putting a session away also closes its own cmux tab, tmux pane or terminal window, after 5 seconds to undo. Never a working session.</td>
   </tr>
   <tr>
     <td valign="top"><img src="docs/images/feature-battery.png" alt="Keep-awake and battery pause" width="100%"><br><b>Page Power: stays awake, pauses gracefully.</b> Keeps the computer awake while agents work, lid closed too, and asks them to stop and summarise at your battery cutoff.</td>
@@ -232,6 +238,68 @@ There are four pieces, all of which you run yourself:
   schedule a system wake a minute before the reset and continue the
   conversation afterwards; see [Rate limits](#rate-limits).
 
+### The menu-bar panel
+
+Click the menu-bar icon, or press ⌥⌘P from any app, for the Now panel. From the
+top:
+
+- **What needs you.** Approvals and questions (Decide), stuck sessions, rate
+  limits and forecasts (Look), and finished turns (FINISHED).
+- **In flight.** Every session working right now: its current step and the
+  few before it, how long the turn and the session have run, its workflows,
+  and whether it looks well.
+- **Idle.** Every other open Claude Code or Codex session, sitting at its
+  prompt, most recent first. The first three show and **Show all** lists the
+  rest. The header collapses the group to a line of names.
+
+Finished, idle and working sessions share one card:
+- the project, then the agent, model and terminal (`Claude · Opus 5.5 · cmux ›
+  payments-api`);
+- what it's doing now, or what its last turn did;
+- the times;
+- **Open**, which brings its terminal pane forward and types nothing;
+- **Steer**, which sends it a message;
+- its [budget](#project-budgets).
+
+**Putting a finished session away.** Swipe a finished or idle card sideways
+with two fingers on the trackpad, drag it sideways with the mouse, click its
+**×**, or select it and press **⌫**.
+
+- The card goes at once, and the status line offers **Undo** for 5 seconds.
+- After that, the session stays out of the panel until its next turn starts.
+  It then shows in flight again, and as finished once that turn ends.
+- A finished-turn page closes on your phone too. A session put away before
+  its page opened won't page you for that turn.
+- Nothing is ever typed into the session.
+- **N dismissed · Show**, in the Idle header, brings them all back.
+- Working sessions, approvals, questions and stuck pages can't be put away.
+
+**Closing its terminal too (off by default).** Turn on Preferences ▸
+Terminals ▸ "Dismissing a session also closes its terminal tab". When the 5
+seconds are up, Page Studio then closes that session's own terminal. That ends
+the agent running there; pick it up again later with `claude --resume`.
+
+| Terminal | What closes |
+|---|---|
+| cmux | Its tab, or its workspace when the tab is the only one in it |
+| tmux | Its pane (`kill-pane`) |
+| Terminal.app | Its window, only when the tab is alone in it |
+| iTerm2 | Its session |
+| WezTerm | Its pane |
+| kitty | Its window |
+
+Anything else is put away but left open, and the status line says why. That
+covers Ghostty, Warp, Herdr, Claude Squad, the desktop app and Codex sessions.
+
+Before closing, Page Studio looks the session up again. It must still be:
+- the same Claude Code process;
+- at its prompt (`idle` or `shell`);
+- unused since you put it away;
+- in a pane Page Studio can name exactly.
+
+Otherwise the terminal stays open and the status line says why. Page Studio
+never falls back to another window and never closes a working session.
+
 ### Alerts beyond "it needs you"
 
 Settings live in **Preferences ▸ Attention**.
@@ -330,8 +398,12 @@ used = (week % now − week % when Page Studio started watching) × project's sp
 
 - **"Measuring…"** Until the week has risen one whole point since Page Studio
   started watching (just after you install, or early in a new week), there's
-  nothing to share out. Projects read "Measuring…" and no budget can warn or
-  stop. A point of the week can take a while of work. Spend is recorded
+  no share of the week to give out, and no budget can warn or stop. A point of
+  the week can take a while of work. Meanwhile each project shows its share
+  of the work watched so far, for example "Measuring · 63% of the work so far"
+  (on a menu-bar card, "Measuring · 63% of work"). That is a split of what
+  this week's sessions have spent, not a share of your week. It fills no bar,
+  and it gives way to the real share once the week moves. Spend is recorded
   meanwhile, so the first figures are already split correctly.
 - **The cost is only a weight.** Dollars are never shown and never leave the
   Mac. Usage from before Page Studio started watching belongs to no one.
@@ -850,6 +922,7 @@ Apply hand edits with **Reload Config** in the menu.
 | `codexPath` | `""` | Absolute path to `codex`. Empty = auto-discover (`~/.local/bin`, Homebrew, `/usr/local/bin`, npm-global, nvm) |
 | `budget.projects` | `{}` | [Project budgets](#project-budgets): whole percent of the week (1–100) per project folder, e.g. `{"/Users/me/projects/payments-api": 25}`. The key is an absolute path with symlinks resolved. Entries out of range or not absolute are dropped with a note |
 | `budget.defaultPct` | none | A budget for every project without one of its own (1–100) |
+| `dismissClosesTerminal` | `false` | Putting a finished or idle session away in the [menu-bar panel](#the-menu-bar-panel) also closes its own terminal tab, after the 5-second Undo. Never a working session |
 
 The hook reads its own environment variables:
 
@@ -884,6 +957,8 @@ Other files in `~/Library/Application Support/ClaudePowerMode/`:
   - `budget-over/`: one marker per budget reached (`<hash>.json`, and the
     `<hash>.gate` the budget gate reads).
   - `budget-allow/`: sessions allowed to finish their current turn.
+- `dismissed-sessions.json` (0600): the sessions you put away in the panel,
+  each until its next turn.
 
 ## How it works
 
@@ -972,6 +1047,16 @@ enforced in code and covered by tests:
   goes through System Events, but only after checking that Terminal is
   frontmost with the right tab selected.) A session that's stopped (^Z),
   running in the background, or behind another job in its terminal is refused.
+- **Closing a terminal is opt-in and exact.** Putting a session away in the
+  panel closes its terminal only with `dismissClosesTerminal` on, and only
+  after the 5-second Undo. At that moment Page Studio reads the session again:
+  - it must be the same process, still `idle` or `shell`, and unused since
+    you put it away;
+  - it must resolve to one cmux tab, tmux pane, Terminal window, iTerm2
+    session, WezTerm pane or kitty window.
+
+  It never falls back to "any terminal" and never closes a working session.
+  Nothing is typed.
 - **Status-aware keystrokes.** The keys depend on the session's live status,
   re-read before every key:
   - `waiting` (a prompt is on screen): Approve sends `1` with no Enter. Deny
@@ -1071,9 +1156,12 @@ travel, so "nothing leaves your devices" isn't true. What leaves your devices:
 | Lid-closed-on-battery won't turn on | Preferences ▸ Power shows whether the sudo helper and watchdog are installed. It needs a charge more than 5 points above your cutoff and agents mid-turn |
 | Mac won't sleep after Page Studio quit | `pmset -g` shows `SleepDisabled`; run `sudo pmset -a disablesleep 0`. The menu warns when a clear fails |
 | config.json edits ignored | The menu shows a config problem. Look for `config.json.bad-<timestamp>` |
-| Budgets say "Measuring…" | Normal just after installing and early in each week: shares appear once the week has risen one whole point since Page Studio started watching. See [How the share is measured](#project-budgets) |
+| Budgets say "Measuring…" | Normal just after installing and early in each week: shares of the week appear once it has risen one whole point since Page Studio started watching. Until then each project shows its share of the work so far, and plain "Measuring…" means it hasn't spent anything yet this week. See [How the share is measured](#project-budgets) |
 | Budget screens say to turn on usage tracking | Preferences ▸ Budget ▸ Show my Claude usage. Budgets need it |
 | A project went past its budget and kept working | Install the agent hooks again (Integrations ▸ Install agent hooks…) so the budget gate is in `~/.claude/settings.json`; the hook window shows outdated hooks. A session you allowed to finish its turn runs until that turn ends |
+| Some sessions are missing from the panel | Idle sessions are under **Idle**, below In flight. Expand it, or use **Show all**. Sessions you put away come back with **N dismissed · Show**. A Codex thread shows only while it runs in a terminal |
+| A session I put away came back | It started a new turn, or a new page opened for it. Putting a session away lasts until its next turn |
+| I put a session away but its tab stayed open | The status line says why. Common reasons: the setting is off (Preferences ▸ Terminals), the tab shares a Terminal.app window, the session was used again within the 5 seconds, or macOS needs Automation permission for Terminal or iTerm2 |
 
 Logs:
 

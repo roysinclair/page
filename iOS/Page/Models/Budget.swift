@@ -42,10 +42,28 @@ enum BudgetWire {
         return min(100, max(0, raw))
     }
 
+    /// The share of the work Page has watched so far (`work`, sent only while the Mac is measuring): a finite
+    /// number in 0–100, else none. Unlike `share` it never clamps: a figure outside the range is not a share.
+    static func work(_ raw: Double?) -> Double? {
+        guard let raw, raw.isFinite, (0...100).contains(raw) else { return nil }
+        return raw
+    }
+
     /// What a `list` says about budgets once the Mac's capabilities are known: nothing at all without
-    /// `budget-v1`, so no card, chip or sheet is drawn for a Mac that cannot honour a budget. Pure.
+    /// `budget-v1`, so no card, chip or sheet is drawn for a Mac that cannot honour a budget. While the header
+    /// says `measuring` (with capture on) each row's budget is stamped `measuringHeader`. Pure.
     static func gated(budget: MacBudget?, sessions: [LiveSession], caps: Set<String>) -> (budget: MacBudget?, sessions: [LiveSession]) {
-        if caps.contains(capability) { return (budget, sessions) }
+        if caps.contains(capability) {
+            // A measuring week: every row's budget reads "Measuring…" (with its share of the work, when sent), never "0% of 25%".
+            guard let budget, budget.capture, budget.measuring else { return (budget, sessions) }
+            return (budget, sessions.map { s in
+                guard var b = s.budget else { return s }
+                b.measuringHeader = true
+                var s = s
+                s.budget = b
+                return s
+            })
+        }
         return (nil, sessions.map { s in
             guard s.budget != nil else { return s }
             var s = s
@@ -84,7 +102,7 @@ extension MacBudget: Decodable {
 }
 
 extension BudgetProject: Decodable {
-    private enum CodingKeys: String, CodingKey { case key, name, used, cap, state }
+    private enum CodingKeys: String, CodingKey { case key, name, used, cap, state, work }
 
     /// Needs a key (the Mac's project folder, sent back verbatim) and a share; the rest has a fallback.
     init(from decoder: Decoder) throws {
@@ -102,11 +120,12 @@ extension BudgetProject: Decodable {
         self.used = used
         cap = BudgetWire.cap((try? c.decodeIfPresent(Double.self, forKey: .cap)) ?? nil)
         state = BudgetState(wire: c.lenientString(.state)) ?? BudgetState(used: used, cap: cap)
+        work = BudgetWire.work((try? c.decodeIfPresent(Double.self, forKey: .work)) ?? nil)
     }
 }
 
 extension SessionBudget: Decodable {
-    private enum CodingKeys: String, CodingKey { case projectKey, used, cap, scope, state, sessionUsed, sessionCap }
+    private enum CodingKeys: String, CodingKey { case projectKey, used, cap, scope, state, sessionUsed, sessionCap, work }
 
     /// Needs the project key and the share; a row whose `budget` is anything else has none.
     init(from decoder: Decoder) throws {
@@ -125,6 +144,7 @@ extension SessionBudget: Decodable {
         state = BudgetState(wire: c.lenientString(.state)) ?? BudgetState(used: used, cap: cap)
         sessionUsed = BudgetWire.share((try? c.decodeIfPresent(Double.self, forKey: .sessionUsed)) ?? nil)
         sessionCap = BudgetWire.cap((try? c.decodeIfPresent(Double.self, forKey: .sessionCap)) ?? nil)
+        work = BudgetWire.work((try? c.decodeIfPresent(Double.self, forKey: .work)) ?? nil)
     }
 }
 
@@ -154,6 +174,9 @@ struct BudgetProject: Equatable, Identifiable {
     /// Its own budget; nil = none (the default may still apply: `effectiveCap`).
     var cap: Int?
     var state: BudgetState
+    /// While the Mac is measuring: its share of the work Page has watched so far, 0–100. Nil when the
+    /// Mac did not say (not measuring, nothing watched yet, or an older Mac).
+    var work: Double? = nil
     var id: String { key }
 
     /// Its own budget, else the default.
@@ -177,6 +200,17 @@ struct SessionBudget: Hashable {
     /// The session's own share and budget, when it has one.
     var sessionUsed: Double?
     var sessionCap: Int?
+    /// While the Mac is measuring: the binding scope's share of the work watched so far, 0–100 (the
+    /// session's when `scope` is session, else the project's). Nil when the Mac did not say; the Mac
+    /// sends it only while measuring, so a figure here means the week has not risen a whole point yet.
+    var work: Double? = nil
+
+    /// The list's header said `measuring: true` (set by `BudgetWire.gated`, never on the wire): the week has not
+    /// risen a whole point, so this row's figures mean nothing yet even when the Mac sent no `work` for it.
+    var measuringHeader: Bool = false
+
+    /// The Mac is still measuring the week: its header says so, or it sent `work` (only sent while measuring).
+    var measuring: Bool { measuringHeader || work != nil }
 
     var meter: BudgetMeter { BudgetMeter(used: used, cap: cap, state: state) }
 }
@@ -297,12 +331,35 @@ enum BudgetCopy {
     /// Budget with usage tracking off.
     static let captureOff = "Turn on usage tracking in Page Studio ▸ Budget to see and set budgets."
 
-    /// Early in the week, before shares mean anything.
-    static let measuring = "Measuring… shares appear once the week has moved a little."
+    /// The Budget list's note while the week is still being measured.
+    static let measuring = "Measuring until the week rises one whole point. Meanwhile each project shows its share of the work so far."
 
-    /// The Session room's chip: "Budget 18/25%"; nil with no budget.
+    /// What "Measuring" means, for VoiceOver (the Mac's tooltip says the same).
+    static let measuringHelp = "Its share of the work this week's sessions have done so far. It becomes a share of your week once the week has risen one whole point."
+
+    /// A project's or session's line while the Mac is measuring (Designs/budget-caps.md §2).
+    /// Long form, for rows with room: "Measuring · 63% of the work so far".
+    /// Short form (`short`), for a one-line chip: "Measuring · 63% of work".
+    /// A whole percent, "<1%" above 0 and below 1; with no work (nil, 0, or not a finite 0–100 figure) a plain "Measuring…".
+    static func measuringLine(work: Double?, short: Bool = false) -> String {
+        guard let w = BudgetWire.work(work), w > 0 else { return "Measuring…" }
+        return short ? "Measuring · \(pct(w)) of work" : "Measuring · \(pct(w)) of the work so far"
+    }
+
+    /// The same line for VoiceOver, with no "·": "measuring, 63% of the work so far"; just "measuring" with no work.
+    static func measuringPhrase(work: Double?) -> String {
+        guard let w = BudgetWire.work(work), w > 0 else { return "measuring" }
+        return "measuring, \(pct(w)) of the work so far"
+    }
+
+    /// "payments-api, measuring, 63% of the work so far".
+    static func measuringSpoken(name: String, work: Double?) -> String { "\(name), \(measuringPhrase(work: work))" }
+
+    /// The Session room's chip: "Budget 18/25%"; nil with no budget. While the Mac is measuring (it sent
+    /// `work`) the figures mean nothing yet, so the chip says so in the short form: "Measuring · 63% of work".
     static func chip(_ b: SessionBudget) -> String? {
         guard let cap = b.cap else { return nil }
+        if b.measuring { return measuringLine(work: b.work, short: true) }
         return "Budget \(Int(b.used.rounded()))/\(cap)%"
     }
 
@@ -368,6 +425,11 @@ struct BudgetSheetModel: Equatable, Identifiable {
     var resetsAt: Date?
     /// A session's project key (`SessionBudget.projectKey`): sent with the session's own budget.
     var projectKey: String? = nil
+    /// The Mac is still measuring the week: the subtitle says so, with `work` when it is known, instead of a share of the week.
+    var measuring: Bool = false
+    /// The share of the work watched so far that belongs to what the sheet edits (the project's; the session's own
+    /// only when the row's budget is the session's). Nil when not known.
+    var work: Double? = nil
 
     var id: String { "\(scope)-\(key ?? "default")" }
 
@@ -379,12 +441,13 @@ struct BudgetSheetModel: Equatable, Identifiable {
         }
     }
 
-    /// "18% of the week so far"; the default's purpose.
+    /// "18% of the week so far"; while measuring "Measuring · 63% of the work so far"; the default's purpose.
     var subtitle: String {
         switch scope {
         case .defaultCap: return "For every project without a budget of its own"
         case .project, .session:
-            let u = used.map { "\(BudgetCopy.pct($0)) of the week so far" } ?? "Nothing used this week yet"
+            let u = measuring ? BudgetCopy.measuringLine(work: work)
+                : used.map { "\(BudgetCopy.pct($0)) of the week so far" } ?? "Nothing used this week yet"
             return scope == .session ? "\(name) · \(u)" : u
         }
     }
@@ -402,9 +465,11 @@ struct BudgetSheetModel: Equatable, Identifiable {
 // MARK: - The sheets' models, from what the Mac reported
 
 extension BudgetSheetModel {
-    /// A project's sheet: its own budget (not the default it may be using) is what is edited.
-    static func project(_ p: BudgetProject, resetsAt: Date?) -> BudgetSheetModel {
-        BudgetSheetModel(scope: .project, name: p.name, key: p.key, hue: p.hue, used: p.used, cap: p.cap, resetsAt: resetsAt)
+    /// A project's sheet: its own budget (not the default it may be using) is what is edited. `measuring` is the
+    /// header's flag; a project that carries `work` is measuring too.
+    static func project(_ p: BudgetProject, resetsAt: Date?, measuring: Bool = false) -> BudgetSheetModel {
+        BudgetSheetModel(scope: .project, name: p.name, key: p.key, hue: p.hue, used: p.used, cap: p.cap, resetsAt: resetsAt,
+                         measuring: measuring || p.work != nil, work: p.work)
     }
 
     /// The default for projects with none of their own.
@@ -417,7 +482,8 @@ extension BudgetSheetModel {
     static func session(_ s: LiveSession, resetsAt: Date?) -> BudgetSheetModel {
         BudgetSheetModel(scope: .session, name: SkyModel.projectName(cwd: s.cwd, fallback: s.title), key: s.id,
                          hue: ProjectHue(key: s.cwd.isEmpty ? s.title : s.cwd),
-                         used: s.budget?.sessionUsed, cap: s.budget?.sessionCap, resetsAt: resetsAt, projectKey: s.budget?.projectKey)
+                         used: s.budget?.sessionUsed, cap: s.budget?.sessionCap, resetsAt: resetsAt, projectKey: s.budget?.projectKey,
+                         measuring: s.budget?.measuring ?? false, work: s.budget?.scope == .session ? s.budget?.work : nil)
     }
 
     /// The `budget` op that saves `pct` (nil = Off), or nil when none can be sent: a project or session

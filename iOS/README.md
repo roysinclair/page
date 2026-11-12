@@ -230,7 +230,10 @@ and sends changes back. See the main README's
 
 - **Tower ▸ Budget** lists every project this week with how much of the week
   it has used against its budget, the default for projects without their
-  own, and "Measuring…" until the week has risen one whole point.
+  own. Until the week has risen one whole point each project reads
+  "Measuring · 63% of the work so far" (its share of the work Page has
+  watched, when the Mac sends `work`; plain "Measuring…" when it has no
+  figure), and a session's budget chip reads "Measuring · 63% of work".
 - **In a session**, the budget chip opens the budget sheet for its project
   or for that session only.
 - **Pages.** "Near its budget" (80%) arrives under Look and "Stopped at its

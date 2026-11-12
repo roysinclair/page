@@ -106,11 +106,13 @@ struct NWBudgetProjectRow: View {
                     Text(project.name).font(NightWatch.Typo.name).foregroundColor(NightWatch.Palette.textPrimary.color)
                         .lineLimit(1).truncationMode(.middle)
                     if !measuring { NWBudgetBar(meter: meter, height: 7) }
-                    Text(measuring ? "Measuring…" : detail(meter, inherited: inherited))
+                    Text(measuring ? BudgetCopy.measuringLine(work: project.work) : detail(meter, inherited: inherited))
                         .font(NightWatch.Typo.caption.monospacedDigit())
                         .foregroundColor((meter.tone == .warm ? NightWatch.Palette.amber : NightWatch.Palette.textTertiary).color)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                // Full width, so the chevron stays at the edge on a row with no bar (measuring).
+                .frame(maxWidth: .infinity, alignment: .leading)
                 Image(systemName: "chevron.right").font(.system(.caption, weight: .bold)).foregroundColor(NightWatch.Palette.textQuiet.color)
             }
             .padding(.horizontal, 14).padding(.vertical, 10)
@@ -118,8 +120,8 @@ struct NWBudgetProjectRow: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(meter.spoken(name: project.name)))
-        .accessibilityHint(Text("Sets its budget"))
+        .accessibilityLabel(Text(measuring ? BudgetCopy.measuringSpoken(name: project.name, work: project.work) : meter.spoken(name: project.name)))
+        .accessibilityHint(Text(measuring ? BudgetCopy.measuringHelp + " Sets its budget." : "Sets its budget"))
     }
 
     /// "26% of 25% · stopped"; "11% of 15% · default budget"; "2% · no budget".
@@ -153,7 +155,7 @@ struct NWBudgetProjects: View {
                 if budget.measuring { note(BudgetCopy.measuring) }
                 ForEach(budget.projects) { p in
                     NWBudgetProjectRow(project: p, defaultCap: budget.defaultCap, measuring: budget.measuring) {
-                        open(.project(p, resetsAt: budget.resetsAt))
+                        open(.project(p, resetsAt: budget.resetsAt, measuring: budget.measuring))
                     }
                     .id("budget-\(p.key)")
                 }
@@ -220,7 +222,8 @@ struct NWBudgetSheet: View {
                     Text(model.subtitle).font(NightWatch.Typo.caption).foregroundColor(Color.white.opacity(0.88))
                 }
             }
-            if let used = model.used {
+            // While measuring nothing is used yet to show: the subtitle says it, and there is no bar to fill.
+            if let used = model.used, !model.measuring {
                 VStack(alignment: .leading, spacing: 6) {
                     NWBudgetBar(meter: BudgetMeter(used: used, cap: value), height: 10, onJewel: true)
                     Text(BudgetMeter(used: used, cap: value).line).font(NightWatch.Typo.captionStrong.monospacedDigit()).foregroundColor(Color.white.opacity(0.9))

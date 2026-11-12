@@ -229,14 +229,14 @@ final class TowerStore: ObservableObject {
             if let i = b.rows.firstIndex(where: { $0.key == key }) {
                 let r = b.rows[i]
                 let state = BudgetBoardRow.State(rawValue: BudgetState(used: r.used, cap: pct ?? b.defaultCap).rawValue) ?? .ok
-                b.rows[i] = BudgetBoardRow(key: r.key, name: r.name, used: r.used, cap: pct, state: state)
+                b.rows[i] = BudgetBoardRow(key: r.key, name: r.name, used: r.used, cap: pct, state: state, work: r.work)
             }
         } else {
             b.defaultCap = pct
             b.rows = b.rows.map { r in
                 guard r.cap == nil else { return r }
                 let state = BudgetBoardRow.State(rawValue: BudgetState(used: r.used, cap: pct).rawValue) ?? .ok
-                return BudgetBoardRow(key: r.key, name: r.name, used: r.used, cap: nil, state: state)
+                return BudgetBoardRow(key: r.key, name: r.name, used: r.used, cap: nil, state: state, work: r.work)
             }
         }
         budgetBoard = b

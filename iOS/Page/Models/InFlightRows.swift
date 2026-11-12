@@ -70,7 +70,9 @@ struct InFlightRow: Equatable, Identifiable {
         if let w = card.workflowHeading { parts.append(w) }
         else if let progress { parts.append(progress) }
         // "21% of 25% this week" (the BUDGET fact), with the word for amber so it is not only a colour.
-        if let m = budget?.meter {
+        if let b = budget, b.measuring {
+            parts.append(BudgetCopy.measuringPhrase(work: b.work))
+        } else if let m = budget?.meter {
             parts.append(m.cap == nil ? "\(m.usedText) of the week, no budget"
                          : "budget \(m.line) this week" + (m.state == .over ? ", stopped" : m.state == .warn ? ", near its budget" : ""))
         }

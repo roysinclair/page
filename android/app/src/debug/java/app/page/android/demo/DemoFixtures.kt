@@ -166,6 +166,20 @@ object DemoFixtures {
         )
     }
 
+    /**
+     * The same Mac early in a week it is still measuring (`measuring: true`): no project has a share of the week yet, so each
+     * says its share of the work watched so far (`work`): 63%, 24%, 12%, "<1%", and one with no spend yet (plain "Measuring…").
+     */
+    fun budgetMeasuring(at: Instant = now): MacBudget {
+        fun p(name: String, work: Double?, cap: Int?) = BudgetProject(budgetKey(name), name, 0.0, cap, BudgetState.OK, work)
+        return MacBudget(
+            resetsAt = at.plusSeconds(6 * 86_400L + 20 * 3600L), capture = true, measuring = true, weekPct = 2.0, defaultCap = 15,
+            projects = listOf(
+                p("payments-api", 63.0, 25), p("sensor-hub", 24.0, null), p("llm-play", 12.4, null), p("tokenizer-lab", 0.6, null), p("docs-site", null, null),
+            ),
+        )
+    }
+
     /** The budget pages: payments-api reached its budget (a decision), sensor-hub is near its own (a look). [at] is the clock they are aged from. */
     fun budgetPages(at: Instant = now): List<Intervention> {
         fun age(s: Long) = at.minusSeconds(s)
@@ -182,12 +196,15 @@ object DemoFixtures {
             val name = app.page.android.model.SkyModel.projectName(s.cwd, s.title)
             val p = byName[name] ?: return@map s
             val cap = p.effectiveCap(b.defaultCap)
-            s.copy(budget = SessionBudget(p.key, p.used, cap, SessionBudget.Scope.PROJECT, BudgetState.of(p.used, cap)))
+            s.copy(budget = SessionBudget(p.key, p.used, cap, SessionBudget.Scope.PROJECT, BudgetState.of(p.used, cap), work = p.work, measuring = b.measuring))
         }
     }
 
     /** The working sessions of the Now screens, each wearing its project's budget. */
     val budgetSessions: List<LiveSession> get() = withBudgets(sessionsWithFlight.filter { it.id in setOf("w1", "w2", "w5") })
+
+    /** The working sessions of the projects of [budgetMeasuring], each carrying its project's share of the work so far. */
+    val budgetMeasuringSessions: List<LiveSession> get() = withBudgets(sessionsWithFlight.filter { it.id in setOf("sess-p3", "w2", "w3") }, budgetMeasuring())
 
     /** The sheets, as the iOS harness draws them: a project's, one session's, the default. */
     fun budgetSheet(screen: String): BudgetSheetModel {
@@ -213,6 +230,8 @@ object DemoFixtures {
             "now-budget", "now-budget-arming" -> budgetSessions
             // sensor-hub on its own: its card, with its BUDGET fact in amber (the warning), is the whole In flight section.
             "now-budget-flight" -> budgetSessions.filter { it.id == "w2" }
+            // The week is still being measured: sensor-hub's BUDGET fact says its project's share of the work so far, with no bar.
+            "now-budget-measuring" -> budgetMeasuringSessions.filter { it.id == "w2" }
             "now-flight", "now-flight-two", "now-flight-header", "now-flight-jump" -> pick(listOf("sess-p1", "w1", "sess-p3"), sessionsWithFlight)
             "now-flight-old" -> pick(listOf("sess-p1", "w1", "sess-p3"), sessions)
             "now-flight-quiet" -> pick(listOf("w1", "sess-p3"), sessionsWithFlight)

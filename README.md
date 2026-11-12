@@ -330,8 +330,12 @@ used = (week % now − week % when Page Studio started watching) × project's sp
 
 - **"Measuring…"** Until the week has risen one whole point since Page Studio
   started watching (just after you install, or early in a new week), there's
-  nothing to share out. Projects read "Measuring…" and no budget can warn or
-  stop. A point of the week can take a while of work. Spend is recorded
+  no share of the week to give out, and no budget can warn or stop. A point of
+  the week can take a while of work. Meanwhile each project shows its share
+  of the work watched so far, for example "Measuring · 63% of the work so far"
+  (on a menu-bar card, "Measuring · 63% of work"). That is a split of what
+  this week's sessions have spent, not a share of your week. It fills no bar,
+  and it gives way to the real share once the week moves. Spend is recorded
   meanwhile, so the first figures are already split correctly.
 - **The cost is only a weight.** Dollars are never shown and never leave the
   Mac. Usage from before Page Studio started watching belongs to no one.
@@ -1071,7 +1075,7 @@ travel, so "nothing leaves your devices" isn't true. What leaves your devices:
 | Lid-closed-on-battery won't turn on | Preferences ▸ Power shows whether the sudo helper and watchdog are installed. It needs a charge more than 5 points above your cutoff and agents mid-turn |
 | Mac won't sleep after Page Studio quit | `pmset -g` shows `SleepDisabled`; run `sudo pmset -a disablesleep 0`. The menu warns when a clear fails |
 | config.json edits ignored | The menu shows a config problem. Look for `config.json.bad-<timestamp>` |
-| Budgets say "Measuring…" | Normal just after installing and early in each week: shares appear once the week has risen one whole point since Page Studio started watching. See [How the share is measured](#project-budgets) |
+| Budgets say "Measuring…" | Normal just after installing and early in each week: shares of the week appear once it has risen one whole point since Page Studio started watching. Until then each project shows its share of the work so far, and plain "Measuring…" means it hasn't spent anything yet this week. See [How the share is measured](#project-budgets) |
 | Budget screens say to turn on usage tracking | Preferences ▸ Budget ▸ Show my Claude usage. Budgets need it |
 | A project went past its budget and kept working | Install the agent hooks again (Integrations ▸ Install agent hooks…) so the budget gate is in `~/.claude/settings.json`; the hook window shows outdated hooks. A session you allowed to finish its turn runs until that turn ends |
 

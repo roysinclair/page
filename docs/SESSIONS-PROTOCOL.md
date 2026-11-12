@@ -1061,6 +1061,20 @@ phone draws budget controls only when `caps` has `budget-v1`.
   null when it has none (then `defaultCap`, if set, applies). `state` is
   measured against whichever applies: `ok`, `warn` (80% of the budget) or
   `over`.
+- `work` (optional, on each project; one decimal, 0–100): the project's share
+  of the work the Mac has watched so far this week, `100 × its spend / all
+  spend`. Sent only while `measuring` is true, and only for a project that has
+  spent something; absent otherwise. It is a share of the work watched, not of
+  the week, so it never fills a bar and never warns or stops. Phones show it in
+  place of a bare "Measuring…" (`Measuring · 63% of the work so far`; `<1%`
+  below one percent; plain "Measuring…" when `work` is absent) and ignore it
+  once `measuring` is false. Older phones don't know the field and ignore it.
+  While measuring, `used` is 0.
+
+```json
+"projects": [ { "key": "/Users/me/projects/payments-api", "name": "payments-api", "used": 0,
+                "cap": 25, "state": "ok", "work": 63.4 } ]
+```
 
 **`list` row** gains `budget` (Claude sessions the Mac has seen, while capture
 is on):
@@ -1073,6 +1087,12 @@ is on):
 `cap` is the budget that binds this session and `scope` says whose it is: the
 project's or the session's own. When a session has both, the one further
 along binds (`over`, then `warn`, then `ok`; on a tie the lower budget).
+
+`work` (optional; one decimal, 0–100) is the same share of the work watched so
+far, for the binding scope: the session's own when `scope` is `session`, else
+the project's. Sent only while the header's `measuring` is true and only when
+there is spend to share; absent otherwise. It is not a share of the week, and
+older phones ignore it.
 
 **Op `budget`** sets or clears one budget. `pct` missing or null clears it.
 

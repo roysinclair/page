@@ -26,8 +26,8 @@ enum RenderHarness {
         "hold-stop", "stop-confirm", "stop-result", "stop-none",
         "lanes", "lanes-crowded", "lanes-empty", "lanes-problem", "lanes-standby", "lanes-paused",
         "tower", "tower-budget", "tower-budget-projects", "tower-budget-off", "tower-budget-measuring", "budget-sheet", "budget-sheet-session", "budget-sheet-default",
-        "budget-sheet-saving", "budget-sheet-offline", "budget-sheet-refused", "budget-sheet-live", "now-budget", "now-budget-flight",
-        "decision-budget", "decision-budget-warning", "room-budget", "room-budget-warn", "room-budget-none",
+        "budget-sheet-saving", "budget-sheet-offline", "budget-sheet-refused", "budget-sheet-live", "budget-sheet-measuring", "budget-sheet-session-measuring", "now-budget", "now-budget-flight", "now-budget-measuring",
+        "decision-budget", "decision-budget-warning", "room-budget", "room-budget-warn", "room-budget-none", "room-budget-measuring",
         "tower-glow", "tower-terminals", "tower-gestures",
         "tower-widgets", "tower-widgets-lock", "tower-widgets-previews", "tower-widgets-large", "tower-widgets-lockscreen",
         "dispatch", "dispatch-sending", "dispatch-off",
@@ -214,6 +214,7 @@ enum RenderFixtures {
         func pick(_ ids: [String], from all: [LiveSession]) -> [LiveSession] { ids.compactMap { id in all.first { $0.id == id } } }
         switch screen {
         case "now-budget", "now-budget-flight": return budgetSessions
+        case "now-budget-measuring": return budgetSessionsMeasuring
         case "now-flight", "now-flight-two", "now-flight-header", "now-flight-jump":
             return pick(["sess-p1", "w1", "sess-p3"], from: sessionsWithFlight)
         case "now-flight-old": return pick(["sess-p1", "w1", "sess-p3"], from: sessions)
@@ -241,6 +242,29 @@ enum RenderFixtures {
         return MacBudget(resetsAt: now.addingTimeInterval(3 * 86_400 + 4 * 3600), capture: true, measuring: false, weekPct: 66, defaultCap: 15,
                          projects: [p("payments-api", 25.6, 25, .over), p("sensor-hub", 21, 25, .warn), p("page", 11.2, nil, .ok),
                                     p("bottle-flip", 4.4, 10, .ok), p("llm-play", 2.1, nil, .ok), p("mac-on-claude-code", 0.4, nil, .ok)])
+    }
+
+    /// Early in the week (Designs/budget-caps.md §2): the week has not risen a whole point, so no share of it is known
+    /// and nothing is near a budget. Each project shows its share of the work Page has watched so far instead: a big
+    /// one, a few small ones, one under 1% ("<1%") and one with no figure (plain "Measuring…").
+    static var budgetMeasuring: MacBudget {
+        func p(_ name: String, work: Double?, cap: Int?) -> BudgetProject {
+            BudgetProject(key: budgetKey(name), name: name, used: 0, cap: cap, state: .ok, work: work)
+        }
+        return MacBudget(resetsAt: now.addingTimeInterval(5 * 86_400 + 2 * 3600), capture: true, measuring: true, weekPct: 12, defaultCap: 15,
+                         projects: [p("payments-api", work: 63, cap: 25), p("sensor-hub", work: 21.4, cap: nil), p("llm-play", work: 9.8, cap: nil),
+                                    p("tokenizer-lab", work: 0.6, cap: 10), p("docs-site", work: nil, cap: nil)])
+    }
+
+    /// One working session while measuring: its project's budget is 15% by default and its share of the work is 21%.
+    static var budgetSessionsMeasuring: [LiveSession] {
+        let rows = sessionsWithFlight.filter { $0.id == "w2" }.map { s in
+            var s = s
+            s.budget = SessionBudget(projectKey: budgetKey("sensor-hub"), used: 0, cap: 15, scope: .project, state: .ok, work: 21.4)
+            return s
+        }
+        // Through the same gate a real list takes, so each row also carries the header's "measuring".
+        return BudgetWire.gated(budget: budgetMeasuring, sessions: rows, caps: [BudgetWire.capability]).sessions
     }
 
     static var budgetPages: [Intervention] {
@@ -317,6 +341,9 @@ enum RenderFixtures {
         case "now-budget", "now-budget-flight":
             var st = status; st.onAC = true
             return NowModel.build(inputs(open: budgetPages, status: st, sessions: budgetSessions))
+        case "now-budget-measuring":
+            var st = status; st.onAC = true; st.working = 1
+            return NowModel.build(inputs(open: [], status: st, sessions: budgetSessionsMeasuring))
         case "now-dusk":
             let paused = iv("pz", "bottle-flip", .idle, "Page Power paused your agents at 10% battery.", ago: 600, sub: "low_battery")
             return NowModel.build(inputs(open: [paused], status: status))
@@ -405,7 +432,7 @@ enum RenderFixtures {
         if screen == "now-inflight" { d.scrollTo = "inflight-w1" }
         if ["now-flight", "now-flight-old", "now-flight-jump"].contains(screen) { d.scrollToId = HeaderJump.sectionId }
         if screen == "now-flight-two" { d.scrollTo = "inflight-sess-p3" }
-        if screen == "now-budget-flight" { d.scrollTo = "inflight-w2" }
+        if screen == "now-budget-flight" || screen == "now-budget-measuring" { d.scrollTo = "inflight-w2" }
         d.budgetControls = screen.hasPrefix("now-budget")
         if screen == "now-inflight-long", let last = d.inFlight.rows.last { d.scrollTo = "inflight-\(last.id)" }
         // `-NWScrollId section-look`: frame any part of the stream (a section, "row-<id>"), for a review of its look.
@@ -738,11 +765,7 @@ struct HarnessTower: View {
         if screen.hasPrefix("tower-budget") {
             var b = RenderFixtures.budget
             if screen == "tower-budget-off" { b.capture = false; b.projects = [] }
-            if screen == "tower-budget-measuring" {
-                // Early in the week: shares mean nothing yet, so every project reads 0 and nothing is near a budget.
-                b.measuring = true
-                b.projects = b.projects.map { var p = $0; p.used = 0; p.state = .ok; return p }
-            }
+            if screen == "tower-budget-measuring" { b = RenderFixtures.budgetMeasuring }
             d.budgetProjects = b
         }
         if ["tower-budget-projects", "tower-budget-off", "tower-budget-measuring"].contains(screen) { d.scrollToId = "budget-projects" }
@@ -766,6 +789,13 @@ struct HarnessBudgetSheet: View {
         case "budget-sheet-session":
             let p = b.projects[1]
             return BudgetSheetModel(scope: .session, name: p.name, key: "w2", hue: p.hue, used: 6.3, cap: 10, resetsAt: b.resetsAt)
+        case "budget-sheet-measuring":
+            // The week has not risen a whole point: the project's share of the work so far, not of the week.
+            let m = RenderFixtures.budgetMeasuring
+            return .project(m.projects[0], resetsAt: m.resetsAt, measuring: m.measuring)
+        case "budget-sheet-session-measuring":
+            let m = RenderFixtures.budgetMeasuring
+            return .session(RenderFixtures.budgetSessionsMeasuring[0], resetsAt: m.resetsAt)
         case "budget-sheet-default":
             return BudgetSheetModel(scope: .defaultCap, name: "", key: nil, hue: nil, used: nil, cap: b.defaultCap, resetsAt: b.resetsAt)
         case "budget-sheet-saving", "budget-sheet-offline", "budget-sheet-refused":

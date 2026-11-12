@@ -460,6 +460,8 @@ struct BudgetBoardRow: Equatable, Identifiable {
     /// Its own budget, whole percent; nil = none (the default may apply).
     let cap: Int?
     let state: State
+    /// While measuring: its share of the work watched so far, 0–100 (not of the week). nil otherwise.
+    var work: Double? = nil
     var id: String { key }
 }
 

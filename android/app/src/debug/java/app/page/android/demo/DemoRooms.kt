@@ -298,6 +298,16 @@ object DemoRooms {
                     caps = holdCaps + SessionCaps.BUDGET,
                 )
             }
+            // The week still being measured: the chip says the project's share of the work so far, in the short form (and no "Budget 6/25%").
+            "room-budget-measuring" -> {
+                val p = DemoFixtures.budgetMeasuring().projects[1]
+                i = i.copy(
+                    session = session("room-claude", "sensor-hub", state = LiveSessionState.ACTIVE, preview = "Bash: pio run").copy(
+                        budget = app.page.android.model.SessionBudget(p.key, 0.0, 25, app.page.android.model.SessionBudget.Scope.PROJECT, app.page.android.model.BudgetState.OK, null, null, p.work, true),
+                    ),
+                    caps = holdCaps + SessionCaps.BUDGET,
+                )
+            }
             "room-ended" -> i = i.copy(session = session("room-claude", "mac-on-claude-code", state = LiveSessionState.IDLE, ago = 400), ended = true)
             "room-blocked" -> i = i.copy(
                 session = session("room-claude", "mac-on-claude-code", state = LiveSessionState.IDLE, host = "Ghostty", canType = false, blocker = "Page Studio can't type into Ghostty yet", ago = 300),

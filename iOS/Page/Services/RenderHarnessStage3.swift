@@ -203,13 +203,18 @@ enum RenderFixtures3 {
             i.session = session("room-local", "tokenizer-lab", backend: "opencode", provider: "ollama", state: .active, preview: "Generating…")
             i.transcript = SessionTranscript(sessionId: "room-local", entries: localEntries, truncated: false)
             i.screen = nil; i.runs = []; i.fiveHourPct = nil; i.sent = []; i.diff = nil
-        case "room-budget", "room-budget-warn", "room-budget-none":
+        case "room-budget", "room-budget-warn", "room-budget-none", "room-budget-measuring":
             // A Mac that does budgets (budget-v1): the "Budget 18/25%" chip, amber from the warning, and "Session budget…".
             i.caps = ["hold-v1", "retract-v1", BudgetWire.capability]
             i.budgetControls = true
-            let key = RenderFixtures.budgetKey("mac-on-claude-code")
+            var key = RenderFixtures.budgetKey("mac-on-claude-code")
+            if screen == "room-budget-measuring" {
+                i.session = session("room-claude", "payments-api", state: .active, preview: "Bash: iOS/Tests/run-logic-tests.sh")
+                key = RenderFixtures.budgetKey("payments-api")
+            }
             switch screen {
             case "room-budget": i.session.budget = SessionBudget(projectKey: key, used: 18.4, cap: 25, scope: .project, state: .ok, sessionUsed: 6.1, sessionCap: nil)
+            case "room-budget-measuring": i.session.budget = SessionBudget(projectKey: key, used: 0, cap: 25, scope: .project, state: .ok, work: 63)
             case "room-budget-warn": i.session.budget = SessionBudget(projectKey: key, used: 21.2, cap: 25, scope: .project, state: .warn, sessionUsed: 9.4, sessionCap: nil)
             default: i.session.budget = SessionBudget(projectKey: key, used: 3.1, cap: nil, scope: .project, state: .ok)
             }

@@ -88,6 +88,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.page.android.model.BudgetCopy
 import app.page.android.model.BudgetMeter
+import app.page.android.model.SessionBudget
 import app.page.android.model.FlightHealth
 import app.page.android.ui.nw.budget.NWBudgetBar
 import androidx.compose.foundation.layout.widthIn
@@ -365,8 +366,8 @@ fun NWInFlightCardView(row: InFlightRow, modifier: Modifier = Modifier, motion: 
                     Column(Modifier.padding(start = NW.Space.lg, end = NW.Space.lg, top = 14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Fact("NOW") { NowSteps(row, motion) }
                         card.timeText?.let { t -> Fact("TIME") { TimeText(t) } }
-                        // BUDGET: a mini bar and "18% of 25% this week", amber from the warning (Designs/budget-caps.md).
-                        row.budget?.let { b -> Fact("BUDGET", tint = if (b.meter.tone == BudgetMeter.Tone.WARM) NW.Palette.amber else NW.Palette.teal) { BudgetFact(b.meter) } }
+                        // BUDGET: a mini bar and "18% of 25% this week", amber from the warning; "Measuring · 63% of the work so far" while the week is measured (Designs/budget-caps.md).
+                        row.budget?.let { b -> Fact("BUDGET", tint = if (b.meter.tone == BudgetMeter.Tone.WARM && !b.isMeasuring) NW.Palette.amber else NW.Palette.teal) { BudgetFact(b) } }
                         if (lines.isNotEmpty()) {
                             // With only a ghost left, the whole fact folds away with it.
                             val last = lines.singleOrNull()?.takeIf { it.status != FlightLineStatus.RUNNING }
@@ -533,15 +534,19 @@ private fun EntryButton(entry: RoomEntry, enabled: Boolean, kind: NWButtonKind, 
     }
 }
 
-/** "18% of 25% this week", and the bar under it (amber from the warning). */
+/**
+ * "18% of 25% this week", and the bar under it (amber from the warning). While the Mac is still measuring the week: "Measuring ·
+ * 63% of the work so far" and no bar, since a share of the work is not a share of the budget.
+ */
 @Composable
-private fun BudgetFact(m: BudgetMeter) {
+private fun BudgetFact(b: SessionBudget) {
+    val m = b.meter
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
-            m.line + " this week", style = NW.Typo.meta.copy(fontFeatureSettings = "tnum"), maxLines = 2,
-            color = (if (m.tone == BudgetMeter.Tone.WARM) NW.Palette.amber else NW.Palette.textPrimary).color,
+            if (b.isMeasuring) BudgetCopy.measuringLine(b.work) else m.line + " this week", style = NW.Typo.meta.copy(fontFeatureSettings = "tnum"), maxLines = 2,
+            color = (if (m.tone == BudgetMeter.Tone.WARM && !b.isMeasuring) NW.Palette.amber else NW.Palette.textPrimary).color,
         )
-        NWBudgetBar(m, Modifier.widthIn(max = 200.dp), height = 6.dp)
+        if (!b.isMeasuring) NWBudgetBar(m, Modifier.widthIn(max = 200.dp), height = 6.dp)
     }
 }
 

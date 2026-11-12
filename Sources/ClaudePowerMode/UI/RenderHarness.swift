@@ -360,6 +360,10 @@ enum RenderSurfaces {
         let badStore = TowerFixtures.store(section: .macsPhones, config: bad)
         badStore.preview(usageCapture: TowerStore.UsageCaptureStatus(on: false), problem: "relayURL: Use https:// — plain http would send your pairing token unencrypted.")
         out.append(Surface(name: "tower-macs-phones-problem", width: w + pad * 2, height: h + pad * 2, view: window(badStore)))
+        // The first hours of a week: shares of the work so far, no bars. Tall, so the whole board shows.
+        let measuring = TowerFixtures.store(section: .budget)
+        measuring.preview(budgetBoard: TowerFixtures.budgetBoardMeasuring())
+        out.append(Surface(name: "tower-budget-measuring", width: w + pad * 2, height: 1500 + pad * 2, view: window(measuring, height: 1500)))
         let empty = TowerFixtures.store(section: .budget, scene: (NightWatchFixtures.snapshot(), NowModel.starting(macName: "Studio MBP")))
         empty.preview(usageCapture: TowerStore.UsageCaptureStatus(on: false))
         out.append(Surface(name: "tower-budget-empty", width: w + pad * 2, height: h + pad * 2, view: window(empty)))

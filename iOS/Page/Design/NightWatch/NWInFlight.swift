@@ -369,7 +369,7 @@ struct NWInFlightCardView: View {
                     if let time = card.timeText {
                         fact("TIME") { text(time, NightWatch.Palette.textPrimary).nwRolls(time, reduceMotion: reduceMotion) }
                     }
-                    if let b = row.budget { fact("BUDGET") { budgetBlock(b.meter) } }
+                    if let b = row.budget { fact("BUDGET") { budgetBlock(b) } }
                     if card.workflowHeading != nil || !card.closing.isEmpty { workflows(at: t) }
                     fact("HEALTH") { healthBlock(f) }
                 }
@@ -578,11 +578,18 @@ struct NWInFlightCardView: View {
         card.health == .longRunning ? NightWatch.Palette.sky : NightWatch.Palette.green
     }
 
-    /// "18% of 25% this week", and the bar under it (amber from the warning).
-    private func budgetBlock(_ m: BudgetMeter) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            text(m.line + " this week", m.tone == .warm ? NightWatch.Palette.amber : NightWatch.Palette.textPrimary)
-            NWBudgetBar(meter: m, height: 6).frame(maxWidth: 200)
+    /// "18% of 25% this week", and the bar under it (amber from the warning). While the Mac is measuring
+    /// the week the figures mean nothing yet: "Measuring · 63% of the work so far", and no bar to fill.
+    @ViewBuilder
+    private func budgetBlock(_ b: SessionBudget) -> some View {
+        if b.measuring {
+            text(BudgetCopy.measuringLine(work: b.work), NightWatch.Palette.textPrimary)
+        } else {
+            let m = b.meter
+            VStack(alignment: .leading, spacing: 6) {
+                text(m.line + " this week", m.tone == .warm ? NightWatch.Palette.amber : NightWatch.Palette.textPrimary)
+                NWBudgetBar(meter: m, height: 6).frame(maxWidth: 200)
+            }
         }
     }
 

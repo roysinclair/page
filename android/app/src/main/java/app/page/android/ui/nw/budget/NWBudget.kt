@@ -184,7 +184,7 @@ fun NWBudgetProjectRow(project: BudgetProject, defaultCap: Int?, modifier: Modif
     val inherited = project.cap == null && defaultCap != null
     Row(
         modifier.fillMaxWidth().heightIn(min = 64.dp)
-            .semantics(mergeDescendants = true) { contentDescription = meter.spoken(project.name) }
+            .semantics(mergeDescendants = true) { contentDescription = if (measuring) BudgetCopy.measuringSpoken(project.name, project.work) else meter.spoken(project.name) }
             .clickable(role = Role.Button, onClickLabel = "Sets its budget", onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically,
@@ -194,7 +194,7 @@ fun NWBudgetProjectRow(project: BudgetProject, defaultCap: Int?, modifier: Modif
             Text(project.name, style = NW.Typo.name, color = NW.Palette.textPrimary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (!measuring) NWBudgetBar(meter, height = 7.dp)
             Text(
-                if (measuring) "Measuring…" else detail(project, meter, inherited), style = NW.Typo.caption.copy(fontFeatureSettings = "tnum"),
+                if (measuring) BudgetCopy.measuringLine(project.work) else detail(project, meter, inherited), style = NW.Typo.caption.copy(fontFeatureSettings = "tnum"),
                 color = (if (meter.tone == BudgetMeter.Tone.WARM) NW.Palette.amber else NW.Palette.textTertiary).color,
             )
         }
@@ -294,7 +294,8 @@ fun NWBudgetSheet(
                     Text(model.subtitle, style = NW.Typo.caption, color = Color.White.copy(alpha = 0.88f))
                 }
             }
-            model.used?.let { used ->
+            // While measuring there is no share of the week yet: no "0% of 25%" under the subtitle.
+            model.used?.takeUnless { model.measuring }?.let { used ->
                 val meter = BudgetMeter(used, value)
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = meter.spoken(model.name.ifEmpty { "This project" }) }) {
                     NWBudgetBar(meter, height = 10.dp, onJewel = true)

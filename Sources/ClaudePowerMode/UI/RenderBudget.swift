@@ -41,8 +41,21 @@ extension NightWatchFixtures {
     }
 
     /// The Mac's budgets for that scene. `over`: payments-api has used its whole 25%. `capture` false: usage tracking is off.
-    static func budgetStatus(now: Date = boardNow(), over: Bool = false, capture: Bool = true) -> BudgetStatus {
+    /// `measuring`: the week hasn't risen a whole point yet, so each card shows its share of the work so far, with no bar.
+    static func budgetStatus(now: Date = boardNow(), over: Bool = false, capture: Bool = true, measuring: Bool = false) -> BudgetStatus {
         guard capture else { return .off }
+        if measuring {
+            func row(_ name: String, cap: Int?, work: Double) -> BudgetStatus.Row {
+                BudgetStatus.Row(projectKey: "/Users/studio/projects/\(name)", projectName: name, used: 0, cap: cap, scope: .project,
+                                 state: .ok, sessionUsed: 0, sessionCap: nil, projectCap: cap, defaultCap: nil, work: work)
+            }
+            return BudgetStatus(
+                capture: true, measuring: true, weekPct: 30.4, resetsAt: now.addingTimeInterval(6 * 86400 + 20 * 3600), defaultCap: nil,
+                projects: [],
+                sessions: ["sess-payments-api": row("payments-api", cap: 25, work: 64.2),
+                           "sess-llm-play": row("llm-play", cap: nil, work: 10.5),
+                           "sess-sensor-hub": row("sensor-hub", cap: 10, work: 0.4)])
+        }
         func row(_ name: String, used: Double, cap: Int?, state: BudgetState, projectCap: Int?) -> BudgetStatus.Row {
             BudgetStatus.Row(projectKey: "/Users/studio/projects/\(name)", projectName: name, used: used, cap: cap, scope: .project,
                              state: state, sessionUsed: used / 2, sessionCap: nil, projectCap: projectCap, defaultCap: nil)
@@ -101,6 +114,9 @@ extension RenderSurfaces {
 
         let over = budgetStore(scene, status: NightWatchFixtures.budgetStatus(now: scene.now, over: true))
 
+        // The first hours of a week: each card says its share of the work so far, and its bar stays empty.
+        let measuring = budgetStore(scene, status: NightWatchFixtures.budgetStatus(now: scene.now, measuring: true))
+
         let off = budgetStore(scene, status: NightWatchFixtures.budgetStatus(now: scene.now, capture: false))
         let offOpen = budgetStore(scene, status: NightWatchFixtures.budgetStatus(now: scene.now, capture: false))
         offOpen.clickSetBudget(rowId: editRow, sessionId: "sess-payments-api", backend: .claude)
@@ -112,6 +128,7 @@ extension RenderSurfaces {
             popover(noBudget, name: "popover-budget-editor-no-budget"),
             popover(review, name: "popover-budget-editor-review"),
             popover(over, name: "popover-budget-over"),
+            popover(measuring, name: "popover-budget-measuring"),
             popover(off, name: "popover-budget-capture-off"),
             popover(offOpen, name: "popover-budget-capture-off-open")
         ]

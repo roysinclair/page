@@ -181,6 +181,11 @@ budget" pages come up as cards with Raise to N% and Let this turn finish.
 Their notifications have no actions, because a typed reply would only mean
 "keep stopped". Shown only when the Mac advertises `budget-v1`.
 
+While the Mac is still measuring the week, a project's (or session's) row says
+`Measuring · 63% of the work so far` from the optional `work` the Mac sends
+(plain `Measuring…` without it), and draws no bar. Render it with
+`tools/screens.sh -- tower-budget-measuring now-budget-measuring`.
+
 ## Differences from iOS
 
 - No push: Stay connected and the 15-minute check stand in (above); no device

@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import SwiftUI
 @testable import PageCore
 
 /// A button on the panel that is not a row key.
@@ -62,6 +63,28 @@ final class NowStore: ObservableObject {
     @Published private(set) var flightJumpToken = 0
     /// Budgets as the Mac last reported them (nil until it has: no budget rows are drawn then).
     @Published private(set) var budget: BudgetStatus?
+    /// Dismissals in their five seconds of Undo, oldest first. They outlive a panel close: the
+    /// controller commits them on its own timer, so the store keeps them hidden until then.
+    @Published private(set) var pendingDismissals: [PendingDismissal] = []
+    /// The sessions the Mac's ledger hides right now (dismissed, and not yet worked again).
+    @Published private(set) var ledgerHidden: Set<String> = []
+    /// A card dragged sideways: the finger moves it, and the label behind it says Dismiss.
+    @Published var swipe: Swipe?
+    /// Bumped when a card group's scroller measures itself, so the panel fits its window again.
+    @Published private(set) var layoutToken = 0
+    /// "Also close its terminal" is on (Preferences ▸ Terminals): the words and colours say so.
+    @Published var dismissClosesTerminal = false
+    /// Dismissals whose five seconds are over: still kept out until the Mac's ledger says so.
+    @Published private(set) var committedDismissals: [String: Date] = [:]
+    /// The card under the pointer (not published: moving over cards redraws nothing). The
+    /// panel's scroll monitor swipes it when it can be dismissed.
+    var hoveredCard: String?
+
+    /// A card being swiped, by row id, and how far it has moved (either direction).
+    struct Swipe: Equatable {
+        let rowId: String
+        var offset: Double
+    }
     /// The height the panel can give everything between its header and its
     /// footer: what is left of the screen (set by the panel when it opens).
     var bodyBudget: CGFloat = 760
@@ -69,9 +92,24 @@ final class NowStore: ObservableObject {
     /// The tallest the In-flight cards may grow before they scroll: the body's
     /// budget less the rows above them and the runway, tip and status around them.
     var flightCardsMaxHeight: CGFloat {
+        let room = cardsRoom
+        return max(260, showsIdleGroup && !flightRows.isEmpty ? room * 0.55 : room)
+    }
+
+    /// The same for the IDLE group's cards: what the In-flight group leaves.
+    var idleCardsMaxHeight: CGFloat {
+        let room = cardsRoom
+        return max(220, flightRows.isEmpty ? room : room * 0.45)
+    }
+
+    /// The body's budget less the rows above the card groups and the runway, tip and status around them.
+    private var cardsRoom: CGFloat {
         let rows = CGFloat(min(model.rows.count, NowModel.visibleRows)) * 100
         return max(260, bodyBudget - rows - 110)
     }
+
+    /// The IDLE group is drawn: it has cards, or it has dismissed sessions to bring back.
+    var showsIdleGroup: Bool { !idleRows.isEmpty || dismissedCount > 0 }
 
     var timeZone: TimeZone = .current
     var perform: (NowEffect) -> Void = { _ in }
@@ -110,6 +148,7 @@ final class NowStore: ObservableObject {
         self.prefs = prefs
         tipDismissed = prefs.tipDismissed
         state.inFlightCollapsed = prefs.inFlightCollapsed
+        state.idleCollapsed = prefs.idleCollapsed
         for r in model.flight { lastFlight[r.id] = r }
         shownRows = model.rows
         shownIds = model.rows.map(\.id)
@@ -127,7 +166,7 @@ final class NowStore: ObservableObject {
         let old = self.model
         if self.model != model { self.model = model }
         for r in model.flight { lastFlight[r.id] = r }
-        let reconciled = NowKeys.reconcile(state, rows: model.rows, flights: flightRows)
+        let reconciled = NowKeys.reconcile(state, rows: model.rows, flights: flightRows, idle: idleRows)
         if reconciled != state { state = reconciled }
         let kept = Set(flightRows.map(\.id))
         lastFlight = lastFlight.filter { kept.contains($0.key) }
@@ -141,17 +180,43 @@ final class NowStore: ObservableObject {
 
     /// The working sessions' rows as drawn: the model's, plus any whose turn
     /// ended while a draft or a receipt is still open (so typing is never
-    /// lost, and the receipt has a row to sit in).
+    /// lost, and the receipt has a row to sit in). A card whose turn ended and
+    /// that was put away stays out.
     var flightRows: [InFlightRow] {
         var rows = model.flight
         let live = Set(rows.map(\.id))
         var keep = Set(flightReceipts.keys)
         if let c = state.composer { keep.insert(c.rowId) }
         if let e = state.budgetEditor { keep.insert(e.rowId) }
+        let hidden = hiddenSessionIds
         for id in keep.sorted() where !live.contains(id) {
-            if let r = lastFlight[id], r.kind == .session { rows.append(r.finished) }
+            if let r = lastFlight[id], r.kind == .session, !hidden.contains(r.sessionId) { rows.append(r.finished) }
         }
         return rows
+    }
+
+    /// Sessions kept out of the cards: in their five seconds of Undo, committed and waiting for
+    /// the ledger to say so, or hidden by the ledger.
+    var hiddenSessionIds: Set<String> {
+        Set(pendingDismissals.map(\.id)).union(committedDismissals.keys).union(ledgerHidden)
+    }
+
+    /// The IDLE group's cards: sessions at their prompt, less any that has a row of its own (a
+    /// FINISHED, Decide or Look row, or a card whose turn just ended) and any put away.
+    var idleRows: [InFlightRow] {
+        IdleGroup.contents(idle: model.idle, rows: model.rows, flights: flightRows, hidden: hiddenSessionIds)
+    }
+
+    /// Every card the keys, hover and clicks may act on: the working ones and the idle ones.
+    var cardRows: [InFlightRow] { flightRows + idleRows }
+
+    /// "2 dismissed · Show": the live sessions the ledger hides (not those still in their Undo).
+    var dismissedCount: Int { ledgerHidden.count }
+
+    /// A finished turn's session, as its idle card: where it runs, its model and when it last
+    /// did something. nil when Page hasn't read them (a FINISHED card then leaves the line out).
+    func sessionCard(for sessionId: String) -> InFlightRow? {
+        model.idle.first { $0.sessionId == sessionId }
     }
 
     var selectedId: String? { state.selectedId }
@@ -167,13 +232,18 @@ final class NowStore: ObservableObject {
         return shownRows.filter { live.contains($0.id) && !sending.contains($0.id) }
     }
 
+    /// Sessions whose finished-turn rows are kept out: put away and in their Undo, committed, or hidden by
+    /// the ledger. The last is safe (the ledger never hides a session that has a different page open), and it
+    /// keeps a page the backend still lists for a moment from coming back before the next tick.
+    private var hiddenFinishedSessionIds: Set<String> { hiddenSessionIds }
+
     // MARK: keys and clicks
 
     /// Feeds a key; true when the panel consumed it.
     @discardableResult
     func handle(_ press: NowKeyPress) -> Bool {
         let before = state
-        let r = NowKeys.handle(press, state: state, rows: keyRows, flights: flightRows, now: now())
+        let r = NowKeys.handle(press, state: state, rows: keyRows, flights: flightRows, idle: idleRows, now: now())
         apply(r.state, effect: r.effect)
         if press.phase == .up { return before.hold != nil }
         explainFlightKey(press, before: before, result: r)
@@ -200,7 +270,7 @@ final class NowStore: ObservableObject {
     private func explainFlightKey(_ press: NowKeyPress, before: NowPanelState, result r: (state: NowPanelState, effect: NowEffect)) {
         guard r.effect == .none, r.state.composer == nil, before.composer == nil, before.budgetEditor == nil, !before.showShortcuts,
               !press.hasModifiers, !press.isRepeat, case .char(let raw) = press.key,
-              let id = before.selectedId, let row = flightRows.first(where: { $0.id == id }) else { return }
+              let id = before.selectedId, let row = cardRows.first(where: { $0.id == id }) else { return }
         switch raw.lowercased() {
         case PanelKeys.type.lowercased():
             if row.kind == .localModel { notice = Notice(text: "Local model · Page Studio can't steer it", failed: true) }
@@ -213,7 +283,7 @@ final class NowStore: ObservableObject {
     }
 
     func select(_ id: String) {
-        guard model.rows.contains(where: { $0.id == id }) || flightRows.contains(where: { $0.id == id }),
+        guard model.rows.contains(where: { $0.id == id }) || cardRows.contains(where: { $0.id == id }),
               state.composer == nil, state.budgetEditor == nil else { return }
         var s = state
         s.selectedId = id
@@ -243,7 +313,8 @@ final class NowStore: ObservableObject {
         if let p = pointer {
             let previous = lastHoverPointer
             lastHoverPointer = p
-            let onDecision = state.selectedId.map { sid in !flightRows.contains { $0.id == sid } } ?? false
+            let cards = cardRows
+            let onDecision = state.selectedId.map { sid in !cards.contains { $0.id == sid } } ?? false
             if let q = previous { guard hypot(p.x - q.x, p.y - q.y) > 0.5 else { return } }
             else if onDecision { return }
         }
@@ -286,9 +357,25 @@ final class NowStore: ObservableObject {
         state = s
     }
 
+    /// The IDLE group's header: collapses it to its names, or opens it again (remembered).
+    func setIdleCollapsed(_ on: Bool) {
+        var s = state
+        s.idleCollapsed = on
+        if on, let id = s.selectedId, idleRows.contains(where: { $0.id == id }) { s.selectedId = nil }
+        if on, let c = s.composer, c.kind == .type, idleRows.contains(where: { $0.id == c.rowId }) { s.composer = nil }
+        state = s
+        prefs.idleCollapsed = on
+    }
+
+    func setIdleExpanded(_ on: Bool) {
+        var s = state
+        s.idleExpanded = on
+        state = s
+    }
+
     /// A click on one of a working session's buttons.
     func clickFlight(_ action: InFlightAction, on row: InFlightRow) {
-        guard flightRows.contains(where: { $0.id == row.id }) else { return }
+        guard cardRows.contains(where: { $0.id == row.id }) else { return }
         if state.composer != nil && action == .steer && state.composer?.rowId == row.id { return }
         // A half-typed reply is never thrown away by a click elsewhere.
         if let c = state.composer, !c.text.isEmpty {
@@ -342,7 +429,7 @@ final class NowStore: ObservableObject {
 
     private func resolveWantedComposer() {
         guard let w = wantedComposer else { return }
-        if let row = flightRows.first(where: { $0.sessionId == w.sessionId && $0.kind == .session }) {
+        if let row = cardRows.first(where: { $0.sessionId == w.sessionId && $0.kind == .session }) {
             if row.actions.canType || !row.actions.checking {
                 wantedComposer = nil
                 openFlightComposer(row)
@@ -371,7 +458,7 @@ final class NowStore: ObservableObject {
     /// The input path answered (or timed out): the receipt goes in the row.
     func finishTyping(sessionId: String, result: SessionCommandResult) {
         let id = InFlightRow.idPrefix + sessionId
-        let route = flightRows.first { $0.id == id }?.route
+        let route = cardRows.first { $0.sessionId == sessionId }?.route
         setReceipt(InFlightReceipt.from(result, route: route, at: now()), for: id)
     }
 
@@ -525,6 +612,9 @@ final class NowStore: ObservableObject {
         endHold()
         state = NowPanelState()
         state.inFlightCollapsed = prefs.inFlightCollapsed
+        state.idleCollapsed = prefs.idleCollapsed
+        swipe = nil
+        hoveredCard = nil
         notice = nil
         // A typed message's receipt stays through a close, as a pending reply's thread does: the
         // answer may land after the panel is gone, and it must still be there when it opens again.
@@ -638,6 +728,176 @@ final class NowStore: ObservableObject {
         holdProgress = 0
     }
 
+
+    // MARK: dismissing finished and idle sessions
+
+    /// A card's width, for deciding whether a drag has gone far enough (the panel's width less
+    /// the padding the groups give their cards).
+    var cardWidth: Double { Double(NightWatch.Space.popoverWidth) - 20 }
+
+    /// A card group found its height: the window is fitted to the panel again.
+    func cardsResized() { layoutToken += 1 }
+
+    func setHover(_ id: String, inside: Bool) {
+        if inside { hoveredCard = id } else if hoveredCard == id { hoveredCard = nil }
+    }
+
+    /// What a card stands for, if it may be put away: a finished turn, or a card of a session
+    /// that is not working. Never a working card, a Decide or a Look row.
+    func dismissTarget(forRowId id: String) -> DismissTarget? {
+        if let row = model.rows.first(where: { $0.id == id }) { return DismissTarget.of(row) }
+        if let card = cardRows.first(where: { $0.id == id }) { return DismissTarget.of(card) }
+        return nil
+    }
+
+    /// Whether the card takes the swipe, the × and ⌫: it can be dismissed and is not being answered.
+    func canDismiss(_ id: String) -> Bool {
+        !sending.contains(id) && dismissTarget(forRowId: id) != nil
+    }
+
+    /// Where the card's session runs, for the tooltip and the status line.
+    func route(forRowId id: String) -> String? {
+        if let row = model.rows.first(where: { $0.id == id }) { return sessionCard(for: row.sessionId)?.route }
+        return cardRows.first { $0.id == id }?.route
+    }
+
+    /// The × tooltip: "Dismiss · ⌫ · hides it until its next turn", or with the setting on,
+    /// "…also closes its cmux tab".
+    func dismissHelp(forRowId id: String) -> String {
+        // Only a Claude Code session's terminal is ever closed.
+        let noun = dismissTarget(forRowId: id)?.backend == .claude ? TerminalClose.noun(forRoute: route(forRowId: id)) : nil
+        return DismissCopy.tooltip(closesTerminal: dismissClosesTerminal, noun: noun)
+    }
+
+    /// The words behind a card as it swipes: teal "Dismiss", or amber "Dismiss · close tab".
+    var swipeLabel: String { dismissClosesTerminal ? DismissCopy.swipeCloseLabel : DismissCopy.swipeLabel }
+
+    /// The newest dismissal still in its Undo: what the status line speaks for.
+    var dismissStatus: PendingDismissal? { pendingDismissals.last }
+
+    /// Puts a card away: it leaves at once (its slot closes with the gap motion; under Reduce
+    /// Motion it fades), and its five seconds of Undo begin. Nothing else happens until they end:
+    /// the controller owns the timer and commits it, even if the panel has closed.
+    func dismiss(rowId: String) {
+        guard let target = dismissTarget(forRowId: rowId), !sending.contains(rowId),
+              !pendingDismissals.contains(where: { $0.id == target.sessionId }) else { return }
+        let noun = target.backend == .claude ? TerminalClose.noun(forRoute: route(forRowId: rowId)) : nil
+        let pending = PendingDismissal(target: target, startedAt: now(), closesTerminal: dismissClosesTerminal, closeNoun: noun)
+        let slot = slot(of: rowId)
+        let change = { [self] in
+            closeGap(at: slot, rowId: rowId)
+            pendingDismissals.append(pending)
+            var s = state
+            if s.selectedId == rowId { s.selectedId = nil }
+            if let c = s.composer, c.rowId == rowId { s.composer = nil }
+            if let e = s.budgetEditor, e.rowId == rowId { s.budgetEditor = nil }
+            state = s
+            swipe = nil
+            if hoveredCard == rowId { hoveredCard = nil }
+            refreshShown()
+        }
+        if NightWatch.systemReduceMotion { withAnimation(.easeOut(duration: 0.18)) { change() } } else { change() }
+        perform(.startDismissal(pending))
+    }
+
+    /// Undo: the card comes back and nothing else happens.
+    func undoDismissal() {
+        guard let p = pendingDismissals.last else { return }
+        pendingDismissals.removeAll { $0.id == p.id }
+        refreshShown()
+        perform(.undoDismissal(sessionId: p.id))
+    }
+
+    /// The five seconds are over and the controller has handed the dismissal to the Coordinator:
+    /// the line stops offering Undo, and the card stays out until the Mac's ledger says it is hidden.
+    func dismissalCommitted(sessionId: String) {
+        pendingDismissals.removeAll { $0.id == sessionId }
+        committedDismissals[sessionId] = now()
+        refreshShown()
+    }
+
+    /// The Mac's ledger, after each snapshot: the live sessions it hides.
+    func updateDismissals(hidden: Set<String>) {
+        if hidden != ledgerHidden { ledgerHidden = hidden }
+        let t = now()
+        let kept = committedDismissals.filter { id, at in !hidden.contains(id) && t.timeIntervalSince(at) < 12 }
+        if kept.count != committedDismissals.count { committedDismissals = kept }
+        refreshShown()
+    }
+
+    /// "N dismissed · Show": they all come back (the Mac clears its ledger).
+    func restoreDismissed() {
+        guard !ledgerHidden.isEmpty else { return }
+        ledgerHidden = []
+        refreshShown()
+        perform(.restoreDismissed)
+    }
+
+    /// Where a card sat: in the list of finished turns and pages, or in one of the two card groups.
+    private enum Slot {
+        case row(Int)
+        case card(NowMotion.CardGap.Group, Int)
+    }
+
+    private func slot(of rowId: String) -> Slot? {
+        if let i = shownRows.firstIndex(where: { $0.id == rowId }) { return .row(i) }
+        let flights = InFlightLayout.visible(flightRows, collapsed: state.inFlightCollapsed, expanded: state.inFlightExpanded).shown
+        if let i = flights.firstIndex(where: { $0.id == rowId }) { return .card(.flight, i) }
+        let idle = InFlightLayout.visible(idleRows, collapsed: state.idleCollapsed, expanded: state.idleExpanded).shown
+        if let i = idle.firstIndex(where: { $0.id == rowId }) { return .card(.idle, i) }
+        return nil
+    }
+
+    /// The cards below the one that left glide up into its place (`NowMotion.gaps` for the rows,
+    /// `cardGaps` for the two card groups, so an idle card going never moves a decision row).
+    private func closeGap(at slot: Slot?, rowId: String) {
+        guard let slot else { return }
+        let at = now()
+        switch slot {
+        case .row(let i):
+            motion.gaps.append(NowMotion.Gap(index: i, rowId: rowId, at: at))
+            DispatchQueue.main.asyncAfter(deadline: .now() + NowMotion.gapDuration + 0.05) { [weak self] in
+                self?.motion.gaps.removeAll { $0.at == at }
+            }
+        case .card(let group, let i):
+            motion.cardGaps.append(NowMotion.CardGap(group: group, index: i, rowId: rowId, at: at))
+            DispatchQueue.main.asyncAfter(deadline: .now() + NowMotion.gapDuration + 0.05) { [weak self] in
+                self?.motion.cardGaps.removeAll { $0.at == at }
+            }
+        }
+    }
+
+    // MARK: swiping
+
+    /// A sideways drag starts on a card: only a dismissable one takes it.
+    @discardableResult
+    func swipeBegan(rowId: String) -> Bool {
+        guard canDismiss(rowId), swipe == nil || swipe?.rowId == rowId else { return false }
+        swipe = Swipe(rowId: rowId, offset: 0)
+        return true
+    }
+
+    func swipeMoved(rowId: String, offset: Double) {
+        guard swipe?.rowId == rowId else { return }
+        swipe = Swipe(rowId: rowId, offset: offset)
+    }
+
+    /// The finger lifts: far enough (or fast enough), and the card is dismissed; otherwise it springs back.
+    func swipeEnded(rowId: String, offset: Double, velocity: Double) {
+        guard swipe?.rowId == rowId else { return }
+        if SwipeDismissModel.shouldDismiss(offset: offset, width: cardWidth, velocity: velocity) {
+            dismiss(rowId: rowId)
+        } else {
+            withAnimation(NightWatch.systemReduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8)) { swipe = nil }
+        }
+    }
+
+    /// The scroll gesture was cancelled: the card goes back.
+    func swipeCancelled() {
+        guard swipe != nil else { return }
+        withAnimation(NightWatch.systemReduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8)) { swipe = nil }
+    }
+
     // MARK: effects
 
     private func apply(_ new: NowPanelState, effect: NowEffect) {
@@ -657,10 +917,15 @@ final class NowStore: ObservableObject {
             sending.insert(id)
             beginThread(rowId: id, authenticating: false)
             perform(effect)
+        case .dismiss(let id):
+            // The key, ×, swipe or VoiceOver action asked: the store makes it a pending dismissal.
+            dismiss(rowId: id)
         case .typeInto(let target, _):
             // Not a page reply: no receipt thread, no Esc. The row says what happened.
+            // An idle card's receipt sits under the same key as a working card's: the message
+            // starts a turn, and the session moves from IDLE to In flight with it.
             let id = InFlightRow.idPrefix + target.sessionId
-            let route = flightRows.first { $0.id == id }?.route
+            let route = cardRows.first { $0.sessionId == target.sessionId }?.route
             let started = InFlightReceipt(outcome: .sending, route: route, at: now())
             setReceipt(started, for: id)
             perform(effect)
@@ -830,7 +1095,10 @@ final class NowStore: ObservableObject {
     /// pop back after folding).
     private func refreshShown(release: Bool = false) {
         let t = now()
-        let merged = NowStableOrder.merge(shown: shownIds, ranked: model.rows, frozen: orderFrozen && !release)
+        // A finished turn that was put away stays out: while its Undo lasts and until its page closes.
+        let away = hiddenFinishedSessionIds
+        let ranked = away.isEmpty ? model.rows : model.rows.filter { $0.section != .review || !away.contains($0.sessionId) }
+        let merged = NowStableOrder.merge(shown: shownIds, ranked: ranked, frozen: orderFrozen && !release)
         var rows = merged.rows
         // Verified and folded, but the page has not closed yet: keep it out.
         rows.removeAll { r in
@@ -918,6 +1186,15 @@ struct NowMotion: Equatable {
         let at: Date
     }
 
+    /// A dismissed card has gone from its group (In flight, or IDLE): the cards below it glide up.
+    struct CardGap: Equatable {
+        enum Group: Equatable { case flight, idle }
+        let group: Group
+        let index: Int
+        let rowId: String
+        let at: Date
+    }
+
     var arrivals: [String: Date] = [:]
     var threads: [String: Thread] = [:]
     var clearedAt: Date?
@@ -927,6 +1204,7 @@ struct NowMotion: Equatable {
     var unwind: Unwind?
     var burst: Burst?
     var gaps: [Gap] = []
+    var cardGaps: [CardGap] = []
 
     static let arrivalStagger: TimeInterval = 0.09
     /// The longest a verified row stays hidden waiting for its page to close.

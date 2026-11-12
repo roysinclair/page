@@ -168,6 +168,9 @@ struct InFlightRow: Equatable, Identifiable {
 
     /// Row ids carry this prefix, so a selection can never be mistaken for a page id.
     static let idPrefix = "inflight-"
+    /// An idle session's card carries this one: it can never be mistaken for a
+    /// working card (or a page) of the same session either.
+    static let idlePrefix = "idle-"
 
     let id: String
     /// The session id (or the local activity's id).
@@ -195,11 +198,24 @@ struct InFlightRow: Equatable, Identifiable {
     /// A session's card (a local model has only a compact row).
     var hasCard: Bool { kind == .session }
 
+    /// The card of a session that is not working: it waits at its prompt, or
+    /// finished a turn (the IDLE group's cards, and what a finished turn's
+    /// FINISHED card takes its who-line from).
+    var isIdle: Bool { id.hasPrefix(Self.idlePrefix) }
+
+    /// Pure. A card the person may put away (swipe, ×, ⌫): a session that is
+    /// not working. Never a working card or a local model.
+    var dismissable: Bool { kind == .session && !working }
+
     var hasActions: Bool { actions.canOpen || actions.canType || actions.checking }
 
     var accessibilityText: String {
         guard hasCard else {
             return [project, route, doing, elapsed.map { "working for \($0)" }].compactMap { $0 }.joined(separator: ", ")
+        }
+        if isIdle {
+            return [project, "idle", card.backendName, route, card.model, card.lastTurn, card.idleTimeLine]
+                .compactMap { $0 }.joined(separator: ", ")
         }
         return [project, card.backendName, route, card.model, card.now, card.timeLine,
                 card.workflowsHeading, card.healthLine]
@@ -289,6 +305,65 @@ enum InFlightRows {
         return rows.sorted { a, b in
             let c = a.project.localizedCaseInsensitiveCompare(b.project)
             return c == .orderedSame ? a.id < b.id : c == .orderedAscending
+        }
+    }
+
+    /// What an idle card says when Page has nothing about the last turn.
+    static let idleText = "idle"
+    /// The aggregate row Claude reports when it runs but no session can be told apart.
+    static let aggregateSessionId = "claude-cli"
+
+    /// Pure. The sessions at their prompt, as cards: the IDLE group's, and the source
+    /// of a FINISHED card's who-line and time line. Included:
+    ///   - sessions with `state == .idle`;
+    ///   - sessions with `state == .waitingOnUser` whose open pages are all finished-turn
+    ///     pages (`DecideRow.Section.review`). A session with an open finished-turn page
+    ///     is `.waitingOnUser`; one with a stuck page, a question or an approval is not here.
+    /// Claude and Codex both. Local models, Aura and Orbit are not. Left out too: the
+    /// synthetic `claude-cli` row, a headless run with no terminal (host "background"),
+    /// and a Codex thread nobody is running (Codex lists every thread touched in the last
+    /// half hour as idle, whether its process is alive or not): one with no finished-turn
+    /// page needs a host that says it runs in a terminal. A card's step, workflow and health
+    /// lines are replaced by what the last turn changed (`facts[id].lastTurn`).
+    /// Most recent activity first, then project, then id.
+    static func buildIdle(_ s: Coordinator.Snapshot, hosts: [String: SessionHostInfo], facts: [String: InFlightFacts],
+                          now: Date) -> [InFlightRow] {
+        let pages = Dictionary(grouping: s.pendingInterventions, by: \.sessionId)
+        let rows: [InFlightRow] = s.sessions.compactMap { a in
+            guard a.backend == .claude || a.backend == .codex, a.sessionId != aggregateSessionId else { return nil }
+            let open = pages[a.sessionId] ?? []
+            let hasFinishedPage = !open.isEmpty && open.allSatisfy { NowModel.section(of: $0) == .review }
+            switch a.state {
+            case .idle: break
+            case .waitingOnUser: guard hasFinishedPage else { return nil }
+            default: return nil
+            }
+            let host = hosts[a.sessionId].map { SessionRemote.effectiveHost($0, backend: a.backend, state: a.state) }
+            if !hasFinishedPage {
+                if host?.host == "background" { return nil }
+                if a.backend == .codex {
+                    guard let h = host?.host, !["unknown", "desktop", "background", "VS Code"].contains(h) else { return nil }
+                }
+            }
+            let project = NowModel.projectName(of: a)
+            let f = facts[a.sessionId]
+            let card = InFlightCardInfo.makeIdle(facts: f, backend: a.backend, idleSince: a.lastActivityAt, now: now)
+            let doing = card.lastTurn.map { InterventionDetector.clip($0, maxDoing) } ?? idleText
+            return InFlightRow(
+                id: InFlightRow.idlePrefix + a.sessionId, sessionId: a.sessionId, kind: .session, project: project, backend: a.backend,
+                route: host.flatMap { TerminalFocus.routeLabel(host: $0.host, project: project) },
+                doing: doing, since: a.lastActivityAt, elapsed: a.lastActivityAt.map { elapsed(since: $0, now: now) },
+                actions: .resolve(host: host), target: InFlightTarget(session: a), working: false, card: card)
+        }
+        return rows.sorted { a, b in
+            switch (a.since, b.since) {
+            case let (x?, y?) where x != y: return x > y
+            case (_?, nil): return true
+            case (nil, _?): return false
+            default:
+                let c = a.project.localizedCaseInsensitiveCompare(b.project)
+                return c == .orderedSame ? a.id < b.id : c == .orderedAscending
+            }
         }
     }
 
@@ -534,7 +609,7 @@ enum InFlightMenu {
 // MARK: - Remembered choices
 
 /// What the panel remembers between launches: the first-run tip, and whether
-/// the In-flight group is collapsed. Kept in UserDefaults (never config.json).
+/// the In-flight and IDLE groups are collapsed. Kept in UserDefaults (never config.json).
 /// The defaults object is injected so tests and the render harness never touch
 /// the real app's.
 struct NowPrefs {
@@ -543,6 +618,7 @@ struct NowPrefs {
 
     static let tipKey = "nowPanel.rowActionsTipDismissed"
     static let collapsedKey = "nowPanel.inFlightCollapsed"
+    static let idleCollapsedKey = "nowPanel.idleCollapsed"
 
     init(defaults: UserDefaults) {
         read = { defaults.bool(forKey: $0) }
@@ -580,6 +656,12 @@ struct NowPrefs {
     var inFlightCollapsed: Bool {
         get { read(Self.collapsedKey) }
         nonmutating set { write(Self.collapsedKey, newValue) }
+    }
+
+    /// Whether the IDLE group is collapsed to its header.
+    var idleCollapsed: Bool {
+        get { read(Self.idleCollapsedKey) }
+        nonmutating set { write(Self.idleCollapsedKey, newValue) }
     }
 }
 

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Every session in the menu bar</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .pop { left: 584px; top: 14px; width: 190px; border-radius: 10px; }
+  .swipe { left: 334px; top: 292px; width: 236px; border-radius: 8px; z-index: 6;
+           box-shadow: 0 26px 60px rgba(0,0,0,.72), 0 0 0 .5px rgba(255,255,255,.1); }
+  .copy p { max-width: 262px; text-wrap: pretty; }
+</style></head>
+<body><div class="canvas feat">
+  <div class="sky" data-seed="73"></div>
+  <div class="aurora" data-blobs="70,-30,60,70,teal,.24,70; 30,70,40,60,amber,.12,80; 95,40,40,60,sky,.14,90"></div>
+  <div class="copy" style="--cw:270px; --ct:42%">
+    <span class="eyebrow"><span class="pulse" style="--s:18px"><b></b></span>Menu bar</span>
+    <h2 class="headline">Every session. <em>Put away what's done.</em></h2>
+    <p class="caption">Working, finished and idle sessions on one card. Swipe a finished one away until its next turn, or let Page close its terminal tab too.</p>
+    <div class="chips">
+      <span class="chip"><span class="dot"></span>In flight</span>
+      <span class="chip"><span class="dot" style="background:var(--sky);box-shadow:0 0 8px var(--sky)"></span>Idle</span>
+      <span class="chip"><span class="dot" style="background:var(--amber);box-shadow:0 0 8px var(--amber)"></span>Swipe · × · ⌫</span>
+    </div>
+  </div>
+  <div class="render pop shadowed"><img src="assets/mac-popover-sessions.webp" alt=""></div>
+  <div class="render swipe"><img src="assets/mac-popover-swipe.webp" alt=""></div>
+</div><script src="sky.js"></script></body></html>

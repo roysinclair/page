@@ -8,7 +8,7 @@ Each image is an HTML composition shot by headless Chromium. Nothing opens a win
 | `hero.html` | `hero.png` 2400×1200 (README), `hero.webp` 2880×1440 (website) |
 | `og.html` | `og.png` / `og.webp` 1200×630 (social card, GitHub social preview) |
 | `og-studio.html` | `website/public/img/og/studio.webp` 1200×630 (the website home page's social card) |
-| `feature-*.html` | 1600×1000 each: budgets, budget-stop, battery, lock-screen, sessions, terminals, android, widgets, relay, aura |
+| `feature-*.html` | 1600×1000 each: budgets, budget-stop, panel, panel-close, battery, lock-screen, sessions, terminals, android, widgets, relay, aura |
 | `family.html` | `family.png` / `family.webp` 2400×1500 (brochure cover, website overview) |
 | `screen-lock.html` | `out/screen-lock.png` 782×1690, the lock-screen board with the Page Relay name, for `website/scripts/product-shots.py` (`power/lock`) |
 
@@ -55,6 +55,17 @@ node shoot.mjs feature-budget && .venv/bin/python compress.py
 
 The Mac's budget fixtures live in `Sources/ClaudePowerMode/UI/RenderBudget.swift` (popover) and
 `TowerFixtures.budgetBoard()` (Tower ▸ Budget), with demo names only.
+
+The menu-bar panel images (`feature-panel`, `feature-panel-close`) need only the Mac renders:
+
+```sh
+.build/debug/ClaudePowerMode --render-ui /tmp/r/mac --card-glow full    # from the repo root
+.venv/bin/python assets.py --mac /tmp/r/mac --only panel
+node shoot.mjs feature-panel && .venv/bin/python compress.py
+(cd ../../../website && npm run crops -- panel)     # the website's -visual crops
+```
+
+Their fixtures live in `Sources/ClaudePowerMode/UI/RenderSessions.swift`, with demo names only.
 
 ## Rules for what goes in
 

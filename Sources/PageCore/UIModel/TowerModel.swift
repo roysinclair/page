@@ -528,12 +528,13 @@ enum ShortcutCatalog {
             TowerShortcut(keys: ["⌘", "N"], title: "New session", detail: "Opens Dispatch: pick a folder, write the prompt")
         ]),
         TowerShortcutGroup(title: "IN THE NOW PANEL", items: [
-            TowerShortcut(keys: ["↑", "↓"], title: "Move between rows", detail: "Pages first, then the sessions in flight. Selects a row; nothing is sent by moving"),
+            TowerShortcut(keys: ["↑", "↓"], title: "Move between rows", detail: "Pages first, then the sessions in flight, then the idle ones. Selects a row; nothing is sent by moving"),
             TowerShortcut(keys: ["1"], title: "Approve", detail: "Types option 1 into the session. On an irreversible item, hold it, then Touch ID (or your password)"),
             TowerShortcut(keys: ["↵"], title: "Approve an undoable item", detail: "Does nothing on irreversible ones, where it opens the terminal instead"),
             TowerShortcut(keys: ["esc"], title: "Deny", detail: "Presses Esc in the session. With nothing selected it closes the panel"),
             TowerShortcut(keys: [PanelKeys.type], title: "Steer: reply to a waiting page, or type to a session", detail: "On a waiting page: Esc first, then your text, then Return. On a session in flight: just your text and Return, read after its current step"),
             TowerShortcut(keys: [PanelKeys.open], title: "Open the session’s terminal", detail: "Pages and sessions in flight. Claude: the session’s own Terminal, iTerm2, cmux or tmux pane. Codex: brings your terminal forward. Never types"),
+            TowerShortcut(keys: ["⌫"], title: "Dismiss a finished or idle session", detail: "Hides it until its next turn, with 5 seconds to undo. Swiping a card sideways or clicking its × does the same. With “also closes its terminal tab” on, its tab closes too"),
             TowerShortcut(keys: [PanelKeys.help], title: "Show every shortcut", detail: "The ? button in the panel’s footer does the same"),
             TowerShortcut(keys: ["click"], title: "Click a card in flight to open it", detail: "Its Open and Steer buttons do what O and T do. “N working” in the header jumps to the cards, and the pulse opens Settings"),
             TowerShortcut(keys: ["hold", "⌘", "."], title: "Stop all agents", detail: "Hold for 10 seconds; sends Esc to every busy session"),
@@ -619,6 +620,7 @@ enum TowerControlMap {
         .init(old: "action: Set up kitty remote control", oldTab: "(new)", section: .terminals, newControl: "kitty row: Set up… adds two lines to kitty.conf (backed up), Undo"),
         .init(old: "action: Allow Terminal / iTerm2 automation", oldTab: "(new)", section: .terminals, newControl: "Terminal and iTerm2 rows: Allow… asks macOS for Automation permission"),
         .init(old: "action: Get a terminal", oldTab: "(new)", section: .terminals, newControl: "Not-installed rows: Get it ↗ opens the official site"),
+        .init(old: "action: Dismissing closes the terminal toggle", oldTab: "(new)", section: .terminals, newControl: "Terminals page, THE NOW PANEL: “Dismissing a session also closes its terminal tab” (config key dismissClosesTerminal, applied at once like the budget steppers; Swipe, × or ⌫ in the Now panel then also closes that session’s own tab, once its 5 seconds to undo are up)"),
         .init(old: "action: Open widget settings", oldTab: "(new)", section: .widgets, newControl: "Widgets page: Widget settings (macOS 14 and later) opens System Settings at Desktop & Dock, for showing widgets on the desktop and using iPhone widgets; adding a widget is Show me how"),
         .init(old: "action: Widgets how-to", oldTab: "(new)", section: .widgets, newControl: "Widgets page: Show me how draws the steps (right-click the desktop, Edit Widgets, search Page Studio, drag)"),
         .init(old: "action: Register widgets", oldTab: "(new)", section: .widgets, newControl: "Widgets page: the status line, and Ask macOS to find them when it hasn’t"),

@@ -119,6 +119,13 @@ struct Config: Codable, Equatable {
     /// the 5-hour limit is 30 min away at the current pace.
     var usageForecastPageEnabled: Bool = true
 
+    // The Now panel's sessions (Designs/panel-sessions.md).
+    /// Dismissing a finished or idle session in the Now panel (swipe, ×, ⌫) also closes the
+    /// terminal tab, pane or window it runs in, after five seconds you can undo. That ends
+    /// the agent there. Off by default; set on Preferences ▸ Terminals. A working session is
+    /// never closed.
+    var dismissClosesTerminal: Bool = false
+
     // Appearance.
     /// How much of a teal glow glass cards (the menu bar panel, Dispatch,
     /// Welcome back, the Tower) get along their bottom edge. Off by default.
@@ -154,6 +161,7 @@ struct Config: Codable, Equatable {
         case batteryForecastPageEnabled, earlyBatteryPause, usageForecastPageEnabled
         case cardGlow
         case budget
+        case dismissClosesTerminal
     }
 
     /// Collects per-key decode problems. Passed through `decoder.userInfo`
@@ -223,6 +231,7 @@ struct Config: Codable, Equatable {
         usageForecastPageEnabled = field(.usageForecastPageEnabled, d.usageForecastPageEnabled)
         cardGlow = field(.cardGlow, d.cardGlow)
         budget = field(.budget, d.budget)
+        dismissClosesTerminal = field(.dismissClosesTerminal, d.dismissClosesTerminal)
     }
 
     // MARK: validation

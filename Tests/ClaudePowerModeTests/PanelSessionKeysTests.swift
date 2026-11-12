@@ -299,6 +299,33 @@ final class PanelSessionDetectorDismissTests: XCTestCase {
         XCTAssertEqual(r.opened.count, 1)
     }
 
+    // After a relaunch: the saved ledger quiets its Claude sessions before the first scan.
+
+    func testQuietOnLaunchNamesTheLedgersClaudeSessions() {
+        var ledger = SessionDismissals()
+        ledger.dismiss(SessionDismissal(sessionId: "b-claude", backend: .claude, at: Date(), pageId: "b-claude-idle-1"))
+        ledger.dismiss(SessionDismissal(sessionId: "a-claude", backend: .claude, at: Date(), pageId: nil))
+        ledger.dismiss(SessionDismissal(sessionId: "codex-1", backend: .codex, at: Date(), pageId: nil))
+        XCTAssertEqual(Coordinator.quietOnLaunch(ledger), ["a-claude", "b-claude"])
+        XCTAssertEqual(Coordinator.quietOnLaunch(SessionDismissals()), [])
+    }
+
+    func testAfterARelaunchADismissedSessionStaysQuietAndHidden() throws {
+        try write([userLine("go"), assistantText("done")])
+        var ledger = SessionDismissals()
+        ledger.dismiss(SessionDismissal(sessionId: sid, backend: .claude, at: Date(), pageId: nil))
+        // A fresh detector, as at launch, quieted from the saved ledger.
+        let det = detector()
+        for id in Coordinator.quietOnLaunch(ledger) { det.quietFinishedTurn(sessionId: id) }
+        let r = det.scan(sessions: [live(.idle, since: Date().addingTimeInterval(-120))], transcriptFor: { _ in self.transcript },
+                         settings: DetectorSettings())
+        XCTAssertTrue(r.opened.isEmpty, "no page, so the phone isn't paged for a session put away before the relaunch")
+        let session = AgentSession(backend: .claude, sessionId: sid, cwd: "/tmp", title: "proj", source: .terminal, state: .idle,
+                                   lastActivityAt: nil, activeFlags: [], supportsRemoteReply: true)
+        XCTAssertTrue(ledger.hides(session, openPageIds: Set(det.currentlyPending.values.filter { $0.sessionId == sid }.map(\.id))),
+                      "and with no new page the ledger keeps it hidden")
+    }
+
     func testAQuietLeavesAnAlreadyOpenPageAlone() throws {
         try write([userLine("go"), assistantText("done")])
         let det = detector()

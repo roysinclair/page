@@ -347,6 +347,9 @@ final class Coordinator {
         publishedConfigProblem = loaded.problem
         tickConfig = cfg
         claudeBackend = ClaudeBackend(config: cfg)
+        // Sessions put away before a relaunch stay quiet: without this the first scan would open
+        // their finished-turn pages again (paging the phone) and the ledger would let them back.
+        for id in Self.quietOnLaunch(dismissals) { claudeBackend.quietFinishedTurn(sessionId: id) }
         codexBackend = CodexBackend(config: cfg)
         auraBackend = AuraBackend(config: cfg)
         orbitBackend = AuraBackend(config: cfg, flavor: .orbit)
@@ -1998,6 +2001,13 @@ final class Coordinator {
             Logger.shared.log("Session dismissed in the panel: \(sessionId.prefix(8)) (\(backend.rawValue))\(pageId == nil ? "" : ", its finished-turn page closed")")
             if self.hasTicked { self.publishSnapshot() }
         }
+    }
+
+    /// Pure. The Claude sessions whose finished-turn pages must stay shut when Page Studio starts:
+    /// every Claude session in the saved ledger. Nothing is open before the first scan, so quieting
+    /// covers a card put away with its page and one put away before its page opened alike.
+    static func quietOnLaunch(_ ledger: SessionDismissals) -> [String] {
+        ledger.entries.values.filter { $0.backend == .claude }.map(\.sessionId).sorted()
     }
 
     /// "N dismissed · Show": every dismissed session comes back.

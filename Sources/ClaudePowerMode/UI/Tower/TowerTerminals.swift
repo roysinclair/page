@@ -47,6 +47,12 @@ struct NWTerminalsPage: View {
             }
             NWNote(text: "Run Claude Code inside any of these and it shows up on your phone, ready to reply. Page Studio types only into the exact pane or tab the session runs in, and checks it is still that session first. Anything else (Ghostty, Warp, VS Code’s terminal…) can’t be typed into yet: run the agent inside tmux, or install the agent hooks so approvals work from any terminal. Questions Claude asks can be answered from your phone wherever the line above says yes. Photos sent from your phone's session chat are attached where it says so; elsewhere Claude gets the file's location and opens it itself. Nothing here is installed for you.")
                 .padding(.horizontal, 4)
+            NWCard(title: "THE NOW PANEL") {
+                NWToggleRowCustom(
+                    title: "Dismissing a session also closes its terminal tab",
+                    detail: "Swipe, × or ⌫ in the Now panel. Once its 5 seconds to undo are up, Page closes only that session’s own cmux tab (or its workspace, when the tab is alone there), tmux pane, Terminal window, iTerm2 session, WezTerm pane or kitty window. That ends the agent there; pick it up later with claude --resume. A working session is never closed.",
+                    isOn: store.dismissClosesTerminal) { store.setDismissClosesTerminal($0) }
+            }
             NWCard(title: "ANY OTHER TERMINAL") {
                 NWRow(title: "Agent hooks", detail: "phone approvals for Claude Code and Codex in any terminal, with a diff and a backup first") {
                     NWButton(title: "Install agent hooks…", kind: .secondary) { store.openPhoneApprovals() }

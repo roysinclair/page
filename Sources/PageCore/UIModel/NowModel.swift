@@ -335,6 +335,9 @@ struct NowInputs {
     /// What each working session's card shows, by session id: its last steps,
     /// model, session start, running workflows (the probe's read).
     var facts: [String: InFlightFacts] = [:]
+    /// What each idle session's card shows, by session id: its model, session start and
+    /// what the last turn changed (the idle probe's read, kept apart from `facts`).
+    var idleFacts: [String: InFlightFacts] = [:]
     var timeZone: TimeZone = .current
 }
 
@@ -389,6 +392,10 @@ struct NowModel: Equatable {
     /// The same sessions as clickable rows (project, route, what it is doing,
     /// how long), longest-running first; busy local models included.
     var flight: [InFlightRow] = []
+    /// Sessions at their prompt, as cards (the IDLE group; a FINISHED card takes its
+    /// who-line from its session's entry), most recent activity first. Not yet less the
+    /// ones with a row of their own or the dismissed: `IdleGroup.contents` does that.
+    var idle: [InFlightRow] = []
     /// Sessions Stop all would press Esc in.
     var stoppableCount: Int = 0
     /// Spoken by VoiceOver on the status item.
@@ -495,6 +502,7 @@ struct NowModel: Equatable {
             paused: pausedAgents, canResumeNow: !s.battery.paused.isEmpty,
             phoneLine: phoneLine, rings: i.day?.rings ?? [], glyph: glyph, macName: i.macName,
             inFlight: inFlight(s), flight: InFlightRows.build(s, hosts: i.hosts, activity: i.activity, busySince: i.busySince, facts: i.facts, now: i.now),
+            idle: InFlightRows.buildIdle(s, hosts: i.hosts, facts: i.idleFacts, now: i.now),
             stoppableCount: s.sessions.filter { $0.state == .active }.count,
             accessibilityLabel: "Page Studio — \(headline)", configProblem: s.configProblem)
     }

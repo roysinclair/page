@@ -158,6 +158,8 @@ enum StopScope {
 struct NowKeyPress: Equatable {
     enum Key: Equatable {
         case up, down, ret, esc
+        /// ⌫ and forward delete: dismiss a finished or idle session.
+        case delete
         case char(Character)
     }
     enum Phase: Equatable { case down, up }
@@ -198,6 +200,10 @@ struct NowPanelState: Equatable {
     var inFlightCollapsed = false
     /// All in-flight rows shown (otherwise the first `InFlightLayout.cap`).
     var inFlightExpanded = false
+    /// The IDLE group shows only its header (names and count).
+    var idleCollapsed = false
+    /// All idle cards shown (otherwise the first `InFlightLayout.cap`).
+    var idleExpanded = false
     /// The shortcuts sheet is up in place of the rows.
     var showShortcuts = false
     /// The budget editor open in a card ("Set budget"). Never together with the composer.
@@ -233,6 +239,16 @@ enum NowEffect: Equatable {
     /// Delete a message a phone asked to hold until its session's turn ends
     /// (the phone's `retract`); nothing is typed.
     case deleteHeld(clientId: String)
+    /// ⌫, ×, a swipe or VoiceOver's Dismiss on a finished or idle card. The store turns it
+    /// into a `PendingDismissal` (five seconds of Undo) and says `startDismissal`.
+    case dismiss(rowId: String)
+    /// The card is gone and the countdown begins: the controller arms its timer and commits
+    /// when it ends (even if the panel has closed). Nothing is typed, nothing closed yet.
+    case startDismissal(PendingDismissal)
+    /// Undo: the controller drops that session's timer. Nothing else happened.
+    case undoDismissal(sessionId: String)
+    /// "N dismissed · Show": clear the ledger, so every dismissed session comes back.
+    case restoreDismissed
     /// Save in the budget editor: sets or clears a budget (config.json or the session caps).
     /// Nothing is typed into any session.
     case setBudget(BudgetOp)
@@ -242,24 +258,27 @@ enum NowKeys {
     /// Pure. The selection after the rows change: kept by id, and dropped (never
     /// moved to a neighbour) when its row is gone, so a key can never act on a
     /// row the person did not choose. An open composer for a vanished row closes.
-    static func reconcile(_ state: NowPanelState, rows: [DecideRow], flights: [InFlightRow] = []) -> NowPanelState {
+    static func reconcile(_ state: NowPanelState, rows: [DecideRow], flights: [InFlightRow] = [],
+                          idle: [InFlightRow] = []) -> NowPanelState {
         var s = state
-        let ids = Set(rows.map(\.id)).union(flights.map(\.id))
+        let ids = Set(rows.map(\.id)).union(flights.map(\.id)).union(idle.map(\.id))
         if let id = s.selectedId, !ids.contains(id) { s.selectedId = nil }
         if let c = s.composer, !ids.contains(c.rowId) { s.composer = nil }
         if let e = s.budgetEditor, !ids.contains(e.rowId) { s.budgetEditor = nil }
         if let h = s.hold, case .approve(let id) = h.kind, !ids.contains(id) { s.hold = nil }
         if rows.count <= NowModel.visibleRows { s.expanded = false }
         if flights.count <= InFlightLayout.cap { s.inFlightExpanded = false }
+        if idle.count <= InFlightLayout.cap { s.idleExpanded = false }
         return s
     }
 
     /// Pure. A key against the panel's state and the current rows.
     static func handle(_ press: NowKeyPress, state: NowPanelState, rows: [DecideRow], flights: [InFlightRow] = [],
-                       now: Date) -> (state: NowPanelState, effect: NowEffect) {
-        var s = reconcile(state, rows: rows, flights: flights)
+                       idle: [InFlightRow] = [], now: Date) -> (state: NowPanelState, effect: NowEffect) {
+        var s = reconcile(state, rows: rows, flights: flights, idle: idle)
         let selected = s.selectedId.flatMap { id in rows.first { $0.id == id } }
-        let selectedFlight = s.selectedId.flatMap { id in flights.first { $0.id == id } }
+        // A working card, an idle card and a card whose turn just ended answer to the same keys.
+        let selectedFlight = s.selectedId.flatMap { id in flights.first { $0.id == id } ?? idle.first { $0.id == id } }
 
         // Releasing the key (or Command) ends a hold that has not filled.
         if press.phase == .up {
@@ -342,8 +361,10 @@ enum NowKeys {
         case .up, .down:
             // Moving cancels a hold: it was for the row you left.
             s.hold = nil
-            // Pages first, then working sessions (none while that group is collapsed).
-            let ids = rows.map(\.id) + (s.inFlightCollapsed ? [] : flights.map(\.id))
+            // Pages first, then working sessions, then idle ones (none while a group is collapsed).
+            let flightIds = s.inFlightCollapsed ? [] : flights.map(\.id)
+            let idleIds = s.idleCollapsed ? [] : idle.map(\.id)
+            let ids = rows.map(\.id) + flightIds + idleIds
             guard !ids.isEmpty else { return (s, .none) }
             let current = s.selectedId.flatMap { ids.firstIndex(of: $0) }
             let next: Int
@@ -357,7 +378,18 @@ enum NowKeys {
             s.selectedId = ids[next]
             // Reaching a row past the compact list opens the rest.
             if next >= NowModel.visibleRows && next < rows.count { s.expanded = true }
-            if next >= rows.count && next - rows.count >= InFlightLayout.cap { s.inFlightExpanded = true }
+            let intoFlights = next - rows.count
+            if intoFlights >= 0, intoFlights < flightIds.count, intoFlights >= InFlightLayout.cap { s.inFlightExpanded = true }
+            let intoIdle = next - rows.count - flightIds.count
+            if intoIdle >= InFlightLayout.cap { s.idleExpanded = true }
+            return (s, .none)
+
+        case .delete:
+            // ⌫ puts away a finished turn, an idle card or a card whose turn has ended; on anything
+            // else (a working card, a Decide or Look row) it does nothing.
+            guard !press.isRepeat else { return (s, .none) }
+            if let row = selected { return (s, DismissTarget.of(row) == nil ? .none : .dismiss(rowId: row.id)) }
+            if let card = selectedFlight { return (s, DismissTarget.of(card) == nil ? .none : .dismiss(rowId: card.id)) }
             return (s, .none)
 
         case .esc:

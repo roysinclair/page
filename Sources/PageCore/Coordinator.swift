@@ -81,6 +81,9 @@ final class Coordinator {
         /// Budget caps: each project's share of the week and where it stands (`.off` while
         /// capture is off). nil when the snapshot doesn't say (fixtures, tests).
         var budget: BudgetStatus? = nil
+        /// The sessions the person put away in the Now panel, until their next turn
+        /// (`dismissed-sessions.json`). Empty in fixtures and tests.
+        var dismissals = SessionDismissals()
 
         var relayConnected: Bool { relayState == .connected }
         var boosting: Bool { awake.preventIdleSleep }
@@ -207,6 +210,9 @@ final class Coordinator {
     /// Budget caps (Designs/budget-caps.md): the books, the gate's markers and the
     /// budget pages (tick queue only).
     private let budgetController: BudgetController
+    /// Sessions the person put away in the Now panel (tick queue only), and where they are kept.
+    private var dismissals: SessionDismissals
+    private let dismissalStore: SessionDismissalStore
     private var budgetCaptureOn = false
     private var budgetCaptureCheckedAt: Date = .distantPast
     private var lastBudgetStatus = BudgetStatus.off
@@ -326,12 +332,15 @@ final class Coordinator {
 
     /// `platform` becomes `Platform.current`, so the static helpers the
     /// backends call (presence, process inspection) agree with it.
-    init(platform: Platform = .current, budgetFiles: BudgetFiles = .live()) {
+    init(platform: Platform = .current, budgetFiles: BudgetFiles = .live(),
+         dismissalStore: SessionDismissalStore = .live()) {
         Platform.current = platform
         self.platform = platform
         power = platform.makePower()
         sleepGuard = platform.makeLidGuard()
         budgetController = BudgetController(files: budgetFiles)
+        self.dismissalStore = dismissalStore
+        dismissals = dismissalStore.load()
         let loaded = Config.loadResult()
         let cfg = loaded.config ?? Config()
         publishedConfig = cfg
@@ -1663,8 +1672,15 @@ final class Coordinator {
             if let problem = cfg.relayURLProblem { return .misconfigured(problem.message) }
             return relay?.isConnected == true ? .connected : .connecting
         }()
+        let allSessions = snapshots.flatMap { $0.sessions }
+        let allPages = snapshots.flatMap { $0.pendingInterventions }
+        // A dismissed session that worked again (or went, or got a different page) is shown again.
+        // Never before the first tick: an empty session list then is "not looked yet", not "all gone".
+        // A backend that has not scanned yet (Codex, on its own queue) cannot say a session is gone.
+        let reported: Set<AgentBackendID> = codexBackend.hasCompletedFirstScan ? [.claude, .codex, .aura, .orbit] : [.claude, .aura, .orbit]
+        if hasTicked, !dismissals.isEmpty, dismissals.prune(live: allSessions, openPages: allPages, reported: reported) { persistDismissals() }
         let snap = Snapshot(
-            sessions: snapshots.flatMap { $0.sessions },
+            sessions: allSessions,
             power: lastPower,
             awake: power.held,
             lidClosedOnBattery: sleepGuard.isActive,
@@ -1674,7 +1690,7 @@ final class Coordinator {
                                    graceEndsAt: battery.graceEndsAt, mode: battery.mode),
             activeRateLimit: mergedRateLimit(snapshots),
             scheduledResumes: claudeBackend.latestState.scheduledResumes,
-            pendingInterventions: snapshots.flatMap { $0.pendingInterventions },
+            pendingInterventions: allPages,
             relayState: relayState,
             backends: infos,
             configProblem: configProblem,
@@ -1684,7 +1700,8 @@ final class Coordinator {
             usage: usage.latest,
             usageHitAt: usage.hitAt(now: Date()),
             held: sessionRemote.heldMessages(),
-            budget: budgetController.status
+            budget: budgetController.status,
+            dismissals: dismissals
         )
         onStateChange?(snap)
     }
@@ -1932,6 +1949,93 @@ final class Coordinator {
             return platform.terminalHost.activate(appNamed: "Page Aura")
         case .orbit:
             return platform.terminalHost.activate(appNamed: "Page Orbit")
+        }
+    }
+
+    // MARK: dismissed sessions (the Now panel)
+
+    /// What the cards of sessions at their prompt show: their model, when the session began
+    /// and what the last finished turn changed. Reads files and runs git (a transcript only
+    /// when it has changed): probe queue only, one caller at a time. Kept apart from
+    /// `inFlightFacts`, whose caches keep only the working sessions.
+    private let idleProbe = FlightProbe()
+
+    func idleFacts(for sessions: [AgentSession]) -> [String: InFlightFacts] {
+        let summaries = config.turnSummaryEnabled
+        return idleProbe.idleFacts(for: sessions, live: claudeBackend.remoteLiveSessions,
+                                   transcriptFile: { [liveBackends] in liveBackends.transcriptFile(for: $0) },
+                                   headline: summaries ? { TurnSummary.headline(transcript: $0, cwd: $1) } : nil)
+    }
+
+    /// The process a Claude session runs in now (when exactly one does) and when its status last
+    /// changed: captured when a card is put away, so closing its terminal five seconds later can tell
+    /// it is still that process and has not been used since.
+    func liveMark(sessionId: String, backend: AgentBackendID) -> (pid: Int32, since: Date?)? {
+        guard backend == .claude else { return nil }
+        let live = claudeBackend.remoteLiveSessions.filter { $0.sessionId == sessionId }
+        return live.count == 1 ? (live[0].pid, live[0].statusUpdatedAt) : nil
+    }
+
+    /// The five seconds are over: a ledger entry hides the session until its next turn, and a
+    /// finished-turn page closes everywhere (the backend marks it dismissed, so it is not opened
+    /// again for the same turn, and closes it on the relay as "dismissed_at_mac": the phone's page
+    /// goes away too). Nothing is typed into the session and nothing is closed here.
+    func dismissSession(sessionId: String, backend: AgentBackendID, pageId: String?) {
+        tickQueue.async { [weak self] in
+            guard let self, !self.isShutDown else { return }
+            if let pageId {
+                switch backend {
+                case .claude: self.claudeBackend.dismissFinishedPage(id: pageId)
+                case .codex: self.codexBackend.dismissIdlePage(id: pageId)
+                case .aura, .orbit: break
+                }
+            } else if backend == .claude {
+                // No page yet: the one this turn would open later is held back too.
+                self.claudeBackend.quietFinishedTurn(sessionId: sessionId)
+            }
+            self.dismissals.dismiss(SessionDismissal(sessionId: sessionId, backend: backend, at: Date(), pageId: pageId))
+            self.persistDismissals()
+            Logger.shared.log("Session dismissed in the panel: \(sessionId.prefix(8)) (\(backend.rawValue))\(pageId == nil ? "" : ", its finished-turn page closed")")
+            if self.hasTicked { self.publishSnapshot() }
+        }
+    }
+
+    /// "N dismissed · Show": every dismissed session comes back.
+    func restoreDismissed() {
+        tickQueue.async { [weak self] in
+            guard let self, !self.dismissals.isEmpty else { return }
+            self.dismissals.clear()
+            self.persistDismissals()
+            Logger.shared.log("Dismissed sessions restored in the panel")
+            if self.hasTicked { self.publishSnapshot() }
+        }
+    }
+
+    private func persistDismissals() {
+        if !dismissalStore.save(dismissals) { Logger.shared.log("Couldn't save \(SessionDismissalStore.fileName)") }
+    }
+
+    /// Closes the exact terminal a dismissed Claude session runs in (the setting "Dismissing a
+    /// session also closes its terminal tab"). Blocking work runs off the caller's queue; it
+    /// re-reads the live sessions and resolves the host again, and closes nothing unless the
+    /// session is still at its prompt, still the same process (`expectedPid`) and in a host Page
+    /// can close (`TerminalClose`). `completion` gets what happened, on any queue; the same
+    /// words go to the log.
+    func closeTerminal(sessionId: String, backend: AgentBackendID, expectedPid: Int32? = nil, expectedSince: Date? = nil,
+                       completion: @escaping (TerminalCloseOutcome) -> Void) {
+        let claude = claudeBackend
+        DispatchQueue.global(qos: .userInitiated).async {
+            let table = ProcessRunner.processTable()
+            let io = TerminalCloseIO(
+                liveSessions: { claude.freshLiveSessions(processTable: table) },
+                currentStatus: { claude.remoteStatus(pid: $0) },
+                processTable: { table },
+                resolveHost: { InjectionExecutor.resolveHost(for: $0, processTable: $1) },
+                run: { TerminalClose.runLive($0) })
+            let outcome = TerminalClose.close(sessionId: sessionId, backend: backend, expectedPid: expectedPid,
+                                              expectedSince: expectedSince, io: io)
+            Logger.shared.log("Close terminal for \(sessionId.prefix(8)): \(outcome)")
+            completion(outcome)
         }
     }
 

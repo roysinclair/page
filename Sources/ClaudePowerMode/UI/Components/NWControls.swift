@@ -215,26 +215,54 @@ struct NWRingsRow: View {
 
 // MARK: - Receipt line
 
-/// One line of proof that a keystroke landed (or why it did not).
+/// One line of proof that a keystroke landed (or why it did not). With `actionTitle` it ends in a
+/// link-like button ("Undo"), which stays on screen while the words give way.
 struct NWReceiptLine: View {
     var text: String
     var failed = false
+    /// An SF Symbol in place of the default one.
+    var symbol: String? = nil
+    var actionTitle: String? = nil
+    var action: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 9) {
-            Image(systemName: failed ? "exclamationmark.square" : "dollarsign.square")
+            Image(systemName: symbol ?? (failed ? "exclamationmark.square" : "dollarsign.square"))
                 .font(Font.system(size: 12, weight: .medium))
-            Text(text)
-                .font(Font.system(size: 10.5, weight: .medium, design: .monospaced))
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
-                .truncationMode(.tail)
+            if let actionTitle {
+                HStack(spacing: 0) {
+                    Text(text + " · ")
+                        .font(Font.system(size: 10.5, weight: .medium, design: .monospaced))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        .truncationMode(.tail)
+                    Button(action: action) {
+                        Text(actionTitle)
+                            .font(Font.system(size: 10.5, weight: .semibold, design: .monospaced))
+                            .underline()
+                            .lineLimit(1)
+                            .fixedSize()
+                    }
+                    .buttonStyle(.plain)
+                    .layoutPriority(1)
+                    .help("\(actionTitle) · puts it back, nothing else happens")
+                }
+            } else {
+                // One line when it fits; a long outcome ("… didn't close its tab: it started working again") wraps to a second.
+                Text(text)
+                    .font(Font.system(size: 10.5, weight: .medium, design: .monospaced))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+                    .truncationMode(.tail)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.vertical, 4)
+            }
         }
         .foregroundColor((failed ? NightWatch.Palette.amber : NightWatch.Palette.teal).opacity(0.92).color)
         .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
         .background((failed ? NightWatch.Palette.amber : NightWatch.Palette.teal).opacity(0.07).color)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: actionTitle == nil ? .combine : .contain)
     }
 }
 

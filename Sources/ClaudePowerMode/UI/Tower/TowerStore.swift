@@ -125,6 +125,8 @@ final class TowerStore: ObservableObject {
     @Published private(set) var helperInstalling = false
     @Published private(set) var relayTest: RelayTest = .idle
     @Published private(set) var usageCapture = UsageCaptureStatus()
+    /// "Dismissing a session also closes its terminal tab" (Terminals page). Applied at once, not by Apply.
+    @Published private(set) var dismissClosesTerminal = false
     /// Each project's share of the week and its budget; nil until the Mac has measured (Designs/budget-caps.md).
     @Published private(set) var budgetBoard: BudgetBoard?
     @Published private(set) var localLines: [String] = []
@@ -166,6 +168,7 @@ final class TowerStore: ObservableObject {
         self.baseline = f
         self.macName = macName
         self.env = env
+        self.dismissClosesTerminal = config.dismissClosesTerminal
     }
 
     // MARK: live data
@@ -252,6 +255,7 @@ final class TowerStore: ObservableObject {
         let f = PreferencesForm(cfg)
         form = f
         baseline = f
+        dismissClosesTerminal = cfg.dismissClosesTerminal
         problem = loaded?.problem
         usageCapture = Self.usageStatus(env.usageCaptureState())
         relayTest = .idle
@@ -589,6 +593,31 @@ final class TowerStore: ObservableObject {
         } catch {
             usageCapture = UsageCaptureStatus(on: !on, text: (error as? LocalizedError)?.errorDescription ?? "\(error)", failed: true)
         }
+    }
+
+    // MARK: dismissing closes the terminal (applied at once)
+
+    /// The Terminals page's toggle. It writes config.json now (the freshest file, one field changed) and
+    /// reloads, like the budget steppers: it is not part of Apply. Turning it on never closes anything by
+    /// itself; it only changes what dismissing a session in the Now panel does next.
+    func setDismissClosesTerminal(_ on: Bool) {
+        let before = dismissClosesTerminal
+        guard let loaded = env.loadConfig(), var config = loaded.config else {
+            env.beep()
+            env.showAlert("Couldn’t save this setting", "config.json couldn’t be read, so Page Studio left it alone. Open Config File… to look at it.")
+            return
+        }
+        dismissClosesTerminal = on
+        config.dismissClosesTerminal = on
+        do {
+            try env.writeConfig(config)
+        } catch {
+            dismissClosesTerminal = before
+            env.showAlert("Couldn’t save this setting", error.localizedDescription)
+            return
+        }
+        env.log("Dismissing a session also closes its terminal: \(on ? "on" : "off")")
+        env.reloadConfig()
     }
 
     // MARK: apply, cancel, reset

@@ -290,6 +290,32 @@ from sleeping with the lid closed.
   environment, and discards everything else, including cmux's capability
   token.
 
+## Closing terminals (off by default)
+
+With `dismissClosesTerminal` on, putting a finished or idle session away in the
+Mac's menu-bar panel also closes that session's own terminal. That ends the
+agent there.
+
+- Only from the Mac's panel: the phone has no way to close a terminal.
+- Only after the 5-second Undo. At that moment Page Studio reads the session
+  again from `~/.claude/sessions/` and the process table, and refuses if:
+  - it isn't the same pid;
+  - it isn't `idle` or `shell`;
+  - its status changed since it was put away;
+  - more than one process claims the session id.
+- Exact target only:
+  - a cmux surface (by its `CMUX_SURFACE_ID`, or its workspace when that is the
+    workspace's only surface);
+  - a tmux pane id;
+  - a Terminal.app window whose only tab has the session's tty;
+  - an iTerm2 session with that tty;
+  - a WezTerm pane;
+  - a kitty window.
+
+  Ids are checked before they go into arguments or AppleScript. Anything else
+  is refused, never replaced by another window. Codex sessions are never
+  closed.
+
 ## Headless resumes
 
 When a session has ended, Page Studio may deliver a text reply with

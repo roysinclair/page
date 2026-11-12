@@ -28,6 +28,8 @@ const crops = [
   [`${D}/feature-aura.png`, 'feature-aura-visual', { left: 640, top: 130, width: 920, height: 660 }],
   [`${D}/feature-budgets.png`, 'feature-budgets-visual', { left: 650, top: 60, width: 950, height: 910 }],
   [`${D}/feature-budget-stop.png`, 'feature-budget-stop-visual', { left: 740, top: 40, width: 860, height: 900 }],
+  [`${D}/feature-panel.png`, 'feature-panel-visual', { left: 640, top: 20, width: 940, height: 960 }],
+  [`${D}/feature-panel-close.png`, 'feature-panel-close-visual', { left: 650, top: 190, width: 930, height: 620 }],
 ];
 
 const only = process.argv[2];

@@ -306,7 +306,7 @@ enum RenderSurfaces {
             Surface(name: "welcome-back", width: 380 + 56, view: onBackdrop(NWWelcomeBackView(model: amber))),
             Surface(name: "welcome-back-calm", width: 380 + 56, view: onBackdrop(NWWelcomeBackView(model: calm))),
             Surface(name: "welcome-back-phone", width: 380 + 56, view: onBackdrop(NWWelcomeBackView(model: phone))),
-        ] + towerSurfaces() + widgetSurfaces() + legacySurfaces() + inFlightSurfaces() + budgetSurfaces() + [
+        ] + towerSurfaces() + widgetSurfaces() + legacySurfaces() + inFlightSurfaces() + budgetSurfaces() + sessionsSurfaces() + [
             Surface(name: "components", width: 760, view: AnyView(NWComponentSheet())),
             Surface(name: "glyphs", width: 1140, view: AnyView(NWGlyphSheet()))
         ]

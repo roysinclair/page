@@ -133,6 +133,13 @@ struct NWDecideRowView: View {
     var extra: AnyView? = nil
     /// The line that says what a key will do under a selected row; off while an editor is open in it.
     var showsPreview = true
+    /// A finished turn's session as an idle card: where it runs, its model, and how long it has
+    /// been idle. nil leaves the who-line and the time line out.
+    var session: InFlightRow? = nil
+    /// The × on a finished turn's card (`NWDismissButton`); nil for every other row.
+    var dismissButton: AnyView? = nil
+    /// VoiceOver's "Dismiss" action on a finished turn's card.
+    var onDismiss: (() -> Void)? = nil
     var onKey: (KeyHint.Action) -> Void = { _ in }
     var onHoldBegan: () -> Void = {}
     var onHoldEnded: () -> Void = {}
@@ -140,6 +147,9 @@ struct NWDecideRowView: View {
 
     private var tint: NightWatch.RGBA { row.chip.color }
     private var irreversible: Bool { row.chip == .irreversible }
+    /// A finished turn is drawn as the In-flight card is: chip on the right, the who-line,
+    /// LAST TURN, the time line and full-width buttons.
+    private var finished: Bool { row.chip == .review }
 
     /// Pure. The thread's frame at `now` (seconds on the reference clock).
     static func threadFrame(_ t: NowMotion.Thread, now: Date, reduceMotion: Bool) -> ReceiptThreadModel.Frame {
@@ -182,26 +192,32 @@ struct NWDecideRowView: View {
     }
 
     private func card(thread f: ReceiptThreadModel.Frame?, authenticating: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 12) {
-                RoundedRectangle(cornerRadius: 1.5)
-                    .fill(tint.color)
-                    .frame(width: 3, height: 32)
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack(spacing: 7) {
-                        Text(row.projectName)
-                            .font(NightWatch.Typo.mono)
-                            .foregroundColor(NightWatch.Palette.textPrimary.color)
-                            .lineLimit(1)
-                        NWChip(kind: row.chip)
+        VStack(alignment: .leading, spacing: finished ? 9 : 6) {
+            Group {
+                if finished {
+                    finishedInfo
+                } else {
+                    HStack(spacing: 12) {
+                        RoundedRectangle(cornerRadius: 1.5)
+                            .fill(tint.color)
+                            .frame(width: 3, height: 32)
+                        VStack(alignment: .leading, spacing: 3) {
+                            HStack(spacing: 7) {
+                                Text(row.projectName)
+                                    .font(NightWatch.Typo.mono)
+                                    .foregroundColor(NightWatch.Palette.textPrimary.color)
+                                    .lineLimit(1)
+                                NWChip(kind: row.chip)
+                            }
+                            Text(row.summary)
+                                .font(NightWatch.Typo.monoBody)
+                                .foregroundColor(NightWatch.Palette.textSecondary.opacity(0.78).color)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                        }
+                        Spacer(minLength: 6)
                     }
-                    Text(row.summary)
-                        .font(NightWatch.Typo.monoBody)
-                        .foregroundColor(NightWatch.Palette.textSecondary.opacity(0.78).color)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
                 }
-                Spacer(minLength: 6)
             }
             .opacity(sending || f != nil ? 0.5 : 1)
             if let f {
@@ -211,10 +227,10 @@ struct NWDecideRowView: View {
                 // Every action in words, always there: Approve, Deny, Steer, Open. The keys
                 // work too, and live in each button's tooltip and the shortcuts sheet.
                 actionStrip(authenticating: authenticating)
-                    .padding(.leading, 15)
+                    .padding(.leading, finished ? 0 : 15)
             }
             if f == nil, !sending, let extra {
-                extra.padding(.leading, 15)
+                extra.padding(.leading, finished ? 0 : 15)
             }
             if f == nil, focused, showsPreview, let preview = row.focusPreview {
                 // While held, a short lead-in; the end of the line is what gets cut, so
@@ -224,11 +240,11 @@ struct NWDecideRowView: View {
                     .foregroundColor(NightWatch.Palette.textTertiary.color)
                     .lineLimit(1)
                     .truncationMode(.tail)
-                    .padding(.leading, 15)
+                    .padding(.leading, finished ? 13 : 15)
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.vertical, finished ? 11 : 10)
         .background(
             RoundedRectangle(cornerRadius: NightWatch.Radius.row, style: .continuous)
                 .fill(irreversible ? tint.opacity(focused ? 0.11 : 0.07).color : Color.white.opacity(focused ? 0.08 : 0.045))
@@ -240,18 +256,81 @@ struct NWDecideRowView: View {
         .opacity(sending && f == nil ? 0.5 : 1)
         .contentShape(RoundedRectangle(cornerRadius: NightWatch.Radius.row, style: .continuous))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("\(row.projectName), \(row.chip.title.capitalized), \(row.summary)"))
+        .accessibilityLabel(Text(accessibilityText))
+        .nwDismissAction(onDismiss)
+    }
+
+    /// The finished turn's top of card, as an In-flight card has it: the name with the chip and the
+    /// × on the right, who it is and where it runs, what the turn changed, and how long it has been idle.
+    private var finishedInfo: some View {
+        let card = session?.card
+        let who = [card?.backendName, card?.model, session?.route].compactMap { $0 }.joined(separator: " · ")
+        return VStack(alignment: .leading, spacing: 9) {
+            HStack(alignment: .top, spacing: 10) {
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(tint.opacity(0.8).color)
+                    .frame(width: 3, height: 32)
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 7) {
+                        Text(row.projectName)
+                            .font(NightWatch.Typo.mono)
+                            .foregroundColor(NightWatch.Palette.textPrimary.color)
+                            .lineLimit(1)
+                            .layoutPriority(1)
+                        Spacer(minLength: 4)
+                        NWChip(kind: row.chip)
+                        if let dismissButton { dismissButton }
+                    }
+                    if !who.isEmpty {
+                        Text(who)
+                            .font(NightWatch.Typo.monoMicro)
+                            .foregroundColor(NightWatch.Palette.textTertiary.color)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                }
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text("LAST TURN").nwLabel()
+                Text(row.summary)
+                    .font(NightWatch.Typo.monoBody)
+                    .foregroundColor(NightWatch.Palette.textSecondary.color)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 2)
+            }
+            if let time = card?.idleTimeLine {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock")
+                        .font(Font.system(size: 10, weight: .medium))
+                        .foregroundColor(NightWatch.Palette.textTertiary.color)
+                    Text(time)
+                        .font(NightWatch.Typo.monoSmall)
+                        .foregroundColor(NightWatch.Palette.textSecondary.color)
+                        .lineLimit(1)
+                }
+                .help("How long it has been idle, and how long the session has been open")
+            }
+        }
+    }
+
+    private var accessibilityText: String {
+        if finished {
+            return [row.projectName, row.chip.title.capitalized, session?.card.backendName, session?.route, row.summary,
+                    session?.card.idleTimeLine].compactMap { $0 }.joined(separator: ", ")
+        }
+        return "\(row.projectName), \(row.chip.title.capitalized), \(row.summary)"
     }
 
     /// The row's actions as buttons in words. Return is marked on the one it
     /// does (a brighter button); an Irreversible approval keeps its press-and-hold.
     @ViewBuilder
     private func actionStrip(authenticating: Bool) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: finished ? 8 : 6) {
             ForEach(Array((row.keys + row.moreKeys).enumerated()), id: \.offset) { _, key in
                 stripButton(key, authenticating: authenticating)
             }
-            Spacer(minLength: 0)
+            if !finished { Spacer(minLength: 0) }
         }
     }
 
@@ -269,7 +348,7 @@ struct NWDecideRowView: View {
                 .accessibilityAddTraits(.isButton)
                 .accessibilityLabel(Text("\(title), hold key 1"))
         } else {
-            NWActionButton(title: title, emphasised: key.action == row.returnAction, help: help) { onKey(key.action) }
+            NWActionButton(title: title, emphasised: key.action == row.returnAction, fills: finished, help: help) { onKey(key.action) }
         }
     }
 
@@ -454,6 +533,11 @@ struct NWNowPopover: View {
                     .padding(.horizontal, 10)
                     .padding(.bottom, 10)
             }
+            if store.showsIdleGroup {
+                NWIdleGroup(store: store, maxCardsHeight: store.idleCardsMaxHeight)
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 10)
+            }
             statusLine
         }
     }
@@ -478,6 +562,7 @@ struct NWNowPopover: View {
                 }
                 ForEach(Array(visibleRows.enumerated()), id: \.element.id) { index, row in
                     rowCell(row, index: index, now: now, flies: !scrolls)
+                        .transition(.opacity)
                 }
                 if !store.expanded && overflowRows > 0 {
                     Button { store.setExpanded(true) } label: {
@@ -521,17 +606,7 @@ struct NWNowPopover: View {
         let hidden = elapsed.map { $0 < 0 || slot == nil } ?? false
         let flying = f.map { !$0.finished } ?? false
         return VStack(spacing: 6) {
-            NWDecideRowView(
-                row: row, focused: row.id == store.selectedId, sending: store.sending.contains(row.id),
-                holdProgress: holdProgress(for: row), thread: store.motion.threads[row.id],
-                unwind: store.motion.unwind, burst: store.motion.burst,
-                // A finished turn is a session card too: budgets sit under its Steer and Open.
-                extra: row.chip == .review
-                    ? AnyView(NWBudgetSlot(store: store, rowId: row.id, sessionId: row.sessionId, backend: row.backend)) : nil,
-                showsPreview: store.budgetEditor?.rowId != row.id,
-                onKey: { store.click($0, on: row) },
-                onHoldBegan: { store.mouseHoldBegan(.approve(rowId: row.id)) },
-                onHoldEnded: { store.mouseHoldEnded() })
+            decideCard(row)
                 // In flight it is an empty outline (board 07): its words, and the solid card
                 // under them, come only as it lands, so nothing is drawn over the header's or
                 // the runway's words on the way down.
@@ -554,6 +629,34 @@ struct NWNowPopover: View {
         .background(GeometryReader { g in
             Color.clear.preference(key: NWRowFramesKey.self, value: [row.id: g.frame(in: .named(Self.space))])
         })
+    }
+
+    /// The row's card. A finished turn is a session card like the others: it takes its who-line and
+    /// time line from its session's idle card, has the × after its chip, and can be swiped away.
+    @ViewBuilder
+    private func decideCard(_ row: DecideRow) -> some View {
+        let finished = row.chip == .review
+        let card = NWDecideRowView(
+            row: row, focused: row.id == store.selectedId, sending: store.sending.contains(row.id),
+            holdProgress: holdProgress(for: row), thread: store.motion.threads[row.id],
+            unwind: store.motion.unwind, burst: store.motion.burst,
+            // A finished turn is a session card too: budgets sit under its Steer and Open.
+            extra: finished
+                ? AnyView(NWBudgetSlot(store: store, rowId: row.id, sessionId: row.sessionId, backend: row.backend)) : nil,
+            showsPreview: store.budgetEditor?.rowId != row.id,
+            session: finished ? store.sessionCard(for: row.sessionId) : nil,
+            dismissButton: finished
+                ? AnyView(NWDismissButton(store: store, rowId: row.id, project: row.projectName, selected: row.id == store.selectedId))
+                : nil,
+            onDismiss: finished ? { store.dismiss(rowId: row.id) } : nil,
+            onKey: { store.click($0, on: row) },
+            onHoldBegan: { store.mouseHoldBegan(.approve(rowId: row.id)) },
+            onHoldEnded: { store.mouseHoldEnded() })
+        if finished {
+            NWSwipeCard(store: store, rowId: row.id, enabled: true) { card }
+        } else {
+            card
+        }
     }
 
     /// The arriving card's outline: it widens out from under the pulse to the
@@ -617,7 +720,10 @@ struct NWNowPopover: View {
     /// The receipt of the last delivery, or the result of the last action.
     @ViewBuilder
     private var statusLine: some View {
-        if let n = store.notice {
+        if let pending = store.dismissStatus {
+            // Five seconds to take a dismissal back: "Dismissed payments-api · Undo".
+            NWDismissLine(store: store, pending: pending)
+        } else if let n = store.notice {
             NWReceiptLine(text: n.text, failed: n.failed)
         } else if let r = model.receiptLine {
             NWReceiptLine(text: r, failed: model.receiptFailed)
@@ -642,6 +748,7 @@ struct NWNowPopover: View {
             }
             tip
             if !store.flightRows.isEmpty { NWInFlightGroup(store: store, maxCardsHeight: store.flightCardsMaxHeight) }
+            if store.showsIdleGroup { NWIdleGroup(store: store, maxCardsHeight: store.idleCardsMaxHeight) }
             statusLine.padding(.horizontal, -16)
         }
         .padding(.horizontal, 16)

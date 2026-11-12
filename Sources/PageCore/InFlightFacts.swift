@@ -194,6 +194,9 @@ struct InFlightFacts: Equatable {
     /// When the running turn began (sessions file busy-since), if it says.
     var busySince: Date?
     var workflows: [InFlightWorkflow] = []
+    /// What the last finished turn changed, as the idle page's headline words it
+    /// ("Changed 3 files (+12 −4) · tests passed"). Read for idle sessions only.
+    var lastTurn: String?
 
     /// Read from the tail: more than a card lists, so a run of one repeated
     /// step can fold without emptying the earlier steps.
@@ -282,12 +285,24 @@ struct InFlightCardInfo: Equatable {
     /// is the same wherever it is read. nil while the session runs normally.
     var healthLine: String?
 
+    /// "12m": how long it has been idle (an idle card). nil on a working card.
+    var idleFor: String? = nil
+    /// What the last finished turn changed ("Changed 3 files (+12 −4) · tests passed"),
+    /// when Page has it. nil on a working card, and on an idle one with nothing to say.
+    var lastTurn: String? = nil
+
     /// How many steps before the current one a card lists.
     static let earlierCount = 3
 
     /// "working 12m · session 2h 10m", or whichever half is known.
     var timeLine: String? {
         let parts = [workingFor.map { "working \($0)" }, sessionAge.map { "session \($0)" }].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    /// "idle 12m · session 6h 45m", or whichever half is known.
+    var idleTimeLine: String? {
+        let parts = [idleFor.map { "idle \($0)" }, sessionAge.map { "session \($0)" }].compactMap { $0 }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
@@ -320,6 +335,24 @@ struct InFlightCardInfo: Equatable {
                 InFlightWorkflowLine(name: $0.name, detail: $0.detail, fraction: $0.fraction)
             },
             health: health, healthLine: health.needsAttention ? health.line(now: now) : nil)
+    }
+}
+
+extension InFlightCardInfo {
+    /// Pure. The card of a session that is not working: who it is, how long it has
+    /// been idle and how long the session has run, and what its last turn changed.
+    /// The steps, workflows and health lines of a working card are left empty.
+    static func makeIdle(facts: InFlightFacts?, backend: AgentBackendID?, idleSince: Date?, now: Date) -> InFlightCardInfo {
+        let turn = facts?.lastTurn?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return InFlightCardInfo(
+            backendName: backend.map { AgentDisplay.agentName($0) },
+            model: ModelNaming.short(facts?.model),
+            now: InFlightRows.idleText, earlier: [],
+            workingFor: nil,
+            sessionAge: facts?.startedAt.map { InFlightRows.elapsed(since: $0, now: now) },
+            workflows: [], health: .normal, healthLine: nil,
+            idleFor: idleSince.map { InFlightRows.elapsed(since: $0, now: now) },
+            lastTurn: turn.flatMap { $0.isEmpty ? nil : $0 })
     }
 }
 
@@ -386,6 +419,8 @@ final class FlightProbe {
     private var steps: [String: (stamp: SessionRemote.FileStamp, steps: [InFlightStep], newest: Bool)] = [:]
     private var models: [String: (model: String?, at: Date)] = [:]
     private var workflows: [String: (at: Date, runs: [InFlightWorkflow])] = [:]
+    /// Idle sessions' last-turn headlines, by transcript stamp (`idleFacts`).
+    private var turns: [String: (stamp: SessionRemote.FileStamp, headline: String?)] = [:]
     private let scanner = SessionWorkflowScanner()
 
     /// The model is re-read this often (it only changes with /model).
@@ -429,6 +464,43 @@ final class FlightProbe {
         let ids = Set(sessions.map(\.sessionId))
         models = models.filter { ids.contains($0.key) }
         for gone in workflows.keys where !ids.contains(gone) { workflows[gone] = nil }
+        return out
+    }
+
+    /// What the cards of sessions that are not working show: their model, when the
+    /// session began, and what the last finished turn changed (`headline`, a
+    /// blocking read with git calls, so it runs only when a transcript has changed
+    /// since it was last read; nil turns it off). Use an instance of its own for
+    /// these: the caches here keep only the sessions passed in, so a probe shared
+    /// with `facts(for:)` would throw the other set's away each time.
+    func idleFacts(for sessions: [AgentSession], live: [ClaudeLiveSession],
+                   transcriptFile: (AgentSession) -> SessionTranscriptFile?,
+                   headline: ((_ transcript: URL, _ cwd: String?) -> String?)?, now: Date = Date()) -> [String: InFlightFacts] {
+        var out: [String: InFlightFacts] = [:]
+        var keepTurns: [String: (stamp: SessionRemote.FileStamp, headline: String?)] = [:]
+        for s in sessions {
+            var f = InFlightFacts()
+            guard s.backend == .claude else {
+                out[s.sessionId] = f
+                continue
+            }
+            if let l = live.first(where: { $0.sessionId == s.sessionId && $0.hasSessionFile }) { f.startedAt = l.startedAt }
+            if let file = transcriptFile(s), let stamp = SessionRemote.fileStamp(file.path) {
+                f.model = model(for: s.sessionId, path: file.path, now: now)
+                if let cached = turns[s.sessionId], cached.stamp == stamp {
+                    keepTurns[s.sessionId] = cached
+                    f.lastTurn = cached.headline
+                } else if let headline {
+                    let text = headline(URL(fileURLWithPath: file.path), s.cwd)
+                    keepTurns[s.sessionId] = (stamp, text)
+                    f.lastTurn = text
+                }
+            }
+            out[s.sessionId] = f
+        }
+        turns = keepTurns
+        let ids = Set(sessions.map(\.sessionId))
+        models = models.filter { ids.contains($0.key) }
         return out
     }
 

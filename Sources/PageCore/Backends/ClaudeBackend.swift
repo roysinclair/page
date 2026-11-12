@@ -406,6 +406,43 @@ final class ClaudeBackend: AgentBackend {
         if wasSent && !replied { relay?.sendInterventionClosed(id: id, reason: reason) }
     }
 
+    /// The person put a finished-turn page away at the Mac (swipe, × or ⌫ on its card). It
+    /// closes on the relay ("dismissed_at_mac": the phone's page goes away too, as one
+    /// answered at the Mac does) and the detector does not open it again for the same turn.
+    /// Nothing is typed into the session. False when there was no such page (an approval,
+    /// a question or a stuck page is never closed this way).
+    @discardableResult
+    func dismissFinishedPage(id: String) -> Bool {
+        guard let page = interventionDetector.dismiss(id: id) else { return false }
+        // The published state is the last tick's: drop the page (and the session's "waiting on you") now,
+        // so the panel, the widget and the counts don't show it until the next tick.
+        lock.lock()
+        let s = _latestState
+        let remaining = s.pendingInterventions.filter { $0.id != id }
+        let sessions = s.sessions.map { a -> AgentSession in
+            guard a.sessionId == page.sessionId, a.state == .waitingOnUser,
+                  !remaining.contains(where: { $0.sessionId == a.sessionId }) else { return a }
+            return AgentSession(backend: a.backend, sessionId: a.sessionId, cwd: a.cwd, title: a.title, source: a.source,
+                                state: .idle, lastActivityAt: a.lastActivityAt,
+                                activeFlags: a.activeFlags.filter { $0 != "waitingOnUser" },
+                                supportsRemoteReply: a.supportsRemoteReply, preview: a.preview)
+        }
+        _latestState = State(sessions: sessions, claudeRunning: s.claudeRunning, claudeActive: s.claudeActive,
+                             secondsSinceTranscript: s.secondsSinceTranscript, activeRateLimit: s.activeRateLimit,
+                             scheduledResumes: s.scheduledResumes, pendingInterventions: remaining,
+                             relayConnected: s.relayConnected, wantsPowerAssertion: s.wantsPowerAssertion)
+        lock.unlock()
+        closePage(id, reason: "dismissed_at_mac")
+        Logger.shared.log("Finished-turn page dismissed at the Mac: \(id.prefix(48))")
+        return true
+    }
+
+    /// The person put an idle session away at the Mac before its finished-turn page
+    /// opened: that page is not opened for this turn (see `InterventionDetector.quietFinishedTurn`).
+    func quietFinishedTurn(sessionId: String) {
+        interventionDetector.quietFinishedTurn(sessionId: sessionId)
+    }
+
     // MARK: stuck watch
 
     /// Runs the stuck watch and closes what resolved. Returns new pages.
@@ -886,6 +923,12 @@ final class ClaudeBackend: AgentBackend {
     /// Live sessions as of the last tick (pid, tty, provider), for the
     /// phone's list. Never used to type: the gate re-reads everything.
     var remoteLiveSessions: [ClaudeLiveSession] { registry.sessions }
+
+    /// A fresh read of every live session (not the last tick's list), validated against
+    /// `processTable`: for the moment before a terminal is closed.
+    func freshLiveSessions(processTable: [ProcessRunner.ProcessInfoRow]) -> [ClaudeLiveSession] {
+        registry.allLiveSessions(processTable: processTable)
+    }
 
     /// The session's transcript file, if Page knows it.
     func remoteTranscriptURL(sessionId: String, cwd: String?) -> URL? {

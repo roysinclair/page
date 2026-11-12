@@ -16,6 +16,8 @@ struct NWInFlightGroup: View {
     @ObservedObject var store: NowStore
     /// The tallest the cards may be before they scroll (the popover must fit the screen).
     var maxCardsHeight: CGFloat = 640
+    /// Each card's height, so a card that left (a finished one, dismissed) can say how far the rest glide.
+    @State private var heights: [String: CGFloat] = [:]
 
     var body: some View {
         let rows = store.flightRows
@@ -64,19 +66,31 @@ struct NWInFlightGroup: View {
 
     /// The cards, in a scroller that only scrolls once they outgrow the screen.
     private func cards(_ shown: [InFlightRow], firstId: String?) -> some View {
-        ScrollViewReader { proxy in
-            ScrollView(.vertical, showsIndicators: true) {
-                VStack(spacing: 8) {
-                    ForEach(shown) { row in
-                        NWInFlightRowView(store: store, row: row)
+        let gaps = store.motion.cardGaps.filter { $0.group == .flight }
+        return NWOneShot(start: gaps.map(\.at).min(), duration: NowMotion.gapDuration + 0.02) { now in
+            ScrollViewReader { proxy in
+                NWCardScroll(maxHeight: maxCardsHeight, onResize: { store.cardsResized() }) {
+                    VStack(spacing: 8) {
+                        ForEach(Array(shown.enumerated()), id: \.element.id) { index, row in
+                            NWInFlightRowView(store: store, row: row)
+                                .background(GeometryReader { g in
+                                    Color.clear.preference(key: NWCardHeightsKey.self, value: [row.id: g.size.height])
+                                })
+                                .offset(y: NWCardGapShift.shift(forIndex: index, gaps: gaps, heights: heights, now: now))
+                                .transition(.opacity)
+                        }
                     }
+                    .padding(.trailing, 1)
                 }
-                .padding(.trailing, 1)
+                .onChange(of: store.flightJumpToken) { _ in
+                    if let id = firstId { withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo(id, anchor: .top) } }
+                }
             }
-            .frame(maxHeight: maxCardsHeight)
-            .onChange(of: store.flightJumpToken) { _ in
-                if let id = firstId { withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo(id, anchor: .top) } }
-            }
+        }
+        .onPreferenceChange(NWCardHeightsKey.self) { found in
+            var all = heights
+            for (k, v) in found { all[k] = v }
+            if all != heights { heights = all }
         }
     }
 
@@ -121,12 +135,21 @@ struct NWInFlightRowView: View {
         guard let c = store.composer, c.rowId == row.id, c.kind == .type else { return nil }
         return c
     }
-    private var receipt: InFlightReceipt? { store.flightReceipts[row.id] }
+    /// A message typed from an idle card is filed under the same key as a working card's, since
+    /// the session moves from IDLE to In flight with the turn it starts.
+    private var receipt: InFlightReceipt? {
+        store.flightReceipts[row.isIdle ? InFlightRow.idPrefix + row.sessionId : row.id]
+    }
     private var accent: NightWatch.RGBA { row.working ? NightWatch.Palette.teal : NightWatch.Palette.textQuiet }
     private var attention: Bool { row.working && row.card.health.needsAttention }
     private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: NightWatch.Radius.row, style: .continuous) }
 
     var body: some View {
+        // A finished or idle card can be swiped away (and dismissed with ×, ⌫ or VoiceOver's action).
+        NWSwipeCard(store: store, rowId: row.id, enabled: row.dismissable) { cardBody }
+    }
+
+    private var cardBody: some View {
         VStack(alignment: .leading, spacing: 9) {
             if row.hasCard {
                 // The card itself is the Open button: everything above the buttons.
@@ -140,6 +163,7 @@ struct NWInFlightRowView: View {
                     .accessibilityHint(Text("Opens its terminal"))
                     .accessibilityAddTraits(.isButton)
                     .accessibilityAction { store.clickFlight(.open, on: row) }
+                    .nwDismissAction(row.dismissable ? { store.dismiss(rowId: row.id) } : nil)
                 actions
                 // Budgets: a slim line under Open and Steer, and its editor in this card.
                 NWBudgetSlot(store: store, rowId: row.id, sessionId: row.sessionId, backend: row.backend)
@@ -190,8 +214,11 @@ struct NWInFlightRowView: View {
                             .layoutPriority(1)
                         Spacer(minLength: 4)
                         if !row.working {
-                            Text("FINISHED").font(NightWatch.Typo.label).kerning(NightWatch.Typo.labelTracking)
+                            Text(row.isIdle ? "IDLE" : "FINISHED").font(NightWatch.Typo.label).kerning(NightWatch.Typo.labelTracking)
                                 .foregroundColor(NightWatch.Palette.textTertiary.color)
+                            if row.dismissable {
+                                NWDismissButton(store: store, rowId: row.id, project: row.project, selected: selected)
+                            }
                         } else if attention {
                             healthChip
                         }
@@ -222,6 +249,31 @@ struct NWInFlightRowView: View {
                 }
                 if !card.workflows.isEmpty { workflows(card) }
                 healthLine(card)
+            } else if row.isIdle {
+                // At its prompt: what the last turn changed (when Page has it), and how long it has waited.
+                if let turn = card.lastTurn {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("LAST TURN").nwLabel()
+                        Text(turn)
+                            .font(NightWatch.Typo.monoBody)
+                            .foregroundColor(NightWatch.Palette.textSecondary.color)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.leading, 2)
+                    }
+                }
+                if let time = card.idleTimeLine {
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock")
+                            .font(Font.system(size: 10, weight: .medium))
+                            .foregroundColor(NightWatch.Palette.textTertiary.color)
+                        Text(time)
+                            .font(NightWatch.Typo.monoSmall)
+                            .foregroundColor(NightWatch.Palette.textSecondary.color)
+                            .lineLimit(1)
+                    }
+                    .help("How long it has been idle, and how long the session has been open")
+                }
             } else {
                 Text(row.doing)
                     .font(NightWatch.Typo.monoBody)

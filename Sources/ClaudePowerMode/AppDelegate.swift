@@ -72,7 +72,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
     /// What Page has delivered (or failed to) from the panel, newest last.
     private var receipts: [DeliveryReceipt] = []
     /// Where each pending page's session runs, probed off main.
-    private struct RouteInfo { let label: String?; let blocker: String?; let host: SessionHostInfo?; let at: Date }
+    private struct RouteInfo {
+        let label: String?; let blocker: String?; let host: SessionHostInfo?; let at: Date
+        /// An idle session's `lastActivityAt` when it was probed: a change probes it again.
+        var activity: Date? = nil
+    }
     private var routes: [String: RouteInfo] = [:]
     private var probingRoutes = false
     /// What each working session is doing now (its last tool step), read off main while the panel is up.
@@ -83,6 +87,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
     private var activityReadAt: Date = .distantPast
     private static let activityFreshFor: TimeInterval = 10
     private var probingActivity = false
+    /// What the idle cards show (model, session start, what the last turn changed), read off main
+    /// on a queue of its own: a transcript's git calls must never hold the route and step probes.
+    private var idleFacts: [String: InFlightFacts] = [:]
+    /// The `lastActivityAt` each idle read was made for, so a card is read again when it changes.
+    private var idleFactsFor: [String: Date] = [:]
+    private var idleFactsCheckedAt: Date = .distantPast
+    private var probingIdle = false
+    private let idleQueue = DispatchQueue(label: "ClaudePowerMode.panel.idle", qos: .utility)
+    /// Dismissals in their five seconds: committed here, even if the panel closes meanwhile.
+    private var dismissTimers: [String: DispatchWorkItem] = [:]
+    /// The process each dismissed Claude session ran in, and its status time, when its card was put away.
+    private var dismissMarks: [String: (pid: Int32, since: Date?)] = [:]
     /// Paused sessions whose transcript shows the summary Page asked for.
     private var summarised: Set<String> = []
     private var summaryCheckedAt: Date = .distantPast
@@ -413,6 +429,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         rebuildModel()
         refreshRoutes(snap)
         refreshActivity(snap)
+        refreshIdleFacts(snap)
         refreshSummaryEvidence(snap)
     }
 
@@ -437,10 +454,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         let routes = self.routes
         inputs.hosts = routes.compactMapValues(\.host)
         inputs.facts = flightFacts
+        inputs.idleFacts = idleFacts
         inputs.route = { routes[$0.sessionId]?.label }
         inputs.blocker = { routes[$0.sessionId]?.blocker }
         let model = NowModel.build(inputs)
         nowStore.updateBudget(snap.budget)
+        // The sessions the person put away stay out; the setting names what a dismissal also does.
+        nowStore.dismissClosesTerminal = cfg.dismissClosesTerminal
+        nowStore.updateDismissals(hidden: snap.dismissals.hiddenSessionIds(live: snap.sessions, openPages: snap.pendingInterventions))
         nowStore.update(model)
         widgets.offer(WidgetSnapshotBuilder.build(model: model, snapshot: snap, cardGlow: cfg.cardGlow, now: now))
         // The Tower's sidebar card, badge and Power page follow the same model while it is open.
@@ -478,6 +499,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
             if let snap = self?.lastSnapshot {
                 self?.refreshRoutes(snap, force: true)
                 self?.refreshActivity(snap, force: true)
+                self?.refreshIdleFacts(snap, force: true)
                 self?.refreshSummaryEvidence(snap, force: true)
             }
             self?.rebuildModel()
@@ -589,6 +611,58 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
             deleteHeld(clientId)
         case .setBudget(let op):
             setBudget(op)
+        case .dismiss:
+            break   // the store turns it into a pending dismissal and says `.startDismissal`
+        case .startDismissal(let pending):
+            startDismissal(pending)
+        case .undoDismissal(let sessionId):
+            undoDismissal(sessionId: sessionId)
+        case .restoreDismissed:
+            coordinator.restoreDismissed()
+        }
+    }
+
+    // MARK: dismissing finished and idle sessions
+
+    /// The card is gone and its five seconds begin. The timer lives here, not in the panel, so the
+    /// dismissal commits even if the panel closes. Nothing happens to the session until it does.
+    private func startDismissal(_ p: PendingDismissal) {
+        dismissTimers[p.id]?.cancel()
+        dismissMarks[p.id] = coordinator.liveMark(sessionId: p.target.sessionId, backend: p.target.backend)
+        let item = DispatchWorkItem { [weak self] in self?.commitDismissal(p) }
+        dismissTimers[p.id] = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + PendingDismissal.window, execute: item)
+    }
+
+    /// Undo: the card is back and nothing else happened.
+    private func undoDismissal(sessionId: String) {
+        dismissTimers.removeValue(forKey: sessionId)?.cancel()
+        dismissMarks[sessionId] = nil
+    }
+
+    /// The five seconds are over. The ledger hides the session until its next turn; a finished-turn
+    /// page closes everywhere; with the setting still on, its exact terminal closes (off main, after
+    /// re-checking that it is idle, the same process and a host Page can close). The outcome is the
+    /// status line, and the log.
+    private func commitDismissal(_ p: PendingDismissal) {
+        dismissTimers[p.id] = nil
+        let mark = dismissMarks.removeValue(forKey: p.id)
+        let t = p.target
+        coordinator.dismissSession(sessionId: t.sessionId, backend: t.backend, pageId: t.pageId)
+        nowStore.dismissalCommitted(sessionId: t.sessionId)
+        guard p.closesTerminal, coordinator.config.dismissClosesTerminal else { return }
+        // A Claude session Page could not pin to one process when the card was put away is not closed.
+        if t.backend == .claude, mark == nil {
+            let line = DismissCopy.outcome(project: t.project, .refused(.sessionGone))
+            Logger.shared.log(line.text)
+            nowStore.notice = NowStore.Notice(text: line.text, failed: line.failed)
+            return
+        }
+        coordinator.closeTerminal(sessionId: t.sessionId, backend: t.backend, expectedPid: mark?.pid,
+                                  expectedSince: mark?.since) { [weak self] outcome in
+            let line = DismissCopy.outcome(project: t.project, outcome)
+            Logger.shared.log(line.text)
+            DispatchQueue.main.async { self?.nowStore.notice = NowStore.Notice(text: line.text, failed: line.failed) }
         }
     }
 
@@ -792,15 +866,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         // Only while the panel is up: nothing here is needed otherwise.
         guard force || nowPanel.isShown else { return }
         let now = Date()
-        // Pages' sessions, and the working ones the In-flight rows open and type into.
+        // Pages' sessions, the working ones the In-flight rows open and type into, and the idle ones
+        // (the IDLE group, and a finished turn's who-line). A working or paged session is looked at
+        // again every 30 s; an idle one when its last activity changes, or every 30 s: never on every tick.
         let working = snap.sessions.filter { $0.state == .active }
-        let wanted = Set(snap.pendingInterventions.map(\.sessionId)).union(working.map(\.sessionId))
+        let idle = IdleGroup.probeCandidates(snap.sessions)
+        let wanted = Set(snap.pendingInterventions.map(\.sessionId)).union(working.map(\.sessionId)).union(idle.map(\.sessionId))
         routes = routes.filter { wanted.contains($0.key) }
-        let stale = wanted.filter { id in force || routes[id].map { now.timeIntervalSince($0.at) > 30 } ?? true }
+        let activity = Dictionary(idle.compactMap { s in s.lastActivityAt.map { (s.sessionId, $0) } }, uniquingKeysWith: { a, _ in a })
+        let stale = wanted.filter { id in
+            force || routes[id].map { known in
+                now.timeIntervalSince(known.at) > 30 || (activity[id] != nil && known.activity != activity[id])
+            } ?? true
+        }
         guard !stale.isEmpty, !probingRoutes else { return }
         let sessions = snap.sessions.filter { stale.contains($0.sessionId) }
         let projects = Dictionary(snap.pendingInterventions.map { ($0.sessionId, $0.projectName) }
-                                  + working.map { ($0.sessionId, NowModel.projectName(of: $0)) }, uniquingKeysWith: { a, _ in a })
+                                  + working.map { ($0.sessionId, NowModel.projectName(of: $0)) }
+                                  + idle.map { ($0.sessionId, NowModel.projectName(of: $0)) }, uniquingKeysWith: { a, _ in a })
         guard !sessions.isEmpty else { return }
         probingRoutes = true
         probeQueue.async { [weak self] in
@@ -812,13 +895,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
                 for s in sessions {
                     // Unknown stays unknown for a while (no probe on every tick).
                     guard let info = hosts[s.sessionId] else {
-                        self.routes[s.sessionId] = RouteInfo(label: nil, blocker: nil, host: nil, at: at)
+                        self.routes[s.sessionId] = RouteInfo(label: nil, blocker: nil, host: nil, at: at, activity: activity[s.sessionId])
                         continue
                     }
                     self.routes[s.sessionId] = RouteInfo(
                         label: info.canType ? TerminalFocus.routeLabel(host: info.host, project: projects[s.sessionId] ?? "") : nil,
-                        blocker: info.canType ? nil : info.typeBlocker, host: info, at: at)
+                        blocker: info.canType ? nil : info.typeBlocker, host: info, at: at, activity: activity[s.sessionId])
                 }
+                self.rebuildModel()
+            }
+        }
+    }
+
+    /// What the idle cards show: each one's model, when its session began and what its last turn
+    /// changed. Read off main, on a queue of its own, while the panel is up: when the panel opens,
+    /// when a session's last activity changes, or every 30 s: never on every tick (a transcript is
+    /// only read again when it has changed).
+    private func refreshIdleFacts(_ snap: Coordinator.Snapshot, force: Bool = false) {
+        guard force || nowPanel.isShown else { return }
+        let candidates = IdleGroup.probeCandidates(snap.sessions).filter { $0.backend == .claude }
+        guard !candidates.isEmpty else {
+            if !idleFacts.isEmpty { idleFacts = [:]; idleFactsFor = [:] }
+            return
+        }
+        let now = Date()
+        let activity = Dictionary(candidates.compactMap { s in s.lastActivityAt.map { (s.sessionId, $0) } }, uniquingKeysWith: { a, _ in a })
+        let changed = candidates.contains { idleFactsFor[$0.sessionId] != activity[$0.sessionId] || idleFacts[$0.sessionId] == nil }
+        guard !probingIdle, force || changed || now.timeIntervalSince(idleFactsCheckedAt) > 30 else { return }
+        idleFactsCheckedAt = now
+        probingIdle = true
+        idleQueue.async { [weak self] in
+            let facts = self?.coordinator.idleFacts(for: candidates) ?? [:]
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.probingIdle = false
+                self.idleFactsFor = activity
+                guard facts != self.idleFacts else { return }
+                self.idleFacts = facts
                 self.rebuildModel()
             }
         }

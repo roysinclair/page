@@ -281,10 +281,23 @@ import { u, GUIDE, BLOB, GITHUB } from '../../data/site';
       <div>
         <p class="label">Menu bar and Preferences</p>
         <h2 class="h2 mt-3">The menu bar is the dispatcher. The Tower is the control room.</h2>
-        <p class="body mt-5">The menu-bar pulse shows at a glance whether agents are working, something needs you, or Page Studio has paused them for battery. Click it, or press Option-Command-P, for what needs you, what’s working, and the runway of battery cutoff, usage limits and scheduled resumes. A Dispatch box starts new work.</p>
+        <p class="body mt-5">The menu-bar pulse shows at a glance whether agents are working, something needs you, or Page Studio has paused them for battery. Click it, or press Option-Command-P, for what needs you, what’s working, what’s idle, and the runway of battery cutoff, usage limits and scheduled resumes. A Dispatch box starts new work.</p>
         <p class="body mt-4">The Tower (Preferences): Power, Budget, Macs &amp; phones, Attention, Agents, Phone approvals, Terminals, Widgets, Shortcuts, Pairing &amp; encryption and About. Setup steps such as hooks, cmux and the power helper are windows in the app, never terminal chores.</p>
       </div>
       <Shot name="mac-menubar-states" crop={0.73} alt="Three states of Page Studio's menu-bar popover: needs you, all quiet, and paused for battery at 10 percent." />
+    </div>
+
+    <div id="panel" class="wrap mt-20 grid items-center gap-8 lg:mt-24 lg:grid-cols-[1fr_1.1fr] lg:gap-12">
+      <div>
+        <p class="label">The Now panel</p>
+        <h2 class="h2 mt-3">Every session. <span class="text-grad">Put away what’s done.</span></h2>
+        <ul class="list-dots mt-6">
+          <li><strong>Everything open, on one card style.</strong> What needs you, what’s in flight and every idle session at its prompt, each with its agent, model and terminal, what it did last, and Open and Steer.</li>
+          <li><strong>Swipe it away.</strong> Two fingers sideways on a finished or idle card, its ×, or ⌫. You have 5 seconds to undo; then it stays out of the panel until its next turn, and its finished page leaves your phone too. Nothing is typed into it.</li>
+          <li><strong>Close its tab too, if you like.</strong> Off by default (Tower ▸ Terminals). Page Studio closes only that session’s own cmux tab, tmux pane or terminal window, after checking it is still the same idle session. Never a working one.</li>
+        </ul>
+      </div>
+      <Showcase name="showcase/feature-panel-visual" motion="final-approach" sizes="(min-width: 1024px) 580px, 100vw" alt="The menu-bar Now panel: a finished sensor-hub card with the same layout as the cards in flight (Claude, Opus 4.7, cmux, its last turn, idle 12 minutes, Open and Steer, its budget), two sessions in flight, and the Idle group collapsed to tokenizer-lab, docs-site and mobile-shell. Beside it, the sensor-hub card mid-swipe, uncovering Dismiss and close tab." />
     </div>
 
     <div id="widgets" class="wrap mt-20 grid items-center gap-8 lg:mt-24 lg:grid-cols-[1.1fr_1fr] lg:gap-12">

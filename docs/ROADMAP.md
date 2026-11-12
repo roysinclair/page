@@ -69,6 +69,8 @@ rather than infers.
 | Lid closed on AC, opt-in lid closed on battery with watchdog, low-battery pause and resume | Done |
 | Project budgets: a share of the weekly Claude limit per project or session, warn at 80%, stop at 100% (Esc, the `PreToolUse` budget gate, a page with Raise / Let this turn finish), set from Page Studio, the menu bar and both phones | Done |
 | Budgets on Linux (usage tracking and `paged config set` for budgets, the gate shipped by `install-linux.sh`) and for Codex (a different plan, and no hook that can stop a tool call) | Not started |
+| Mac menu-bar panel: every session (finished, in flight, idle) on one card style; swipe, × or ⌫ to put a finished session away until its next turn; optionally close its exact terminal tab | Done |
+| The same idle list and dismiss on the phones | Not started |
 | Claude desktop app session detection (reading its local session records) | Not started |
 | Skip sessions controlled remotely by Anthropic's apps; publish client presence so Claude doesn't double-notify | Not started |
 | `Elicitation` (MCP forms) and `StopFailure` (rate limits) hooks | Not started |

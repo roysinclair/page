@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Close its tab too</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .win { left: 340px; top: 110px; width: 436px; border-radius: 6.4px; }
+  .foot { left: 372px; top: 290px; width: 300px; border-radius: 10px; z-index: 6;
+          box-shadow: 0 26px 60px rgba(0,0,0,.72), 0 0 0 .5px rgba(255,255,255,.1); }
+  .copy p { max-width: 262px; text-wrap: pretty; }
+</style></head>
+<body><div class="canvas feat">
+  <div class="sky" data-seed="79"></div>
+  <div class="aurora" data-blobs="60,-30,60,70,teal,.20,70; 85,20,40,60,amber,.16,70; 15,65,50,60,sky,.12,90"></div>
+  <div class="copy" style="--cw:280px; --hs:36px">
+    <span class="eyebrow"><span class="pulse amber" style="--s:18px"><b></b></span>Optional</span>
+    <h2 class="headline">Close its tab too. <em class="amber">Only that one.</em></h2>
+    <p class="caption">Turn it on in Preferences ▸ Terminals. After 5 seconds to undo, Page closes that session's own cmux tab, tmux pane or terminal window. Never a working session.</p>
+    <div class="chips">
+      <span class="chip"><span class="dot"></span>Exact tab only</span>
+      <span class="chip"><span class="dot" style="background:var(--amber);box-shadow:0 0 8px var(--amber)"></span>5 s to undo</span>
+    </div>
+  </div>
+  <div class="render win shadowed"><img src="assets/mac-tower-terminals-dismiss.webp" alt=""></div>
+  <div class="render foot"><img src="assets/mac-popover-undo-close.webp" alt=""></div>
+</div><script src="sky.js"></script></body></html>

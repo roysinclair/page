@@ -14,7 +14,18 @@
     <!-- Restarts "Stay connected" (if on) or the 15-minute check after a reboot. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!-- Dictation into the message boxes (Designs/voice-input.md): the microphone is open only while the stop button shows. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
+    <!-- Without this, SpeechRecognizer.isRecognitionAvailable() is false on Android 11 and later: the phone's speech service is not visible to Page. -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
 
     <application
         android:name=".PageApplication"

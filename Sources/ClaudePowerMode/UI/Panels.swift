@@ -245,6 +245,11 @@ final class NowPanelController: NSObject {
         onVisibilityChange?(false)
     }
 
+    /// A system prompt (the microphone's) took the keyboard and is gone: Esc and Return are the panel's again.
+    func regainKeyboard() {
+        if panel.isVisible { panel.makeKeyAndOrderFront(nil) }
+    }
+
     /// The point under the footer's ellipsis, for the More menu.
     func moreMenuAnchor() -> (view: NSView, point: NSPoint) {
         // The footer is the bottom 38 pt, whichever way the hosting view's y runs.

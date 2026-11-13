@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import kotlinx.coroutines.flow.first
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -402,10 +404,44 @@ object DemoRooms {
         val base = SessionRoomData.make(inputs(screen).let { i -> runsAt(screen, t)?.let { i.copy(runs = it) } ?: i })
         val data = if (screen == "room-stop") base.copy(fixedStop = 0.62) else base
         var lens by remember { mutableStateOf(RoomLens.resolve(lensFor(screen), data.lenses)) }
-        var draft by remember { mutableStateOf(if (screen == "room-draft") "Run the tests, then stop" else if (screen.startsWith("room-photos") && tray(screen).draft.count > 0) "What's wrong with this screen?" else "") }
+        var draft by remember { mutableStateOf(if (screen == "room-draft") "Run the tests, then stop" else if (screen == "room-voice-listening" || screen == "room-voice-server") "Run the tests again and then tell me which ones still fail" else if (screen.startsWith("room-photos") && tray(screen).draft.count > 0) "What's wrong with this screen?" else "") }
         var runId by remember { mutableStateOf<String?>("wf1") }
+        if (screen == "room-voice-script") VoiceScript(draft) { draft = it }
         CompositionLocalProvider(LocalWorkflowScript provides workflowScript(screen)) {
             NWSessionRoom(data, SessionRoomActions(), lens, { lens = it }, draft, { draft = it }, runId, { runId = it }, focusComposer = false, photos = remember(screen) { tray(screen) })
+        }
+    }
+
+    /**
+     * `room-voice-script`: the room with the real dictation controller, and a script that plays a recognizer's callbacks into it
+     * once the mic is listening (tap the mic; the permission is asked for as in the app): partials, a result, a second utterance,
+     * then the person's edit (the draft changes under the dictation), after which the late partial must be dropped and the
+     * listening stopped. What it did is in logcat under `VoiceScript`. Debug only; a stand-in for speaking on an emulator with no audio in.
+     */
+    @Composable
+    private fun VoiceScript(draft: String, setDraft: (String) -> Unit) {
+        val controller = app.page.android.data.AppGraph.dictation
+        val state by controller.state.collectAsState()
+        val latest by androidx.compose.runtime.rememberUpdatedState(draft)
+        val say = remember { { l: android.speech.RecognitionListener, key: String, text: String ->
+            val b = android.os.Bundle().apply { putStringArrayList(android.speech.SpeechRecognizer.RESULTS_RECOGNITION, arrayListOf(text)) }
+            if (key == "partial") l.onPartialResults(b) else l.onResults(b)
+            android.util.Log.i("VoiceScript", "$key \"$text\" -> draft=\"$latest\" phase=${controller.state.value.phase}")
+        } }
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            controller.state.first { it.phase.isListening }
+            val l = controller.activeListener ?: return@LaunchedEffect
+            kotlinx.coroutines.delay(600)
+            for (t in listOf("run", "run the", "run the tests", "run the\ntests   again")) { say(l, "partial", t); kotlinx.coroutines.delay(250) }
+            kotlinx.coroutines.delay(500)
+            android.util.Log.i("VoiceScript", "before edit: draft=\"$latest\" phase=${controller.state.value.phase}")
+            // The person's edit (a restored draft merging in, say): the draft is no longer what dictation wrote.
+            setDraft("$latest (edited)")
+            kotlinx.coroutines.delay(400)
+            android.util.Log.i("VoiceScript", "after edit: draft=\"$latest\" phase=${controller.state.value.phase} listener=${controller.activeListener}")
+            say(l, "partial", "late words that must be dropped")
+            kotlinx.coroutines.delay(400)
+            android.util.Log.i("VoiceScript", "after late partial: draft=\"$latest\" phase=${controller.state.value.phase}")
         }
     }
 

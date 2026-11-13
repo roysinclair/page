@@ -7,6 +7,11 @@
          won't even prompt for permission, it just denies. -->
     <key>com.apple.security.automation.apple-events</key>
     <true/>
+    <!-- Lets Page Studio open the microphone for voice input (dictating into the
+         Steer box). Required under hardened runtime: without this entitlement
+         the microphone is silently denied, with no prompt. -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
     <!-- The group Page shares with its widget extension (the snapshot file the
          widgets read). build.sh puts the signing team where $(PAGE_TEAM_ID) is
          (e.g. ABCDE12345.app.page.shared); macOS

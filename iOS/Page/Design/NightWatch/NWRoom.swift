@@ -548,9 +548,14 @@ struct NWRoomComposer: View {
     var focusOnAppear = false
     @FocusState private var focused: Bool
     @State private var didFocus = false
+    @Environment(\.nwDictation) private var dictation
 
     /// Words or photos, and every photo encoded.
     private var canSend: Bool { PhotoDraft.canSend(text: draft, items: data.photos) }
+    /// This box, to the one dictation controller.
+    private var dictationBox: String { "room:\(data.session.id)" }
+    private var dictationPhase: DictationPhase { dictation.phase(for: dictationBox) }
+    private var voiceLevel: Double { dictationPhase.level }
 
     var body: some View {
         VStack(spacing: 8) {
@@ -566,10 +571,10 @@ struct NWRoomComposer: View {
             if let arm = data.yesNoArm {
                 // Tapped: the 1.2 s ring runs and Cancel works, so a mis-tap on "Should I deploy?" is not final.
                 NWArmedReply(arm: arm, onCancel: actions.cancelArm)
-            } else if draft.isEmpty, let question = data.yesNo {
+            } else if draft.isEmpty, !dictationPhase.isActive, let question = data.yesNo {
                 // Primary pair, in place of the generic replies, until the person types, sends, or the session moves on.
                 NWYesNoReplies(question: question, agent: data.character.name, onReply: { actions.armReply($0) })
-            } else if data.composer.offersQuickReplies, data.character.kind != .local, draft.isEmpty { quickReplies }
+            } else if data.composer.offersQuickReplies, data.character.kind != .local, draft.isEmpty, !dictationPhase.isActive { quickReplies }
             switch data.composer {
             case .locked(let why), .disabled(let why):
                 lockedBlock(symbol: data.composer.routesThroughPage ? "keyboard" : "lock", title: data.composerCopy.placeholder, text: why)
@@ -581,9 +586,16 @@ struct NWRoomComposer: View {
                 NWSendChoiceControl(plan: data.choice, agent: data.character.name, explain: data.explainChoice,
                                     onChoose: actions.setChoice)
                 if !data.photos.isEmpty { NWPhotoStrip(items: data.photos, onRemove: actions.removePhoto) }
+                if let line = dictation.line(for: dictationBox) {
+                    NWDictationLine(line: line, level: voiceLevel, onSettings: dictation.openSettings)
+                }
                 field
             }
         }
+        // One input at a time: touching the field, the box locking or leaving the room stops listening.
+        .onChange(of: focused) { _, now in if now, dictationPhase.isActive { dictation.cancel(dictationBox) } }
+        .onChange(of: data.composer.acceptsText) { _, now in if !now { dictation.cancel(dictationBox) } }
+        .onDisappear { dictation.cancel(dictationBox) }
         .padding(.horizontal, NightWatch.Space.lg)
         .padding(.top, 8)
         .padding(.bottom, 8)
@@ -610,7 +622,8 @@ struct NWRoomComposer: View {
         HStack(alignment: .bottom, spacing: 8) {
             NWPhotoButton(offer: data.photoOffer, slots: PhotoDraft.slots(data.photos), onPick: actions.pickPhotos, onBlocked: actions.photoBlocked)
             VStack(alignment: .leading, spacing: 4) {
-                TextField(data.photos.isEmpty ? data.composerCopy.placeholder : "Add a caption…", text: $draft, axis: .vertical)
+                TextField(dictationPhase.isListening && draft.isEmpty ? DictationCopy.listeningPlaceholder
+                          : data.photos.isEmpty ? data.composerCopy.placeholder : "Add a caption…", text: $draft, axis: .vertical)
                     .lineLimit(1...5)
                     .font(.system(.body))
                     .foregroundColor(NightWatch.Palette.textPrimary.color)
@@ -638,6 +651,10 @@ struct NWRoomComposer: View {
                 }
             }
             .padding(.leading, 6)
+            NWMicButton(phase: dictationPhase) {
+                focused = false
+                dictation.toggle(dictationBox, $draft)
+            }
             Button {
                 submit(draft)
             } label: {
@@ -665,6 +682,8 @@ struct NWRoomComposer: View {
     private func submit(_ raw: String) {
         let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard PhotoDraft.canSend(text: text, items: data.photos) else { return }
+        // What shows is what is sent: no late words land after it.
+        dictation.cancel(dictationBox)
         actions.send(text)
     }
 

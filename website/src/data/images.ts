@@ -39,6 +39,8 @@ export const imageSize: Record<string, [number, number]> = {
   'showcase/feature-budget-stop-visual': [860, 900],
   'showcase/feature-panel-visual': [940, 960],
   'showcase/feature-panel-close-visual': [930, 620],
+  'showcase/feature-voice-visual': [855, 900],
+  'showcase/feature-voice-mac-visual': [740, 830],
   // Product screenshots for Page Aura, Page Orbit and Page Power, cut from the apps' own docs screenshots and
   // renders (fixture data) by scripts/product-shots.py. Each has smaller copies in imageVariants for srcset.
   'aura/hero': [2000, 1175],

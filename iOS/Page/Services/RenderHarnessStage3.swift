@@ -328,7 +328,8 @@ enum RenderFixtures3 {
         default: break
         }
         let draft = screen == "room-draft" ? "Run the tests, then stop" : screen == "room-yesno-draft" ? "Yes, and push it too"
-            : screen == "room-queue-choice" ? "Then run the linter" : screen == "room-photos-composer" ? "What's wrong with this screen?" : ""
+            : screen == "room-queue-choice" ? "Then run the linter" : screen == "room-photos-composer" ? "What's wrong with this screen?"
+            : screen == "room-voice-listening" || screen == "room-voice-server" ? "Run the tests again and then tell me which ones still fail" : ""
         return Room(data: data, lens: RoomLens.resolve(lens, offered: data.lenses), draft: draft,
                     runId: "wf1")
     }

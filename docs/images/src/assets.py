@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Crops the real renders (and the few design boards) the compositions use into ./assets/*.webp.
 
-    python3 assets.py --mac <dir> --ios <dir> --android <dir> [--aura ~/projects/page-studio-apps/docs] [--only budget|panel]
+    python3 assets.py --mac <dir> --ios <dir> --android <dir> [--aura ~/projects/page-studio-apps/docs] [--only budget|panel|voice]
 
 --mac      output of `.build/debug/ClaudePowerMode --render-ui <dir> --card-glow full`
 --ios      output of `iOS/Tools/render-screens.sh <dir> full` (files named <screen>-glow-full.png or <screen>-full.png)
@@ -12,6 +12,8 @@
            Android decision-budget and now-budget)
            panel: write only the menu-bar panel crops (needs only --mac: popover-sessions-idle-collapsed,
            popover-sessions-swipe-close, popover-sessions-undo-close and tower-terminals-tall)
+           voice: write only the voice-input crops (needs Mac popover-voice-listening, iOS
+           room-voice-listening, Android room-voice-listening)
 
 Design boards come from Designs/v4 in this repo. Every crop below was checked by eye for demo data only.
 Needs Pillow with WebP support.
@@ -49,7 +51,7 @@ def main():
     ap.add_argument("--ios")
     ap.add_argument("--android")
     ap.add_argument("--aura", default=os.path.expanduser("~/projects/page-studio-apps/docs"))
-    ap.add_argument("--only", choices=["budget", "panel"])
+    ap.add_argument("--only", choices=["budget", "panel", "voice"])
     a = ap.parse_args()
     if a.only != "panel" and not (a.ios and a.android):
         ap.error("--ios and --android are needed unless --only panel")
@@ -60,6 +62,8 @@ def main():
         budget(a)
     if a.only in (None, "panel"):
         panel(a)
+    if a.only in (None, "voice"):
+        voice(a)
 
 
 def rgba(p):
@@ -99,6 +103,15 @@ def panel(a):
     # The popover's foot: "Closing tokenizer-lab's cmux tab in 5s · Undo" over the footer.
     undo = rgba(find(a.mac, "popover-sessions-undo-close.png"))
     save(undo.crop((56, undo.height - 300, 816, undo.height - 56)), "mac-popover-undo-close")
+
+
+def voice(a):
+    """Voice input (feature-voice, feature-voice-mac). Fixture names only: mac-on-claude-code, page."""
+    # The phones, listening in a session room: the words so far in the box, the teal line above it.
+    save(ios_screen(a, "room-voice-listening"), "ios-room-voice", width=900)
+    save(rgb(find(a.android, "room-voice-listening-full.png", "room-voice-listening.png")), "android-room-voice", width=900)
+    # The popover's page card, its Steer box listening on the Mac (popover x 56..816).
+    save(rgba(find(a.mac, "popover-voice-listening.png")).crop((74, 1556, 798, 2384)), "mac-popover-voice")
 
 
 def everything_else(a):

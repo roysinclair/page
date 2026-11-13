@@ -30,6 +30,8 @@ const crops = [
   [`${D}/feature-budget-stop.png`, 'feature-budget-stop-visual', { left: 740, top: 40, width: 860, height: 900 }],
   [`${D}/feature-panel.png`, 'feature-panel-visual', { left: 640, top: 20, width: 940, height: 960 }],
   [`${D}/feature-panel-close.png`, 'feature-panel-close-visual', { left: 650, top: 190, width: 930, height: 620 }],
+  [`${D}/feature-voice.png`, 'feature-voice-visual', { left: 740, top: 50, width: 855, height: 900 }],
+  [`${D}/feature-voice-mac.png`, 'feature-voice-mac-visual', { left: 790, top: 80, width: 740, height: 830 }],
 ];
 
 const only = process.argv[2];

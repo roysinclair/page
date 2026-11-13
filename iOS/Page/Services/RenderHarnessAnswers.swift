@@ -10,7 +10,7 @@ import SwiftUI
 enum RenderHarnessAnswers {
     static let screens = [
         "ask-story-q1", "ask-story-q2", "ask-story-other", "ask-story-review", "ask-story-sending", "ask-story-refused",
-        "ask-story-answered", "ask-screen", "ask-screen-review", "ask-decision", "ask-hook-q2", "ask-hook-review",
+        "ask-story-answered", "ask-screen", "ask-screen-review", "ask-decision", "ask-hook-q2", "ask-hook-review", "ask-voice",
     ]
 
     /// A page Claude's question hook is holding: no dialog on screen, answers go as text through the hook.
@@ -48,6 +48,8 @@ enum RenderHarnessAnswers {
             s.tap(option: 0); s.tap(option: 2)
         case "ask-story-other":
             s.toggleOther(); s.setOther("develop, but rebase onto main first")
+        case "ask-voice":
+            s.toggleOther(); s.setOther("develop, but rebase onto main first and then")
         default:   // the review steps
             s.tap(option: 1)
             s.tap(option: 0); s.tap(option: 2)

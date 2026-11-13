@@ -54,6 +54,9 @@ separate apps that work with Page Relay too.
   couldn't.
 - **Live sessions on your phone.** Watch the story, the screen and the changes
   of a running session, and type into it or stop it.
+- **Speak instead of type.** Every message box on the phone, and the Steer
+  box on the Mac, has a mic. Talk, read it over, then send. Speech is turned
+  into text on the device where it can be. See [Speak instead of type](#speak-instead-of-type).
 - **Your own relay.** A small Worker on your own Cloudflare account carries
   pages and replies. Nothing goes to the authors.
 
@@ -112,6 +115,10 @@ together, your phone hears from all of them.
   <tr>
     <td valign="top"><img src="docs/images/feature-panel.png" alt="The menu-bar panel: every session on one card, a finished one swiped away" width="100%"><br><b>Every session. Put away what's done.</b> Working, finished and idle sessions on one card in the menu bar. Swipe a finished one away until its next turn.</td>
     <td valign="top"><img src="docs/images/feature-panel-close.png" alt="Preferences, Terminals: dismissing a session also closes its terminal tab" width="100%"><br><b>Close its tab too. Only that one.</b> Optionally, putting a session away also closes its own cmux tab, tmux pane or terminal window, after 5 seconds to undo. Never a working session.</td>
+  </tr>
+  <tr>
+    <td valign="top"><img src="docs/images/feature-voice.png" alt="Speak instead of type: a session listening on iPhone and on Android" width="100%"><br><b>Speak instead of type.</b> A mic beside Send in every message box. Your words appear as you speak, on the phone where it can, and nothing is sent until you tap Send.</td>
+    <td valign="top"><img src="docs/images/feature-voice-mac.png" alt="Dictating into the Steer box in the Mac's menu-bar panel" width="100%"><br><b>Dictate a Steer on the Mac.</b> Click the mic in a Steer box, or press ⌘D, and talk. Return still sends, and only when you press it.</td>
   </tr>
   <tr>
     <td valign="top"><img src="docs/images/feature-battery.png" alt="Keep-awake and battery pause" width="100%"><br><b>Page Power: stays awake, pauses gracefully.</b> Keeps the computer awake while agents work, lid closed too, and asks them to stop and summarise at your battery cutoff.</td>
@@ -260,6 +267,11 @@ Finished, idle and working sessions share one card:
 - **Open**, which brings its terminal pane forward and types nothing;
 - **Steer**, which sends it a message;
 - its [budget](#project-budgets).
+
+**Dictating a message.** Steer boxes have a mic. Click it, or press ⌘D, and
+talk: the words appear in the box as you speak, and nothing is sent until you
+press Return. Press ⌘D or click again to stop, or Esc to stop and keep the
+box open. Typing stops it too. See [Speak instead of type](#speak-instead-of-type).
 
 **Putting a finished session away.** Swipe a finished or idle card sideways
 with two fingers on the trackpad, drag it sideways with the mouse, click its
@@ -576,6 +588,8 @@ at any time, not only when a page is open.
   a digit (it could pick a menu option). Codex is typed into once its turn
   ends, or mid-turn only in a cmux pane with an empty composer. **Stop**
   presses Esc in a working session (tmux, iTerm2, cmux).
+- **Speak instead of type.** Every message box has a mic: see
+  [Speak instead of type](#speak-instead-of-type).
 - **New session.** The **+** on the Sessions tab starts a new Claude
   session on the Mac: pick one of the folders Claude has worked in during
   the last 30 days, type what it should do, and Page Studio opens a cmux workspace
@@ -595,6 +609,39 @@ at any time, not only when a page is open.
   shows why when one can't. Turn the view off with
   **Preferences ▸ Macs & phones ▸ Show my live sessions on my phone**
   (`remoteSessionsEnabled`). It needs a relay that speaks `sessions-v1`.
+
+### Speak instead of type
+
+Every place you write a message has a mic. On the phone, that's a session's
+message box, a reply to a page, a question's answer and a new task; on the Mac,
+the panel's Steer boxes. Tap it and talk. The words appear in the box as you
+speak, and you can read and edit them before you send.
+
+- **Nothing is sent by voice.** Dictation only fills the box. Send, Return and
+  every rule about where a message may go are exactly as for typed text.
+  Saying "send" just writes the word.
+- **On the device first.** Where the device can, speech is turned into text on
+  it:
+  - iOS 26 and macOS 26 use Apple's SpeechAnalyzer;
+  - older iOS and macOS use SFSpeechRecognizer on the device;
+  - Android 12 and later use the on-device recognizer (`createOnDeviceSpeechRecognizer`).
+
+  The first time, the phone may fetch a language model, which the system keeps.
+  When the device can't transcribe on its own, the phone's own speech service
+  does it: Apple's, or the Android phone's default recognizer (usually
+  Google's). The line above the box says so the whole time it listens:
+  "Listening on this iPhone", or "Listening with Apple's speech service".
+- **Page never keeps or relays audio.** The microphone is open only while the
+  stop button shows. Audio isn't written to disk, logged or sent over your
+  relay. Only the text you send travels, as before.
+- **When it stops.** Listening stops when you tap stop, touch or type in the
+  box, send, leave the screen, or lock the phone. It also stops after 20
+  seconds without speech, or 10 minutes in all. The words so far are kept.
+- **Language.** The language your device is set to. If no recognizer can handle
+  it, the mic says so.
+- **Permissions.** The first tap asks for the microphone, and on Apple
+  devices for Speech Recognition. If you refused, the line above the box has
+  **Open Settings**.
 
 ### Codex support level
 
@@ -1125,6 +1172,11 @@ travel, so "nothing leaves your devices" isn't true. What leaves your devices:
 - **To Apple's push service (APNs).** Each push carries the project name, the
   session id, the page kind and up to 180 characters of the context as the
   notification body.
+- **Voice input.** Dictation is turned into text on the device when it can
+  be. Otherwise the device's own speech service does it (Apple's, or the
+  Android phone's default recognizer, usually Google's), under that company's
+  terms, and the line above the box says so while it listens. Page never
+  records, keeps or relays audio. See [Speak instead of type](#speak-instead-of-type).
 - **Budgets.** A budget page is a page like any other: the project name and
   percentages, such as "payments-api reached its budget: about 26% of the
   week (budget 25%)". Each project's folder, share and budget reach the phone
@@ -1161,6 +1213,8 @@ travel, so "nothing leaves your devices" isn't true. What leaves your devices:
 | A project went past its budget and kept working | Install the agent hooks again (Integrations ▸ Install agent hooks…) so the budget gate is in `~/.claude/settings.json`; the hook window shows outdated hooks. A session you allowed to finish its turn runs until that turn ends |
 | Some sessions are missing from the panel | Idle sessions are under **Idle**, below In flight. Expand it, or use **Show all**. Sessions you put away come back with **N dismissed · Show**. A Codex thread shows only while it runs in a terminal |
 | A session I put away came back | It started a new turn, or a new page opened for it. Putting a session away lasts until its next turn |
+| The mic says microphone access is off | iPhone: Settings ▸ Page ▸ Microphone and Speech Recognition. Android: Settings ▸ Apps ▸ Page ▸ Permissions ▸ Microphone. Mac: System Settings ▸ Privacy & Security ▸ Microphone and Speech Recognition (a new build of Page Studio can be asked again) |
+| The mic says it can't turn speech into text | No recognizer on the device handles its language. Try the device's language set to one it supports, or on Android install a speech service (Speech Services by Google) |
 | I put a session away but its tab stayed open | The status line says why. Common reasons: the setting is off (Preferences ▸ Terminals), the tab shares a Terminal.app window, the session was used again within the 5 seconds, or macOS needs Automation permission for Terminal or iTerm2 |
 
 Logs:

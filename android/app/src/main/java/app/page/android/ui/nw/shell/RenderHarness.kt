@@ -55,6 +55,10 @@ object RenderHarness {
         val reduce: Boolean = false,
         /** The Tower: scroll to the project list under Budget's rings (`tower-budget-projects`). */
         val towerProjects: Boolean = false,
+        /** Voice input held still at one phase in one box (the `-voice` screens), instead of the live controller. */
+        val dictation: app.page.android.model.DictationState? = null,
+        /** Decision composer and Dispatch: the text the box starts with (a render's dictated draft); the Decision sheet opens its composer for it. */
+        val draftText: String? = null,
     )
 
     /**

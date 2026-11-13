@@ -54,14 +54,17 @@ fun NWRoot(onRequestNotifications: () -> Unit) {
         // A harness frame pins a local minute of the day, never an instant: 01:12 unless asked.
         LocalDaypart provides (spec?.let { DaypartWeights.at(it.dayTime ?: Daypart.NIGHTTIME.coreMinute) } ?: daypart),
     ) {
-        Box(Modifier.fillMaxSize().background(NW.Palette.background.color)) {
-            when {
-                standalone != null -> standalone()
-                pairedMac != null -> {
-                    val welcome by AppRouter.state.collectAsStateWithLifecycle()
-                    if (welcome.pairedWelcome) app.page.android.ui.nw.onboarding.PairedContainer(onRequestNotifications) else NWMain(onRequestNotifications)
+        // Voice input for every message box below: the app's one dictation controller (the render harness holds a phase still).
+        app.page.android.ui.nw.components.ProvideDictation(spec?.dictation) {
+            Box(Modifier.fillMaxSize().background(NW.Palette.background.color)) {
+                when {
+                    standalone != null -> standalone()
+                    pairedMac != null -> {
+                        val welcome by AppRouter.state.collectAsStateWithLifecycle()
+                        if (welcome.pairedWelcome) app.page.android.ui.nw.onboarding.PairedContainer(onRequestNotifications) else NWMain(onRequestNotifications)
+                    }
+                    else -> app.page.android.ui.nw.onboarding.PairFlow()
                 }
-                else -> app.page.android.ui.nw.onboarding.PairFlow()
             }
         }
     }

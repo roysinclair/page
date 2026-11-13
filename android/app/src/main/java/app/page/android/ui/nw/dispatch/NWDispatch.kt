@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.Role
@@ -46,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.page.android.model.DeliveryPreview
+import app.page.android.model.DictationCopy
 import app.page.android.model.DispatchAgent
 import app.page.android.model.DispatchAvailability
 import app.page.android.model.DispatchDraft
@@ -56,6 +58,9 @@ import app.page.android.model.SessionComposer
 import app.page.android.model.StartFolder
 import app.page.android.ui.nw.components.NWButton
 import app.page.android.ui.nw.components.NWButtonKind
+import app.page.android.ui.nw.components.NWDictationLine
+import app.page.android.ui.nw.components.NWMic
+import app.page.android.ui.nw.components.rememberDictationBox
 import app.page.android.ui.nw.components.NWGlassCard
 import app.page.android.ui.nw.components.NWIconTile
 import app.page.android.ui.nw.components.NWJewel
@@ -129,6 +134,8 @@ private fun FormLabel(symbol: String, title: String, jewel: NWJewel) {
 
 @Composable
 private fun Form(data: DispatchScreenData, actions: DispatchScreenActions, draft: DispatchDraft, onDraft: (DispatchDraft) -> Unit) {
+    // Voice input: speaking only fills the prompt; Start is the same Start. The latest draft is always the one written to.
+    val voice = rememberDictationBox("dispatch", draft.prompt) { onDraft(draft.copy(prompt = it)) }
     Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             FormLabel("folder.fill", "Where", NWJewel.sky)
@@ -143,12 +150,13 @@ private fun Form(data: DispatchScreenData, actions: DispatchScreenActions, draft
         }
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             FormLabel("text.bubble.fill", "What", NWJewel.violet)
+            NWDictationLine(voice, send = "Start")
             val shape = RoundedCornerShape(16.dp)
             Column(Modifier.fillMaxWidth().clip(shape).background(Color.White.copy(alpha = 0.05f)).border(1.dp, Color.White.copy(alpha = 0.08f), shape).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Box(Modifier.heightIn(min = 72.dp)) {
-                    if (draft.prompt.isEmpty()) Text("What should Claude do? (optional)", style = NW.Typo.body, color = NW.Palette.textQuiet.color)
+                    if (draft.prompt.isEmpty()) Text(if (voice.isListening) DictationCopy.LISTENING_PLACEHOLDER else "What should Claude do? (optional)", style = NW.Typo.body, color = NW.Palette.textQuiet.color)
                     BasicTextField(
-                        draft.prompt, { onDraft(draft.copy(prompt = it)) }, Modifier.fillMaxWidth().semantics { contentDescription = "What should Claude do? Optional." },
+                        draft.prompt, { onDraft(draft.copy(prompt = it)) }, Modifier.fillMaxWidth().onFocusChanged { if (it.isFocused) voice.fieldFocused() }.semantics { contentDescription = "What should Claude do? Optional." },
                         textStyle = NW.Typo.body.copy(color = NW.Palette.textPrimary.color), cursorBrush = SolidColor(NW.Palette.teal.color), minLines = 3, maxLines = 8,
                     )
                 }
@@ -156,6 +164,7 @@ private fun Form(data: DispatchScreenData, actions: DispatchScreenActions, draft
                     Box(Modifier.size(48.dp).clip(CircleShape).clickable(role = Role.Button, onClickLabel = "Paste", onClick = actions.paste), contentAlignment = Alignment.Center) {
                         Icon(Icons.Outlined.ContentPaste, "Paste", tint = NW.Palette.textTertiary.color, modifier = Modifier.size(20.dp))
                     }
+                    NWMic(voice, size = 36.dp)
                     Box(Modifier.weight(1f))
                     Text(draft.promptProblem ?: "optional · max ${SessionComposer.MAX_CHARACTERS}", style = NW.Typo.monoMicro, color = (if (draft.promptProblem == null) NW.Palette.textQuiet else NW.Palette.amber).color)
                 }
@@ -173,7 +182,8 @@ private fun Form(data: DispatchScreenData, actions: DispatchScreenActions, draft
         val can = draft.canStart(data.availability, data.sending)
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             NWButton(
-                if (data.sending) "Starting…" else draft.startTitle(data.macName), actions.start, Modifier.fillMaxWidth(), kind = NWButtonKind.BRIGHT, enabled = can,
+                // What shows is what is started: no late words land after it.
+                if (data.sending) "Starting…" else draft.startTitle(data.macName), { voice.cancel(); actions.start() }, Modifier.fillMaxWidth(), kind = NWButtonKind.BRIGHT, enabled = can,
                 leading = if (data.sending) null else Icons.Outlined.Send,
             )
             Text(DispatchDraft.footer(data.macName), style = NW.Typo.caption, color = NW.Palette.textQuiet.color, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth())

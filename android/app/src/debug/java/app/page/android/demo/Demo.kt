@@ -15,6 +15,10 @@ import app.page.android.data.TipStore
 import app.page.android.model.Absence
 import app.page.android.model.Base64Url
 import app.page.android.model.CardGlow
+import app.page.android.model.DictationPermission
+import app.page.android.model.DictationPhase
+import app.page.android.model.DictationState
+import app.page.android.model.DictationUnavailable
 import app.page.android.model.Intervention
 import app.page.android.model.InterventionKind
 import app.page.android.model.LiveSession
@@ -75,6 +79,10 @@ object Demo {
         "tower", "tower-budget", "tower-budget-projects", "tower-budget-measuring", "tower-glow", "tower-terminals", "tower-gestures",
         "budget-sheet", "budget-sheet-session", "budget-sheet-default", "budget-sheet-offline", "now-budget", "now-budget-arming", "now-budget-flight", "now-budget-measuring", "decision-budget", "decision-budget-warning", "room-budget", "room-budget-measuring",
         "dispatch", "dispatch-sending", "dispatch-off",
+        // Voice input: the mic and the line above the box, held at one phase (Designs/voice-input.md).
+        "room-voice", "room-voice-listening", "room-voice-server", "room-voice-download", "room-voice-denied", "room-voice-off",
+        "decision-review-voice", "dispatch-voice",
+        // (Not captured: `room-voice-live` is the room with the real dictation controller, for trying the mic on an emulator or a phone.)
         "runway", "settled", "gallery", "glow-compare",
         "room-story", "room-screen", "room-changes", "room-workflows", "room-waiting", "room-codex", "room-local", "room-agent",
         "room-workflows-running", "room-workflows-finish", "room-workflows-complete", "room-workflows-done", "room-agent-live",
@@ -345,6 +353,7 @@ object Demo {
                 lanesAvailability = if (screen == "lanes-problem") app.page.android.model.SessionAvailability.NeedsRepair(keyMismatch = false) else null,
                 dayTime = dayTime, flightScript = DemoMotion.flightScript(motion), nowScript = DemoMotion.nowScript(motion), reduce = reduce,
                 towerProjects = screen == "tower-budget-projects" || screen == "tower-budget-measuring" || screen.startsWith("budget-sheet"),
+                dictation = dictationFor(screen), draftText = draftTextFor(screen),
             ),
         )
         if (isStandalone(motion) || isUnpaired(screen)) return
@@ -439,6 +448,30 @@ object Demo {
             "stop-result" -> StopCoordinator.overrideForRender(StopFlowPhase.Result(StopOutcome.Asked))
             "stop-none" -> StopCoordinator.overrideForRender(StopFlowPhase.Result(StopOutcome.NothingBusy))
         }
+    }
+
+    /** Voice input held still for the `-voice` screens, as iOS's RenderFixtures.dictation: which box, and where its dictation is. */
+    private fun dictationFor(screen: String): DictationState? {
+        val en = "English (United Kingdom)"
+        fun room(phase: DictationPhase) = DictationState("room:room-claude", phase, en)
+        return when (screen) {
+            "room-voice" -> DictationState(language = en)
+            "room-voice-listening" -> room(DictationPhase.Listening(0.7, true))
+            "room-voice-server" -> room(DictationPhase.Listening(0.7, false))
+            "room-voice-download" -> room(DictationPhase.Downloading(0.4))
+            "room-voice-denied" -> room(DictationPhase.Denied(DictationPermission.MICROPHONE))
+            "room-voice-off" -> room(DictationPhase.Unavailable(DictationUnavailable.Language("Afrikaans")))
+            "decision-review-voice" -> DictationState("decision:${DemoFixtures.page(screen).id}", DictationPhase.Listening(0.55, true), en)
+            "dispatch-voice" -> DictationState("dispatch", DictationPhase.Listening(0.6, true), en)
+            else -> null
+        }
+    }
+
+    /** What a `-voice` screen's box already holds (the dictated words), for the boxes whose draft the container owns. */
+    private fun draftTextFor(screen: String): String? = when (screen) {
+        "decision-review-voice" -> "Keep the sanitizer but also add a test for a leading slash"
+        "dispatch-voice" -> "Make the History tab collapse into Settled days in Now."
+        else -> null
     }
 
     /** The screens drawn outside the shell. */

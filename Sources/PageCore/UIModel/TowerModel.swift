@@ -533,6 +533,7 @@ enum ShortcutCatalog {
             TowerShortcut(keys: ["↵"], title: "Approve an undoable item", detail: "Does nothing on irreversible ones, where it opens the terminal instead"),
             TowerShortcut(keys: ["esc"], title: "Deny", detail: "Presses Esc in the session. With nothing selected it closes the panel"),
             TowerShortcut(keys: [PanelKeys.type], title: "Steer: reply to a waiting page, or type to a session", detail: "On a waiting page: Esc first, then your text, then Return. On a session in flight: just your text and Return, read after its current step"),
+            TowerShortcut(keys: ["⌘", "D"], title: "Dictate into the Steer box", detail: "Starts and stops listening while a Steer box is open. Esc stops listening first and a second Esc closes the box. Speaking only fills the box: nothing is sent until you press Return"),
             TowerShortcut(keys: [PanelKeys.open], title: "Open the session’s terminal", detail: "Pages and sessions in flight. Claude: the session’s own Terminal, iTerm2, cmux or tmux pane. Codex: brings your terminal forward. Never types"),
             TowerShortcut(keys: ["⌫"], title: "Dismiss a finished or idle session", detail: "Hides it until its next turn, with 5 seconds to undo. Swiping a card sideways or clicking its × does the same. With “also closes its terminal tab” on, its tab closes too"),
             TowerShortcut(keys: [PanelKeys.help], title: "Show every shortcut", detail: "The ? button in the panel’s footer does the same"),

@@ -60,6 +60,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
     // the left-click; none of them hold a Coordinator reference themselves.
     private var nowStore: NowStore!
     private var nowPanel: NowPanelController!
+    /// Voice input in the Steer boxes. Touches no microphone or speech API until the first toggle.
+    private var dictation: DictationController!
     private var dispatchStore: DispatchStore!
     private var dispatchPanel: DispatchPanelController!
     private let welcomeBack = WelcomeBackController()
@@ -490,6 +492,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         nowStore.perform = { [weak self] effect in self?.perform(effect) }
         nowStore.command = { [weak self] command in self?.run(command) }
         nowPanel = NowPanelController(store: nowStore)
+        dictation = DictationController(store: nowStore)
+        // macOS's microphone and speech prompts take the keyboard: the panel must not close under them.
+        dictation.onSystemPrompt = { [weak self] up in
+            self?.nowPanel.isAuthenticating = up
+            if !up { self?.nowPanel.regainKeyboard() }
+        }
         nowPanel.anchorFrame = { [weak self] in
             guard let b = self?.statusItem.button, let w = b.window else { return nil }
             return w.convertToScreen(b.convert(b.bounds, to: nil))

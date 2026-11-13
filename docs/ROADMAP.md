@@ -71,6 +71,8 @@ rather than infers.
 | Budgets on Linux (usage tracking and `paged config set` for budgets, the gate shipped by `install-linux.sh`) and for Codex (a different plan, and no hook that can stop a tool call) | Not started |
 | Mac menu-bar panel: every session (finished, in flight, idle) on one card style; swipe, × or ⌫ to put a finished session away until its next turn; optionally close its exact terminal tab | Done |
 | The same idle list and dismiss on the phones | Not started |
+| Voice input: a mic in every message box on iPhone and Android and in the Mac's Steer boxes; on-device speech-to-text first (SpeechAnalyzer / SFSpeechRecognizer, `createOnDeviceSpeechRecognizer`), the platform's speech service as fallback; never sends by voice | Done |
+| Voice input on Linux (`paged`) | Not started |
 | Claude desktop app session detection (reading its local session records) | Not started |
 | Skip sessions controlled remotely by Anthropic's apps; publish client presence so Claude doesn't double-notify | Not started |
 | `Elicitation` (MCP forms) and `StopFailure` (rate limits) hooks | Not started |

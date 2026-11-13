@@ -6455,5 +6455,347 @@ do {
     check(dm2.subtitle == "For every project without a budget of its own", "sheet default: measuring never changes the default's line")
 }
 
+// MARK: - Voice input (Designs/voice-input.md): the words in the box, the Return-key trap, the engine choice,
+// the two limits, the lines and phases, and the source the spec pins. Dictation.swift imports only Foundation.
+
+// The words in the box: joining, the volatile part, one line, finish().
+do {
+    func box(_ base: String) -> DictationDraft { DictationDraft(base: base) }
+
+    // Joining: one space once there are words, none into an empty base, none after a base that already ends in whitespace.
+    check(box("").text == "", "an empty base with nothing said is empty")
+    var j0 = box(""); j0.setVolatile("hello")
+    check(j0.text == "hello", "an empty base takes the first words with no leading space (\(j0.text))")
+    check(box("run the tests").text == "run the tests", "a base with nothing said is shown as typed")
+    var j1 = box("run the tests"); j1.setVolatile("again")
+    check(j1.text == "run the tests again", "a base with no trailing space gets one space")
+    var j2 = box("run the tests "); j2.setVolatile("again")
+    check(j2.text == "run the tests again", "a base ending in a space gets no second space")
+    var j3 = box("line one\n"); j3.setVolatile("again")
+    check(j3.text == "line one\nagain", "a base ending in a newline gets no space after it (\(j3.text.debugDescription))")
+    var j4 = box("   "); j4.setVolatile("x")
+    check(j4.text == "   x", "a base of spaces already ends in whitespace")
+    var j5 = box("a"); j5.commit("b")
+    check(j5.text == "a b", "a commit joins with one space, like a volatile update")
+
+    // The base is the person's own: kept byte for byte, its newlines and tabs included.
+    let raw = "first line\n\nsecond\t"
+    check(box(raw).text == raw, "a base with nothing said comes back exactly as typed")
+    var j6 = box(raw); j6.setVolatile("words")
+    check(j6.text == raw + "words" && j6.base == raw, "the base is kept exactly and the words follow it")
+
+    // A volatile update replaces only the volatile part; commits accumulate; a new volatile part follows them.
+    var v = box("")
+    v.setVolatile("run")
+    check(v.text == "run", "volatile words show in the box")
+    v.setVolatile("run the")
+    check(v.text == "run the" && v.committed == "" && v.volatile == "run the", "a volatile update replaces only the volatile part")
+    v.commit("run the tests")
+    check(v.text == "run the tests" && v.committed == "run the tests" && v.volatile == "", "a commit moves the words to committed and clears the volatile part")
+    v.setVolatile("and")
+    check(v.text == "run the tests and", "a new volatile part follows the commits")
+    v.commit("and then")
+    check(v.committed == "run the tests and then", "commits accumulate with one space between them")
+    v.commit("stop")
+    v.setVolatile("now")
+    check(v.committed == "run the tests and then stop" && v.text == "run the tests and then stop now", "a commit, then a new volatile part, keeps the commits")
+    v.setVolatile("")
+    check(v.text == "run the tests and then stop", "an empty volatile update removes only the volatile words")
+    v.commit("  ")
+    check(v.committed == "run the tests and then stop", "a blank commit adds nothing")
+
+    // One line: newlines, \r\n, tabs and runs of spaces become single spaces, and the ends are trimmed.
+    check(DictationDraft.oneLine("  spaced   out \t and\n\n\nlines  ") == "spaced out and lines", "runs of spaces, tabs and newlines collapse and the ends are trimmed")
+    check(DictationDraft.oneLine("a\r\n\r\nb") == "a b" && DictationDraft.oneLine("x\r\ny") == "x y", "a \\r\\n becomes one space")
+    check(DictationDraft.oneLine(" \n ") == "" && DictationDraft.oneLine("") == "" && DictationDraft.oneLine("\r\n") == "", "a result that is only whitespace is empty")
+    check(DictationDraft.oneLine("send\n") == "send" && DictationDraft.oneLine("tab\tsep") == "tab sep", "a trailing newline is dropped and a tab is a space")
+    var n = box("")
+    n.commit("one\ntwo")
+    check(n.committed == "one two", "a newline in a commit becomes a space")
+    n.setVolatile("a\r\nb\nc")
+    check(n.text == "one two a b c", "newlines in a volatile update become single spaces (\(n.text))")
+    n.setVolatile("\r\n")
+    check(n.text == "one two", "a result of only a newline adds nothing")
+    var n2 = box(""); n2.commit("  lead and trail  ")
+    check(n2.committed == "lead and trail", "leading and trailing spaces in a result are trimmed")
+    check(!n.spoken.contains("\n") && !n.spoken.contains("\r"), "the dictated words never hold a newline")
+
+    // finish() keeps the words still changing, and leaves the draft as it was.
+    var f = box("draft: "); f.commit("kept"); f.setVolatile("still going")
+    let before = f
+    check(f.finish() == "draft: kept still going", "finish() includes the volatile words")
+    check(f == before, "finish() does not change the draft")
+    check(box("hi").finish() == "hi", "finish() with nothing said is the base")
+}
+
+// The Return-key trap: whatever the sequence of updates, no update reads as "old + Return" (Rule 3).
+do {
+    let bases = ["", "run", "run ", "line\n", "a\n\nb  ", "   ", "send\n", "\n", "tab\t"]
+    let results = ["", "\n", " \n ", "send\n", "\n\n", "a\nb", "one\ntwo\n", "x", "x\r\n", "\r\n", "  \n  \n", "run the tests\n", "\n\nsend"]
+    var pairs = 0
+    var trapped: [String] = []
+    var leaked: [String] = []
+    for base in bases {
+        for a in results {
+            for b in results {
+                let steps: [(commit: Bool, words: String)] = [(false, a), (true, b), (false, b), (true, a), (false, a), (false, b), (true, a), (true, "\n")]
+                var d = DictationDraft(base: base)
+                var old = d.text
+                for step in steps {
+                    if step.commit { d.commit(step.words) } else { d.setVolatile(step.words) }
+                    let after = d.text
+                    pairs += 1
+                    if DraftSubmit.isReturnKey(old: old, new: after) {
+                        trapped.append("base \(base.debugDescription), results \(a.debugDescription) and \(b.debugDescription)")
+                    }
+                    if !after.hasPrefix(base) || after.dropFirst(base.count).contains("\n") {
+                        leaked.append("base \(base.debugDescription), results \(a.debugDescription) and \(b.debugDescription)")
+                    }
+                    old = after
+                }
+            }
+        }
+    }
+    check(pairs == bases.count * results.count * results.count * 8, "every consecutive pair in the walk was checked (\(pairs))")
+    check(trapped.isEmpty, "no update reads as the Return key: \(trapped.prefix(3))")
+    check(leaked.isEmpty, "the dictated part never holds a newline, and the base is kept: \(leaked.prefix(3))")
+
+    // The named results, on a base that does not end in a space and on one that does.
+    for base in ["hi", "hi "] {
+        for r in ["\n", " \n ", "send\n"] {
+            var d = DictationDraft(base: base)
+            let before = d.text
+            d.setVolatile(r)
+            check(!DraftSubmit.isReturnKey(old: before, new: d.text), "a result of \(r.debugDescription) on \(base.debugDescription) is not a Return")
+            d.setVolatile("send")
+            let mid = d.text
+            d.commit(r)
+            check(!DraftSubmit.isReturnKey(old: mid, new: d.text), "committing \(r.debugDescription) after \(mid.debugDescription) is not a Return")
+        }
+    }
+    // Control: a Return typed at the end of the box is the Send key, so the check above can fail.
+    check(DraftSubmit.isReturnKey(old: "hi", new: "hi\n"), "control: a Return typed at the end is the Send key")
+}
+
+// The guard: the same text is not an edit; any change is.
+do {
+    check(!DictationGuard.userEdited(current: "run", lastWritten: "run"), "the same text is not an edit")
+    check(!DictationGuard.userEdited(current: "", lastWritten: ""), "nothing written and nothing there is not an edit")
+    check(DictationGuard.userEdited(current: "run tests", lastWritten: "run"), "longer text is an edit")
+    check(DictationGuard.userEdited(current: "ru", lastWritten: "run"), "shorter text is an edit")
+    check(DictationGuard.userEdited(current: "", lastWritten: "run"), "cleared text is an edit")
+    check(DictationGuard.userEdited(current: "Run", lastWritten: "run"), "changed text (case) is an edit")
+    check(DictationGuard.userEdited(current: "run ", lastWritten: "run") && DictationGuard.userEdited(current: "run\n", lastWritten: "run"), "a typed space or newline is an edit")
+    var g = DictationDraft(base: "go "); g.setVolatile("on")
+    check(!DictationGuard.userEdited(current: g.text, lastWritten: g.text), "the draft's own text is not an edit")
+}
+
+// Which engine listens (decision D1: on the device first, then Apple's own service).
+do {
+    func pick(os: Int, tAvail: Bool = true, tSup: Bool = false, dSup: Bool = false, sfSup: Bool = true, sfOn: Bool = true,
+              sfAvail: Bool = true, lang: String = "Afrikaans") -> DictationEngineChoice {
+        DictationEngineChoice.pick(osMajor: os, transcriberAvailable: tAvail, transcriberSupportsLocale: tSup, dictationSupportsLocale: dSup,
+                                   sfSupportsLocale: sfSup, sfOnDevice: sfOn, sfAvailable: sfAvail, language: lang)
+    }
+    // iOS 26 and later: SpeechAnalyzer first.
+    check(pick(os: 26, tSup: true, dSup: true) == .speechTranscriber, "iOS 26 with everything available: SpeechTranscriber")
+    check(pick(os: 27, tSup: true, dSup: true) == .speechTranscriber, "iOS 27 takes the same path")
+    check(pick(os: 26, tSup: true) == .speechTranscriber, "the transcriber alone with the locale: SpeechTranscriber")
+    check(pick(os: 26, tAvail: false, tSup: true, dSup: true) == .dictationTranscriber, "transcriber unavailable, dictation supported: DictationTranscriber")
+    check(pick(os: 26, dSup: true) == .dictationTranscriber, "no transcriber locale, dictation with it: DictationTranscriber")
+    check(pick(os: 26, sfOn: true) == .recognizerOnDevice, "iOS 26 with no analyzer locale and SF on the device: recognizerOnDevice")
+    check(pick(os: 26, sfOn: false) == .recognizerServer, "iOS 26 with no analyzer locale and SF only on Apple's server: recognizerServer")
+    check(pick(os: 26, tSup: true, sfOn: true) == .speechTranscriber, "the analyzer comes before SF on the device")
+    check(pick(os: 26, dSup: true, sfOn: false) == .dictationTranscriber, "on-device DictationTranscriber comes before SF's server")
+    check(pick(os: 26, tAvail: false, tSup: true, sfOn: false) == .recognizerServer, "transcriber unavailable and no dictation: SF's server")
+    // iOS 17 to 25: the transcriber flags are ignored.
+    check(pick(os: 25, tSup: true, dSup: true, sfOn: true) == .recognizerOnDevice, "iOS 25 ignores the transcriber flags: SF on the device")
+    check(pick(os: 25, tSup: true, dSup: true, sfOn: false) == .recognizerServer, "iOS 25 ignores the transcriber flags: SF's server")
+    check(pick(os: 25, tAvail: true, tSup: true, dSup: true, sfSup: false) == .unavailable(.language("Afrikaans")), "iOS 25: transcriber flags don't make the locale known")
+    check(pick(os: 17, sfOn: true) == .recognizerOnDevice && pick(os: 17, sfOn: false) == .recognizerServer, "iOS 17 uses SF, on the device first")
+    check(pick(os: 17, tSup: true, dSup: true, sfSup: false) == .unavailable(.language("Afrikaans")), "iOS 17 with no SF locale: the language line")
+    // A missing locale: no path knows it, or SF knows it but can't run.
+    check(pick(os: 26, sfSup: false, sfOn: false, sfAvail: false) == .unavailable(.language("Afrikaans")), "no path knows the locale: the language line")
+    check(pick(os: 17, sfSup: false, sfOn: false, sfAvail: false, lang: "Swahili") == .unavailable(.language("Swahili")), "the language line names the language")
+    check(pick(os: 26, sfOn: true, sfAvail: false) == .unavailable(.noRecognizer), "SF knows the locale but isn't available: no recognizer")
+    check(pick(os: 26, tAvail: false, tSup: true, sfSup: false, sfOn: false, sfAvail: false) == .unavailable(.noRecognizer), "the analyzer knows the locale but can't run: no recognizer")
+    check(pick(os: 26, tAvail: false, sfSup: false, sfOn: false, sfAvail: false) == .unavailable(.language("Afrikaans")), "transcriber unavailable and nothing knows the locale: the language line")
+    // Which engine reports itself on the device.
+    check(DictationEngineChoice.speechTranscriber.isOnDevice && DictationEngineChoice.dictationTranscriber.isOnDevice && DictationEngineChoice.recognizerOnDevice.isOnDevice, "the three on-device engines say so")
+    check(!DictationEngineChoice.recognizerServer.isOnDevice && !DictationEngineChoice.unavailable(.noRecognizer).isOnDevice, "the server and unavailable do not")
+
+    // Every OS and every combination of answers: the invariants of the D1 chain.
+    var combos = 0
+    var broken: [String] = []
+    for os in [17, 25, 26, 27] {
+        for bits in 0..<64 {
+            let tA = bits & 1 != 0, tS = bits & 2 != 0, dS = bits & 4 != 0
+            let sS = bits & 8 != 0, sO = bits & 16 != 0, sA = bits & 32 != 0
+            let r = pick(os: os, tAvail: tA, tSup: tS, dSup: dS, sfSup: sS, sfOn: sO, sfAvail: sA, lang: "X")
+            let analyzer = os >= 26
+            let analyzerPath = analyzer && ((tA && tS) || dS)
+            let onDevicePath = analyzerPath || (sS && sA && sO)
+            let anyPath = analyzerPath || (sS && sA)
+            let knowsLocale = sS || (analyzer && (tS || dS))
+            var ok = true
+            if onDevicePath && !r.isOnDevice { ok = false }                    // on-device before the server
+            if r == .recognizerServer && onDevicePath { ok = false }
+            if r == .recognizerServer && !(sS && sA && !sO) { ok = false }     // the server only when SF is on the server
+            if r == .recognizerOnDevice && !(sS && sA && sO) { ok = false }
+            if os < 26 && (r == .speechTranscriber || r == .dictationTranscriber) { ok = false }
+            if anyPath && r == .unavailable(.noRecognizer) { ok = false }      // something can listen: never unavailable
+            if !anyPath {
+                switch r {
+                case .unavailable(.language(let name)): if knowsLocale || name != "X" { ok = false }
+                case .unavailable(.noRecognizer): if !knowsLocale { ok = false }
+                default: ok = false
+                }
+            }
+            combos += 1
+            if !ok { broken.append("iOS \(os), bits \(bits): \(r)") }
+        }
+    }
+    check(combos == 256, "every OS and every combination of answers was checked (\(combos))")
+    check(broken.isEmpty, "the D1 chain holds for every combination: \(broken.prefix(3))")
+}
+
+// The two limits: 20 s of silence, 10 min in all. Words reset the silence; only the cap is a fixed end.
+do {
+    let t0 = Date(timeIntervalSince1970: 1_000_000)
+    func at(_ s: Double) -> Date { t0.addingTimeInterval(s) }
+    check(DictationClock.silenceLimit == 20 && DictationClock.capLimit == 600, "the limits are 20 s of silence and 10 min in all")
+    var c = DictationClock(startedAt: t0)
+    check(c.lastWordsAt == t0 && c.startedAt == t0, "silence is counted from when the mic opened")
+    check(c.expiry(at: at(0)) == nil && c.expiry(at: at(19)) == nil, "nothing expires in the first 19 s")
+    check(c.expiry(at: at(19.9)) == nil, "no silence expiry at 19.9 s")
+    check(c.expiry(at: at(20)) == .silence, "silence expires at 20 s with no words")
+    check(c.nextDeadline == at(20), "with no words, the next deadline is the silence")
+    c.heardWords(at: at(15))
+    check(c.expiry(at: at(34.9)) == nil && c.expiry(at: at(35)) == .silence, "words at 15 s move the silence to 35 s")
+    check(c.nextDeadline == at(35), "the next deadline moves with the words")
+    c.heardWords(at: at(10))
+    check(c.lastWordsAt == at(15), "words heard earlier than the last are ignored")
+    check(c.capDeadline == at(600), "the cap runs from the start, whatever the words")
+
+    // Steady words every 5 s: the silence never fires, the cap does.
+    var steady = DictationClock(startedAt: t0)
+    for s in stride(from: 5.0, through: 595.0, by: 5.0) { steady.heardWords(at: at(s)) }
+    check(steady.expiry(at: at(599.9)) == nil, "steady words: no expiry before 600 s")
+    check(steady.expiry(at: at(600)) == .cap, "steady words: the cap expires at 600 s")
+    check(steady.nextDeadline == at(600), "with steady words the cap is the next deadline")
+
+    // Both due: the cap wins.
+    check(DictationClock(startedAt: t0).expiry(at: at(700)) == .cap, "no words for 700 s: the cap wins over the silence")
+    var late = DictationClock(startedAt: t0)
+    late.heardWords(at: at(585))
+    check(late.expiry(at: at(604)) == .cap, "silence due at 605 s and cap at 600 s: the cap wins")
+    check(late.nextDeadline == at(600), "nextDeadline is the earlier of the two")
+    var capped = DictationClock(startedAt: t0)
+    capped.heardWords(at: at(650))
+    check(capped.expiry(at: at(600)) == .cap, "words never move the cap")
+    var c3 = DictationClock(startedAt: t0)
+    c3.heardWords(at: at(100))
+    check(c3.nextDeadline == at(120), "with words at 100 s, the silence (120 s) is the next deadline")
+}
+
+// The lines above the box, the tone of each, Open Settings, the progress bar, and the words in them.
+do {
+    func line(_ p: DictationPhase, device: String = "iPhone", language: String = "English (UK)", send: String = "Send") -> DictationCopy.Line? {
+        DictationCopy.line(for: p, device: device, language: language, send: send)
+    }
+    let phases: [DictationPhase] = [.preparing, .downloading(fraction: nil), .downloading(fraction: 0.5), .listening(level: 0, onDevice: true),
+                                    .listening(level: 1, onDevice: false), .denied(.microphone), .denied(.speech), .unavailable(.language("Afrikaans")),
+                                    .unavailable(.noOnDevice), .unavailable(.noRecognizer), .interrupted]
+    check(line(.idle) == nil, "idle shows no line")
+    check(phases.allSatisfy { line($0) != nil }, "every phase but idle has a line")
+    var settingsOK = true
+    for p in phases {
+        let refused = p == .denied(.microphone) || p == .denied(.speech)
+        if (line(p)?.opensSettings ?? false) != refused { settingsOK = false }
+    }
+    check(settingsOK, "only a refused permission offers Open Settings")
+
+    // Tones: listening is teal, a refused permission is amber (.problem), the rest are quiet.
+    check(line(.listening(level: 0.4, onDevice: true))?.tone == .listening && line(.listening(level: 0.4, onDevice: false))?.tone == .listening, "listening is teal")
+    check(line(.denied(.microphone))?.tone == .problem && line(.denied(.speech))?.tone == .problem, "a refused permission is the problem tone")
+    check(line(.preparing)?.tone == .quiet && line(.downloading(fraction: 0.4))?.tone == .quiet && line(.interrupted)?.tone == .quiet, "preparing, downloading and interrupted are quiet")
+    check(line(.unavailable(.language("Afrikaans")))?.tone == .quiet && line(.unavailable(.noRecognizer))?.tone == .quiet && line(.unavailable(.noOnDevice))?.tone == .quiet, "every unavailable line is quiet")
+
+    // The words.
+    check(line(.preparing)?.text == "Getting ready to listen…", "preparing says it is getting ready")
+    check(line(.listening(level: 0.4, onDevice: true))?.text == "Listening on this iPhone · nothing is sent until you tap Send", "the on-device listening line")
+    check(line(.listening(level: 0.4, onDevice: false))?.text == "Listening with Apple's speech service · nothing is sent until you tap Send", "the server listening line")
+    check(line(.listening(level: 0.4, onDevice: true), device: "iPad")?.text == "Listening on this iPad · nothing is sent until you tap Send", "an iPad says iPad")
+    check(line(.listening(level: 0.4, onDevice: true), send: "Start")?.text.hasSuffix("nothing is sent until you tap Start") == true, "New task names Start")
+    check(line(.listening(level: 0.4, onDevice: true), send: "Answer")?.text.hasSuffix("nothing is sent until you tap Answer") == true, "a question names Answer")
+    check(line(.denied(.microphone))?.text == "Page can't hear you: microphone access is off for Page.", "the microphone-off line")
+    check(line(.denied(.speech))?.text == "Speech recognition is off for Page.", "the speech-off line")
+    check(line(.interrupted)?.text == "Stopped listening: something else took the microphone. Your words are kept.", "the interrupted line")
+    check(line(.unavailable(.language("Afrikaans")))?.text == "Speech in Afrikaans can't be turned into text on this iPhone.", "the language line names the language")
+    check(line(.unavailable(.language("Afrikaans")), device: "iPad")?.text == "Speech in Afrikaans can't be turned into text on this iPad.", "the language line says iPad on an iPad")
+    check(DictationCopy.noRecognizer(device: "phone") == "This phone has no speech recognizer, so the mic is off."
+          && line(.unavailable(.noRecognizer))?.text == "This iPhone has no speech recognizer, so the mic is off.", "the no-recognizer line, with the device word")
+    check(DictationCopy.noOnDevice(device: "phone") == "This phone can't turn speech into text on the phone itself, so Page leaves the mic off."
+          && line(.unavailable(.noOnDevice))?.text == "This iPhone can't turn speech into text on the phone itself, so Page leaves the mic off.", "the no-on-device line, with the device word")
+
+    // Downloads: a fraction shows a percent and a bar; no fraction shows the words alone.
+    check(DictationCopy.downloading(language: "English (UK)", device: "iPhone", fraction: 0.404) == "Getting English (UK) speech for this iPhone · 40%", "a download with a fraction shows the percent")
+    check(DictationCopy.downloading(language: "English (UK)", device: "iPhone", fraction: nil) == "Getting English (UK) speech for this iPhone…", "a download without a fraction has no percent")
+    check(line(.downloading(fraction: 0.25))?.progress == 0.25 && line(.downloading(fraction: nil))?.progress == nil, "only a determinate download has a bar")
+    check(line(.listening(level: 0.4, onDevice: true))?.progress == nil, "listening has no bar")
+
+    // Percent: whole, clamped to 0…100.
+    check(DictationCopy.percent(0.404) == "40%" && DictationCopy.percent(0.5) == "50%", "percent rounds down to a whole number")
+    check(DictationCopy.percent(1.2) == "100%" && DictationCopy.percent(1) == "100%", "percent is clamped at 100%")
+    check(DictationCopy.percent(-1) == "0%" && DictationCopy.percent(0) == "0%", "percent is clamped at 0%")
+
+    // The fixed words.
+    check(DictationCopy.micLabel == "Dictate" && DictationCopy.stopLabel == "Stop dictating", "the mic's labels")
+    check(DictationCopy.micHint == "Your words go into the message box. Nothing is sent until you tap Send.", "the mic's hint")
+    check(DictationCopy.listeningPlaceholder == "Listening…" && DictationCopy.openSettings == "Open Settings", "the placeholder and the Settings button")
+}
+
+// The phases: which are active (the mic is open or about to be), which are blocked, and what each carries.
+do {
+    let active: [DictationPhase] = [.preparing, .downloading(fraction: nil), .downloading(fraction: 0.3), .listening(level: 0.2, onDevice: true), .listening(level: 0.2, onDevice: false)]
+    let inactive: [DictationPhase] = [.idle, .denied(.microphone), .denied(.speech), .unavailable(.language("X")), .unavailable(.noOnDevice), .unavailable(.noRecognizer), .interrupted]
+    check(active.allSatisfy { $0.isActive } && inactive.allSatisfy { !$0.isActive }, "preparing, downloading and listening are active; the rest are not")
+    let blocked: [DictationPhase] = [.denied(.microphone), .denied(.speech), .unavailable(.language("X")), .unavailable(.noOnDevice), .unavailable(.noRecognizer)]
+    check(blocked.allSatisfy { $0.isBlocked } && (active + [.idle, .interrupted]).allSatisfy { !$0.isBlocked }, "denied and unavailable block a tap; the rest do not")
+    check(DictationPhase.listening(level: 0.7, onDevice: true).isListening && !DictationPhase.preparing.isListening && !DictationPhase.idle.isListening, "only listening is listening")
+    check(DictationPhase.listening(level: 0.7, onDevice: true).level == 0.7 && DictationPhase.listening(level: 0.3, onDevice: false).level == 0.3, "the level is the listening level")
+    check((active + inactive).filter { !$0.isListening }.allSatisfy { $0.level == 0 }, "every other phase has a level of 0")
+    check(DictationPhase.listening(level: 0, onDevice: false).onDevice == false && DictationPhase.listening(level: 0, onDevice: true).onDevice, "onDevice follows the listening phase")
+    check(DictationPhase.idle.onDevice && DictationPhase.preparing.onDevice && DictationPhase.unavailable(.noRecognizer).onDevice, "outside listening, onDevice is true (nothing goes to Apple)")
+}
+
+// The source the spec pins: the Info.plist copy, no claim that audio never leaves the phone, and a Foundation-only model.
+if let root = ProcessInfo.processInfo.environment["PAGE_IOS_ROOT"] {
+    let plist = (try? String(contentsOfFile: root + "/Page/Info.plist", encoding: .utf8)) ?? ""
+    func plistString(_ key: String) -> String? {
+        guard let k = plist.range(of: "<key>\(key)</key>") else { return nil }
+        let rest = plist[k.upperBound...]
+        guard let open = rest.range(of: "<string>"), let close = rest.range(of: "</string>"), open.upperBound <= close.lowerBound else { return nil }
+        return String(rest[open.upperBound..<close.lowerBound])
+    }
+    let mic = plistString("NSMicrophoneUsageDescription") ?? ""
+    let speech = plistString("NSSpeechRecognitionUsageDescription") ?? ""
+    check(!mic.isEmpty && !speech.isEmpty, "Info.plist has NSMicrophoneUsageDescription and NSSpeechRecognitionUsageDescription")
+    check(mic == "Page Relay uses the microphone only while you dictate a message. What you say is turned into text on this iPhone, or by Apple's speech service when the iPhone can't. It isn't recorded or kept.",
+          "the microphone string is the spec's copy")
+    check(speech == "Page Relay turns what you say into text, so you can dictate messages to your sessions. Nothing is sent until you tap Send.",
+          "the speech string is the spec's copy")
+    for (name, s) in [("microphone", mic), ("speech", speech)] {
+        let low = s.lowercased()
+        check(!low.contains("sent anywhere") && !low.contains("never sent") && !low.contains("never leaves"),
+              "the \(name) string does not claim the audio is never sent anywhere")
+    }
+    let dictation = (try? String(contentsOfFile: root + "/Page/Models/Dictation.swift", encoding: .utf8)) ?? ""
+    let imports = dictation.components(separatedBy: "\n").filter { $0.hasPrefix("import ") }
+    check(imports == ["import Foundation"], "Dictation.swift imports only Foundation: \(imports)")
+} else {
+    check(false, "PAGE_IOS_ROOT is not set: run through iOS/Tests/run-logic-tests.sh")
+}
+
 print("passes=\(passes) failures=\(failures)")
 exit(failures == 0 ? 0 : 1)

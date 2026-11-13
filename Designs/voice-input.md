@@ -67,7 +67,7 @@ One line, in the composer's own column, above the field, in the style of the roo
 | No on-device speech (D1) | `This phone can't turn speech into text on the phone itself, so Page leaves the mic off.` | textSecondary |
 | Interrupted | `Stopped listening: something else took the microphone. Your words are kept.` | textSecondary |
 
-"iPhone" reads "Android phone" or the model name on Android, and "iPad" on an iPad. The line goes away by itself 4 s after a stop or an interruption. The Settings notes stay until the next tap.
+"iPhone" reads "phone" on Android (as the rest of the Android copy does), and "iPad" on an iPad. The line goes away by itself 4 s after a stop or an interruption. The Settings notes stay until the next tap.
 
 While listening with an empty draft, the placeholder reads "Listening…", and the quick replies and Yes/No step aside.
 

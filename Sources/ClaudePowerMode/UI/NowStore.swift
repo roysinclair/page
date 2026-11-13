@@ -248,6 +248,22 @@ final class NowStore: ObservableObject {
     /// Feeds a key; true when the panel consumed it.
     @discardableResult
     func handle(_ press: NowKeyPress) -> Bool {
+        // Voice input's keys come before the panel's own: Esc would close the box, and ⌘ combinations
+        // fall through to the responders. Speaking never sends; Return is the only key that does.
+        switch DictationKeys.action(for: press, composerOpen: state.composer != nil, dictating: dictation.isActive) {
+        case .toggle?:
+            toggleDictation()
+            return true
+        case .stopListening?:
+            // The first Esc stops listening and keeps the words; the next one closes the box as it always did.
+            toggleDictation()
+            return true
+        case .stopForSend?:
+            // Return sends what shows. Whatever is still arriving must not land after it (or in the next box).
+            cancelDictation()
+        case nil:
+            break
+        }
         let before = state
         let r = NowKeys.handle(press, state: state, rows: keyRows, flights: flightRows, idle: idleRows, now: now())
         apply(r.state, effect: r.effect)
@@ -535,11 +551,12 @@ final class NowStore: ObservableObject {
         }
     }
 
-    /// The mic, or ⌥⌘D: start, or stop and keep the words.
+    /// The mic, or ⌘D: start, or stop and keep the words.
     func toggleDictation() { dictationActions.toggle() }
 
-    /// Stop listening without writing anything more (Return, typing, closing the box).
-    func cancelDictation() { if dictation.isActive { dictationActions.cancel() } }
+    /// Stop listening without writing anything more (Return, typing, closing the box). Safe to call
+    /// when nothing is listening: a stop that is still finalising its last words is dropped too.
+    func cancelDictation() { dictationActions.cancel() }
 
     func cancelComposer() {
         cancelDictation()
@@ -623,6 +640,7 @@ final class NowStore: ObservableObject {
     /// half-typed, and nothing mid-motion. What is on screen now counts as seen,
     /// so opening the panel never flies the existing rows in.
     func reset() {
+        cancelDictation()
         endHold()
         state = NowPanelState()
         state.inFlightCollapsed = prefs.inFlightCollapsed

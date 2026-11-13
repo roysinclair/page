@@ -8,7 +8,7 @@ import SwiftUI
 
 /// What the store calls to drive the microphone. Set by the app; the harness leaves them empty.
 struct NowDictationActions {
-    /// Start, or stop and keep the words (the mic button, ⌥⌘D).
+    /// Start, or stop and keep the words (the mic button, ⌘D).
     var toggle: () -> Void = {}
     /// Stop without writing anything more: Return, typing, closing the box. What shows is kept.
     var cancel: () -> Void = {}

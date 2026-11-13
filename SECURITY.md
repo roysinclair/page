@@ -290,6 +290,30 @@ from sleeping with the lid closed.
   environment, and discards everything else, including cmux's capability
   token.
 
+## Voice input
+
+The phones' message boxes and the Mac's Steer boxes have a mic for dictation
+(README, "Speak instead of type").
+
+- Speech is turned into text on the device when the device can do it: Apple's
+  SpeechAnalyzer or SFSpeechRecognizer with `requiresOnDeviceRecognition`, or
+  Android's `createOnDeviceSpeechRecognizer`.
+- Otherwise the platform's own speech service does it: Apple's, or the Android
+  phone's default `RecognitionService`, usually Google's. That sends the audio
+  to that company under its terms. The line above the box names it the whole
+  time it listens.
+- Page never writes audio to disk, never logs it or its transcript, and never
+  sends audio over the relay.
+- The microphone is open only while the stop button shows. It closes when you
+  send, leave the box, background the app or lock the phone, and after 20
+  seconds of silence.
+- Dictated text only fills the draft. It goes nowhere until you send it, by
+  the same route and under the same rules as typed text. Newlines are never
+  dictated, so a transcript can't press Return.
+- Permissions: the microphone (`NSMicrophoneUsageDescription`, `RECORD_AUDIO`)
+  and, on Apple platforms, Speech Recognition. The Mac app's hardened runtime
+  needs `com.apple.security.device.audio-input`.
+
 ## Closing terminals (off by default)
 
 With `dismissClosesTerminal` on, putting a finished or idle session away in the

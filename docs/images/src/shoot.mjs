@@ -28,6 +28,8 @@ export const jobs = [
   { name: 'feature-budget-stop', html: 'feature-budget-stop.html', w: 800, h: 500, dpr: 2 },
   { name: 'feature-panel', html: 'feature-panel.html', w: 800, h: 500, dpr: 2 },
   { name: 'feature-panel-close', html: 'feature-panel-close.html', w: 800, h: 500, dpr: 2 },
+  { name: 'feature-voice', html: 'feature-voice.html', w: 800, h: 500, dpr: 2 },
+  { name: 'feature-voice-mac', html: 'feature-voice-mac.html', w: 800, h: 500, dpr: 2 },
   { name: 'family', html: 'family.html', w: 1200, h: 750, dpr: 2 },        // 2400x1500
   { name: 'screen-lock', html: 'screen-lock.html', w: 782, h: 1690, dpr: 1 }, // the website's power/lock (website/scripts/product-shots.py)
 ];

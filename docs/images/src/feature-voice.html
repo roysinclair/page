@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Speak instead of type</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .p1 { left: 600px; top: 52px; --w: 178px; z-index: 4; transform: rotate(4deg); }
+  .p2 { left: 392px; top: 30px; --w: 196px; z-index: 5; }
+  .copy p { max-width: 282px; text-wrap: pretty; }
+</style></head>
+<body><div class="canvas feat">
+  <div class="sky" data-seed="83"></div>
+  <div class="aurora" data-blobs="55,-30,60,70,teal,.26,70; 85,10,40,60,sky,.16,80; 20,65,45,60,violet,.10,90"></div>
+  <div class="copy" style="--cw:300px">
+    <span class="eyebrow"><span class="pulse" style="--s:18px"><b></b></span>Page Relay</span>
+    <h2 class="headline">Speak instead of type. <em>Nothing sent until you send.</em></h2>
+    <p class="caption">A mic beside Send in every message box. Your words appear as you speak, turned into text on the phone where it can be, and you read them before they go.</p>
+    <div class="chips">
+      <span class="chip"><span class="dot"></span>On the device first</span>
+      <span class="chip"><span class="dot" style="background:var(--sky);box-shadow:0 0 8px var(--sky)"></span>Never sends by voice</span>
+    </div>
+  </div>
+  <div class="phone android p1"><div class="cam"></div><div class="screen"><img src="assets/android-room-voice.webp" alt=""></div></div>
+  <div class="phone p2 reflect"><div class="island"></div><div class="screen"><img src="assets/ios-room-voice.webp" alt=""></div></div>
+</div><script src="sky.js"></script></body></html>

@@ -117,6 +117,10 @@ together, your phone hears from all of them.
     <td valign="top"><img src="docs/images/feature-panel-close.png" alt="Preferences, Terminals: dismissing a session also closes its terminal tab" width="100%"><br><b>Close its tab too. Only that one.</b> Optionally, putting a session away also closes its own cmux tab, tmux pane or terminal window, after 5 seconds to undo. Never a working session.</td>
   </tr>
   <tr>
+    <td valign="top"><img src="docs/images/feature-voice.png" alt="Speak instead of type: a session listening on iPhone and on Android" width="100%"><br><b>Speak instead of type.</b> A mic beside Send in every message box. Your words appear as you speak, on the phone where it can, and nothing is sent until you tap Send.</td>
+    <td valign="top"><img src="docs/images/feature-voice-mac.png" alt="Dictating into the Steer box in the Mac's menu-bar panel" width="100%"><br><b>Dictate a Steer on the Mac.</b> Click the mic in a Steer box, or press ⌘D, and talk. Return still sends, and only when you press it.</td>
+  </tr>
+  <tr>
     <td valign="top"><img src="docs/images/feature-battery.png" alt="Keep-awake and battery pause" width="100%"><br><b>Page Power: stays awake, pauses gracefully.</b> Keeps the computer awake while agents work, lid closed too, and asks them to stop and summarise at your battery cutoff.</td>
     <td valign="top"><img src="docs/images/feature-lock-screen.png" alt="Answer from the lock screen" width="100%"><br><b>Page Relay: answer from the lock screen.</b> Approve, deny or reply from the notification. Anything riskier than an undoable command opens the decision sheet.</td>
   </tr>

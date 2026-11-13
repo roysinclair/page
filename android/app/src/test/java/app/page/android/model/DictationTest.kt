@@ -446,7 +446,7 @@ class DictationTest {
 
     @Test fun `an interruption is a quiet line that keeps the words`() {
         val l = line(DictationPhase.Interrupted)!!
-        assertEquals("Stopped listening: something else took the microphone. Your words are kept.", l.text)
+        assertEquals("Stopped listening. Your words are kept.", l.text)
         assertEquals(DictationCopy.Tone.QUIET, l.tone)
     }
 

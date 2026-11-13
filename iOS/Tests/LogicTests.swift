@@ -6730,7 +6730,7 @@ do {
     check(line(.listening(level: 0.4, onDevice: true), send: "Answer")?.text.hasSuffix("nothing is sent until you tap Answer") == true, "a question names Answer")
     check(line(.denied(.microphone))?.text == "Page can't hear you: microphone access is off for Page.", "the microphone-off line")
     check(line(.denied(.speech))?.text == "Speech recognition is off for Page.", "the speech-off line")
-    check(line(.interrupted)?.text == "Stopped listening: something else took the microphone. Your words are kept.", "the interrupted line")
+    check(line(.interrupted)?.text == "Stopped listening. Your words are kept.", "the interrupted line")
     check(line(.unavailable(.language("Afrikaans")))?.text == "Speech in Afrikaans can't be turned into text on this iPhone.", "the language line names the language")
     check(line(.unavailable(.language("Afrikaans")), device: "iPad")?.text == "Speech in Afrikaans can't be turned into text on this iPad.", "the language line says iPad on an iPad")
     check(DictationCopy.noRecognizer(device: "phone") == "This phone has no speech recognizer, so the mic is off."

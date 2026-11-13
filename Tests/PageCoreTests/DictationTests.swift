@@ -606,7 +606,7 @@ final class DictationTests: XCTestCase {
 
     func testInterruptedLine() {
         let line = DictationCopy.line(for: .interrupted, language: lang)
-        XCTAssertEqual(line?.text, "Stopped listening: something else took the microphone. Your words are kept.")
+        XCTAssertEqual(line?.text, "Stopped listening. Your words are kept.")
         XCTAssertEqual(line?.tone, .quiet)
         XCTAssertEqual(line?.opensSettings, false)
     }

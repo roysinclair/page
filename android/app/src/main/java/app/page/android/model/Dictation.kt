@@ -100,7 +100,7 @@ object DictationCopy {
     const val PREPARING = "Getting ready to listen…"
     const val MICROPHONE_OFF = "Page can't hear you: microphone access is off for Page."
     const val SPEECH_OFF = "Speech recognition is off for Page."
-    const val INTERRUPTED = "Stopped listening: something else took the microphone. Your words are kept."
+    const val INTERRUPTED = "Stopped listening. Your words are kept."
     const val NO_RECOGNIZER = "This phone has no speech recognizer, so the mic is off."
 
     /**

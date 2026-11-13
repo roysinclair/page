@@ -75,7 +75,7 @@ enum DictationCopy {
     static let preparing = "Getting ready to listen…"
     static let microphoneOff = "Page can't hear you: microphone access is off for Page Studio."
     static let speechOff = "Speech recognition is off for Page Studio."
-    static let interrupted = "Stopped listening: something else took the microphone. Your words are kept."
+    static let interrupted = "Stopped listening. Your words are kept."
     static let noRecognizer = "This Mac has no speech recognizer, so the mic is off."
 
     static func listening(onDevice: Bool) -> String {

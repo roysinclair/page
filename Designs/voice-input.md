@@ -65,7 +65,7 @@ One line, in the composer's own column, above the field, in the style of the roo
 | Speech recognition off (iOS) | `Speech recognition is off for Page.` [Open Settings] | amber |
 | Language not on this phone | `Speech in Afrikaans can't be turned into text on this iPhone.` | textSecondary |
 | No on-device speech (D1) | `This phone can't turn speech into text on the phone itself, so Page leaves the mic off.` | textSecondary |
-| Interrupted | `Stopped listening: something else took the microphone. Your words are kept.` | textSecondary |
+| Interrupted | `Stopped listening. Your words are kept.` (neutral: a call or Siri taking the microphone, a lost input, and on Android a speech service that stopped answering all end here) | textSecondary |
 
 "iPhone" reads "phone" on Android (as the rest of the Android copy does), and "iPad" on an iPad. The line goes away by itself 4 s after a stop or an interruption. The Settings notes stay until the next tap.
 
@@ -121,7 +121,7 @@ API levels are pinned from `platforms/android-35/data/api-versions.xml`: `create
 - **API 31+ with `SpeechRecognizer.isOnDeviceRecognitionAvailable(ctx)`:** `SpeechRecognizer.createOnDeviceSpeechRecognizer(ctx)`.
 - **API 33+ first:** `checkRecognitionSupport(intent, mainExecutor, cb)`.
   - The locale is in `installedOnDeviceLanguages`: go.
-  - It is in `supportedOnDeviceLanguages` or `pendingOnDeviceLanguages`: on 34+, `triggerModelDownload(intent, mainExecutor, listener)` (progress shows on the line); on 33, `triggerModelDownload(intent)` (the line says "Getting … speech" with no percent, and the person taps again).
+  - It is in `supportedOnDeviceLanguages` or `pendingOnDeviceLanguages`: on 34+, `triggerModelDownload(intent, mainExecutor, listener)` (progress shows on the line); on 33, `triggerModelDownload(intent)` (the line says "Getting … speech" with no percent, and the app checks again every 3 s and starts listening when it is in).
   - Neither: unavailable.
 - **API 26–30, or no on-device recognizer:** D1 decides. Either unavailable, or `createSpeechRecognizer(ctx)` with `EXTRA_PREFER_OFFLINE`, and then the line says the phone's speech service may use the network.
 - **Intent.** `ACTION_RECOGNIZE_SPEECH`, `EXTRA_LANGUAGE_MODEL = LANGUAGE_MODEL_FREE_FORM`, `EXTRA_LANGUAGE = locale.toLanguageTag()`, `EXTRA_PARTIAL_RESULTS = true`, `EXTRA_PREFER_OFFLINE = true`.
@@ -135,7 +135,7 @@ API levels are pinned from `platforms/android-35/data/api-versions.xml`: `create
 - **Level.** `onRmsChanged(rmsdB)`, mapped from −2…10 dB to 0…1.
 - **Threading.** Create, use and `destroy()` the recognizer on the main thread, with `DisposableEffect` on leaving the box.
 - **Manifest.** `<uses-permission android:name="android.permission.RECORD_AUDIO" />`, and `<queries><intent><action android:name="android.speech.RecognitionService" /></intent></queries>` (without it `isRecognitionAvailable` is false on API 30+).
-- **Runtime permission.** `RequestPermission`. If it is refused for good, the Microphone off line opens `ACTION_APPLICATION_DETAILS_SETTINGS`.
+- **Runtime permission.** `ActivityCompat.requestPermissions` with a small request code, answered in `MainActivity.onRequestPermissionsResult`. Not the ActivityResult `RequestPermission` launcher: the locked androidx.fragment 1.2.5 rejects its request codes ("Can only use lower 16 bits for requestCode"). After a refusal the Microphone off line opens `ACTION_APPLICATION_DETAILS_SETTINGS`; the next tap asks again.
 
 ## Pure logic (both platforms, same names, unit-tested)
 

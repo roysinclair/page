@@ -78,7 +78,7 @@ enum DictationCopy {
     static let preparing = "Getting ready to listen…"
     static let microphoneOff = "Page can't hear you: microphone access is off for Page."
     static let speechOff = "Speech recognition is off for Page."
-    static let interrupted = "Stopped listening: something else took the microphone. Your words are kept."
+    static let interrupted = "Stopped listening. Your words are kept."
     /// Announced to VoiceOver when the mic opens and when it closes.
     static let announceStart = "Listening. Nothing is sent until you send it."
     static let announceStop = "Stopped listening"

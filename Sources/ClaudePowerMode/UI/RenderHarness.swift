@@ -270,7 +270,9 @@ enum RenderSurfaces {
             prompt: "Add a dark mode to the settings", folders: NightWatchFixtures.folders, folderIndex: 1,
             phase: .failed("Starting a session needs cmux, and it isn't installed on your Mac")))
 
-        return [
+        // Built in steps: one literal joined to the other lists with `+` is more than the Swift 6.0/6.1 type checker
+        // (CI's default Xcode on macos-15) can solve in time.
+        var all: [Surface] = [
             Surface(name: "popover-needs-you", width: w, view: onBackdrop(NWNowPopover(store: needs))),
             Surface(name: "popover-selected", width: w, view: onBackdrop(NWNowPopover(store: selected))),
             Surface(name: "popover-composer", width: w, view: onBackdrop(NWNowPopover(store: composer))),
@@ -306,10 +308,16 @@ enum RenderSurfaces {
             Surface(name: "welcome-back", width: 380 + 56, view: onBackdrop(NWWelcomeBackView(model: amber))),
             Surface(name: "welcome-back-calm", width: 380 + 56, view: onBackdrop(NWWelcomeBackView(model: calm))),
             Surface(name: "welcome-back-phone", width: 380 + 56, view: onBackdrop(NWWelcomeBackView(model: phone))),
-        ] + towerSurfaces() + widgetSurfaces() + legacySurfaces() + inFlightSurfaces() + budgetSurfaces() + sessionsSurfaces() + [
-            Surface(name: "components", width: 760, view: AnyView(NWComponentSheet())),
-            Surface(name: "glyphs", width: 1140, view: AnyView(NWGlyphSheet()))
         ]
+        all += towerSurfaces()
+        all += widgetSurfaces()
+        all += legacySurfaces()
+        all += inFlightSurfaces()
+        all += budgetSurfaces()
+        all += sessionsSurfaces()
+        all.append(Surface(name: "components", width: 760, view: AnyView(NWComponentSheet())))
+        all.append(Surface(name: "glyphs", width: 1140, view: AnyView(NWGlyphSheet())))
+        return all
     }
 
     /// Every Tower section, in the board's window size, plus taller renders

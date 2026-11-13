@@ -1,6 +1,6 @@
 # Speak instead of type: voice input in the phone apps
 
-Branch `voice-input` (stacked on `budget-caps`). iPhone and Android. The Mac is not in this pass.
+Branch `voice-input` (stacked on `budget-caps`). iPhone, Android, and Page Studio on the Mac (decision D2).
 
 ## What the user asked (2026-11-13)
 
@@ -9,7 +9,7 @@ Branch `voice-input` (stacked on `budget-caps`). iPhone and Android. The Mac is 
 ## Rules that do not bend
 
 1. **Speaking only fills the box.** Nothing is ever sent by voice. The words land in the draft, the person reads them, and Send is the same Send as before. Saying "send" is just a word.
-2. **The voice stays on the phone.** Recognition runs on the device. Page never records, keeps or relays audio. Only the text the person sends goes over the relay, as it does today. (Whether a server may ever be used is decision D1 below.)
+2. **On the device first; never through Page.** Recognition runs on the device when the device can do it. Otherwise it uses the phone's own speech service (Apple's, or the Android phone's default recognizer, usually Google's), and the line says so the whole time it listens (decision D1). Page never records, keeps or relays audio. Only the text the person sends goes over the relay, as it does today.
 3. **Dictated text is one line.** Newlines in a result become spaces, so a dictated update can never look like the Return key (`DraftSubmit.isReturnKey(old:new:)` is `new == old + "\n"`) and send by accident.
 4. **One input at a time.** Tapping the mic drops the keyboard. Touching the field, typing, sending, leaving the screen, locking the phone, the app going to the background, or the box locking (`sending`, `locked`, the composer mode turning `.locked`/`.blocked`) stops listening. The words so far are kept.
 5. **Nothing the person typed is overwritten.** Spoken words are added after the existing draft. If the draft changes under the dictation (the person edited it), listening stops and the late results are dropped.
@@ -158,13 +158,34 @@ A new section, "Voice input":
 - The text goes into the draft and goes nowhere until Send, by the same route and rules as typed text.
 - The microphone is open only while the stop button shows.
 
-## Decisions for the user
+## Decisions (the user, 2026-11-13)
 
-- **D1. On-device only?** The recommendation is yes.
-  - **iPhone.** Every iPhone on iOS 17+ that Page supports can transcribe common languages on the phone.
-  - **Android.** On-device needs Android 12 (API 31) and a phone with an on-device recognizer, as on Pixel and recent Samsung phones. On older phones the mic stays off with the "No on-device speech" line.
-  - **The alternative.** Allow the phone's own speech service (Apple's or Google's servers) when on-device isn't there. The line would then say so while listening.
-- **D2. The Mac too?** The Steer boxes in Page Studio could get the same mic (the same Speech framework, macOS 26). macOS already has system dictation (press 🎤 or Fn twice) in any box, so the recommendation is phones first.
+- **Design: approved** as rendered (the board of seven iPhone screens).
+- **D1: on-device first, then the phone's own speech service.** Use on-device recognition whenever the device has it. Otherwise fall back to the platform service, which may send audio to Apple or Google.
+  - **Line while listening on a server.** iPhone: "Listening with Apple's speech service · nothing is sent until you tap Send". Android: "Listening with this phone's speech service · nothing is sent until you tap Send". The on-device line stays "Listening on this iPhone · …".
+  - **Copy.** `DictationCopy.listening(device:send:onDevice:)`. On a server, `DictationPhase.listening` carries `onDevice: false`.
+  - **iOS chain.** `SpeechTranscriber` (iOS 26+, on-device), then `DictationTranscriber` (iOS 26+, on-device), then `SFSpeechRecognizer` with `requiresOnDeviceRecognition = true` when `supportsOnDeviceRecognition`, then `SFSpeechRecognizer` on Apple's server (`requiresOnDeviceRecognition = false`). The server path ends each request near 1 minute, so the engine starts a new request at 55 s and carries the committed words over.
+  - **Android chain.** `createOnDeviceSpeechRecognizer` (API 31+, with `isOnDeviceRecognitionAvailable`, a supported or installed language, or a download), then `createSpeechRecognizer` when `SpeechRecognizer.isRecognitionAvailable(ctx)`, with `EXTRA_PREFER_OFFLINE = true`. If neither exists: `unavailable(.noRecognizer)`, "This phone has no speech recognizer, so the mic is off."
+  - **A language missing on-device** falls back to the server path too, before the language line is ever shown. That line is only for a language that no path supports.
+- **D2: the Mac too.** Page Studio's two Steer boxes in the menu-bar panel get the same mic (see "Mac" below).
+
+## Mac (Page Studio)
+
+- **Boxes.** `NWComposer` ("Tell it instead…", NowPopoverView.swift) and `NWFlightComposer` ("Steer Claude…", NowInFlightView.swift). Both write `store.composerText`.
+- **The mic.** A 24 pt glyph button inside the field, before the ↵ keycap or Send: `mic` in textTertiary, with the help text "Dictate · nothing is sent until you press Return". While listening it shows the teal stop square on a 16 % teal disc, with the level ring.
+- **The line.** It sits above the field, in the panel's style (monoMicro or 11 pt): "Listening on this Mac · nothing is sent until you press Return", with level bars. The problem lines are the phones' lines, with "Mac", and "Open Settings" opens System Settings ▸ Privacy & Security ▸ Microphone or Speech Recognition (`x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone` / `?Privacy_SpeechRecognition`).
+- **Keys.**
+  - ⌥⌘D (or a click) starts and stops while a Steer box is open.
+  - Esc stops listening first and closes the box on the second press.
+  - Return sends what shows and stops, the same as Send.
+  - Typing stops listening.
+- **Engines.** macOS 26+: `SpeechAnalyzer` + `SpeechTranscriber` / `DictationTranscriber` (the same calls as iOS; macOS has no `AVAudioSession`, so `AVAudioEngine` is used directly). Earlier: `SFSpeechRecognizer`, on-device when supported, else Apple's server (D1). The package's deployment target is macOS 12, so it is all behind `#available`.
+- **Permissions.**
+  - `AVCaptureDevice.requestAccess(for: .audio)` and `SFSpeechRecognizer.requestAuthorization`.
+  - build.sh writes `NSMicrophoneUsageDescription` and `NSSpeechRecognitionUsageDescription` into Info.plist.
+  - Resources/Page.entitlements gains `com.apple.security.device.audio-input`; the app is signed with the hardened runtime, and without that entitlement the microphone is silently denied.
+- **Pure logic.** The same `Dictation.swift` types in Sources/PageCore (Foundation only: PageCore also builds for Linux).
+- **Renders.** `RenderHarness` screens `popover-voice-listening` and `popover-voice-denied`.
 
 ## Build plan
 

@@ -43,6 +43,12 @@ final class NowStore: ObservableObject {
     /// What Stop all would do, named while the hold fills.
     @Published var stopScope: String = ""
     @Published var composerFocusToken = 0
+    /// Voice input in the open Steer box (Designs/voice-input.md, "Mac"). One box is open at a time, so one phase.
+    @Published var dictation: DictationPhase = .idle
+    /// The display name of the language being listened for ("English (UK)").
+    var dictationLanguage = "English"
+    /// Set by the app (DictationController); empty in the render harness.
+    var dictationActions = NowDictationActions()
     /// When each signature motion started (arrivals, receipt threads, the
     /// exhale, dusk, dawn, the hold's unwind and burst). Views turn these into
     /// frames with the pure models in SignatureMotion.swift.
@@ -529,13 +535,21 @@ final class NowStore: ObservableObject {
         }
     }
 
+    /// The mic, or ⌥⌘D: start, or stop and keep the words.
+    func toggleDictation() { dictationActions.toggle() }
+
+    /// Stop listening without writing anything more (Return, typing, closing the box).
+    func cancelDictation() { if dictation.isActive { dictationActions.cancel() } }
+
     func cancelComposer() {
+        cancelDictation()
         var s = state
         s.composer = nil
         state = s
     }
 
     func submitComposer() {
+        cancelDictation()
         handle(NowKeyPress(key: .ret))
     }
 

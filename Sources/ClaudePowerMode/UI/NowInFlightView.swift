@@ -509,17 +509,20 @@ struct NWFlightComposer: View {
         let preview = InFlightPreview.line(for: row, text: composer.text, macName: store.model.macName)
         let ready = !composer.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && preview.ok
         VStack(alignment: .leading, spacing: 5) {
+            NWDictationSlot(store: store)
             HStack(spacing: 8) {
                 Image(systemName: "keyboard")
                     .font(Font.system(size: 12, weight: .medium))
                     .foregroundColor(NightWatch.Palette.teal.color)
-                TextField("Steer \(row.card.backendName ?? row.project)…",
+                TextField(store.dictation.isListening && composer.text.isEmpty ? DictationCopy.listeningPlaceholder
+                          : "Steer \(row.card.backendName ?? row.project)…",
                           text: Binding(get: { store.composerText }, set: { store.composerText = $0 }))
                     .textFieldStyle(.plain)
                     .font(Font.system(size: 13))
                     .foregroundColor(NightWatch.Palette.textPrimary.color)
                     .focused($focused)
                     .accessibilityLabel(Text("Steer \(row.project)"))
+                NWDictationMicButton(phase: store.dictation) { store.toggleDictation() }
                 Button { store.submitComposer() } label: {
                     Text("Send")
                         .font(Font.system(size: 12, weight: .semibold))

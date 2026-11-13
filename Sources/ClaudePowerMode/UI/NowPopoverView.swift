@@ -392,15 +392,18 @@ struct NWComposer: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
+            NWDictationSlot(store: store)
             HStack(spacing: 8) {
                 Image(systemName: "text.bubble")
                     .font(Font.system(size: 12, weight: .medium))
                     .foregroundColor(NightWatch.Palette.teal.color)
-                TextField("Tell it instead…", text: Binding(get: { store.composerText }, set: { store.composerText = $0 }))
+                TextField(store.dictation.isListening && store.composerText.isEmpty ? DictationCopy.listeningPlaceholder : "Tell it instead…",
+                          text: Binding(get: { store.composerText }, set: { store.composerText = $0 }))
                     .textFieldStyle(.plain)
                     .font(Font.system(size: 13))
                     .foregroundColor(NightWatch.Palette.textPrimary.color)
                     .focused($focused)
+                NWDictationMicButton(phase: store.dictation) { store.toggleDictation() }
                 NWKeyCap(label: "↵", emphasised: true)
             }
             .padding(.horizontal, 12)

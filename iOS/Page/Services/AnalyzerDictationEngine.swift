@@ -29,8 +29,11 @@ final class AnalyzerDictationEngine: DictationEngine, @unchecked Sendable {
         self.locale = locale
     }
 
+    /// `.fastResults` as well as `.volatileResults`: measured on the Mac with real-time audio, `.volatileResults` alone
+    /// showed nothing for the first ~4 s and then came in bursts; with `.fastResults` the first words show after ~1 s.
+    /// It trades a little accuracy for words that keep up with the voice (the Mac engine does the same).
     static func makeSpeechTranscriber(_ locale: Locale) -> SpeechTranscriber {
-        SpeechTranscriber(locale: locale, transcriptionOptions: [], reportingOptions: [.volatileResults], attributeOptions: [])
+        SpeechTranscriber(locale: locale, transcriptionOptions: [], reportingOptions: [.volatileResults, .fastResults], attributeOptions: [])
     }
 
     static func makeDictationTranscriber(_ locale: Locale) -> DictationTranscriber {

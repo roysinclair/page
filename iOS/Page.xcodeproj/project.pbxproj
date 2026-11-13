@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		00CFA74F4885AA16D27EE426 /* CardGlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91CA86F5161C17B5E63226E3 /* CardGlow.swift */; };
 		00D47F53E252CAD3BC55B352 /* NavigationModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB47B7774DE2A2B1F4BDD887 /* NavigationModel.swift */; };
+		00F136BE98C9A11466FF5F9F /* NWDictation.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB374667295B824BC9E1CA9 /* NWDictation.swift */; };
 		017ECCC934690EA30BB9B9FF /* SettledLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3533950CD3451682225AE4 /* SettledLog.swift */; };
 		0197ACBF048050169C8AC008 /* PhotoMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADE5DB9C2262B9A5ED2DE0F3 /* PhotoMessages.swift */; };
 		02137456CFFD03B5D5FFA72E /* NWRunwayBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29CFABD445EE36972428726C /* NWRunwayBar.swift */; };
@@ -78,6 +79,7 @@
 		5F59939B3C1AB1BB346AD4C3 /* DevBypass.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE75A73D4256FFE3CF18AD87 /* DevBypass.swift */; };
 		60C68FE402CDD7A2C73095F3 /* NowMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D9F4CD5B992437D3429EFA /* NowMotion.swift */; };
 		611F1DCC7655A9D07EEEB69A /* ActivityStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEA91064988D836162378AEF /* ActivityStrip.swift */; };
+		61F1FC5DBB3C869C9C739138 /* Dictation.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB110D8C082C359244D847BB /* Dictation.swift */; };
 		65F5F483564AD1D0C5BDD3EE /* RenderArguments.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFB1EB69017DC281AC0B858C /* RenderArguments.swift */; };
 		6677EE3BBE4F04076255EE5D /* NWAurora.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BBDA99F3958EC2211A80357 /* NWAurora.swift */; };
 		680BCF8D2990A2273EA4B074 /* TowerContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 314D7D39859EA3652636C001 /* TowerContainer.swift */; };
@@ -129,6 +131,7 @@
 		A9FAFE26E2C3D9E12B4C1534 /* NowBanners.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F67E4F21F4AB8C27797449A /* NowBanners.swift */; };
 		AACE7808002E2BE61CE32318 /* PageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87F90880A9F324A1582416D0 /* PageWidget.swift */; };
 		ACAC73C0C4BDCAAFF2618B41 /* QuestionDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5BA7C69B41FB272EC3AA8D5 /* QuestionDraft.swift */; };
+		ACDD86006CDF56DD8E98E83F /* Dictation.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB110D8C082C359244D847BB /* Dictation.swift */; };
 		AD60FD3C9BB32C777CA7C94E /* PhotoMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADE5DB9C2262B9A5ED2DE0F3 /* PhotoMessages.swift */; };
 		ADC6F15049231CD3F106808B /* MotionCurves.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB058B1C09FE4D498FCFDE16 /* MotionCurves.swift */; };
 		ADE9A4ECC6519EB5A38AD2AD /* CardGlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91CA86F5161C17B5E63226E3 /* CardGlow.swift */; };
@@ -327,6 +330,7 @@
 		B62211DD7C41E1E931FFAFD5 /* NWOnboarding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NWOnboarding.swift; sourceTree = "<group>"; };
 		BA4B38D95AEEDC3D6CA48FCF /* PairMacView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairMacView.swift; sourceTree = "<group>"; };
 		BB058B1C09FE4D498FCFDE16 /* MotionCurves.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionCurves.swift; sourceTree = "<group>"; };
+		BBB374667295B824BC9E1CA9 /* NWDictation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NWDictation.swift; sourceTree = "<group>"; };
 		BBE02CBE7023D073A2EA82B8 /* StopPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopPlan.swift; sourceTree = "<group>"; };
 		BE95F5541E992F13DB7BC9EB /* UsageDisplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageDisplay.swift; sourceTree = "<group>"; };
 		BEA91064988D836162378AEF /* ActivityStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityStrip.swift; sourceTree = "<group>"; };
@@ -334,6 +338,7 @@
 		C09A2AA8DDFEDFE7B6F461F0 /* NWRoomData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NWRoomData.swift; sourceTree = "<group>"; };
 		C57C01CC45A7D831FDDBE2EF /* NWTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NWTheme.swift; sourceTree = "<group>"; };
 		CB0CC580ED82212F602FF975 /* LiveSessions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveSessions.swift; sourceTree = "<group>"; };
+		CB110D8C082C359244D847BB /* Dictation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dictation.swift; sourceTree = "<group>"; };
 		CB416F859557D49B4DABBA9E /* NWApproach.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NWApproach.swift; sourceTree = "<group>"; };
 		CC339EF04B98E6A50CE04C75 /* ActionFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionFlow.swift; sourceTree = "<group>"; };
 		D19B940BCAA4471D98FC01E9 /* SystemSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemSettings.swift; sourceTree = "<group>"; };
@@ -443,6 +448,7 @@
 				5748C5A2B2542A30FA18EDDA /* NWCapsule.swift */,
 				6CECFCC29CF8FA48594552E6 /* NWControls.swift */,
 				FF541BCFD2218B9C5AD40477 /* NWDecisionSheet.swift */,
+				BBB374667295B824BC9E1CA9 /* NWDictation.swift */,
 				59785BEB3758B1736A649DC2 /* NWDispatch.swift */,
 				5E57785102BFD3C4927FB2E2 /* NWDuskDawn.swift */,
 				92D127BE51D493DFF3E0F127 /* NWGlass.swift */,
@@ -531,6 +537,7 @@
 				F0C502D8412C02AE669D8298 /* Daypart.swift */,
 				2D0E4306688192CB4D09DF21 /* DecisionContent.swift */,
 				FB5F9ED5DCA64A867E1FB019 /* DecisionPhase.swift */,
+				CB110D8C082C359244D847BB /* Dictation.swift */,
 				811FCA35639BE15A50449CFF /* DispatchModel.swift */,
 				216AA84E1E6BAFDC091C70D2 /* DuskDawn.swift */,
 				5A181A52D27E87844823DCF2 /* FirstTimeTips.swift */,
@@ -690,6 +697,7 @@
 				063FE161E781523D9CBDCE6F /* Daypart.swift in Sources */,
 				FEDBD4A3E6837BC38AE7BE88 /* DecisionContent.swift in Sources */,
 				AE023A79C839CAEAB5A4153A /* DecisionPhase.swift in Sources */,
+				61F1FC5DBB3C869C9C739138 /* Dictation.swift in Sources */,
 				FB6F498418C31E881D1C377C /* DispatchModel.swift in Sources */,
 				DF7FA4CA7028D62407A3CE26 /* DuskDawn.swift in Sources */,
 				E5002EEF76E04DB3EC934B15 /* FirstTimeTips.swift in Sources */,
@@ -765,6 +773,7 @@
 				B9A37D8797EECAA7139E0F6D /* DecisionContent.swift in Sources */,
 				4B5C77872E6E09D3738099C0 /* DecisionPhase.swift in Sources */,
 				5F59939B3C1AB1BB346AD4C3 /* DevBypass.swift in Sources */,
+				ACDD86006CDF56DD8E98E83F /* Dictation.swift in Sources */,
 				6BA931073B50BD052B7F0816 /* DiffView.swift in Sources */,
 				89BE4AB8B77B7DF924C0D40B /* DispatchContainer.swift in Sources */,
 				A18B5CED40485F51FE1F25D0 /* DispatchModel.swift in Sources */,
@@ -789,6 +798,7 @@
 				55502CCEE6D15216B83699A3 /* NWCapsule.swift in Sources */,
 				491D91450011244A7F107413 /* NWControls.swift in Sources */,
 				BF2C8A28EE6635FC4AD53223 /* NWDecisionSheet.swift in Sources */,
+				00F136BE98C9A11466FF5F9F /* NWDictation.swift in Sources */,
 				C34B4ED1AD160260BB7740FD /* NWDispatch.swift in Sources */,
 				78A70015EFF30F2C54AFED17 /* NWDuskDawn.swift in Sources */,
 				FB36475A03E6BF8D7036BBC9 /* NWGlass.swift in Sources */,

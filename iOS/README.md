@@ -207,6 +207,31 @@ time, not only when it pages you. The wire contract is
   After a confirmation it presses Esc in the session.
 - The reply screen shows **Open session** when the page's session is live.
 
+### Speak instead of type
+
+The session's message box, the reply sheet, a question's "Type your answer"
+and New task each have a mic beside Send. Tap it and talk; the words land in
+the box as you speak, and nothing is sent until you tap Send (the main
+README's [Speak instead of type](../README.md#speak-instead-of-type)).
+
+- **iOS 26 and later:** `SpeechAnalyzer` with `SpeechTranscriber`, or
+  `DictationTranscriber` where the transcriber has no model for the language.
+  The first use may download the language (`AssetInventory`); the line above
+  the box shows the progress.
+- **iOS 17 to 25:** `SFSpeechRecognizer`, on the device when
+  `supportsOnDeviceRecognition`, otherwise Apple's speech service. The line
+  above the box then reads "Listening with Apple's speech service".
+- **Privacy:** audio is never written, logged or relayed. Info.plist carries
+  `NSMicrophoneUsageDescription` and `NSSpeechRecognitionUsageDescription`.
+- **Code:** the pure parts (phases, copy, the draft that joins dictated words to
+  what you typed, engine choice, the silence clock) are in
+  `Page/Models/Dictation.swift` and covered by `Tests/run-logic-tests.sh`. The
+  mic and the line are in `Page/Design/NightWatch/NWDictation.swift`; the
+  engines and the controller are in `Page/Services/`.
+- **Renders:** `Tools/render-screens.sh <dir> off -- room-voice room-voice-listening
+  room-voice-server room-voice-download room-voice-denied room-voice-off
+  decision-review-voice dispatch-voice`.
+
 ### Re-pairing for live sessions
 
 Pairings made before live sessions existed, or with an older Page Studio on the

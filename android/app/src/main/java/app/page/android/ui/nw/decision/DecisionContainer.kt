@@ -97,10 +97,11 @@ fun DecisionContainer(
     var snapshot by remember(interventionId) { mutableStateOf<Intervention?>(null) }
     var lookupFinished by remember(interventionId) { mutableStateOf(false) }
     var closeLookupFinished by remember(interventionId) { mutableStateOf(false) }
-    var draft by remember(interventionId) { mutableStateOf("") }
+    // (The render harness can start the composer with a draft: the `-voice` screens.)
+    var draft by remember(interventionId) { mutableStateOf(app.page.android.ui.nw.shell.RenderHarness.spec.value?.draftText ?: "") }
     // Steer on a card opens the sheet with the composer already up (and focused): one tap.
     var composerOpen by remember(interventionId) {
-        mutableStateOf(app.page.android.ui.nw.shell.RenderHarness.spec.value?.screen == "decision-composer" || AppRouter.takeSheetComposer(interventionId))
+        mutableStateOf(app.page.android.ui.nw.shell.RenderHarness.spec.value.let { it?.screen == "decision-composer" || it?.draftText != null } || AppRouter.takeSheetComposer(interventionId))
     }
     var restoredNote by remember(interventionId) { mutableStateOf<String?>(null) }
     // A Steer that went to the countdown or the Mac's hold: the same words again within a second are one tap's echo.

@@ -201,6 +201,10 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <true/>
     <key>NSAppleEventsUsageDescription</key>
     <string>Page Studio needs to control your Terminal to deliver replies from your phone into the active session.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Page Studio uses the microphone only while you dictate a message. What you say is turned into text on this Mac, or by Apple's speech service when this Mac can't. It isn't recorded or kept.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Page Studio turns what you say into text, so you can dictate messages to your sessions. Nothing is sent until you press Return.</string>
     <key>CFBundleURLTypes</key>
     <array>
         <dict>

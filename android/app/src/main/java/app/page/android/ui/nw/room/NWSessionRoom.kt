@@ -55,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -114,6 +115,11 @@ import app.page.android.ui.nw.components.NWHoldSurface
 import app.page.android.ui.nw.components.nwIcon
 import app.page.android.ui.nw.theme.AuroraPalette
 import app.page.android.ui.nw.theme.NW
+import app.page.android.ui.nw.components.DictationBox
+import app.page.android.ui.nw.components.NWDictationLine
+import app.page.android.ui.nw.components.NWMic
+import app.page.android.ui.nw.components.rememberDictationBox
+import app.page.android.model.DictationCopy
 import app.page.android.ui.nw.theme.Rgba
 
 // The Session Room: one session, four lenses (Story, Screen, Changes, Workflows), a composer that follows the
@@ -435,6 +441,10 @@ fun NWRoomComposer(data: SessionRoomData, draft: String, onDraft: (String) -> Un
         val text = raw.trim()
         if (photosPicked) { if (tray.draft.isSendable) actions.sendPhotos(text) } else if (text.isNotEmpty()) actions.send(text)
     }
+    // Voice input: speaking only fills the draft, and Send is the same Send. One input at a time: the box locking,
+    // sending, touching the field or leaving the room stops listening (the words so far stay).
+    val voice = rememberDictationBox("room:${data.session.id}", draft, onDraft)
+    LaunchedEffect(data.composer.acceptsText) { if (!data.composer.acceptsText) voice.cancel() }
     LaunchedEffect(data.composer.acceptsText, focusOnAppear) {
         if (!focusOnAppear || didFocus || !data.composer.acceptsText) return@LaunchedEffect
         kotlinx.coroutines.delay(500)
@@ -448,7 +458,7 @@ fun NWRoomComposer(data: SessionRoomData, draft: String, onDraft: (String) -> Un
         data.stopNote?.let { n -> NoteStrip(n.text, when (n.tone) { SessionRoomData.StopNoteTone.GOOD -> NW.Palette.teal; SessionRoomData.StopNoteTone.PROBLEM -> NW.Palette.amber; else -> NW.Palette.textSecondary }, n.tone == SessionRoomData.StopNoteTone.WORKING, if (n.tone == SessionRoomData.StopNoteTone.GOOD) "stop" else "warn") }
         data.receipt?.let { NWSendReceiptView(it, actions.receiptAction, actions.dismissReceipt) }
         data.composerProblem?.let { Text(it, style = NW.Typo.caption, color = NW.Palette.amber.color, modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp).semantics { liveRegion = LiveRegionMode.Polite }) }
-        val yesNo = data.yesNo?.takeIf { data.composer.acceptsText && draft.isEmpty() }
+        val yesNo = data.yesNo?.takeIf { data.composer.acceptsText && draft.isEmpty() && !voice.isActive }
         val arm = data.yesNoArm
         if (arm != null) {
             // A Yes or No was tapped: the same 1.2 s ring and Cancel the review sheet uses, so a mis-tap on "Should I
@@ -462,7 +472,7 @@ fun NWRoomComposer(data: SessionRoomData, draft: String, onDraft: (String) -> Un
                 YesNoChip(YesNoReply.YES, yesNo, primary = true) { actions.armYesNo(YesNoReply.YES) }
                 YesNoChip(YesNoReply.NO, yesNo, primary = false) { actions.armYesNo(YesNoReply.NO) }
             }
-        } else if (data.composer.offersQuickReplies && data.character.kind != AgentCharacter.Kind.LOCAL && draft.isEmpty()) {
+        } else if (data.composer.offersQuickReplies && data.character.kind != AgentCharacter.Kind.LOCAL && draft.isEmpty() && !voice.isActive) {
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 for (q in RoomComposerMode.quickReplies) Text(
                     q, style = NW.Typo.captionStrong, color = NW.Palette.textSecondary.color,
@@ -483,7 +493,8 @@ fun NWRoomComposer(data: SessionRoomData, draft: String, onDraft: (String) -> Un
                 // How photos reach this terminal, or why this session takes none: one quiet line.
                 if (data.photos.enabled) data.photos.pathNote?.let { NWPhotoNote(it) }
                 data.photos.blockerNote?.let { NWPhotoNote(it) }
-                Field(data, draft, onDraft, focus, canSend, ::submit, actions, photosPicked)
+                NWDictationLine(voice)
+                Field(data, draft, onDraft, focus, canSend, ::submit, actions, photosPicked, voice)
             }
         }
     }
@@ -536,9 +547,11 @@ fun YesNoChip(word: String, question: String, primary: Boolean, modifier: Modifi
 @Composable
 private fun Field(
     data: SessionRoomData, draft: String, onDraft: (String) -> Unit, focus: FocusRequester, canSend: Boolean, submit: (String) -> Unit,
-    actions: SessionRoomActions = SessionRoomActions(), withPhotos: Boolean = false,
+    actions: SessionRoomActions = SessionRoomActions(), withPhotos: Boolean = false, voice: DictationBox? = null,
 ) {
     val shape = RoundedCornerShape(30.dp)
+    // What shows is what is sent: no late words land after it.
+    val send: (String) -> Unit = { text -> voice?.cancel(); submit(text) }
     // With photos in the tray the line says what they will do, not what a typed message does.
     val shownPreview = if (withPhotos) {
         DeliveryPreview.line(if (data.session.attach == LiveSession.ATTACH_PATH) "Photo locations, then your words" else "Photos attached, then your words", data.answerRoute, data.macName)
@@ -550,15 +563,18 @@ private fun Field(
         if (data.photos.shown) NWPhotoButton(data.photos, actions.addPhoto, actions.photoUnavailable)
         Column(Modifier.weight(1f).padding(start = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Box(Modifier.heightIn(min = 28.dp), contentAlignment = Alignment.CenterStart) {
-                if (draft.isEmpty()) Text(if (withPhotos) "Add a caption…" else data.composerCopy.placeholder, style = NW.Typo.subline, color = NW.Palette.textQuiet.color, maxLines = 1)
+                if (draft.isEmpty()) Text(
+                    if (voice?.isListening == true) DictationCopy.LISTENING_PLACEHOLDER else if (withPhotos) "Add a caption…" else data.composerCopy.placeholder,
+                    style = NW.Typo.subline, color = NW.Palette.textQuiet.color, maxLines = 1,
+                )
                 BasicTextField(
                     draft, { v ->
                         // The keyboard's Send key is the same Send as the button; one Return typed at the end counts too.
-                        if (DraftSubmit.isReturnKey(draft, v)) submit(draft) else onDraft(v)
+                        if (DraftSubmit.isReturnKey(draft, v)) send(draft) else onDraft(v)
                     },
-                    Modifier.fillMaxWidth().focusRequester(focus).semantics { contentDescription = data.composerCopy.placeholder },
+                    Modifier.fillMaxWidth().focusRequester(focus).onFocusChanged { if (it.isFocused) voice?.fieldFocused() }.semantics { contentDescription = data.composerCopy.placeholder },
                     textStyle = NW.Typo.subline.copy(color = NW.Palette.textPrimary.color), cursorBrush = SolidColor(NW.Palette.teal.color), maxLines = 5,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send), keyboardActions = KeyboardActions(onSend = { submit(draft) }),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send), keyboardActions = KeyboardActions(onSend = { send(draft) }),
                 )
             }
             Text(shownPreview, style = NW.Typo.monoMicro, color = NW.Palette.textQuiet.color, maxLines = 3)
@@ -567,10 +583,13 @@ private fun Field(
                 color = (if (draft.length > SessionComposer.MAX_CHARACTERS) NW.Palette.amber else NW.Palette.textTertiary).color,
             )
         }
+        // The mic is its own button, between the text and Send: never Send's bright gradient, and never Send.
+        // (With photos the row's gaps are 2 dp, so the mic gets a little room of its own beside Send.)
+        if (voice != null) NWMic(voice, modifier = Modifier.padding(horizontal = if (data.photos.shown) 3.dp else 0.dp))
         Box(
             Modifier.size(48.dp).clip(CircleShape)
                 .background(if (canSend) Brush.linearGradient(listOf(NW.Palette.teal.color, NW.Palette.sky.color)) else Brush.linearGradient(listOf(Color.White.copy(alpha = 0.14f), Color.White.copy(alpha = 0.14f))))
-                .clickable(enabled = canSend, role = Role.Button, onClickLabel = shownPreview) { submit(draft) }
+                .clickable(enabled = canSend, role = Role.Button, onClickLabel = shownPreview) { send(draft) }
                 .semantics { contentDescription = data.composerCopy.sendLabel },
             contentAlignment = Alignment.Center,
         ) { Icon(Icons.Outlined.ArrowUpward, null, tint = NW.Palette.onBright.color, modifier = Modifier.size(22.dp)) }

@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.contentDescription
@@ -37,6 +38,8 @@ fun NWTextField(
     onImeAction: () -> Unit = {},
     enabled: Boolean = true,
     label: String = placeholder,
+    /** The field gained focus (the person touched it): voice input stops, one input at a time. */
+    onFocused: () -> Unit = {},
 ) {
     Box(
         modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(16.dp)).background(Color.White.copy(alpha = 0.07f)).padding(horizontal = 14.dp, vertical = 12.dp),
@@ -45,7 +48,7 @@ fun NWTextField(
         if (value.isEmpty()) Text(placeholder, style = NW.Typo.body, color = NW.Palette.textQuiet.color, maxLines = 2)
         BasicTextField(
             value, onValueChange,
-            Modifier.fillMaxWidth().let { if (focus != null) it.focusRequester(focus) else it }.semantics { contentDescription = label },
+            Modifier.fillMaxWidth().let { if (focus != null) it.focusRequester(focus) else it }.onFocusChanged { if (it.isFocused) onFocused() }.semantics { contentDescription = label },
             enabled = enabled, maxLines = maxLines,
             textStyle = NW.Typo.body.copy(color = NW.Palette.textPrimary.color), cursorBrush = SolidColor(NW.Palette.teal.color),
             keyboardOptions = KeyboardOptions(imeAction = imeAction), keyboardActions = KeyboardActions(onSend = { onImeAction() }, onDone = { onImeAction() }, onNext = { onImeAction() }),

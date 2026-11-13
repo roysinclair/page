@@ -37,6 +37,8 @@ enum RenderHarness {
         "room-ended", "room-blocked", "room-stop", "room-draft", "room-receipt", "room-receipt-refused", "room-yesno", "room-yesno-draft",
         "room-yesno-arm", "room-queue-choice", "room-queue-undo", "room-queue-held", "room-queue-bubbles",
         "room-photos-composer", "room-photos-path", "room-photos-busy", "room-photos-uploading", "room-photos-bubble",
+        "room-voice", "room-voice-listening", "room-voice-server", "room-voice-download", "room-voice-denied", "room-voice-off",
+        "decision-review-voice", "dispatch-voice",
         "welcome", "welcome-notice", "scan", "scan-hint", "pair-checking", "pair-confirm", "pair-problem", "paired", "paired-denied",
         "problem-asleep", "problem-gone", "problem-stale", "problem-relay", "problem-pairing",
         "widgets",
@@ -75,6 +77,24 @@ enum RenderFixtures {
     }
 
     /// One page per Decision sheet variant.
+    /// Voice input as each "-voice" screen shows it: which box, and where its dictation is.
+    static func dictation(_ screen: String) -> NWDictation {
+        var d = NWDictation(device: "iPhone", language: "English (UK)")
+        switch screen {
+        case "room-voice-listening": d.box = "room:room-claude"; d.phase = .listening(level: 0.7, onDevice: true)
+        case "room-voice-server": d.box = "room:room-claude"; d.phase = .listening(level: 0.7, onDevice: false)
+        case "room-voice-download": d.box = "room:room-claude"; d.phase = .downloading(fraction: 0.4)
+        case "room-voice-denied": d.box = "room:room-claude"; d.phase = .denied(.microphone)
+        case "room-voice-off": d.box = "room:room-claude"; d.phase = .unavailable(.language("Afrikaans"))
+        case "decision-review-voice": d.box = "decision:\(decision(screen).state.row.id)"; d.phase = .listening(level: 0.55, onDevice: true)
+        case "dispatch-voice": d.box = "dispatch"; d.phase = .listening(level: 0.6, onDevice: true)
+        // The answer card's "Type your answer": the box is the question on screen.
+        case "ask-voice": d.box = "answer:\(RenderHarnessAnswers.ask.id)"; d.phase = .listening(level: 0.6, onDevice: true)
+        default: break
+        }
+        return d
+    }
+
     static func page(_ screen: String) -> Intervention {
         switch screen {
         case "decision-considered":
@@ -103,7 +123,8 @@ enum RenderFixtures {
             // A finished turn that ends on a plain-text yes/no question.
             return iv("r2", "mac-on-claude-code", .idle,
                       "Changed 3 files (+120 −14) · tests passed\n\nI sort by id as well now, and ran the suite five times: all green. The change is small and only touches the reply planner.\n\nShould I go ahead and commit?", ago: 120)
-        case "decision-review-long", "decision-review-kb", "decision-review-sending", "decision-review-resolved", "decision-review-realkb":
+        case "decision-review-long", "decision-review-kb", "decision-review-sending", "decision-review-resolved", "decision-review-realkb",
+             "decision-review-voice":
             // A finished turn with the whole reply: the page Steer lives on, and the one that buried its composer.
             return iv("r1", "mac-on-claude-code", .idle,
                       "Changed 3 files (+120 −14) · tests passed\n\n" + longReply, ago: 120)
@@ -481,6 +502,7 @@ enum RenderFixtures {
         case "decision-hold": st.fixedHold = 0.62
         case "decision-tip": st.tip = TipBook().decisionTip(hasPreview: row.focusPreview != nil)
         case "decision-composer": composer = true; draft = "Use the staging bucket instead"
+        case "decision-review-voice": composer = true; draft = "Keep the sanitizer but also add a test for a leading slash"
         case "decision-review-kb":
             composer = true; draft = "Keep the sanitizer, but also add a test for a leading slash."
             st.fixedKeyboard = keyboardHeight
@@ -557,6 +579,7 @@ struct RenderHarnessRoot: View {
             screen
         }
         .environment(\.nwCardGlow, glowStore.glow)
+        .environment(\.nwDictation, RenderFixtures.dictation(args.screen))
         .environment(\.nwFixedPhase, RenderHarnessMotion.phase(args))
         .environment(\.nwMotion, RenderHarnessMotion.pin(args))
         .environment(\.nwFixedNow, RenderHarness.now)
@@ -600,6 +623,8 @@ struct RenderHarnessRoot: View {
             HarnessBudgetSheet(screen: s)
         case _ where s.hasPrefix("dispatch"):
             HarnessDispatch(screen: s)
+        case "voice-live":
+            HarnessVoiceLive()
         case "runway":
             let m = RenderFixtures.model("now")
             VStack(alignment: .leading, spacing: 20) {

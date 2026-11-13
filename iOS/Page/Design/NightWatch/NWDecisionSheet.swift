@@ -723,6 +723,7 @@ struct NWDecisionScreen: View {
             yesNo: yesNoQuestion, agent: c.agent, onReply: actions.send,
             choice: state.sendChoice, explainChoice: state.explainChoice, onChoose: actions.setChoice,
             sending: state.pending != nil, locked: !accepts || !rowTakesReply, draft: $draft,
+            dictationBox: "decision:\(row.id)",
             onCancel: { composerOpen = false; draft = "" }, onSend: { actions.send($0) })
     }
 }
@@ -747,9 +748,13 @@ private struct NWDecisionComposer: View {
     /// The page no longer takes a message: Send is off, the draft can still be read, edited and copied.
     let locked: Bool
     @Binding var draft: String
+    /// This box, to the one dictation controller.
+    var dictationBox: String
     var onCancel: () -> Void
     var onSend: (String) -> Void
     @FocusState private var focused: Bool
+    @Environment(\.nwDictation) private var dictation
+    private var dictationPhase: DictationPhase { dictation.phase(for: dictationBox) }
     /// The draft as it was when the send began. While it is on its way the field keeps its focus (disabling it
     /// would drop the keyboard and the dock with it, Cancel included) and holds this text.
     @State private var heldDraft: String?
@@ -791,8 +796,13 @@ private struct NWDecisionComposer: View {
             if choice.mode != .none, !sending, !locked {
                 NWSendChoiceControl(plan: choice, agent: agent, explain: explainChoice, onChoose: onChoose)
             }
+            if !sending, !locked, let line = dictation.line(for: dictationBox, send: label) {
+                let level = dictationPhase.level
+                NWDictationLine(line: line, level: level, onSettings: dictation.openSettings)
+            }
             HStack(alignment: .bottom, spacing: 10) {
-                TextField(placeholder, text: $draft, axis: .vertical)
+                TextField(dictationPhase.isListening && draft.isEmpty ? DictationCopy.listeningPlaceholder : placeholder,
+                          text: $draft, axis: .vertical)
                     .lineLimit(1...5)
                     .font(NightWatch.Typo.body)
                     .foregroundColor(NightWatch.Palette.textPrimary.color)
@@ -809,6 +819,12 @@ private struct NWDecisionComposer: View {
                     .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.white.opacity(sending ? 0.04 : 0.07)))
                     .opacity(sending ? 0.7 : 1)
                     .accessibilityLabel(Text(label == "Answer" ? "Your answer" : "Your message"))
+                if !sending, !locked {
+                    NWMicButton(phase: dictationPhase) {
+                        focused = false
+                        dictation.toggle(dictationBox, $draft)
+                    }
+                }
                 Button(label) { submit(draft) }
                     .buttonStyle(NWButtonStyle(kind: .bright))
                     .frame(width: 92)
@@ -827,12 +843,19 @@ private struct NWDecisionComposer: View {
         .onChange(of: sending) { was, now in
             heldDraft = now ? draft : nil
             if was && !now && !locked { focused = true }
+            if now { dictation.cancel(dictationBox) }
         }
+        // One input at a time: touching the field, the box locking or the sheet closing stops listening.
+        .onChange(of: focused) { _, now in if now, dictationPhase.isActive { dictation.cancel(dictationBox) } }
+        .onChange(of: locked) { _, now in if now { dictation.cancel(dictationBox) } }
+        .onDisappear { dictation.cancel(dictationBox) }
     }
 
     private func submit(_ raw: String) {
         let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, canSend else { return }
+        // What shows is what is sent: no late words land after it.
+        dictation.cancel(dictationBox)
         onSend(text)
     }
 }

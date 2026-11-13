@@ -8,7 +8,7 @@ Each image is an HTML composition shot by headless Chromium. Nothing opens a win
 | `hero.html` | `hero.png` 2400×1200 (README), `hero.webp` 2880×1440 (website) |
 | `og.html` | `og.png` / `og.webp` 1200×630 (social card, GitHub social preview) |
 | `og-studio.html` | `website/public/img/og/studio.webp` 1200×630 (the website home page's social card) |
-| `feature-*.html` | 1600×1000 each: budgets, budget-stop, panel, panel-close, battery, lock-screen, sessions, terminals, android, widgets, relay, aura |
+| `feature-*.html` | 1600×1000 each: budgets, budget-stop, panel, panel-close, voice, voice-mac, battery, lock-screen, sessions, terminals, android, widgets, relay, aura |
 | `family.html` | `family.png` / `family.webp` 2400×1500 (brochure cover, website overview) |
 | `screen-lock.html` | `out/screen-lock.png` 782×1690, the lock-screen board with the Page Relay name, for `website/scripts/product-shots.py` (`power/lock`) |
 
@@ -66,6 +66,20 @@ node shoot.mjs feature-panel && .venv/bin/python compress.py
 ```
 
 Their fixtures live in `Sources/ClaudePowerMode/UI/RenderSessions.swift`, with demo names only.
+
+The voice-input images (`feature-voice`, `feature-voice-mac`) need one screen from each app:
+
+```sh
+.build/debug/ClaudePowerMode --render-ui /tmp/r/mac --card-glow full --only popover-voice
+iOS/Tools/render-screens.sh /tmp/r/ios full -- now now-quiet lanes room-voice-listening   # the first captures warm up
+android/tools/screens.sh /tmp/r/android --glow full -- room-voice-listening
+.venv/bin/python assets.py --mac /tmp/r/mac --ios /tmp/r/ios --android /tmp/r/android --only voice
+node shoot.mjs feature-voice && .venv/bin/python compress.py
+(cd ../../../website && npm run crops -- voice)     # the website's -visual crops
+```
+
+Their fixtures are the `room-voice-*` screens (iOS `Services/RenderHarness.swift`, Android `demo/DemoRooms.kt`) and
+`popover-voice-*` (`Sources/ClaudePowerMode/UI/RenderInFlight.swift`).
 
 ## Rules for what goes in
 

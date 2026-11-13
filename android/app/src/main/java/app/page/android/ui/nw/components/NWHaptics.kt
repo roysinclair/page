@@ -26,6 +26,11 @@ class NWHaptics(private val view: View) {
         )
     }
 
+    /** A light tap: the mic starts or stops listening. */
+    fun light() {
+        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+    }
+
     /** Something arms (a swipe commits). */
     fun arm() {
         view.performHapticFeedback(if (Build.VERSION.SDK_INT >= 30) HapticFeedbackConstants.GESTURE_START else HapticFeedbackConstants.KEYBOARD_TAP)

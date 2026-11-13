@@ -46,6 +46,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
@@ -64,6 +65,7 @@ import app.page.android.data.AnswerDraftStore
 import app.page.android.model.AnswerSheet
 import app.page.android.model.AskOption
 import app.page.android.model.ChipKind
+import app.page.android.model.DictationCopy
 import app.page.android.model.DeliveryPreview
 import app.page.android.model.SentSessionCommand
 import app.page.android.model.SessionAsk
@@ -263,15 +265,26 @@ private fun OtherRow(sheet: AnswerSheet, edit: (AnswerSheet.() -> Unit) -> Unit,
             Icon(Icons.Outlined.Edit, null, tint = NW.Palette.textTertiary.color, modifier = Modifier.size(16.dp))
         }
         if (on) {
-            Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color.Black.copy(alpha = 0.35f)).border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 11.dp)) {
-                val text = sheet.otherText(q)
-                if (text.isEmpty()) Text("Type your answer", style = NW.Typo.body, color = NW.Palette.textQuiet.color)
-                BasicTextField(
-                    text, { v -> edit { setOther(v) } }, Modifier.fillMaxWidth().focusRequester(focus).semantics { contentDescription = "Your own answer" },
-                    textStyle = NW.Typo.body.copy(color = NW.Palette.textPrimary.color), cursorBrush = SolidColor(NW.Palette.teal.color),
-                    keyboardOptions = KeyboardOptions(imeAction = if (multi) ImeAction.Done else ImeAction.Next),
-                    keyboardActions = KeyboardActions(onNext = { edit { commitOther() } }, onDone = {}),
-                )
+            val text = sheet.otherText(q)
+            // Voice input: speaking only fills this answer. Nothing is sent until "Submit all".
+            val voice = rememberDictationBox("answer:${sheet.ask.id}", text) { v -> edit { setOther(v) } }
+            LaunchedEffect(sending) { if (sending) voice.cancel() }
+            NWDictationLine(voice, send = "Submit all")
+            val field = RoundedCornerShape(12.dp)
+            Row(
+                Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(field).background(Color.Black.copy(alpha = 0.35f)).border(1.dp, Color.White.copy(alpha = 0.10f), field).padding(start = 12.dp, end = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.weight(1f).padding(vertical = 11.dp)) {
+                    if (text.isEmpty()) Text(if (voice.isListening) DictationCopy.LISTENING_PLACEHOLDER else "Type your answer", style = NW.Typo.body, color = NW.Palette.textQuiet.color)
+                    BasicTextField(
+                        text, { v -> edit { setOther(v) } }, Modifier.fillMaxWidth().focusRequester(focus).onFocusChanged { if (it.isFocused) voice.fieldFocused() }.semantics { contentDescription = "Your own answer" },
+                        textStyle = NW.Typo.body.copy(color = NW.Palette.textPrimary.color), cursorBrush = SolidColor(NW.Palette.teal.color),
+                        keyboardOptions = KeyboardOptions(imeAction = if (multi) ImeAction.Done else ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { edit { commitOther() } }, onDone = {}),
+                    )
+                }
+                NWMic(voice)
             }
         }
     }

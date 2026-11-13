@@ -186,6 +186,27 @@ While the Mac is still measuring the week, a project's (or session's) row says
 (plain `Measuring…` without it), and draws no bar. Render it with
 `tools/screens.sh -- tower-budget-measuring now-budget-measuring`.
 
+## Speak instead of type
+
+As on iOS (see [`iOS/README.md`](../iOS/README.md#speak-instead-of-type)): the
+room's message box, the reply sheet, a question's answer and Dispatch's prompt
+have a mic. The words land in the box as you speak; nothing is sent until you
+tap Send.
+
+- **Android 12 and later with an on-device recognizer:**
+  `SpeechRecognizer.createOnDeviceSpeechRecognizer`. On Android 13+ the app
+  checks the language first (`checkRecognitionSupport`) and can ask the system
+  to download it (`triggerModelDownload`).
+- **Otherwise:** the phone's default recognizer
+  (`SpeechRecognizer.createSpeechRecognizer`, with `EXTRA_PREFER_OFFLINE`),
+  usually Google's, which may send audio to its service. The line above the box
+  then reads "Listening with this phone's speech service".
+- **Permissions:** `RECORD_AUDIO`, asked on the first tap. The manifest's
+  `<queries>` entry for `android.speech.RecognitionService` lets the app see
+  the recognizer on Android 11+.
+- **Renders:** `tools/screens.sh -- room-voice room-voice-listening room-voice-server
+  room-voice-download room-voice-denied room-voice-off decision-review-voice dispatch-voice`.
+
 ## Differences from iOS
 
 - No push: Stay connected and the 15-minute check stand in (above); no device

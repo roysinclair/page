@@ -56,6 +56,9 @@ struct NWDispatchScreen: View {
     var actions = DispatchScreenActions()
     @Binding var draft: DispatchDraft
     @FocusState private var focused: Bool
+    @Environment(\.nwDictation) private var dictation
+    private static let dictationBox = "dispatch"
+    private var dictationPhase: DictationPhase { dictation.phase(for: Self.dictationBox) }
 
     var body: some View {
         ScrollView {
@@ -92,6 +95,8 @@ struct NWDispatchScreen: View {
             .padding(.top, 16).padding(.bottom, 30)
         }
         .scrollDismissesKeyboard(.interactively)
+        // Leaving the screen stops listening: the words stay in the draft.
+        .onDisappear { dictation.cancel(Self.dictationBox) }
     }
 
     private var form: some View {
@@ -114,15 +119,25 @@ struct NWDispatchScreen: View {
             }
             VStack(alignment: .leading, spacing: 12) {
                 NWFormLabel(symbol: "text.bubble.fill", title: "What", jewel: .violet)
+                if let line = dictation.line(for: Self.dictationBox, send: "Start") {
+                    let level = dictationPhase.level
+                    NWDictationLine(line: line, level: level, onSettings: dictation.openSettings)
+                }
                 VStack(alignment: .leading, spacing: 10) {
-                    TextField("What should Claude do? (optional)", text: $draft.prompt, axis: .vertical)
+                    TextField(dictationPhase.isListening && draft.prompt.isEmpty ? DictationCopy.listeningPlaceholder
+                              : "What should Claude do? (optional)", text: $draft.prompt, axis: .vertical)
                         .lineLimit(3...8)
                         .font(NightWatch.Typo.body).foregroundColor(NightWatch.Palette.textPrimary.color)
                         .focused($focused)
-                    HStack {
+                        .onChange(of: focused) { _, now in if now, dictationPhase.isActive { dictation.cancel(Self.dictationBox) } }
+                    HStack(spacing: 6) {
                         Button(action: actions.paste) { Image(systemName: "doc.on.clipboard") }
                             .buttonStyle(.plain).foregroundColor(NightWatch.Palette.textTertiary.color)
                             .frame(width: 36, height: 36).accessibilityLabel(Text("Paste"))
+                        NWMicButton(phase: dictationPhase, size: 36) {
+                            focused = false
+                            dictation.toggle(Self.dictationBox, $draft.prompt)
+                        }
                         Spacer()
                         Text(draft.promptProblem ?? "optional · max \(SessionComposer.maxCharacters)").font(NightWatch.Typo.monoMicro)
                             .foregroundColor((draft.promptProblem == nil ? NightWatch.Palette.textQuiet : NightWatch.Palette.amber).color)
@@ -147,7 +162,7 @@ struct NWDispatchScreen: View {
             }
             if let s = data.status { statusLine(s) }
             VStack(spacing: 10) {
-                Button(action: actions.start) {
+                Button(action: { dictation.cancel(Self.dictationBox); actions.start() }) {
                     HStack(spacing: 8) {
                         if data.sending { ProgressView().controlSize(.small).tint(NightWatch.Palette.onBright.color) } else { Image(systemName: "paperplane") }
                         Text(draft.startTitle(mac: data.macName))

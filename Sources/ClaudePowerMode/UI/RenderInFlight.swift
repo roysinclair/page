@@ -133,6 +133,20 @@ extension RenderSurfaces {
         let quiet = cardsStore(quietInputs)
         let blocked = cardsStore(NightWatchFixtures.cardsScene())
         blocked.hoverFlight(InFlightRow.idPrefix + "sess-llm-play")
+        // Voice input in the Steer box: listening on the Mac, on Apple's service, and the microphone refused.
+        func voice(_ phase: DictationPhase, text: String) -> NowStore {
+            let st = cardsStore(scene)
+            st.hoverFlight(pageRow)
+            st.handle(NowKeyPress(key: .char("t")))
+            st.composerText = text
+            st.dictationLanguage = "English (UK)"
+            st.dictation = phase
+            return st
+        }
+        let voiceListening = voice(.listening(level: 0.7, onDevice: true), text: "also run the Terminals tests when this is green")
+        let voiceServer = voice(.listening(level: 0.5, onDevice: false), text: "and then push the branch")
+        let voiceDenied = voice(.denied(.microphone), text: "")
+        let voiceDownload = voice(.downloading(fraction: 0.4), text: "")
 
         return [
             popover(rest, name: "popover-cards-rest"),
@@ -147,7 +161,11 @@ extension RenderSurfaces {
             popover(jumped, name: "popover-cards-jumped"),
             popover(sheet, name: "popover-cards-shortcuts"),
             popover(quiet, name: "popover-cards-all-quiet"),
-            popover(blocked, name: "popover-cards-selected")
+            popover(blocked, name: "popover-cards-selected"),
+            popover(voiceListening, name: "popover-voice-listening"),
+            popover(voiceServer, name: "popover-voice-server"),
+            popover(voiceDenied, name: "popover-voice-denied"),
+            popover(voiceDownload, name: "popover-voice-download")
         ]
     }
 }

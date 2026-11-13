@@ -2,6 +2,7 @@ package app.page.android.data
 
 import android.app.Application
 import app.page.android.model.Intervention
+import app.page.android.speech.DictationController
 
 /**
  * The process-wide objects, created once in [app.page.android.PageApplication].
@@ -15,6 +16,9 @@ object AppGraph {
         private set
     lateinit var prefs: AppPrefs
         private set
+
+    /** The one voice-input controller: at most one message box dictates at a time (Designs/voice-input.md). */
+    val dictation: DictationController by lazy { DictationController(app) }
 
     fun init(application: Application) {
         app = application

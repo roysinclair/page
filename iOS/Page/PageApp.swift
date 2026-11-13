@@ -58,6 +58,8 @@ struct LiveApp: View {
             .environmentObject(tips)
             // The one place every glass surface reads the Card glow from.
             .environment(\.nwCardGlow, glow.glow)
+            // The one voice-input controller, and the one place every message box reads it from (the sheets inherit it).
+            .modifier(NWDictationHost())
             .onOpenURL { url in
                 // page://intervention/<id> opens that page's reply screen.
                 router.handle(url: url)

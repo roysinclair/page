@@ -49,7 +49,8 @@ struct NWMicButton: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                if case .listening(let level) = phase {
+                if case .listening = phase {
+                    let level = phase.level
                     Circle().stroke(NightWatch.Palette.teal.opacity(0.35).color, lineWidth: 3)
                         .frame(width: size, height: size)
                         .scaleEffect(reduceMotion ? 1.12 : 1 + 0.22 * min(max(level, 0), 1))

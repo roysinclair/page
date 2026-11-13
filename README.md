@@ -264,9 +264,9 @@ Finished, idle and working sessions share one card:
 - **Steer**, which sends it a message;
 - its [budget](#project-budgets).
 
-**Dictating a message.** Steer boxes have a mic. Click it, or press ⌥⌘D, and
+**Dictating a message.** Steer boxes have a mic. Click it, or press ⌘D, and
 talk: the words appear in the box as you speak, and nothing is sent until you
-press Return. Press ⌥⌘D or click again to stop, or Esc to stop and keep the
+press Return. Press ⌘D or click again to stop, or Esc to stop and keep the
 box open. Typing stops it too. See [Speak instead of type](#speak-instead-of-type).
 
 **Putting a finished session away.** Swipe a finished or idle card sideways

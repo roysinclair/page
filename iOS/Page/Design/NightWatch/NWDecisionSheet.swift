@@ -797,7 +797,7 @@ private struct NWDecisionComposer: View {
                 NWSendChoiceControl(plan: choice, agent: agent, explain: explainChoice, onChoose: onChoose)
             }
             if !sending, !locked, let line = dictation.line(for: dictationBox, send: label) {
-                let level: Double = { if case .listening(let l) = dictationPhase { return l } else { return 0 } }()
+                let level = dictationPhase.level
                 NWDictationLine(line: line, level: level, onSettings: dictation.openSettings)
             }
             HStack(alignment: .bottom, spacing: 10) {

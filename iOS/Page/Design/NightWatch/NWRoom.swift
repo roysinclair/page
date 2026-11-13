@@ -555,7 +555,7 @@ struct NWRoomComposer: View {
     /// This box, to the one dictation controller.
     private var dictationBox: String { "room:\(data.session.id)" }
     private var dictationPhase: DictationPhase { dictation.phase(for: dictationBox) }
-    private var voiceLevel: Double { if case .listening(let l) = dictationPhase { return l } else { return 0 } }
+    private var voiceLevel: Double { dictationPhase.level }
 
     var body: some View {
         VStack(spacing: 8) {

@@ -107,8 +107,8 @@ Pinned from the iOS 27.2 SDK `Speech.swiftinterface` on this Mac.
 - `result.bestTranscription.formattedString` is the whole utterance so far. It is the volatile part until `result.isFinal`, then it is committed.
 
 **Permissions (both paths).** `AVAudioApplication.requestRecordPermission()` and `SFSpeechRecognizer.requestAuthorization`. The SDK does not say whether SpeechAnalyzer needs the second, so both are asked for and both keys go in Info.plist:
-- `NSMicrophoneUsageDescription`: "Page uses the microphone only while you dictate a message. What you say is turned into text on this iPhone. It isn't recorded or sent anywhere."
-- `NSSpeechRecognitionUsageDescription`: "Page turns what you say into text on this iPhone, so you can dictate messages to your sessions. Nothing is sent until you tap Send."
+- `NSMicrophoneUsageDescription`: "Page Relay uses the microphone only while you dictate a message. What you say is turned into text on this iPhone, or by Apple's speech service when the iPhone can't. It isn't recorded or kept."
+- `NSSpeechRecognitionUsageDescription`: "Page Relay turns what you say into text, so you can dictate messages to your sessions. Nothing is sent until you tap Send."
 
 **Interruptions.** `AVAudioSession.interruptionNotification` and route loss stop listening and keep the words, with the Interrupted line.
 
@@ -175,7 +175,7 @@ A new section, "Voice input":
 - **The mic.** A 24 pt glyph button inside the field, before the ↵ keycap or Send: `mic` in textTertiary, with the help text "Dictate · nothing is sent until you press Return". While listening it shows the teal stop square on a 16 % teal disc, with the level ring.
 - **The line.** It sits above the field, in the panel's style (monoMicro or 11 pt): "Listening on this Mac · nothing is sent until you press Return", with level bars. The problem lines are the phones' lines, with "Mac", and "Open Settings" opens System Settings ▸ Privacy & Security ▸ Microphone or Speech Recognition (`x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone` / `?Privacy_SpeechRecognition`).
 - **Keys.**
-  - ⌥⌘D (or a click) starts and stops while a Steer box is open.
+  - ⌘D (or a click) starts and stops while a Steer box is open. (Not ⌥⌘D: macOS takes that for "Turn Dock hiding on/off" before any app sees it.)
   - Esc stops listening first and closes the box on the second press.
   - Return sends what shows and stops, the same as Send.
   - Typing stops listening.

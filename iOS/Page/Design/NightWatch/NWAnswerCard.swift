@@ -31,7 +31,14 @@ struct NWAnswerCard: View {
     /// Called when the step changes, so a scroll view can bring the card's top back into view.
     var onStepChange: () -> Void = {}
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.nwDictation) private var dictation
     @FocusState private var otherFocused: Bool
+
+    /// This card's text box, to the one dictation controller: the question on screen.
+    private var dictationBox: String { "answer:\(sheet.ask.id)" }
+    private var dictationPhase: DictationPhase { dictation.phase(for: dictationBox) }
+    /// "Next" only moves on; the button that sends the answers is Submit all, so that is the word the line uses.
+    private static let sendWord = "Submit all"
 
     private var amber: NightWatch.RGBA { NightWatch.Palette.amber }
     private var sending: Bool { delivery?.state.isPending == true }
@@ -63,7 +70,7 @@ struct NWAnswerCard: View {
             VStack(alignment: .leading, spacing: 10) {
                 deliveryNote
                 if sheet.isReview {
-                    Button(action: onSubmit) { Text(retrying ? "Try again" : "Submit all") }
+                    Button { dictation.cancel(dictationBox); onSubmit() } label: { Text(retrying ? "Try again" : "Submit all") }
                         .buttonStyle(NWButtonStyle(kind: .bright))
                         .disabled(!sheet.canSubmit || sending)
                         .opacity(sheet.canSubmit && !sending ? 1 : 0.45)
@@ -96,6 +103,8 @@ struct NWAnswerCard: View {
         })
         .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
         .onChange(of: sheet.step) { _, _ in onStepChange() }
+        // The answers are on their way: no late words land after them.
+        .onChange(of: sending) { _, now in if now { dictation.cancel(dictationBox) } }
         .accessibilityElement(children: .contain)
     }
 
@@ -276,15 +285,28 @@ struct NWAnswerCard: View {
             .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
             .accessibilityHint(Text("Opens a box to type your own answer"))
             if on {
-                TextField("Type your answer", text: text)
-                    .font(NightWatch.Typo.body).foregroundColor(NightWatch.Palette.textPrimary.color)
-                    .focused($otherFocused)
-                    .submitLabel(multi ? .done : .next)
-                    .onSubmit { if !multi { step { sheet.commitOther() } } }
-                    .padding(.horizontal, 12).padding(.vertical, 11)
-                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.black.opacity(0.35)))
-                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.white.opacity(0.10), lineWidth: 1))
-                    .accessibilityLabel(Text("Your own answer"))
+                if let line = dictation.line(for: dictationBox, send: Self.sendWord) {
+                    NWDictationLine(line: line, level: dictationPhase.level, onSettings: dictation.openSettings)
+                }
+                HStack(spacing: 8) {
+                    TextField(dictationPhase.isListening && text.wrappedValue.isEmpty ? DictationCopy.listeningPlaceholder : "Type your answer",
+                              text: text)
+                        .font(NightWatch.Typo.body).foregroundColor(NightWatch.Palette.textPrimary.color)
+                        .focused($otherFocused)
+                        .submitLabel(multi ? .done : .next)
+                        .onSubmit { if !multi { step { sheet.commitOther() } } }
+                        .padding(.horizontal, 12).padding(.vertical, 11)
+                        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.black.opacity(0.35)))
+                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.white.opacity(0.10), lineWidth: 1))
+                        .accessibilityLabel(Text("Your own answer"))
+                    NWMicButton(phase: dictationPhase) {
+                        otherFocused = false
+                        dictation.toggle(dictationBox, text)
+                    }
+                }
+                // One input at a time: touching the field, or the field going away (another step, Other unticked), stops listening.
+                .onChange(of: otherFocused) { _, now in if now, dictationPhase.isActive { dictation.cancel(dictationBox) } }
+                .onDisappear { dictation.cancel(dictationBox) }
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 8)

@@ -95,6 +95,8 @@ struct NWDispatchScreen: View {
             .padding(.top, 16).padding(.bottom, 30)
         }
         .scrollDismissesKeyboard(.interactively)
+        // Leaving the screen stops listening: the words stay in the draft.
+        .onDisappear { dictation.cancel(Self.dictationBox) }
     }
 
     private var form: some View {
@@ -118,7 +120,7 @@ struct NWDispatchScreen: View {
             VStack(alignment: .leading, spacing: 12) {
                 NWFormLabel(symbol: "text.bubble.fill", title: "What", jewel: .violet)
                 if let line = dictation.line(for: Self.dictationBox, send: "Start") {
-                    let level: Double = { if case .listening(let l) = dictationPhase { return l } else { return 0 } }()
+                    let level = dictationPhase.level
                     NWDictationLine(line: line, level: level, onSettings: dictation.openSettings)
                 }
                 VStack(alignment: .leading, spacing: 10) {

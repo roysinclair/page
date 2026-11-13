@@ -37,7 +37,7 @@ enum RenderHarness {
         "room-ended", "room-blocked", "room-stop", "room-draft", "room-receipt", "room-receipt-refused", "room-yesno", "room-yesno-draft",
         "room-yesno-arm", "room-queue-choice", "room-queue-undo", "room-queue-held", "room-queue-bubbles",
         "room-photos-composer", "room-photos-path", "room-photos-busy", "room-photos-uploading", "room-photos-bubble",
-        "room-voice", "room-voice-listening", "room-voice-download", "room-voice-denied", "room-voice-off",
+        "room-voice", "room-voice-listening", "room-voice-server", "room-voice-download", "room-voice-denied", "room-voice-off",
         "decision-review-voice", "dispatch-voice",
         "welcome", "welcome-notice", "scan", "scan-hint", "pair-checking", "pair-confirm", "pair-problem", "paired", "paired-denied",
         "problem-asleep", "problem-gone", "problem-stale", "problem-relay", "problem-pairing",
@@ -81,12 +81,15 @@ enum RenderFixtures {
     static func dictation(_ screen: String) -> NWDictation {
         var d = NWDictation(device: "iPhone", language: "English (UK)")
         switch screen {
-        case "room-voice-listening": d.box = "room:room-claude"; d.phase = .listening(level: 0.7)
+        case "room-voice-listening": d.box = "room:room-claude"; d.phase = .listening(level: 0.7, onDevice: true)
+        case "room-voice-server": d.box = "room:room-claude"; d.phase = .listening(level: 0.7, onDevice: false)
         case "room-voice-download": d.box = "room:room-claude"; d.phase = .downloading(fraction: 0.4)
         case "room-voice-denied": d.box = "room:room-claude"; d.phase = .denied(.microphone)
         case "room-voice-off": d.box = "room:room-claude"; d.phase = .unavailable(.language("Afrikaans"))
-        case "decision-review-voice": d.box = "decision:\(decision(screen).state.row.id)"; d.phase = .listening(level: 0.55)
-        case "dispatch-voice": d.box = "dispatch"; d.phase = .listening(level: 0.6)
+        case "decision-review-voice": d.box = "decision:\(decision(screen).state.row.id)"; d.phase = .listening(level: 0.55, onDevice: true)
+        case "dispatch-voice": d.box = "dispatch"; d.phase = .listening(level: 0.6, onDevice: true)
+        // The answer card's "Type your answer": the box is the question on screen.
+        case "ask-voice": d.box = "answer:\(RenderHarnessAnswers.ask.id)"; d.phase = .listening(level: 0.6, onDevice: true)
         default: break
         }
         return d
@@ -620,6 +623,8 @@ struct RenderHarnessRoot: View {
             HarnessBudgetSheet(screen: s)
         case _ where s.hasPrefix("dispatch"):
             HarnessDispatch(screen: s)
+        case "voice-live":
+            HarnessVoiceLive()
         case "runway":
             let m = RenderFixtures.model("now")
             VStack(alignment: .leading, spacing: 20) {

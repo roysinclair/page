@@ -2,6 +2,7 @@ package app.page.android
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.SystemBarStyle
@@ -19,6 +20,7 @@ import app.page.android.data.AppGraph
 import app.page.android.data.AppRouter
 import app.page.android.demo.Demo
 import app.page.android.notify.NotificationAccess
+import app.page.android.speech.DictationController
 import app.page.android.ui.nw.shell.NWRoot
 import app.page.android.ui.theme.PageTheme
 
@@ -46,6 +48,12 @@ class MainActivity : FragmentActivity() {
     override fun onDestroy() {
         BiometricGate.attach(null)
         super.onDestroy()
+    }
+
+    /** The microphone permission dialog (voice input), asked for with the platform call: see ProvideDictation. */
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == DictationController.REQUEST_MICROPHONE) AppGraph.dictation.onMicrophoneResult(grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED)
     }
 
     override fun onNewIntent(intent: Intent) {

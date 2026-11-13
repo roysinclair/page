@@ -32,7 +32,7 @@ fun DispatchContainer(modifier: Modifier = Modifier) {
     val screen by NowStore.screen.collectAsStateWithLifecycle()
     val mac by PairingStore.pairedMac.collectAsStateWithLifecycle()
     val clip = LocalClipboardManager.current
-    var draft by remember { mutableStateOf(DispatchDraft()) }
+    var draft by remember { mutableStateOf(DispatchDraft(prompt = app.page.android.ui.nw.shell.RenderHarness.spec.value?.draftText ?: "")) }
     var problem by remember { mutableStateOf<String?>(null) }
     val now by rememberNWNow(slowMs = 30_000)
     val request = s.folders

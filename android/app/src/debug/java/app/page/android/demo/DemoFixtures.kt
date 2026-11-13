@@ -77,7 +77,7 @@ object DemoFixtures {
         )
         "decision-unknown" -> iv("u1", "payments-api", InterventionKind.APPROVAL, "Run the migration?", 33, backend = null, backendRaw = "gemini")
         "decision-stuck" -> open[2]
-        "decision-review" -> open[3]
+        "decision-review", "decision-review-voice" -> open[3]
         "decision-yesno" -> iv("y1", "mac-on-claude-code", InterventionKind.IDLE, "Changed 2 files (+40 −6) · tests passed\n\nI've finished the refactor. Should I run the full test suite now?", 120)
         "decision-undoable" -> open[1]
         // A Steer on a finished turn that the relay holds for an offline Mac; a rate-limit reply the Mac holds until it resets.

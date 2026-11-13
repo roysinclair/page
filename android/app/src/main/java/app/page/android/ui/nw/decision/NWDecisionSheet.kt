@@ -100,6 +100,10 @@ import app.page.android.ui.nw.components.NWButton
 import app.page.android.ui.nw.components.NWButtonKind
 import app.page.android.ui.nw.components.NWChip
 import app.page.android.ui.nw.components.NWDeliveryPreview
+import app.page.android.ui.nw.components.NWDictationLine
+import app.page.android.ui.nw.components.NWMic
+import app.page.android.ui.nw.components.rememberDictationBox
+import app.page.android.model.DictationCopy
 import app.page.android.ui.nw.components.NWHoldRing
 import app.page.android.ui.nw.components.NWReceiptAction
 import app.page.android.ui.nw.components.NWReceiptLine
@@ -711,7 +715,9 @@ private class DecisionView(
         val focus = remember { FocusRequester() }
         LaunchedEffect(Unit) { if (!alwaysOpen) runCatching { focus.requestFocus() } }
         val blank = draft.trim().isEmpty()
-        val q = yesNoQuestion?.takeIf { blank }
+        // Voice input: speaking only fills the draft. While it listens, Yes and No step aside.
+        val voice = rememberDictationBox("decision:${row.id}", draft, onDraft)
+        val q = yesNoQuestion?.takeIf { blank && !voice.isActive }
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (q != null) YesNoRow(q)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -723,9 +729,15 @@ private class DecisionView(
             }
             // A busy session: Now (after a 10 s Undo) or When it finishes (held on the Mac).
             state.choice?.let { NWSendChoice(it, c.agent, state.choiceExplained, actions.selectWhen) }
+            NWDictationLine(voice, send = label)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Bottom) {
-                NWTextField(draft, onDraft, placeholder, Modifier.weight(1f), focus = focus)
-                NWButton(label, { actions.send(draft) }, Modifier.width(96.dp), kind = NWButtonKind.BRIGHT, enabled = !blank)
+                NWTextField(
+                    draft, onDraft, if (voice.isListening && draft.isEmpty()) DictationCopy.LISTENING_PLACEHOLDER else placeholder, Modifier.weight(1f),
+                    focus = focus, label = placeholder, onFocused = voice::fieldFocused,
+                )
+                NWMic(voice)
+                // What shows is what is sent: no late words land after it.
+                NWButton(label, { voice.cancel(); actions.send(draft) }, Modifier.width(96.dp), kind = NWButtonKind.BRIGHT, enabled = !blank)
             }
         }
     }

@@ -33,8 +33,8 @@ enum SessionNaming {
     /// Pure. A name as it is shown: one line, trimmed, clipped to the wire's `maxTitle`. nil when nothing is left.
     static func clean(_ raw: String?) -> String? {
         guard let raw else { return nil }
-        let oneLine = raw.components(separatedBy: .newlines).joined(separator: " ")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        // Any run of spaces and line breaks (CRLF included) becomes one space.
+        let oneLine = raw.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.joined(separator: " ")
         guard !oneLine.isEmpty else { return nil }
         return oneLine.count <= SessionRemote.maxTitle ? oneLine : String(oneLine.prefix(SessionRemote.maxTitle))
     }

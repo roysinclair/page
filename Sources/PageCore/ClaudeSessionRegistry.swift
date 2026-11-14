@@ -450,7 +450,9 @@ final class ClaudeSessionRegistry {
                 startedAt: r.startedAt,
                 name: r.name,
                 nameSource: r.nameSource,
-                isPrint: row.map { isPrintCommand($0.command) } ?? false
+                // A sessions file that says "interactive" is a terminal session, whatever its command line holds: ps
+                // flattens argv, so a prompt or an --mcp-config value containing "--print" would look like the flag.
+                isPrint: r.kind == "interactive" ? false : (row.map { isPrintCommand($0.command) } ?? false)
             ))
         }
 
@@ -485,7 +487,8 @@ final class ClaudeSessionRegistry {
     }
 
     /// A one-shot `claude -p` / `claude --print` run, from its command line. Only tokens that are exactly the
-    /// flag count, so a prompt or a path that merely contains "-p" doesn't.
+    /// flag count, so a prompt or a path that merely contains "-p" doesn't. ps joins argv with spaces, so a quoted
+    /// prompt's words are tokens too: this is a fallback for processes without a sessions file `kind`.
     static func isPrintCommand(_ command: String) -> Bool {
         command.split(separator: " ", omittingEmptySubsequences: true).contains { $0 == "--print" || $0 == "-p" }
     }

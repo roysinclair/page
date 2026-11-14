@@ -41,6 +41,12 @@ struct AgentSession: Equatable {
     let supportsRemoteReply: Bool
     /// Page Aura only: the last assistant line, for the phone's list (redacted, clipped).
     var preview: String? = nil
+    /// Claude only: how many terminals have this conversation open (1 when one, or not known to be more).
+    var copies: Int = 1
+    /// Claude only: the process Page follows (the lead of the conversation's terminals).
+    var leadPid: Int32? = nil
+    /// Claude only: the name the person gave the session (`SessionNaming`), clipped; nil shows the folder name.
+    var customName: String? = nil
 }
 
 struct AgentBackendSnapshot: Equatable {

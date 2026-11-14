@@ -42,6 +42,9 @@ struct ClaudeSessionRecord: Equatable {
     var startedAt: Date?
     /// The session's own name (`name`): what Claude Code calls it, often the folder.
     var name: String?
+    /// Where that name came from: "derived" (Claude Code made it up from the folder) or a name the person
+    /// gave it (`/rename`). nil from builds that don't say.
+    var nameSource: String?
 }
 
 /// A Claude Code process that is running right now, with the session it hosts.
@@ -65,6 +68,10 @@ struct ClaudeLiveSession: Equatable {
     var startedAt: Date? = nil
     /// The session's own name from the sessions file, if it has one.
     var name: String? = nil
+    /// Where `name` came from ("derived" or a person's `/rename`); nil when the file doesn't say.
+    var nameSource: String? = nil
+    /// A `claude --print` run: a one-shot, never counted as a terminal the conversation is open in.
+    var isPrint = false
 
     var devTTY: String? { tty.map { "/dev/" + $0 } }
 }
@@ -396,6 +403,7 @@ final class ClaudeSessionRegistry {
             r.startedAt = Date(timeIntervalSince1970: ms.doubleValue / 1000)
         }
         r.name = (obj["name"] as? String).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.flatMap { $0.isEmpty ? nil : String($0.prefix(120)) }
+        r.nameSource = (obj["nameSource"] as? String).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.flatMap { $0.isEmpty ? nil : $0 }
         return r
     }
 
@@ -440,7 +448,11 @@ final class ClaudeSessionRegistry {
                 tty: row.flatMap { normalizedTTY($0.tty) },
                 hasSessionFile: true,
                 startedAt: r.startedAt,
-                name: r.name
+                name: r.name,
+                nameSource: r.nameSource,
+                // A sessions file that says "interactive" is a terminal session, whatever its command line holds: ps
+                // flattens argv, so a prompt or an --mcp-config value containing "--print" would look like the flag.
+                isPrint: r.kind == "interactive" ? false : (row.map { isPrintCommand($0.command) } ?? false)
             ))
         }
 
@@ -458,7 +470,8 @@ final class ClaudeSessionRegistry {
                 status: .unknown,
                 statusUpdatedAt: nil,
                 tty: tty,
-                hasSessionFile: false
+                hasSessionFile: false,
+                isPrint: isPrintCommand(row.command)
             ))
         }
         return result.sorted { $0.pid < $1.pid }
@@ -471,6 +484,13 @@ final class ClaudeSessionRegistry {
         let lower = command.lowercased()
         guard lower.contains("claude") else { return false }
         return !(command.contains("ClaudePowerMode") || command.contains("page-notify"))
+    }
+
+    /// A one-shot `claude -p` / `claude --print` run, from its command line. Only tokens that are exactly the
+    /// flag count, so a prompt or a path that merely contains "-p" doesn't. ps joins argv with spaces, so a quoted
+    /// prompt's words are tokens too: this is a fallback for processes without a sessions file `kind`.
+    static func isPrintCommand(_ command: String) -> Bool {
+        command.split(separator: " ", omittingEmptySubsequences: true).contains { $0 == "--print" || $0 == "-p" }
     }
 
     /// Strict check used for argv discovery: argv[0]'s basename is `claude`.

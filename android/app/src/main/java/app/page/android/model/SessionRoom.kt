@@ -492,6 +492,16 @@ data class RoomBanner(
             }
             return emptyList()
         }
+
+        /**
+         * The conversation is open in more than one terminal on the Mac (Designs/session-copies.md): an amber notice
+         * under the header, after whatever else the room has to say. null for one terminal, and for an ended session.
+         */
+        fun copies(session: LiveSession, ended: Boolean): RoomBanner? {
+            val n = session.copies ?: return null
+            if (ended || n < 2) return null
+            return RoomBanner("copies", Tone.WARNING, "rectangle.on.rectangle", SessionCopiesCopy.roomTitle(n), SessionCopiesCopy.ROOM_MESSAGE, null, null)
+        }
     }
 }
 

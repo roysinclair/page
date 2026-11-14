@@ -12,7 +12,7 @@ struct InterventionEvent: Equatable, Hashable, Codable {
     let id: String                 // "<sessionId>-<kind>-<state-start epoch>" (stable per state)
     let sessionId: String
     let cwd: String
-    let projectName: String
+    var projectName: String
     let kind: InterventionKind
     let openedAt: Date
     var context: String            // what the phone shows: command / question / last reply
@@ -137,6 +137,9 @@ struct TranscriptTail: Equatable {
     /// Last `cwd` seen in the tail.
     var cwd: String?
     var lastEventAt: Date?
+    /// When the last assistant message was written: the end of the last turn Claude finished. nil when
+    /// the tail holds none, or its timestamp is missing.
+    var lastAssistantAt: Date?
 }
 
 /// Detector tuning; built from Config by the backend.
@@ -354,6 +357,7 @@ final class InterventionDetector {
               settings: DetectorSettings,
               sourceFor: (ClaudeLiveSession) -> AgentSessionSource = { _ in .terminal },
               autoApproves: (ClaudeLiveSession) -> Bool = { _ in false },
+              nameFor: (ClaudeLiveSession) -> String? = { _ in nil },
               now: Date = Date()) -> ScanResult {
         scanLock.lock()
         defer { scanLock.unlock() }
@@ -416,8 +420,10 @@ final class InterventionDetector {
                     // Put away at the Mac: not opened (again) for this turn.
                     break
                 }
-                if previous[event.id] != nil {
-                    desired[event.id] = previous[event.id]
+                if var kept = previous[event.id] {
+                    // The same state re-proposed by another process (the lead changed): replies go to it now.
+                    if kept.pid != session.pid { kept.pid = session.pid }
+                    desired[event.id] = kept
                 } else if isHeld(session.sessionId) {
                     // A blocking Page hook already paged this prompt and is
                     // waiting for the phone. Same as .notYet: keep pages for
@@ -458,6 +464,9 @@ final class InterventionDetector {
                     }
                     var event = event
                     event.source = sourceFor(session)
+                    // A new page carries the name the person gave the session (`SessionNaming`), clipped; an
+                    // open page keeps the title it was sent with.
+                    if let name = nameFor(session) { event.projectName = name }
                     if event.kind == .idle, event.subtype == nil, let headline = turnHeadline?(url, session.cwd ?? tail?.cwd) {
                         event.context = TurnSummary.context(headline: headline, reply: event.context)
                     }
@@ -523,6 +532,9 @@ final class InterventionDetector {
                 // they're at the keyboard; nothing to page.
                 return .none
             }
+            // A process opened on an old conversation (`--resume`, `--continue`, cmux's auto-resume) that
+            // hasn't finished a turn of its own yet has nothing to page about.
+            guard turnEndedInThisRun(lastAssistantAt: tail.lastAssistantAt, processStartedAt: session.startedAt) else { return .none }
             guard now.timeIntervalSince(start) >= settings.idleDelay else { return .notYet }
             return .open(.init(kind: .idle, subtype: nil,
                                context: idleContext(tail),
@@ -543,10 +555,20 @@ final class InterventionDetector {
                                    context: "Possibly waiting for approval:\n" + approvalContext(tail.pendingToolUses),
                                    stateStart: start, promptKey: primary.id))
             }
-            guard tail.lastMeaningfulRole == .assistant else { return .none }
+            guard tail.lastMeaningfulRole == .assistant,
+                  turnEndedInThisRun(lastAssistantAt: tail.lastAssistantAt, processStartedAt: session.startedAt) else { return .none }
             return .open(.init(kind: .idle, subtype: nil, context: idleContext(tail),
                                stateStart: start, promptKey: nil))
         }
+    }
+
+    /// Pure. Rule B (Designs/session-copies.md): an idle page needs the last assistant turn to have ended at or
+    /// after the process started. A process reopened on an old conversation has done nothing in this run, and
+    /// its status time is just its start, which would otherwise look like a fresh finished turn. Only judged
+    /// when both times are known; approvals and questions never ask.
+    static func turnEndedInThisRun(lastAssistantAt: Date?, processStartedAt: Date?) -> Bool {
+        guard let end = lastAssistantAt, let start = processStartedAt else { return true }
+        return end >= start
     }
 
     /// How long Claude Squad gets to answer an approval before Page pages
@@ -652,6 +674,7 @@ final class InterventionDetector {
 
             if type == "assistant" {
                 tail.lastMeaningfulRole = .assistant
+                tail.lastAssistantAt = (obj["timestamp"] as? String).flatMap(TranscriptParser.parseISODate)
                 if let s = content as? String, !s.isEmpty { textsSinceLastTool.append(s) }
                 for item in (content as? [[String: Any]]) ?? [] {
                     switch item["type"] as? String {

@@ -235,12 +235,11 @@ final class ClaudeInjectionTargetTests: XCTestCase {
         XCTAssertEqual(try IE.pickSession([a, b], pagePid: 99, pageStateStart: nil).get(), b)
     }
 
-    func testPickSessionAmbiguousTerminalsFail() {
+    func testPickSessionTwoTerminalsTypesIntoTheLead() {
+        // Two terminals on one conversation are no longer refused: the lead (ConversationCopies) is typed into.
         let a = session(10, tty: "ttys001")
         let b = session(20, tty: "ttys002")
-        guard case .failure = IE.pickSession([a, b], pagePid: nil, pageStateStart: nil) else {
-            return XCTFail("two terminals must not be guessed between")
-        }
+        XCTAssertEqual(try IE.pickSession([a, b], pagePid: nil, pageStateStart: nil).get(), b, "equal copies: the highest pid")
     }
 
     func testTmuxPaneMatchesExactTTY() {

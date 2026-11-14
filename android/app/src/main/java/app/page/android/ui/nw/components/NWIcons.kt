@@ -57,6 +57,7 @@ import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Circle
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.DesktopAccessDisabled
 import androidx.compose.material.icons.outlined.DesktopWindows
 import androidx.compose.material.icons.outlined.Description
@@ -174,6 +175,7 @@ fun nwIcon(symbol: String): ImageVector = when (symbol) {
     "sunrise" -> Icons.Outlined.WbTwilight
     "laptopcomputer" -> Icons.Outlined.Laptop
     "display" -> Icons.Outlined.DesktopWindows
+    "rectangle.on.rectangle" -> Icons.Outlined.ContentCopy
     "arrow.turn.down.right" -> Icons.AutoMirrored.Outlined.ArrowForward
     "checkmark.seal" -> Icons.Outlined.Verified
     "exclamationmark.triangle" -> Icons.Outlined.WarningAmber

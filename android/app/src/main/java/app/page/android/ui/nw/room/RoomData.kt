@@ -226,7 +226,7 @@ data class SessionRoomData(
                 chips = RoomHeader.chips(s, character, i.ended, i.pageRow?.waitingSince, review != null, i.fiveHourPct, i.now),
                 canBudget = SessionCaps.canBudget(i.caps) && !i.ended,
                 lenses = lenses, badges = badges,
-                banners = RoomBanner.build(i.ended, i.availability, s, character.name, pinned != null),
+                banners = RoomBanner.build(i.ended, i.availability, s, character.name, pinned != null) + listOfNotNull(RoomBanner.copies(s, i.ended)),
                 now = i.now, macName = i.macName, story = story, truncated = i.transcript?.truncated ?: false, emptyStory = emptyStory, storyLoading = loading,
                 liveLine = if (i.ended) null else StoryBuilder.liveLine(s, character, trailingLive),
                 timingNote = RoomComposerMode.timingNote(character, busy),

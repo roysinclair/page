@@ -195,6 +195,8 @@ object DemoRooms {
                 val s = session("room-claude", "mac-on-claude-code", state = LiveSessionState.WAITING_ON_APPROVAL, ago = 70, page = "c-push")
                 i = i.copy(session = s, transcript = SessionTranscript("room-claude", waitingEntries, false), pageRow = NowRowBuilder.row(page, s, mac))
             }
+            // The conversation is open in two terminals on the Mac: the amber notice under the header, the composer as usual.
+            "room-copies" -> i = i.copy(session = session("room-claude", "workspace", state = LiveSessionState.ACTIVE, preview = "Bash: swift test").copy(copies = 2))
             "room-codex" -> i = i.copy(
                 session = session("room-codex", "payments-api", "codex", "unknown", LiveSessionState.ACTIVE, host = "Terminal", preview = "Shell: npm test -- charges.idem"),
                 transcript = SessionTranscript("room-codex", codexEntries, false), screen = null, runs = emptyList(), fiveHourPct = null, sent = emptyList(),

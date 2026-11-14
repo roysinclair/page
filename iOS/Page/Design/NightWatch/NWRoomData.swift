@@ -99,7 +99,7 @@ extension SessionRoomData {
                                     hasReviewPage: review != nil, fiveHourPct: i.fiveHourPct, now: i.now),
             lenses: lenses, badges: badges,
             banners: RoomBanner.build(ended: i.ended, availability: i.availability, session: s, agent: character.name,
-                                      pageShownInStory: pinned != nil),
+                                      pageShownInStory: pinned != nil) + (RoomBanner.copies(of: s, ended: i.ended).map { [$0] } ?? []),
             now: i.now, macName: i.macName,
             composer: mode, composerCopy: mode.copy(for: character),
             stop: SessionStopPlan.build(session: s, ready: ready, ended: i.ended, macName: i.macName))

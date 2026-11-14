@@ -164,6 +164,10 @@ struct NWInFlightRowView: View {
                     .accessibilityAddTraits(.isButton)
                     .accessibilityAction { store.clickFlight(.open, on: row) }
                     .nwDismissAction(row.dismissable ? { store.dismiss(rowId: row.id) } : nil)
+                // One conversation open in two terminals: the amber line, and the way to close the other.
+                if let c = store.copies[row.sessionId] {
+                    NWCopiesSlot(store: store, sessionId: row.sessionId, project: row.project, copies: c)
+                }
                 actions
                 // Budgets: a slim line under Open and Steer, and its editor in this card.
                 NWBudgetSlot(store: store, rowId: row.id, sessionId: row.sessionId, backend: row.backend)

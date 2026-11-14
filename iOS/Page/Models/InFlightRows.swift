@@ -61,6 +61,8 @@ struct InFlightRow: Equatable, Identifiable {
     var card: InFlightCard = InFlightCard(now: "Working")
     /// Its budget, when its project (or it) has one or has used some of the week.
     var budget: SessionBudget? = nil
+    /// Open in this many terminals (2 or more); nil when one.
+    var copies: Int? = nil
 
     /// The spoken line: "relay, Claude in tmux, Running vitest, working 4m, 1 workflow running".
     var spoken: String {
@@ -76,6 +78,7 @@ struct InFlightRow: Equatable, Identifiable {
             parts.append(m.cap == nil ? "\(m.usedText) of the week, no budget"
                          : "budget \(m.line) this week" + (m.state == .over ? ", stopped" : m.state == .warn ? ", near its budget" : ""))
         }
+        if let n = copies { parts.append(SessionCopiesCopy.line(n).lowercased()) }
         return parts.joined(separator: ", ")
     }
 }
@@ -124,7 +127,7 @@ struct InFlightSection: Equatable {
                 hue: ProjectHue(key: s.cwd.isEmpty ? s.title : s.cwd),
                 canType: s.canType, canStop: s.canInterrupt, canMirror: mirrorHosts.contains(host),
                 card: InFlightCard.build(session: s, runs: workflows[s.id] ?? [], hasStuckPage: stuck.contains(s.id), now: now),
-                budget: s.budget)
+                budget: s.budget, copies: s.copies)
             return (row, s.title)
         }
         .sorted { a, b in

@@ -186,6 +186,15 @@ While the Mac is still measuring the week, a project's (or session's) row says
 (plain `Measuring…` without it), and draws no bar. Render it with
 `tools/screens.sh -- tower-budget-measuring now-budget-measuring`.
 
+## Session titles and copies
+
+The same two changes as iOS (see the [iPhone README](../iOS/README.md#sessions-tab) and the main README's
+[Session names](../README.md#session-names)): a Claude session shows the name you gave it (`/rename`, a renamed
+cmux workspace or tmux window) with its folder underneath, and a conversation open in more than one terminal on
+the Mac shows an amber "Open in N terminals" on its Lanes row and In-flight card, plus a notice in the Room. The
+row follows the copy that's working and messages go to it. At the time of writing these Android changes are
+written but not yet built or rendered.
+
 ## Speak instead of type
 
 As on iOS (see [`iOS/README.md`](../iOS/README.md#speak-instead-of-type)): the

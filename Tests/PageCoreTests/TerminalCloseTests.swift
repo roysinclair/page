@@ -330,10 +330,22 @@ final class TerminalCloseTests: XCTestCase {
         assertRefused(TerminalClose.close(sessionId: "sess-1", io: io([live()], fake: fake)), .notIdle(.busy), fake: fake)
     }
 
-    func testMoreThanOneProcessWithTheSameSessionIdIsAmbiguous() {
+    func testMoreThanOneProcessWithTheSameSessionIdAndNoTerminalIsAmbiguous() {
         let fake = Fake(statuses: [.idle])
+        let headless = { (pid: Int32) in
+            ClaudeLiveSession(pid: pid, sessionId: "sess-1", cwd: "/Users/roy/projects/page", status: .idle,
+                              statusUpdatedAt: self.t0, tty: nil, hasSessionFile: true)
+        }
+        assertRefused(TerminalClose.close(sessionId: "sess-1", io: io([headless(42), headless(43)], fake: fake)), .ambiguous, fake: fake)
+    }
+
+    func testTwoTerminalsOnOneConversationCloseTheLeadOnly() {
+        // The lead of equal copies is the highest pid; a card put away for the other one is a restart.
         let twins = [live(pid: 42), live(pid: 43)]
-        assertRefused(TerminalClose.close(sessionId: "sess-1", io: io(twins, fake: fake)), .ambiguous, fake: fake)
+        let fake = Fake(statuses: [.idle])
+        XCTAssertEqual(TerminalClose.close(sessionId: "sess-1", expectedPid: 43, io: io(twins, fake: fake)), .closed(noun: "cmux tab"))
+        let fake2 = Fake(statuses: [.idle])
+        assertRefused(TerminalClose.close(sessionId: "sess-1", expectedPid: 42, io: io(twins, fake: fake2)), .restarted, fake: fake2)
     }
 
     func testAPlanThatRefusesIsRefusedWithItsWords() {

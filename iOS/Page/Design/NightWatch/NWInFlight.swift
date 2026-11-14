@@ -427,6 +427,8 @@ struct NWInFlightCardView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(row.project).font(NightWatch.Typo.nameLarge).foregroundColor(.white).lineLimit(1)
                 Text(whoWhere).font(NightWatch.Typo.caption).foregroundColor(Color.white.opacity(0.88)).lineLimit(1)
+                // Open in more than one terminal (Designs/session-copies.md).
+                if let n = row.copies { NWCopiesLine(copies: n) }
             }
             Spacer(minLength: 4)
             if card.health.needsAttention, let h = card.health.label {

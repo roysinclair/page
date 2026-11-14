@@ -62,6 +62,47 @@ extension NightWatchFixtures {
         return i
     }
 
+    /// One conversation open in two terminals (Designs/session-copies.md): "workspace" working, beside api-server
+    /// working and two sessions at their prompt. Demo names only. Used by the popover-sessions-copies renders;
+    /// no other scene carries a copy.
+    /// `renamed`: the name the person gave "workspace" (`/rename`, a cmux workspace): the card's title, the
+    /// folder staying on its second line.
+    static func copiesScene(now: Date = boardNow(), renamed: String? = nil) -> NowInputs {
+        func at(_ minutes: Double) -> Date { now.addingTimeInterval(-minutes * 60) }
+        func claude(_ name: String, state: AgentSessionState, active minutes: Double) -> AgentSession {
+            var s = AgentSession(backend: .claude, sessionId: "sess-\(name)", cwd: "/Users/studio/projects/\(name)", title: nil,
+                                 source: .terminal, state: state, lastActivityAt: at(minutes), activeFlags: [], supportsRemoteReply: true)
+            if name == "workspace" { s.customName = renamed }
+            return s
+        }
+        let sessions = [
+            claude("workspace", state: .active, active: 1), claude("api-server", state: .active, active: 1),
+            claude("docs-site", state: .idle, active: 47), claude("mobile-app", state: .idle, active: 130)
+        ]
+        let working: [String: InFlightFacts] = [
+            "sess-workspace": InFlightFacts(
+                steps: [InFlightStep(text: "Edit: Sources/Session/Room.swift", at: at(6)),
+                        InFlightStep(text: "Bash: swift test", at: at(0.4))],
+                currentStepIsNewest: true, model: "claude-opus-4-7", startedAt: at(130), busySince: at(12)),
+            "sess-api-server": InFlightFacts(
+                steps: [InFlightStep(text: "Edit: src/routes/orders.ts", at: at(5)),
+                        InFlightStep(text: "Bash: npm run build", at: at(1))],
+                currentStepIsNewest: true, model: "claude-sonnet-4-5-20250929", startedAt: at(310), busySince: at(20))
+        ]
+        let idleFacts: [String: InFlightFacts] = [
+            "sess-docs-site": InFlightFacts(model: "claude-sonnet-4-5-20250929", startedAt: at(95), lastTurn: "Changed 1 file (+18 −2)"),
+            "sess-mobile-app": InFlightFacts(model: "claude-opus-4-7", startedAt: at(520))
+        ]
+        var hosts: [String: SessionHostInfo] = [:]
+        for s in sessions { hosts[s.sessionId] = SessionHostInfo(host: "cmux", canType: true, typeBlocker: nil, canInterrupt: true) }
+        var i = NowInputs(snapshot: snapshot(sessions: sessions, pending: []), now: now, macName: "Studio MBP", idleSeconds: 5)
+        i.route = route
+        i.hosts = hosts
+        i.facts = working
+        i.idleFacts = idleFacts
+        return i
+    }
+
     /// Budgets for that scene: a line under Open and Steer on every card.
     static func sessionsBudget(now: Date = boardNow()) -> BudgetStatus {
         func row(_ name: String, used: Double, cap: Int?, state: BudgetState) -> BudgetStatus.Row {
@@ -94,6 +135,20 @@ extension RenderSurfaces {
         st.bodyBudget = 1700
         st.updateBudget(NightWatchFixtures.sessionsBudget(now: inputs.now))
         st.dismissClosesTerminal = closesTerminal
+        return st
+    }
+
+    /// The copies scene's store: "workspace" is open in two terminals.
+    @MainActor
+    private static func copiesStore(canCloseOther: Bool, confirm: Bool = false, renamed: String? = nil, copies: Bool = true) -> NowStore {
+        let inputs = NightWatchFixtures.copiesScene(renamed: renamed)
+        let prefs = NowPrefs.ephemeral()
+        prefs.tipDismissed = true
+        let st = NowStore(model: NowModel.build(inputs), prefs: prefs)
+        st.now = { inputs.now }
+        st.bodyBudget = 1700
+        if copies { st.copies = ["sess-workspace": SessionCopies(count: 2, canCloseOther: canCloseOther)] }
+        if confirm { st.copiesConfirm = "sess-workspace" }
         return st
     }
 
@@ -159,7 +214,15 @@ extension RenderSurfaces {
             popover(closed, name: "popover-sessions-closed"),
             popover(notClosed, name: "popover-sessions-not-closed"),
             popover(dismissed, name: "popover-sessions-dismissed-show"),
-            popover(hover, name: "popover-sessions-selected")
+            popover(hover, name: "popover-sessions-selected"),
+            // One conversation open in two terminals: the amber line and Close the other; its confirm; and the
+            // other copy busy, so the line stands alone.
+            popover(copiesStore(canCloseOther: true), name: "popover-sessions-copies"),
+            popover(copiesStore(canCloseOther: true, confirm: true), name: "popover-sessions-copies-confirm"),
+            popover(copiesStore(canCloseOther: false), name: "popover-sessions-copies-busy"),
+            // A session the person renamed: its name is the card's title, the folder stays on the second line.
+            popover(copiesStore(canCloseOther: true, renamed: "Workspace-App"), name: "popover-sessions-copies-renamed"),
+            popover(copiesStore(canCloseOther: false, renamed: "Workspace-App", copies: false), name: "popover-sessions-renamed")
         ]
     }
 }

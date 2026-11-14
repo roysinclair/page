@@ -12,6 +12,9 @@ Each image is an HTML composition shot by headless Chromium. Nothing opens a win
 | `family.html` | `family.png` / `family.webp` 2400×1500 (brochure cover, website overview) |
 | `screen-lock.html` | `out/screen-lock.png` 782×1690, the lock-screen board with the Page Relay name, for `website/scripts/product-shots.py` (`power/lock`) |
 
+`session-copies-iphone-room.png` and `session-copies-mac-card.png` (in `docs/images/` only) aren't compositions: they are the
+approved renders from `Designs/session-copies/` (and the Mac card with a renamed session), downscaled with `sips -Z 1200`.
+
 `base.css` holds the Night Watch tokens, the drawn device frames (generic, with no vendor marks) and the lock-screen
 overlay. `sky.js` draws the seeded star field and aurora. The fonts are Inter and JetBrains Mono (OFL, in `fonts/`).
 

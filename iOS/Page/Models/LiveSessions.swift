@@ -127,6 +127,9 @@ struct LiveSession: Identifiable, Hashable {
     var attach: String? = nil
     /// Why a row Page can type into takes no photos ("Page can't send photos to Codex yet").
     var attachBlocker: String? = nil
+    /// How many live terminals have this conversation open (Designs/session-copies.md); nil when one, or when the Mac
+    /// does not say. Only ever 2 or more.
+    var copies: Int? = nil
 
     static let defaultBlocker = "Page Studio can't type into this session."
 
@@ -149,7 +152,7 @@ extension LiveSession: Decodable {
         case id, backend, title, cwd, state, host, canType, typeBlocker, canInterrupt
         case provider, lastActivityAt, interventionId, preview, ask
         case busySince, startedAt, model, recentSteps, health, healthDetail, healthNote, workflows, workflowsRunning, resetsAt, stepSince
-        case canHold, held, attach, attachBlocker, budget
+        case canHold, held, attach, attachBlocker, budget, copies
     }
 
     /// Lenient like `Intervention`: only `id` is required. A malformed
@@ -199,7 +202,18 @@ extension LiveSession: Decodable {
         attachBlocker = why.isEmpty ? nil : String(why.prefix(200))
         // Designs/budget-caps.md: a row's budget that doesn't read is no budget, never a failed list.
         budget = (try? c.decodeIfPresent(SessionBudget.self, forKey: .budget)) ?? nil
+        // Designs/session-copies.md: present only above 1. Anything else (absent, 1, junk) is one terminal.
+        copies = ((try? c.decodeIfPresent(Int.self, forKey: .copies)) ?? nil).flatMap { $0 >= 2 ? min($0, 99) : nil }
     }
+}
+
+/// What the phone says about a conversation open in more than one terminal (Designs/session-copies.md).
+enum SessionCopiesCopy {
+    /// Under the title in Lanes and Now: "Open in 2 terminals".
+    static func line(_ n: Int) -> String { "Open in \(n) terminals" }
+    /// The room's notice: the bold lead, and the rest.
+    static func roomTitle(_ n: Int) -> String { "Open in \(n) terminals on your Mac." }
+    static let roomMessage = "Both write to this conversation and each remembers only its own part. Close the one you’re not using. Messages from here go to the one that’s working."
 }
 
 extension KeyedDecodingContainer {

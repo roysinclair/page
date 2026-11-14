@@ -59,7 +59,7 @@ enum ReplyOutcomeMapper {
         }
         if d.contains("can type into") || d.contains("can't type") || d.contains("can't press esc")
             || d.contains("couldn't find the session's terminal") || d.contains("suspended or in the background")
-            || d.contains("more than one terminal") || d.contains("allow page to control")
+            || d.contains("more than one terminal") || d.contains("moved to another terminal") || d.contains("allow page to control")
             || d.contains("isn't running in a terminal") || d.contains("background job")
             || d.contains("answer it at the mac") || d.contains("answer at the mac") || d.contains("reply at the mac")
             // The same refusals as worded since the rename (and an older copy's wording above).

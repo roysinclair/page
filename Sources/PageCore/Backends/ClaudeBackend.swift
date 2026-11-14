@@ -58,6 +58,13 @@ final class ClaudeBackend: AgentBackend {
         get { lock.lock(); defer { lock.unlock() }; return _onNewIntervention }
         set { lock.lock(); _onNewIntervention = newValue; lock.unlock() }
     }
+    private var _onCopiesAppeared: ((CopiesNotice) -> Void)?
+    /// Called on the tick queue when a conversation is first seen open in a second terminal (and again only
+    /// after 60 s back at one). Never while a lock is held.
+    var onCopiesAppeared: ((CopiesNotice) -> Void)? {
+        get { lock.lock(); defer { lock.unlock() }; return _onCopiesAppeared }
+        set { lock.lock(); _onCopiesAppeared = newValue; lock.unlock() }
+    }
 
     var currentSnapshot: AgentBackendSnapshot {
         let s = latestState
@@ -82,6 +89,18 @@ final class ClaudeBackend: AgentBackend {
     var onResumeResult: ((ResumeResult) -> Void)?
     private var lastPurgeAt = Date()
     private let interventionDetector = InterventionDetector()
+    /// What the person calls each session (`/rename`, a cmux workspace, a tmux window): read only while someone
+    /// is looking, or when a page is about to open.
+    let names = SessionNameProvider()
+    /// Which conversations are open in more than one terminal, for the once-per-conversation notice (tick queue).
+    private var copiesTracker = CopiesNoticeTracker()
+    /// What the last tick followed: the lead of each conversation, and their transcripts (under `lock`).
+    private var leadSessions: [ClaudeLiveSession] = []
+    private var leadTranscripts: [String: URL] = [:]
+    /// The process each page was raised for, by page id, so a reply that arrives after the page closed
+    /// (the lead moved) is still held to it. Bounded (under `lock`).
+    private var pagePids: [String: Int32] = [:]
+    private var pagePidOrder: [String] = []
     /// Busy-but-getting-nowhere pages (tick queue only; `stuckPages` is the
     /// locked copy replies and sync read).
     private let stuckMonitor = StuckMonitor()
@@ -154,6 +173,7 @@ final class ClaudeBackend: AgentBackend {
         let cfg = config
         Logger.shared.log("ClaudeBackend starting (transcripts=\(cfg.transcriptDirectory), processPattern=\(cfg.claudeProcessPattern))")
         scheduler.purgeStale()
+        names.start()
         // Priming reads every recent transcript; do it on the tick queue.
         lock.lock()
         needsRateLimitPrime = cfg.rateLimitWatcherEnabled
@@ -171,6 +191,7 @@ final class ClaudeBackend: AgentBackend {
     }
 
     func shutdown() {
+        names.stop()
         // Don't wait on the injection queue: it may be blocked on
         // DispatchQueue.main.sync (AppleScript), and shutdown runs on main.
         Self.removeDetectorAliveMarker()
@@ -215,6 +236,10 @@ final class ClaudeBackend: AgentBackend {
         // deleted worktree, so it neither keeps the Mac awake nor gets paged.
         let squad = ClaudeSquad.liveStandings(sessions: sessions, table: table)
         let attended = Self.attendedSessions(sessions: sessions, standings: squad)
+        // One process per conversation: when it is open in several terminals, the lead (ConversationCopies).
+        // Pages, rows, cards and typing all follow it; the others never open a page.
+        let followed = ConversationCopies.leads(attended)
+        names.watch(followed)
         let claudeActive = Self.isActive(
             sessions: attended,
             unidentifiedInteractive: unidentifiedInteractive,
@@ -233,7 +258,7 @@ final class ClaudeBackend: AgentBackend {
                 activeLimit = limit
             }
         }
-        refreshRateLimitPages(sessions: sessions, now: now, cfg: cfg)
+        refreshRateLimitPages(sessions: followed, now: now, cfg: cfg)
 
         // Interventions.
         var opened: [InterventionEvent] = []
@@ -241,15 +266,18 @@ final class ClaudeBackend: AgentBackend {
             let settings = DetectorSettings(idleDelay: max(0, cfg.idlePageDelaySeconds))
             interventionDetector.turnHeadline = cfg.turnSummaryEnabled ? { TurnSummary.headline(transcript: $0, cwd: $1) } : nil
             let result = interventionDetector.scan(
-                sessions: attended,
+                sessions: followed,
                 transcriptFor: { transcripts[$0.sessionId] },
                 settings: settings,
                 sourceFor: { InjectionExecutor.sessionSource(pid: $0.pid, processTable: table) },
                 autoApproves: { squad[$0.pid]?.autoApproves ?? false },
+                nameFor: { [names] s in names.nameForNewPage(s, transcript: transcripts[s.sessionId]) },
                 now: now
             )
             opened = result.opened
-            let livePids = Set(attended.map(\.pid))
+            // A page whose process is no longer followed (the lead moved) closes as resolved, not as
+            // answered at the terminal: the new lead's own prompt, if any, opens as its own page.
+            let livePids = Set(followed.map(\.pid))
             for e in result.resolved {
                 closePage(e.id, reason: (e.pid.map(livePids.contains) ?? false) ? "user_resolved_in_terminal" : "session_resolved")
             }
@@ -257,7 +285,8 @@ final class ClaudeBackend: AgentBackend {
             for e in interventionDetector.reset() { closePage(e.id, reason: "session_resolved") }
         }
         let pending = cfg.interventionDetectionEnabled ? Array(interventionDetector.currentlyPending.values) : []
-        opened += refreshStuckPages(sessions: attended, transcripts: transcripts, pending: pending, now: now, cfg: cfg)
+        rememberPagePids(pending)
+        opened += refreshStuckPages(sessions: followed, transcripts: transcripts, pending: pending, now: now, cfg: cfg)
         let callback = onNewIntervention
         for e in opened { callback?(e) }
 
@@ -288,10 +317,11 @@ final class ClaudeBackend: AgentBackend {
         )
         let wantsPowerAssertion = claudeActive || holdForReset || holdForPages
 
+        let counts = ConversationCopies.counts(in: attended)
         let state = State(
-            sessions: makeSessions(sessions: sessions, transcripts: transcripts, claudeRunning: claudeRunning,
+            sessions: makeSessions(sessions: followed, transcripts: transcripts, claudeRunning: claudeRunning,
                                    claudeActive: claudeActive, secondsSince: secondsSince,
-                                   activeLimit: activeLimit, pending: pending),
+                                   activeLimit: activeLimit, pending: pending, copies: counts),
             claudeRunning: claudeRunning,
             claudeActive: claudeActive,
             secondsSinceTranscript: secondsSince,
@@ -303,7 +333,80 @@ final class ClaudeBackend: AgentBackend {
         )
         lock.lock()
         _latestState = state
+        leadSessions = followed
+        leadTranscripts = transcripts
         lock.unlock()
+        announceCopies(counts: counts, followed: followed, transcripts: transcripts, now: now)
+    }
+
+    /// "<name> is open twice", once per conversation, when a second terminal appears.
+    private func announceCopies(counts: [String: Int], followed: [ClaudeLiveSession], transcripts: [String: URL], now: Date) {
+        let fire = copiesTracker.step(counts: counts, now: now)
+        guard !fire.isEmpty, let callback = onCopiesAppeared else { return }
+        for id in fire {
+            guard let lead = followed.first(where: { $0.sessionId == id }), let n = counts[id] else { continue }
+            callback(CopiesNotice(sessionId: id, count: n, name: displayName(for: lead, transcript: transcripts[id])))
+        }
+    }
+
+    /// What a session is called to the person: the name they gave it, else its folder.
+    private func displayName(for s: ClaudeLiveSession, transcript: URL?) -> String {
+        names.name(for: s, transcript: transcript)
+            ?? s.cwd.map { InterventionDetector.projectName(forCwd: $0, fallback: s.name) } ?? s.name ?? "Claude"
+    }
+
+    /// The names changed (a rename in cmux, tmux or Claude Code): the published sessions say so now, not at the
+    /// next tick. True when something changed.
+    func refreshNames() -> Bool {
+        lock.lock()
+        let state = _latestState
+        let leads = leadSessions
+        let transcripts = leadTranscripts
+        lock.unlock()
+        var changed = false
+        let sessions = state.sessions.map { a -> AgentSession in
+            guard a.backend == id, let pid = a.leadPid, let lead = leads.first(where: { $0.pid == pid }) else { return a }
+            let name = names.name(for: lead, transcript: transcripts[a.sessionId])
+            guard name != a.customName else { return a }
+            changed = true
+            var b = a
+            b.customName = name
+            return b
+        }
+        guard changed else { return false }
+        lock.lock()
+        _latestState = State(sessions: sessions, claudeRunning: state.claudeRunning, claudeActive: state.claudeActive,
+                             secondsSinceTranscript: state.secondsSinceTranscript, activeRateLimit: state.activeRateLimit,
+                             scheduledResumes: state.scheduledResumes, pendingInterventions: state.pendingInterventions,
+                             relayConnected: state.relayConnected, wantsPowerAssertion: state.wantsPowerAssertion)
+        lock.unlock()
+        return true
+    }
+
+    /// The names the phone's list shows right now, by session id (a session without one shows its folder).
+    /// Asking also tells the name reader that someone is looking.
+    func currentNames(sessionIds: Set<String>) -> [String: String] {
+        names.touch()
+        lock.lock()
+        let leads = leadSessions
+        let transcripts = leadTranscripts
+        lock.unlock()
+        var out: [String: String] = [:]
+        for s in leads where sessionIds.contains(s.sessionId) {
+            if let n = names.name(for: s, transcript: transcripts[s.sessionId]) { out[s.sessionId] = n }
+        }
+        return out
+    }
+
+    private func rememberPagePids(_ pages: [InterventionEvent]) {
+        lock.lock()
+        defer { lock.unlock() }
+        for p in pages {
+            guard let pid = p.pid, pagePids[p.id] == nil else { continue }
+            pagePids[p.id] = pid
+            pagePidOrder.append(p.id)
+            if pagePidOrder.count > 500 { pagePids.removeValue(forKey: pagePidOrder.removeFirst()) }
+        }
     }
 
     // MARK: decision helpers (pure, unit-tested)
@@ -425,7 +528,8 @@ final class ClaudeBackend: AgentBackend {
             return AgentSession(backend: a.backend, sessionId: a.sessionId, cwd: a.cwd, title: a.title, source: a.source,
                                 state: .idle, lastActivityAt: a.lastActivityAt,
                                 activeFlags: a.activeFlags.filter { $0 != "waitingOnUser" },
-                                supportsRemoteReply: a.supportsRemoteReply, preview: a.preview)
+                                supportsRemoteReply: a.supportsRemoteReply, preview: a.preview,
+                                copies: a.copies, leadPid: a.leadPid, customName: a.customName)
         }
         _latestState = State(sessions: sessions, claudeRunning: s.claudeRunning, claudeActive: s.claudeActive,
                              secondsSinceTranscript: s.secondsSinceTranscript, activeRateLimit: s.activeRateLimit,
@@ -853,7 +957,8 @@ final class ClaudeBackend: AgentBackend {
             action: reply.action,
             text: reply.text,
             kind: kind,
-            pagePid: pending?.pid,
+            // A page the detector has already closed (the lead moved) still answers to the terminal it was for.
+            pagePid: pending?.pid ?? pagePidOf(id),
             pageStateStart: pending?.stateStartedAt ?? parsed.map { Date(timeIntervalSince1970: $0.epoch) },
             // Notification-hook pages: the prompt key their hook sent, as
             // echoed by the Worker (nil from older hooks / Workers).
@@ -861,6 +966,12 @@ final class ClaudeBackend: AgentBackend {
             hookCreatedAt: hook.map { Date(timeIntervalSince1970: $0.epoch) },
             closedPage: reply.closed == true
         )
+    }
+
+    private func pagePidOf(_ id: String) -> Int32? {
+        lock.lock()
+        defer { lock.unlock() }
+        return pagePids[id]
     }
 
     /// `hook-<sid8>-<epoch>-<pid>` → (sid8, epoch). The pid is the hook
@@ -922,7 +1033,14 @@ final class ClaudeBackend: AgentBackend {
 
     /// Live sessions as of the last tick (pid, tty, provider), for the
     /// phone's list. Never used to type: the gate re-reads everything.
-    var remoteLiveSessions: [ClaudeLiveSession] { registry.sessions }
+    /// With a conversation open in several terminals, only its lead (`ConversationCopies`): every reader of
+    /// this list (host probe, focus, card facts, the phone's status) follows the same process.
+    var remoteLiveSessions: [ClaudeLiveSession] { ConversationCopies.leads(registry.sessions) }
+
+    /// Every terminal each conversation is open in (last tick), for those with more than one.
+    func remoteCopyGroups() -> [String: [ClaudeLiveSession]] {
+        ConversationCopies.copies(in: registry.sessions).filter { $0.value.count > 1 }
+    }
 
     /// A fresh read of every live session (not the last tick's list), validated against
     /// `processTable`: for the moment before a terminal is closed.
@@ -1090,7 +1208,8 @@ final class ClaudeBackend: AgentBackend {
                               claudeActive: Bool,
                               secondsSince: Double?,
                               activeLimit: RateLimitEvent?,
-                              pending: [InterventionEvent]) -> [AgentSession] {
+                              pending: [InterventionEvent],
+                              copies: [String: Int] = [:]) -> [AgentSession] {
         if sessions.isEmpty {
             // Claude running but no identifiable session (bare launch of an
             // old Claude Code): one aggregate row, as before.
@@ -1135,7 +1254,10 @@ final class ClaudeBackend: AgentBackend {
                 state: state,
                 lastActivityAt: s.statusUpdatedAt ?? mtime,
                 activeFlags: flags,
-                supportsRemoteReply: s.tty != nil
+                supportsRemoteReply: s.tty != nil,
+                copies: copies[s.sessionId] ?? 1,
+                leadPid: s.pid,
+                customName: names.name(for: s, transcript: transcripts[s.sessionId])
             )
         }
     }
@@ -1298,7 +1420,8 @@ extension ClaudeBackend: BatteryPausable {
             return []
         }
         var work: [PauseWork] = []
-        for s in registry.allLiveSessions(processTable: table) where s.status == .busy {
+        // One process per conversation: the lead is the busy one when any is.
+        for s in ConversationCopies.leads(registry.allLiveSessions(processTable: table)) where s.status == .busy {
             let host = InjectionExecutor.resolveHost(for: s, processTable: table)
             let strategy = pauseStrategy(status: s.status, host: host, mode: mode, isLocal: s.provider.isLocal)
             if case .skip(let why) = strategy {

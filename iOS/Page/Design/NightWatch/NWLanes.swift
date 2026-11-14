@@ -311,28 +311,38 @@ struct NWLanesScreen: View {
 
     private func laneRow(_ r: LaneRow, relights: [String: TimeInterval]) -> some View {
         Button { actions.openRow(r) } label: {
-            HStack(spacing: 10) {
-                // In the power story the glyph exhales and dims with the pause, and relights at its own resume.
-                NWAnimated(fps: 20, active: data.powerStoryMoving(pin: motionPin)) { t in
-                    let light = data.starLight(id: r.id, state: r.state, at: t, pin: motionPin, relights: relights)
-                    NWStarGlyph(seed: r.seed, color: r.state.color, size: 30, brightness: light.brightness)
-                        .scaleEffect(light.scale)
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 10) {
+                    // In the power story the glyph exhales and dims with the pause, and relights at its own resume.
+                    NWAnimated(fps: 20, active: data.powerStoryMoving(pin: motionPin)) { t in
+                        let light = data.starLight(id: r.id, state: r.state, at: t, pin: motionPin, relights: relights)
+                        NWStarGlyph(seed: r.seed, color: r.state.color, size: 30, brightness: light.brightness)
+                            .scaleEffect(light.scale)
+                    }
+                    VStack(alignment: .leading, spacing: 3) {
+                        // A long title (a renamed session) wraps onto a second line, then tail-truncates.
+                        Text(r.title).font(NightWatch.Typo.name).foregroundColor(NightWatch.Palette.textPrimary.color)
+                            .lineLimit(2).truncationMode(.tail).fixedSize(horizontal: false, vertical: true)
+                        Text(NWSectionHeader.words(r.state.label)).font(NightWatch.Typo.captionStrong).foregroundColor(r.state.color.color)
+                            .lineLimit(1)
+                    }
+                    .frame(width: 100, alignment: .leading)
+                    NWActivityStrip(cells: r.strip)
+                        .frame(height: 30)
                 }
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(r.title).font(NightWatch.Typo.name).foregroundColor(NightWatch.Palette.textPrimary.color).lineLimit(1)
-                    Text(NWSectionHeader.words(r.state.label)).font(NightWatch.Typo.captionStrong).foregroundColor(r.state.color.color)
-                        .lineLimit(1)
+                // The vertical padding only bites when the title wraps: a one-line row is shorter than 60 pt anyway.
+                .padding(.horizontal, 12).padding(.vertical, 8).frame(minHeight: 60)
+                // Open in more than one terminal: a small amber line under the title, aligned with it.
+                if let n = r.copies {
+                    NWCopiesLine(copies: n).padding(.leading, 12 + 30 + 10).padding(.trailing, 12).padding(.bottom, 9).padding(.top, -6)
                 }
-                .frame(width: 100, alignment: .leading)
-                NWActivityStrip(cells: r.strip)
-                    .frame(height: 30)
             }
-            .padding(.horizontal, 12).frame(minHeight: 60)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("\(r.title), \(r.state.label.lowercased()), \(r.agent)" + (r.lastAction.isEmpty ? "" : ", \(r.lastAction)")))
+        .accessibilityLabel(Text("\(r.title), \(r.state.label.lowercased()), \(r.agent)" + (r.lastAction.isEmpty ? "" : ", \(r.lastAction)")
+                                 + (r.copies.map { ", \(SessionCopiesCopy.line($0).lowercased())" } ?? "")))
         .accessibilityHint(Text(r.interventionId != nil ? "Opens the decision" : "Opens the session"))
     }
 
@@ -397,5 +407,17 @@ struct NWActivityStrip: View {
         case .offline?:
             Circle().fill(Color.white.opacity(0.2)).frame(width: min(width, 2), height: 2).frame(width: width, height: height, alignment: .bottom)
         }
+    }
+}
+
+/// "Open in 2 terminals": the amber line a session open in more than one terminal carries in Lanes and Now.
+struct NWCopiesLine: View {
+    var copies: Int
+
+    var body: some View {
+        Text(SessionCopiesCopy.line(copies))
+            .font(NightWatch.Typo.captionStrong)
+            .foregroundColor(NightWatch.Palette.amber.color)
+            .lineLimit(1)
     }
 }

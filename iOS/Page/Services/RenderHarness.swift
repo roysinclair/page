@@ -16,7 +16,7 @@ enum RenderHarness {
         "now", "now-quiet", "now-still", "now-working", "now-dusk", "now-brief", "now-brief-quiet", "now-arming", "now-swipe",
         "now-receipt", "now-banner", "now-new",
         "now-inflight", "now-inflight-long", "now-tip-undoable", "now-tip-irreversible", "now-tip-inflight",
-        "now-flight", "now-flight-two", "now-flight-old", "now-flight-header", "now-flight-jump", "now-flight-quiet",
+        "now-flight", "now-flight-two", "now-flight-old", "now-flight-header", "now-flight-jump", "now-flight-quiet", "now-copies",
         "decision-irreversible", "decision-hold", "decision-considered", "decision-undoable", "decision-question", "decision-stuck",
         "decision-review", "decision-plan", "decision-standing", "decision-unknown", "decision-composer", "decision-delivered",
         "decision-failed", "decision-tip",
@@ -24,7 +24,7 @@ enum RenderHarness {
         "decision-review-realkb", "decision-composer-realkb",
         "decision-steer-busy", "decision-steer-undo", "decision-queued-relay", "decision-queued-held",
         "hold-stop", "stop-confirm", "stop-result", "stop-none",
-        "lanes", "lanes-crowded", "lanes-empty", "lanes-problem", "lanes-standby", "lanes-paused",
+        "lanes", "lanes-crowded", "lanes-empty", "lanes-problem", "lanes-standby", "lanes-paused", "lanes-copies",
         "tower", "tower-budget", "tower-budget-projects", "tower-budget-off", "tower-budget-measuring", "budget-sheet", "budget-sheet-session", "budget-sheet-default",
         "budget-sheet-saving", "budget-sheet-offline", "budget-sheet-refused", "budget-sheet-live", "budget-sheet-measuring", "budget-sheet-session-measuring", "now-budget", "now-budget-flight", "now-budget-measuring",
         "decision-budget", "decision-budget-warning", "room-budget", "room-budget-warn", "room-budget-none", "room-budget-measuring",
@@ -37,7 +37,7 @@ enum RenderHarness {
         "room-ended", "room-blocked", "room-stop", "room-draft", "room-receipt", "room-receipt-refused", "room-yesno", "room-yesno-draft",
         "room-yesno-arm", "room-queue-choice", "room-queue-undo", "room-queue-held", "room-queue-bubbles",
         "room-photos-composer", "room-photos-path", "room-photos-busy", "room-photos-uploading", "room-photos-bubble",
-        "room-voice", "room-voice-listening", "room-voice-server", "room-voice-download", "room-voice-denied", "room-voice-off",
+        "room-voice", "room-voice-listening", "room-voice-server", "room-voice-download", "room-voice-denied", "room-voice-off", "room-copies",
         "decision-review-voice", "dispatch-voice",
         "welcome", "welcome-notice", "scan", "scan-hint", "pair-checking", "pair-confirm", "pair-problem", "paired", "paired-denied",
         "problem-asleep", "problem-gone", "problem-stale", "problem-relay", "problem-pairing",
@@ -238,6 +238,8 @@ enum RenderFixtures {
         case "now-budget-measuring": return budgetSessionsMeasuring
         case "now-flight", "now-flight-two", "now-flight-header", "now-flight-jump":
             return pick(["sess-p1", "w1", "sess-p3"], from: sessionsWithFlight)
+        // One conversation working, open in two terminals: its card is the only In flight card, so it shows whole.
+        case "now-copies": return copiesSessions.filter { $0.id != "cp-api" }
         case "now-flight-old": return pick(["sess-p1", "w1", "sess-p3"], from: sessions)
         case "now-flight-quiet": return pick(["w1", "sess-p3"], from: sessionsWithFlight)
         case "now-inflight", "now-tip-irreversible": return pick(["sess-p1", "w1", "w2"], from: sessions)
@@ -339,7 +341,7 @@ enum RenderFixtures {
         switch screen {
         case "now-flight", "now-flight-two", "now-flight-old", "now-flight-header", "now-flight-jump":
             return NowModel.build(inputs(open: [open[0]], sessions: nowSessions(screen)))
-        case "now-flight-quiet":
+        case "now-flight-quiet", "now-copies":
             var st = status; st.onAC = true; st.forecast = nil
             return NowModel.build(inputs(open: [], status: st, sessions: nowSessions(screen)))
         case "now-inflight", "now-tip-irreversible":
@@ -438,10 +440,35 @@ enum RenderFixtures {
         }
     }
 
+    // MARK: One conversation open in two terminals (Designs/session-copies.md)
+
+    /// A small fleet of generic demo projects, one of them ("workspace") open in two terminals. Used by the
+    /// lanes-copies and now-copies renders only: no other screen's list carries `copies`.
+    static var copiesSessions: [LiveSession] {
+        func row(_ id: String, _ project: String, _ state: LiveSessionState, ago: TimeInterval, preview: String = "", host: String = "cmux",
+                 title: String? = nil) -> LiveSession {
+            s(id, title ?? project, project, state, host: host, ago: ago, preview: preview)
+        }
+        var list = [
+            // A name the person gave it (Designs/session-copies.md, C): the title is the name, the group header is the folder.
+            row("cp-workspace", "workspace", .active, ago: 9, preview: "[Bash] swift test · 212 passed", title: "Workspace-App"),
+            row("cp-api", "api-server", .active, ago: 25, preview: "npm run build", host: "tmux"),
+            row("cp-docs", "docs-site", .idle, ago: 1_200),
+            row("cp-mobile", "mobile-app", .idle, ago: 3_000),
+            row("cp-data", "data-pipeline", .idle, ago: 7_400, host: "tmux"),
+        ]
+        list[0].copies = 2
+        list[0].flight = SessionFlight.make(
+            busySince: now.addingTimeInterval(-12 * 60), startedAt: now.addingTimeInterval(-(2 * 3600 + 10 * 60)), model: "Opus 4.7",
+            recentSteps: ["Reading Session.swift", "Editing SessionRoom.swift", "Running swift test"],
+            health: nil, healthNote: nil, workflows: [], workflowsRunning: nil)
+        return list
+    }
+
     static func nowData(_ screen: String) -> NowScreenData {
         let m = model(screen)
         var chipStatus = status
-        if ["now-quiet", "now-still", "now-brief-quiet", "now-working", "now-flight-quiet"].contains(screen) { chipStatus.onAC = true }
+        if ["now-quiet", "now-still", "now-brief-quiet", "now-working", "now-flight-quiet", "now-copies"].contains(screen) { chipStatus.onAC = true }
         var d = NowScreenData(model: m, log: log, chip: MacChipModel.build(macName: mac, status: chipStatus, now: now), now: now)
         d.inFlight = InFlightSection.build(sessions: nowSessions(screen), hasSessionList: true, now: now)
         // Only the tip screens show a tip, and the real picker chooses it: a fresh phone, the rows as staged.
@@ -451,6 +478,7 @@ enum RenderFixtures {
             if let t = d.tip { d.scrollTo = t.tip == .inFlight ? "inflight-\(t.anchorId)" : t.anchorId }
         }
         if screen == "now-inflight" { d.scrollTo = "inflight-w1" }
+        if screen == "now-copies" { d.scrollTo = "inflight-cp-workspace" }
         if ["now-flight", "now-flight-old", "now-flight-jump"].contains(screen) { d.scrollToId = HeaderJump.sectionId }
         if screen == "now-flight-two" { d.scrollTo = "inflight-sess-p3" }
         if screen == "now-budget-flight" || screen == "now-budget-measuring" { d.scrollTo = "inflight-w2" }
@@ -686,7 +714,8 @@ struct HarnessShell: View {
     private var lanesData: LanesScreenData {
         // The standby screen keeps the fleet short so the standby Macs below it are in view.
         let list = screen == "lanes-empty" ? [] : (screen == "lanes-crowded" ? RenderFixtures.crowdedSessions
-            : (screen == "lanes-standby" ? Array(RenderFixtures.sessions.prefix(2)) : RenderFixtures.sessions))
+            : (screen == "lanes-standby" ? Array(RenderFixtures.sessions.prefix(2))
+               : (screen == "lanes-copies" ? RenderFixtures.copiesSessions : RenderFixtures.sessions)))
         let fleet = RenderFixtures.sky(sessions: list, paused: screen == "lanes-paused")
         var d = LanesScreenData(fleet: fleet, lanes: LanesModel.build(sky: fleet, log: RenderFixtures.activity, now: RenderFixtures.now),
                                 now: RenderFixtures.now, standby: screen == "lanes-standby" ? RenderFixtures.macRows : [])

@@ -292,6 +292,10 @@ enum RenderFixtures3 {
                 i.sent = [c]
                 i.latestInput = c
             }
+        case "room-copies":
+            // The conversation is open in two terminals on the Mac: the amber notice under the header, the composer as usual.
+            i.session = session("room-claude", "workspace", state: .active, preview: "Bash: swift test")
+            i.session.copies = 2
         case "room-ended":
             i.session = session("room-claude", "mac-on-claude-code", state: .idle, ago: 400)
             i.ended = true

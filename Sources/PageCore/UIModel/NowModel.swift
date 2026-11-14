@@ -510,7 +510,7 @@ struct NowModel: Equatable {
     /// Pure. Working sessions by project name, one entry per session.
     static func inFlight(_ s: Coordinator.Snapshot) -> [InFlightAgent] {
         s.sessions.filter { $0.state == .active }.map { a in
-            InFlightAgent(id: a.sessionId, project: projectName(of: a), backend: a.backend)
+            InFlightAgent(id: a.sessionId, project: displayName(of: a), backend: a.backend)
         }.sorted { ($0.project, $0.id) < ($1.project, $1.id) }
     }
 

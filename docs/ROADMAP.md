@@ -70,6 +70,9 @@ rather than infers.
 | Project budgets: a share of the weekly Claude limit per project or session, warn at 80%, stop at 100% (Esc, the `PreToolUse` budget gate, a page with Raise / Let this turn finish), set from Page Studio, the menu bar and both phones | Done |
 | Budgets on Linux (usage tracking and `paged config set` for budgets, the gate shipped by `install-linux.sh`) and for Codex (a different plan, and no hook that can stop a tool call) | Not started |
 | Mac menu-bar panel: every session (finished, in flight, idle) on one card style; swipe, × or ⌫ to put a finished session away until its next turn; optionally close its exact terminal tab | Done |
+| One conversation open in two terminals: Page follows the copy that's working, the iPhone and the Mac card warn, a notification, and **Close the other** in cmux. Android is written the same way, not yet built | Done |
+| Sessions reopened after a restart don't page idle until they finish a turn of their own | Done |
+| Session names from Claude Code's `/rename`, a renamed cmux workspace or a renamed tmux window | Done |
 | The same idle list and dismiss on the phones | Not started |
 | Voice input: a mic in every message box on iPhone and Android and in the Mac's Steer boxes; on-device speech-to-text first (SpeechAnalyzer / SFSpeechRecognizer, `createOnDeviceSpeechRecognizer`), the platform's speech service as fallback; never sends by voice | Done |
 | Voice input on Linux (`paged`) | Not started |

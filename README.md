@@ -133,6 +133,10 @@ together, your phone hears from all of them.
     <td valign="top"><img src="docs/images/feature-widgets.png" alt="Widgets" width="100%"><br><b>Know before you unlock.</b> Widgets on iPhone, Android and the Mac: what needs you, what's working, how long the battery lasts.</td>
   </tr>
   <tr>
+    <td valign="top"><img src="docs/images/session-copies-iphone-room.png" alt="A session room on iPhone with an amber notice: Open in 2 terminals on your Mac" width="55%"><br><b>One conversation, two terminals: a warning.</b> When the same Claude conversation is open in two terminals, the phone says so, follows the one that's working and sends your messages there.</td>
+    <td valign="top"><img src="docs/images/session-copies-mac-card.png" alt="The menu-bar panel: a session named Workspace-App with Open in 2 terminals · close one and a Close the other button" width="55%"><br><b>Close the other, and name your sessions.</b> The Mac card offers to close the idle copy. A session you renamed shows its name, with its folder underneath.</td>
+  </tr>
+  <tr>
     <td valign="top"><img src="docs/images/feature-relay.png" alt="Page Relay, your own relay" width="100%"><br><b>Page Relay: your relay, your keys.</b> A small Worker on your own Cloudflare account carries pages and replies. Nothing goes to the authors.</td>
     <td valign="top"><img src="docs/images/feature-aura.png" alt="Page Aura working with Page Relay" width="100%"><br><b>Page Aura, paged too.</b> The chat app keeps the computer awake while it streams and pages your phone through Page Relay.</td>
   </tr>
@@ -260,8 +264,8 @@ top:
   rest. The header collapses the group to a line of names.
 
 Finished, idle and working sessions share one card:
-- the project, then the agent, model and terminal (`Claude · Opus 5.5 · cmux ›
-  payments-api`);
+- the session's name (see [Session names](#session-names)), then the agent,
+  model, terminal and folder (`Claude · Opus 5.5 · cmux › payments-api`);
 - what it's doing now, or what its last turn did;
 - the times;
 - **Open**, which brings its terminal pane forward and types nothing;
@@ -311,6 +315,47 @@ Before closing, Page Studio looks the session up again. It must still be:
 
 Otherwise the terminal stays open and the status line says why. Page Studio
 never falls back to another window and never closes a working session.
+
+#### Session names
+
+A Claude session's title is no longer always its folder. Page Studio uses the
+first of these that exists:
+
+1. a name you gave it with Claude Code's `/rename`;
+2. a cmux workspace you renamed;
+3. a tmux window you renamed;
+4. otherwise the folder name.
+
+The folder still shows underneath (the card's second line; on the phone, the
+group header or subtitle). A rename shows within about 5 seconds. Pages already
+open keep their old title. Not picked up: cmux tab and window names (cmux
+doesn't say whether you or it set them), and Terminal.app, iTerm2 and Ghostty
+tab names. Codex threads already use their own names, and Page Aura chats
+their titles.
+
+#### The same conversation open in two terminals
+
+This happens when a terminal app reopens a Claude session after a restart and
+you then type `claude --continue` in another window, which opens the same
+newest conversation. Both copies write to one transcript and each remembers
+only its own part.
+
+- **Page follows the copy that's working:** one with a prompt on screen first,
+  then one running a turn, then the most recently used. Only that copy pages
+  your phone, the phone and the Mac show its state, and messages from the
+  phone go to it.
+- **The card says so:** an amber **Open in 2 terminals · close one** and a
+  **Close the other** button. The button is there only in cmux, only while the
+  other copies are idle, and it asks first. It never closes a working copy.
+- **Your phone says so:** Lanes and the In-flight card show **Open in 2
+  terminals**, and the session screen shows a notice.
+- **A notification** "<name> is open twice" appears once when it happens.
+- **A reply to a page is refused** with "This conversation moved to another
+  terminal — check it on your Mac" if the conversation's working copy changed
+  since the page opened.
+
+Better still, don't run `claude --continue` in a folder whose conversation is
+already open. Switch to that window instead.
 
 ### Alerts beyond "it needs you"
 
@@ -484,6 +529,10 @@ How a pause is delivered depends on the terminal:
 Approvals and questions page at once. Idle and rate-limit pages wait until
 you've stepped away. Budget pages are sent at once.
 
+A session reopened after a restart (cmux's auto-resume, `claude --resume` or
+`--continue`) doesn't page idle until it has finished a turn of its own in that
+run. It still appears in the sessions list, because it really is running.
+
 A session has one current page. A newer page replaces the older one, and
 resolving one at the Mac clears its card from the phone. The phone shows
 whether each reply was **delivered**, **queued** (the Mac is offline) or
@@ -590,6 +639,14 @@ at any time, not only when a page is open.
   presses Esc in a working session (tmux, iTerm2, cmux).
 - **Speak instead of type.** Every message box has a mic: see
   [Speak instead of type](#speak-instead-of-type).
+- **Names.** A session shows the name you gave it (Claude Code's `/rename`, a
+  renamed cmux workspace or tmux window), otherwise its folder. The folder
+  stays on the subtitle or group header, and a long title wraps onto a second
+  line in Lanes on the iPhone. See [Session names](#session-names).
+- **One conversation in two terminals.** Lanes and the In-flight card show an
+  amber **Open in N terminals**, and the session screen explains it. The phone
+  follows the copy that's working, and messages from the phone go to it. See
+  [The same conversation open in two terminals](#the-same-conversation-open-in-two-terminals).
 - **New session.** The **+** on the Sessions tab starts a new Claude
   session on the Mac: pick one of the folders Claude has worked in during
   the last 30 days, type what it should do, and Page Studio opens a cmux workspace
@@ -941,7 +998,7 @@ Apply hand edits with **Reload Config** in the menu.
 | `relayEnabled` | `false` | Master switch for phone pages and replies |
 | `relayURL` | placeholder (`https://your-page-relay.workers.dev`, treated as unset) | Your Worker's https base URL. ws/wss and a trailing `/ws` are normalised; http only for localhost |
 | `interventionDetectionEnabled` | `true` | Detect approvals, questions and idle sessions and page them |
-| `idlePageDelaySeconds` | `60` (0–3600) | How long a session must sit idle (turn finished, nothing typed) before it pages |
+| `idlePageDelaySeconds` | `60` (0–3600) | How long a session must sit idle (turn finished, nothing typed) before it pages. A session reopened after a restart waits until it has finished a turn of its own |
 | `idlePageOnlyWhenAwaySeconds` | `120` (0–3600) | Hold idle and rate-limit pages while you've used the Mac within this many seconds. `0` disables the check. Approvals and questions always page |
 | `holdAwakeForPendingPageMinutes` | `60` (0–1440) | Keep the Mac awake this long while a page waits for a reply (relay on only). `0` = don't hold |
 | `headlessResumeFallbackEnabled` | `true` | When the session's process has exited, deliver a text reply with `claude --resume --print` / `codex exec resume`. Never used while the session is still running |
@@ -1215,6 +1272,9 @@ travel, so "nothing leaves your devices" isn't true. What leaves your devices:
 | A session I put away came back | It started a new turn, or a new page opened for it. Putting a session away lasts until its next turn |
 | The mic says microphone access is off | iPhone: Settings ▸ Page ▸ Microphone and Speech Recognition. Android: Settings ▸ Apps ▸ Page ▸ Permissions ▸ Microphone. Mac: System Settings ▸ Privacy & Security ▸ Microphone and Speech Recognition (a new build of Page Studio can be asked again) |
 | The mic says it can't turn speech into text | No recognizer on the device handles its language. Try the device's language set to one it supports, or on Android install a speech service (Speech Services by Google) |
+| A session shows twice, or the phone says "Open in 2 terminals" | One Claude conversation is open in two terminals, for example a terminal app reopened it after a restart and `claude --continue` was typed in another window. Close the one you're not using. In cmux, **Close the other** on the Mac card does it when the other copy is idle. Page follows the copy that's working, and a reply to an older page is refused with "This conversation moved to another terminal". See [the same conversation open in two terminals](#the-same-conversation-open-in-two-terminals) |
+| Old sessions appear after a restart | cmux's auto-resume, `claude --resume` and `--continue` reopen sessions, and they do show in the list because they're running. They don't page idle until they've finished a turn of their own in that run |
+| A session shows its folder name, not the one I gave it | Page picks up a name from Claude Code's `/rename`, a renamed cmux workspace or a renamed tmux window, within about 5 seconds. Not cmux tab or window names, nor Terminal.app, iTerm2 or Ghostty tab names. Pages already open keep their old title. See [Session names](#session-names) |
 | I put a session away but its tab stayed open | The status line says why. Common reasons: the setting is off (Preferences ▸ Terminals), the tab shares a Terminal.app window, the session was used again within the 5 seconds, or macOS needs Automation permission for Terminal or iTerm2 |
 
 Logs:

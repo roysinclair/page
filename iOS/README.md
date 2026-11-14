@@ -206,6 +206,20 @@ time, not only when it pages you. The wire contract is
 - **Stop** appears while a session is working and its terminal supports it.
   After a confirmation it presses Esc in the session.
 - The reply screen shows **Open session** when the page's session is live.
+- **Titles.** A Claude session shows the name you gave it (Claude Code's
+  `/rename`, a renamed cmux workspace or tmux window), otherwise its folder,
+  which stays on the group header and subtitle. A long title wraps onto a
+  second line in Lanes. A rename shows within about 5 seconds; see
+  [Session names](../README.md#session-names).
+- **Open in N terminals.** When one conversation is open in more than one
+  terminal on the Mac, its Lanes row and In-flight card show an amber **Open in
+  N terminals**, and the session screen shows a notice: "Open in 2 terminals on
+  your Mac. Both write to this conversation and each remembers only its own
+  part. Close the one you're not using. Messages from here go to the one
+  that's working." The row shows the copy that's working, and a reply to a page
+  from another copy is refused with "This conversation moved to another
+  terminal — check it on your Mac". The wire field is `copies`
+  ([SESSIONS-PROTOCOL.md](../docs/SESSIONS-PROTOCOL.md) §4).
 
 ### Speak instead of type
 

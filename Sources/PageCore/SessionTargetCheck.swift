@@ -19,10 +19,14 @@ enum SessionTargetCheck {
     /// nil when the command may go ahead.
     static func verify(_ cmd: SessionCommand, against s: AgentSession, home: String = NSHomeDirectory()) -> SessionCommandResult? {
         verify(expectCwd: cmd.expectCwd, expectTitle: cmd.expectTitle, cwd: s.cwd,
-               title: s.title ?? SessionRemote.folderTitle(s.cwd, home: home) ?? s.backend.rawValue, home: home)
+               title: s.title ?? SessionRemote.folderTitle(s.cwd, home: home) ?? s.backend.rawValue, home: home,
+               alsoTitle: s.customName)
     }
 
-    static func verify(expectCwd: String?, expectTitle: String?, cwd: String?, title: String, home: String = NSHomeDirectory()) -> SessionCommandResult? {
+    /// `alsoTitle`: the name the person gave the session; the phone's row shows it in place of the folder name,
+    /// so either one is the title it may have shown.
+    static func verify(expectCwd: String?, expectTitle: String?, cwd: String?, title: String, home: String = NSHomeDirectory(),
+                       alsoTitle: String? = nil) -> SessionCommandResult? {
         if let want = expectCwd.map(normalizedCwd), !want.isEmpty {
             let have = cwd.map { normalizedCwd(SessionRemote.homeAbbreviated($0, home: home)) } ?? ""
             if want == have { return nil }
@@ -30,6 +34,7 @@ enum SessionTargetCheck {
         }
         if let want = expectTitle.map(normalizedTitle), !want.isEmpty {
             if want == normalizedTitle(title) { return nil }
+            if let alsoTitle, want == normalizedTitle(alsoTitle) { return nil }
             return mismatch(shown: want, actual: normalizedTitle(title))
         }
         return nil

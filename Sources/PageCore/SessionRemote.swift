@@ -42,6 +42,9 @@ protocol SessionRemoteBackends: AnyObject {
     /// Fresh Claude statuses by session id (one small file read each), so
     /// the list doesn't lag a long check interval.
     func liveStatuses(_ sessions: [AgentSession]) -> [String: ClaudeSessionStatus]
+    /// The names the person gave these Claude sessions (a session with none shows its folder), read fresh:
+    /// asking tells the name reader a phone is looking. Defaults to none.
+    func customNames(_ sessions: [AgentSession]) -> [String: String]
     func transcriptFile(for session: AgentSession) -> SessionTranscriptFile?
     /// Where the session's screen can be read (tmux / cmux only), or nil.
     /// Blocking; called only on the probe queue, only for a watched session.
@@ -97,6 +100,7 @@ protocol SessionRemoteBackends: AnyObject {
 }
 
 extension SessionRemoteBackends {
+    func customNames(_ sessions: [AgentSession]) -> [String: String] { [:] }
     func flightFacts(_ sessions: [AgentSession]) -> [String: InFlightFacts] { [:] }
     func auraTranscript(for session: AgentSession) -> SessionTranscript.Snapshot? { nil }
     func auraWatchChanged(list: Bool, sessionIds: Set<String>) {}
@@ -398,6 +402,9 @@ struct RemoteSessionRow: Equatable {
     var attachBlocker: String? = nil
     /// The session's budget (`budget-v1`): see `BudgetStatus.rowWire`.
     var budget: WireFields? = nil
+    /// How many Mac terminals have this conversation open, only when more than one (Designs/session-copies.md).
+    /// Phones that don't know the field ignore it.
+    var copies: Int? = nil
 
     var jsonObject: [String: Any] {
         var o: [String: Any] = [
@@ -416,6 +423,7 @@ struct RemoteSessionRow: Equatable {
         if let attach { o["attach"] = attach }
         if let attachBlocker { o["attachBlocker"] = attachBlocker }
         if let budget { o["budget"] = budget.object }
+        if let copies, copies >= 2 { o["copies"] = copies }
         // Added keys never replace one the row already has.
         if let working { o.merge(working.object) { mine, _ in mine } }
         return o
@@ -517,6 +525,10 @@ final class SessionRemote {
     private var pending: [InterventionEvent] = []
     private var statuses: [String: ClaudeSessionStatus] = [:]
     private var statusesAt: Date?
+    /// Names the person gave Claude sessions, as last read (nil until the first read), by session id.
+    private var liveNames: [String: String]?
+    /// The process each session's host was probed for: a new lead is probed again at once.
+    private var hostLeads: [String: Int32] = [:]
     private var hosts: [String: (info: SessionHostInfo, at: Date)] = [:]
     private var probing = false
     /// What each working session's card shows, re-read every `flightInterval`
@@ -717,6 +729,7 @@ final class SessionRemote {
             self.flightFacts = self.flightFacts.filter { id, _ in sessions.contains { $0.sessionId == id } }
             let ids = Set(sessions.map(\.sessionId))
             self.hosts = self.hosts.filter { ids.contains($0.key) }
+            self.hostLeads = self.hostLeads.filter { ids.contains($0.key) }
             self.previews = self.previews.filter { ids.contains($0.key) }
             self.statuses = self.statuses.filter { ids.contains($0.key) }
             self.lastTranscriptCheck = self.lastTranscriptCheck.filter { ids.contains($0.key) }
@@ -1079,14 +1092,21 @@ final class SessionRemote {
     private func refreshStatuses(_ t: Date) {
         if let at = statusesAt, t.timeIntervalSince(at) < Self.liveStatusInterval { return }
         statusesAt = t
-        statuses = backends.liveStatuses(sessions.filter { $0.backend == .claude })
+        let claude = sessions.filter { $0.backend == .claude }
+        statuses = backends.liveStatuses(claude)
+        liveNames = backends.customNames(claude)
     }
 
     private func probeIfNeeded(_ t: Date) {
         guard !probing else { return }
         // A Page Aura chat's host is its state, read on every list: nothing to probe.
-        let due = sessions.filter { $0.backend != .aura }.filter { s in hosts[s.sessionId].map { t.timeIntervalSince($0.at) >= Self.hostTTL } ?? true }
+        // A conversation whose lead moved to another terminal is probed again at once: where it runs (and so
+        // whether it can be typed into) is the new lead's, not what was cached for the old one.
+        let due = sessions.filter { $0.backend != .aura }.filter { s in
+            hosts[s.sessionId].map { t.timeIntervalSince($0.at) >= Self.hostTTL || Self.leadMoved(known: hostLeads[s.sessionId], now: s.leadPid) } ?? true
+        }
         guard !due.isEmpty else { return }
+        for s in due { hostLeads[s.sessionId] = s.leadPid }
         probing = true
         let backends = self.backends
         probeQueue.async { [weak self] in
@@ -1098,6 +1118,12 @@ final class SessionRemote {
                                              live: Set(self.sessions.map(\.sessionId)), at: self.now())
             }
         }
+    }
+
+    /// Pure. The probed process is no longer the lead.
+    static func leadMoved(known: Int32?, now: Int32?) -> Bool {
+        guard let known, let now else { return false }
+        return known != now
     }
 
     /// Re-reads the working sessions' card facts on the probe queue (files only),
@@ -1167,6 +1193,14 @@ final class SessionRemote {
         return .refused(reason, detail)
     }
 
+    /// The name the person gave a Claude session (`SessionNaming`), from the fresh read while a phone looks, else
+    /// from the tick; nil shows the folder name.
+    private func displayName(of s: AgentSession) -> String? {
+        guard s.backend == .claude else { return nil }
+        if let live = liveNames { return live[s.sessionId] }
+        return s.customName
+    }
+
     private func state(of s: AgentSession) -> AgentSessionState {
         s.backend == .claude ? Self.overlay(s.state, fresh: statuses[s.sessionId]) : s.state
     }
@@ -1184,7 +1218,7 @@ final class SessionRemote {
             rows.append(RemoteSessionRow(
                 id: s.sessionId,
                 backend: s.backend.rawValue,
-                title: String((s.title ?? Self.folderTitle(s.cwd) ?? s.backend.rawValue).prefix(Self.maxTitle)),
+                title: String((displayName(of: s) ?? s.title ?? Self.folderTitle(s.cwd) ?? s.backend.rawValue).prefix(Self.maxTitle)),
                 cwd: s.cwd.map { String(Self.homeAbbreviated($0).prefix(Self.maxCwd)) },
                 state: st,
                 host: host,
@@ -1203,7 +1237,8 @@ final class SessionRemote {
                 canHold: Self.canHold(backend: s.backend, probed: probed),
                 attach: photos.attach,
                 attachBlocker: photos.blocker,
-                budget: s.backend == .claude ? budget.rowWire(sessionId: s.sessionId).flatMap(WireFields.init) : nil
+                budget: s.backend == .claude ? budget.rowWire(sessionId: s.sessionId).flatMap(WireFields.init) : nil,
+                copies: s.backend == .claude && s.copies >= 2 ? s.copies : nil
             ))
         }
         return Self.ordered(rows)
@@ -1934,7 +1969,8 @@ final class SessionRemote {
         }
         // The folder and title the phone showed, checked again now.
         if let refusal = SessionTargetCheck.verify(expectCwd: m.expectCwd, expectTitle: m.expectTitle, cwd: s.cwd,
-                                                   title: s.title ?? Self.folderTitle(s.cwd) ?? s.backend.rawValue) {
+                                                   title: s.title ?? Self.folderTitle(s.cwd) ?? s.backend.rawValue,
+                                                   alsoTitle: s.customName) {
             return finishHeldTry(m.clientId, refusal)
         }
         Logger.shared.log("Sessions: held \(tag) → typing (\(m.text.count) chars)")
@@ -2209,6 +2245,10 @@ final class LiveSessionBackends: SessionRemoteBackends {
             if let status = claude.remoteStatus(pid: s.pid) { out[s.sessionId] = status }
         }
         return out
+    }
+
+    func customNames(_ sessions: [AgentSession]) -> [String: String] {
+        claude.currentNames(sessionIds: Set(sessions.map(\.sessionId)))
     }
 
     func flightFacts(_ sessions: [AgentSession]) -> [String: InFlightFacts] {

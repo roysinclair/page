@@ -146,6 +146,8 @@ final class Coordinator {
     var onStateChange: ((Snapshot) -> Void)?
     var onNewRateLimit: ((RateLimitNotice) -> Void)?
     var onNewIntervention: ((InterventionEvent) -> Void)?
+    /// A conversation is open in a second terminal (Designs/session-copies.md): the Mac says so once.
+    var onCopiesAppeared: ((CopiesNotice) -> Void)?
     var onResumeResult: ((ResumeResult) -> Void)?
     var onBatteryNotice: ((BatteryNotice) -> Void)?
 
@@ -407,6 +409,13 @@ final class Coordinator {
             }
             self.claudeBackend.onResumeResult = { [weak self] result in
                 self?.onResumeResult?(result)
+            }
+            self.claudeBackend.onCopiesAppeared = { [weak self] notice in
+                self?.onCopiesAppeared?(notice)
+            }
+            // A rename in cmux, tmux or Claude Code reaches the list and the panel without waiting for a tick.
+            self.claudeBackend.names.onChange = { [weak self] in
+                self?.tickQueue.async { self?.sessionNamesChanged() }
             }
             // Existing installs keep the status line script they were given: bring it up to date
             // (budgets read the per-session files it writes).
@@ -984,6 +993,17 @@ final class Coordinator {
         maybeSync()
         publishSnapshot()
     }
+
+    /// The name reader found a rename: publish it now. Tick queue.
+    private func sessionNamesChanged() {
+        guard hasTicked, !isShutDown, claudeBackend.refreshNames() else { return }
+        lastSnapshots = backends.map { $0.currentSnapshot }
+        pushLiveSessions()
+        publishSnapshot()
+    }
+
+    /// The Now panel is open (or opening): keep the cmux and tmux names fresh for a while.
+    func noteNamesWanted() { claudeBackend.names.touch() }
 
     /// Hands the phone's live-sessions view the sessions of every capable
     /// backend. Page Aura contributes its Sessions-tab chats (`remoteSnapshot`),
@@ -2045,6 +2065,42 @@ final class Coordinator {
             let outcome = TerminalClose.close(sessionId: sessionId, backend: backend, expectedPid: expectedPid,
                                               expectedSince: expectedSince, io: io)
             Logger.shared.log("Close terminal for \(sessionId.prefix(8)): \(outcome)")
+            completion(outcome)
+        }
+    }
+
+    /// Whether "Close the other" is offered for each conversation open in more than one terminal: every other copy
+    /// is idle or at a shell and in a cmux tab. Resolves hosts (ps, tmux, cmux's files): off main, and
+    /// not on every tick. Conversations without copies are left out.
+    func closableCopies(sessionIds: [String]) -> [String: Bool] {
+        let groups = claudeBackend.remoteCopyGroups()
+        let table = ProcessRunner.processTable()
+        guard !table.isEmpty else { return [:] }
+        var out: [String: Bool] = [:]
+        for id in sessionIds {
+            guard let group = groups[id] else { continue }
+            out[id] = ConversationCopies.canCloseOther(others: ConversationCopies.others(of: group), inCmux: { o in
+                if case .cmux = TerminalClose.plan(for: InjectionExecutor.resolveHost(for: o, processTable: table)) { return true }
+                return false
+            })
+        }
+        return out
+    }
+
+    /// "Close the other" (after the panel's confirm): closes every copy of the conversation but the lead, if
+    /// every one is idle or at a shell and in cmux (`TerminalClose.closeOtherCopies`). Off the caller's queue.
+    func closeOtherCopies(sessionId: String, completion: @escaping (CopiesCloseOutcome) -> Void) {
+        let claude = claudeBackend
+        DispatchQueue.global(qos: .userInitiated).async {
+            let table = ProcessRunner.processTable()
+            let io = TerminalCloseIO(
+                liveSessions: { claude.freshLiveSessions(processTable: ProcessRunner.processTable()) },
+                currentStatus: { claude.remoteStatus(pid: $0) },
+                processTable: { table },
+                resolveHost: { InjectionExecutor.resolveHost(for: $0, processTable: $1) },
+                run: { TerminalClose.runLive($0) })
+            let outcome = TerminalClose.closeOtherCopies(sessionId: sessionId, io: io)
+            Logger.shared.log("Close the other terminal for \(sessionId.prefix(8)): \(outcome)")
             completion(outcome)
         }
     }

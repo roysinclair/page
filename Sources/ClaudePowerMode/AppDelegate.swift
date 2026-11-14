@@ -81,6 +81,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
     }
     private var routes: [String: RouteInfo] = [:]
     private var probingRoutes = false
+    /// Whether "Close the other" is offered for each conversation open in more than one terminal (probed off main,
+    /// about every 30 s while the panel is up: it resolves where each copy runs).
+    private var closableCopies: [String: (ok: Bool, at: Date)] = [:]
+    private var probingCopies = false
     /// What each working session is doing now (its last tool step), read off main while the panel is up.
     private var flightFacts: [String: InFlightFacts] = [:]
     private var activityCheckedAt: Date = .distantPast
@@ -150,6 +154,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         }
         coordinator.onResumeResult = { [weak self] result in
             DispatchQueue.main.async { self?.postResumeResultNotification(result) }
+        }
+        coordinator.onCopiesAppeared = { [weak self] notice in
+            DispatchQueue.main.async { self?.postCopiesNotification(notice) }
         }
         coordinator.onBatteryNotice = { [weak self] notice in
             DispatchQueue.main.async {
@@ -345,6 +352,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         postSimpleNotification(title: title, body: "Session \(session)\(detail). Log: \((result.logPath as NSString).lastPathComponent)")
     }
 
+    /// "<name> is open twice": once when a second terminal appears (Designs/session-copies.md).
+    private func postCopiesNotification(_ n: CopiesNotice) {
+        let content = UNMutableNotificationContent()
+        content.title = SessionCopiesCopy.notificationTitle(name: n.name, count: n.count)
+        content.body = SessionCopiesCopy.notificationBody(count: n.count)
+        content.threadIdentifier = n.sessionId
+        let request = UNNotificationRequest(identifier: "copies-\(n.sessionId)", content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error { Logger.shared.log("Failed to post the two-terminals notice: \(error)") }
+        }
+    }
+
     private func postSimpleNotification(title: String, body: String) {
         let content = UNMutableNotificationContent()
         content.title = title
@@ -433,6 +452,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         refreshActivity(snap)
         refreshIdleFacts(snap)
         refreshSummaryEvidence(snap)
+        refreshCopies(snap)
     }
 
     /// Builds the model from the latest snapshot and what Page has delivered,
@@ -461,6 +481,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         inputs.blocker = { routes[$0.sessionId]?.blocker }
         let model = NowModel.build(inputs)
         nowStore.updateBudget(snap.budget)
+        nowStore.copies = Self.copiesByCard(snap.sessions, closable: closableCopies.mapValues(\.ok))
+        // A confirm belongs to the copies it was asked about: if they are gone, it doesn't come back with the next ones.
+        if let asking = nowStore.copiesConfirm, nowStore.copies[asking] == nil { nowStore.cancelCloseOtherCopies() }
         // The sessions the person put away stay out; the setting names what a dismissal also does.
         nowStore.dismissClosesTerminal = cfg.dismissClosesTerminal
         nowStore.updateDismissals(hidden: snap.dismissals.hiddenSessionIds(live: snap.sessions, openPages: snap.pendingInterventions))
@@ -491,6 +514,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         nowStore = NowStore(model: NowModel.starting(macName: macName))
         nowStore.perform = { [weak self] effect in self?.perform(effect) }
         nowStore.command = { [weak self] command in self?.run(command) }
+        nowStore.onCloseOtherCopies = { [weak self] sessionId in self?.closeOtherCopies(sessionId: sessionId) }
         nowPanel = NowPanelController(store: nowStore)
         dictation = DictationController(store: nowStore)
         // macOS's microphone and speech prompts take the keyboard: the panel must not close under them.
@@ -509,6 +533,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
                 self?.refreshActivity(snap, force: true)
                 self?.refreshIdleFacts(snap, force: true)
                 self?.refreshSummaryEvidence(snap, force: true)
+                self?.refreshCopies(snap, force: true)
             }
             self?.rebuildModel()
         }
@@ -889,7 +914,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
         }
         guard !stale.isEmpty, !probingRoutes else { return }
         let sessions = snap.sessions.filter { stale.contains($0.sessionId) }
-        let projects = Dictionary(snap.pendingInterventions.map { ($0.sessionId, $0.projectName) }
+        // The route label names the folder; the card's title is what the person calls the session.
+        let projects = Dictionary(snap.pendingInterventions.map { ($0.sessionId, NowModel.folderName(of: $0)) }
                                   + working.map { ($0.sessionId, NowModel.projectName(of: $0)) }
                                   + idle.map { ($0.sessionId, NowModel.projectName(of: $0)) }, uniquingKeysWith: { a, _ in a })
         guard !sessions.isEmpty else { return }
@@ -913,6 +939,60 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUser
                 self.rebuildModel()
             }
         }
+    }
+
+    /// Pure. The cards' copies lines: a conversation open in more than one terminal, and whether "Close the other"
+    /// is offered (`closable`, by session id; unknown until probed means no button).
+    static func copiesByCard(_ sessions: [AgentSession], closable: [String: Bool]) -> [String: SessionCopies] {
+        var out: [String: SessionCopies] = [:]
+        for s in sessions where s.backend == .claude && s.copies >= 2 {
+            out[s.sessionId] = SessionCopies(count: s.copies, canCloseOther: closable[s.sessionId] ?? false)
+        }
+        return out
+    }
+
+    /// Which conversations can have their other terminal closed from the panel. Off main, only while the panel is up
+    /// and only for conversations with copies; read again every 30 s (it resolves where each copy runs).
+    private func refreshCopies(_ snap: Coordinator.Snapshot, force: Bool = false) {
+        guard force || nowPanel.isShown else { return }
+        // The panel is open: the names cmux and tmux hold are wanted too.
+        coordinator.noteNamesWanted()
+        let ids = Set(snap.sessions.filter { $0.backend == .claude && $0.copies >= 2 }.map(\.sessionId))
+        closableCopies = closableCopies.filter { ids.contains($0.key) }
+        let now = Date()
+        let stale = ids.filter { id in closableCopies[id].map { now.timeIntervalSince($0.at) > 30 } ?? true }
+        guard !stale.isEmpty, !probingCopies else { return }
+        probingCopies = true
+        probeQueue.async { [weak self] in
+            let found = self?.coordinator.closableCopies(sessionIds: Array(stale)) ?? [:]
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.probingCopies = false
+                let at = Date()
+                for id in stale { self.closableCopies[id] = (found[id] ?? false, at) }
+                self.rebuildModel()
+            }
+        }
+    }
+
+    /// "Close" in the panel's confirm: the other terminals close (or the line says why not).
+    private func closeOtherCopies(sessionId: String) {
+        let project = snapshotProject(sessionId)
+        coordinator.closeOtherCopies(sessionId: sessionId) { [weak self] outcome in
+            let line = SessionCopiesCopy.closeOutcome(project: project, outcome)
+            Logger.shared.log(line.text)
+            DispatchQueue.main.async {
+                self?.nowStore.notice = NowStore.Notice(text: line.text, failed: line.failed)
+                // Probed again at once: the line goes (or its button comes back) without waiting for 30 s.
+                self?.closableCopies[sessionId] = nil
+            }
+        }
+    }
+
+    /// What the card calls the session, for the status line.
+    private func snapshotProject(_ sessionId: String) -> String {
+        guard let s = lastSnapshot?.sessions.first(where: { $0.sessionId == sessionId }) else { return "workspace" }
+        return s.customName ?? NowModel.projectName(of: s)
     }
 
     /// What the idle cards show: each one's model, when its session began and what its last turn

@@ -237,15 +237,20 @@ enum TerminalClose {
     /// when a dismissal commits. Re-reads the live sessions and resolves the host
     /// again, then refuses when the session is gone, is not at its prompt, is a
     /// different process from the one dismissed (`expectedPid`), has had activity
-    /// since (`expectedSince`, its status time when the card was put away), shares its
-    /// id with another process, or the plan refuses. `io` is the live read in the app and
+    /// since (`expectedSince`, its status time when the card was put away), can't be
+    /// told from another process with its id (with several terminals open it is the
+    /// lead that is judged), or the plan refuses. `io` is the live read in the app and
     /// a fake in tests.
     static func close(sessionId: String, backend: AgentBackendID = .claude, expectedPid: Int32? = nil,
                       expectedSince: Date? = nil, io: TerminalCloseIO) -> TerminalCloseOutcome {
         guard backend == .claude else { return .refused(.codex) }
         let candidates = io.liveSessions().filter { $0.sessionId == sessionId }
         guard !candidates.isEmpty else { return .refused(.sessionGone) }
-        guard candidates.count == 1, let session = candidates.first else { return .refused(.ambiguous) }
+        // The conversation open in several terminals: closing acts on the lead, like everything else Page does there.
+        // Without a terminal copy, one process is still the only one that can be named.
+        guard let session = ConversationCopies.lead(of: candidates) ?? (candidates.count == 1 ? candidates.first : nil) else {
+            return .refused(.ambiguous)
+        }
         if let expectedPid, session.pid != expectedPid { return .refused(.restarted) }
         // Its status changed since the card was put away: it was used again in between, even if it is
         // at its prompt once more.

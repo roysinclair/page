@@ -315,16 +315,32 @@ enum InjectionExecutor {
     // MARK: target selection (pure, unit-tested)
 
     /// Picks the process to type into among the live processes hosting a
-    /// session. Exact matches first (the pid or state the page was raised
-    /// for); otherwise only an unambiguous terminal-attached process.
+    /// session. With the conversation open in several terminals that is the lead
+    /// (`ConversationCopies`), never a refusal. A page's own process counts only while
+    /// it is still the lead: a prompt answered in one copy must not be answered again
+    /// in another, so once the lead has moved the reply is refused.
     static func pickSession(_ candidates: [ClaudeLiveSession],
                             pagePid: Int32?,
                             pageStateStart: Date?) -> Result<ClaudeLiveSession, InjectionFailure> {
-        if let pagePid, let s = candidates.first(where: { $0.pid == pagePid }) { return .success(s) }
+        let copies = candidates.filter(ConversationCopies.isCopy)
+        let lead = ConversationCopies.lead(of: candidates)
+        let moved = Result<ClaudeLiveSession, InjectionFailure>.failure(InjectionFailure(ConversationCopies.movedMessage))
+        if let pagePid {
+            if let s = candidates.first(where: { $0.pid == pagePid }) {
+                if copies.count > 1, s.pid != lead?.pid { return moved }
+                return .success(s)
+            }
+            // The page's process is gone and several copies remain: which one the page meant can't be told.
+            // (With one or none left the fall-through below is unchanged: a restart still types into it.)
+            if copies.count > 1 { return moved }
+        }
         if let start = pageStateStart,
            let s = candidates.first(where: { c in c.statusUpdatedAt.map { abs($0.timeIntervalSince(start)) <= 1 } ?? false }) {
+            if copies.count > 1, s.pid != lead?.pid { return moved }
             return .success(s)
         }
+        if let lead { return .success(lead) }
+        // No process Page counts as a terminal (a `--print` run, a headless bridge): as before.
         let withTTY = candidates.filter { $0.tty != nil }
         if withTTY.count == 1 { return .success(withTTY[0]) }
         if withTTY.count > 1 {

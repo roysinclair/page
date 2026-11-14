@@ -65,11 +65,15 @@ extension NightWatchFixtures {
     /// One conversation open in two terminals (Designs/session-copies.md): "workspace" working, beside api-server
     /// working and two sessions at their prompt. Demo names only. Used by the popover-sessions-copies renders;
     /// no other scene carries a copy.
-    static func copiesScene(now: Date = boardNow()) -> NowInputs {
+    /// `renamed`: the name the person gave "workspace" (`/rename`, a cmux workspace): the card's title, the
+    /// folder staying on its second line.
+    static func copiesScene(now: Date = boardNow(), renamed: String? = nil) -> NowInputs {
         func at(_ minutes: Double) -> Date { now.addingTimeInterval(-minutes * 60) }
         func claude(_ name: String, state: AgentSessionState, active minutes: Double) -> AgentSession {
-            AgentSession(backend: .claude, sessionId: "sess-\(name)", cwd: "/Users/studio/projects/\(name)", title: nil,
-                         source: .terminal, state: state, lastActivityAt: at(minutes), activeFlags: [], supportsRemoteReply: true)
+            var s = AgentSession(backend: .claude, sessionId: "sess-\(name)", cwd: "/Users/studio/projects/\(name)", title: nil,
+                                 source: .terminal, state: state, lastActivityAt: at(minutes), activeFlags: [], supportsRemoteReply: true)
+            if name == "workspace" { s.customName = renamed }
+            return s
         }
         let sessions = [
             claude("workspace", state: .active, active: 1), claude("api-server", state: .active, active: 1),
@@ -136,14 +140,14 @@ extension RenderSurfaces {
 
     /// The copies scene's store: "workspace" is open in two terminals.
     @MainActor
-    private static func copiesStore(canCloseOther: Bool, confirm: Bool = false) -> NowStore {
-        let inputs = NightWatchFixtures.copiesScene()
+    private static func copiesStore(canCloseOther: Bool, confirm: Bool = false, renamed: String? = nil, copies: Bool = true) -> NowStore {
+        let inputs = NightWatchFixtures.copiesScene(renamed: renamed)
         let prefs = NowPrefs.ephemeral()
         prefs.tipDismissed = true
         let st = NowStore(model: NowModel.build(inputs), prefs: prefs)
         st.now = { inputs.now }
         st.bodyBudget = 1700
-        st.copies = ["sess-workspace": SessionCopies(count: 2, canCloseOther: canCloseOther)]
+        if copies { st.copies = ["sess-workspace": SessionCopies(count: 2, canCloseOther: canCloseOther)] }
         if confirm { st.copiesConfirm = "sess-workspace" }
         return st
     }
@@ -215,7 +219,10 @@ extension RenderSurfaces {
             // other copy busy, so the line stands alone.
             popover(copiesStore(canCloseOther: true), name: "popover-sessions-copies"),
             popover(copiesStore(canCloseOther: true, confirm: true), name: "popover-sessions-copies-confirm"),
-            popover(copiesStore(canCloseOther: false), name: "popover-sessions-copies-busy")
+            popover(copiesStore(canCloseOther: false), name: "popover-sessions-copies-busy"),
+            // A session the person renamed: its name is the card's title, the folder stays on the second line.
+            popover(copiesStore(canCloseOther: true, renamed: "Workspace-App"), name: "popover-sessions-copies-renamed"),
+            popover(copiesStore(canCloseOther: false, renamed: "Workspace-App", copies: false), name: "popover-sessions-renamed")
         ]
     }
 }

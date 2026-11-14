@@ -139,7 +139,8 @@ When it changes, the phone resets its `seq` tracking.
     "held": [ { "clientId": "<the input's clientId>", "text": "Then run the linter", "heldAt": "2026-10-24T12:00:00Z",
                 "state": "held" } ],
     "attach": "image" | "path",
-    "attachBlocker": "Page can't send photos to Codex yet"
+    "attachBlocker": "Page can't send photos to Codex yet",
+    "copies": 2
   } ] }
 ```
 
@@ -220,6 +221,24 @@ When it changes, the phone resets its `seq` tracking.
 - `attachBlocker` (optional): why a row Page Studio can type into takes no photos,
   e.g. "Page Studio can't send photos to Codex yet". Absent when `canType` is false
   (the `typeBlocker` already says why).
+- `copies` (optional): how many terminals on the Mac have this Claude conversation
+  open, an integer of 2 or more, present only when above 1 (a missing `copies`
+  is one terminal). Two Claude Code processes on one session id both write to its
+  transcript and each remembers only its own part, so the phone warns: a row's
+  small amber line ("Open in 2 terminals") and a notice in the room. The row
+  describes the one terminal Page Studio follows (the "lead": a prompt on screen,
+  then a turn running, then a finished turn with a shell going, then idle, then
+  the latest status change, the latest start, the highest pid); its `state`,
+  `preview`, `ask`, `canType` and `canHold` are that terminal's, and `input`
+  types into it. A reply to a page raised for another terminal is refused with
+  "This conversation moved to another terminal — check it on your Mac". Needs
+  no `caps` entry: phones that don't know the field ignore it.
+- `title`, for a Claude session, is the name the person gave it when there is one,
+  clipped to 200 characters: Claude Code's `/rename`, the cmux workspace's own name
+  (not an automatic one), or a tmux window they renamed; otherwise the folder's
+  name. `cwd` is always the folder, so a renamed session still shows where it runs.
+  Names travel only here and in pages, inside the encrypted session list, and a
+  rename shows within about 5 s while a phone is looking.
 - **Working-session fields** (all optional, only on a row whose `state` is
   `active`, each left out when the Mac doesn't know it; older phones ignore
   them, and a phone that finds none shows the card it can from `preview`):

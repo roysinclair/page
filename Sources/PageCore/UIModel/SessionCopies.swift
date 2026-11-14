@@ -22,4 +22,25 @@ enum SessionCopiesCopy {
     static let confirmDetail = "Claude there is idle. Its part of the conversation stays in the history."
     static let confirmCancel = "Cancel"
     static let confirmClose = "Close"
+
+    // The Mac notification, once per conversation when a second terminal appears. `name` is what the person calls
+    // the session: the name they gave it, else its folder.
+    static func notificationTitle(name: String, count: Int) -> String {
+        count == 2 ? "\(name) is open twice" : "\(name) is open in \(count) terminals"
+    }
+    static func notificationBody(count: Int) -> String {
+        "\(count == 2 ? "Two" : "\(count)") terminals are running the same Claude conversation. Each remembers only its own part. Close the one you’re not using."
+    }
+
+    /// The status line after "Close" in the confirm, and whether it is drawn amber.
+    static func closeOutcome(project: String, _ outcome: CopiesCloseOutcome) -> (text: String, failed: Bool) {
+        switch outcome {
+        case .closed(let count, _):
+            return (count == 1 ? "Closed the other \(project) terminal" : "Closed the other \(count) \(project) terminals", false)
+        case .refused(let why):
+            return ("Left the other \(project) terminal open: \(why.text)", true)
+        case .failed(let why):
+            return ("Didn't close the other \(project) terminal: \(why)", true)
+        }
+    }
 }

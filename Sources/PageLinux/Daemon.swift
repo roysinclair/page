@@ -213,6 +213,10 @@ final class PagedDaemon {
         coordinator.onBatteryNotice = { notice in
             notifier?.notify(title: notice.title, body: notice.body, identifier: "battery")
         }
+        coordinator.onCopiesAppeared = { notice in
+            notifier?.notify(title: SessionCopiesCopy.notificationTitle(name: notice.name, count: notice.count),
+                             body: SessionCopiesCopy.notificationBody(count: notice.count), identifier: "copies-\(notice.sessionId)")
+        }
 
         installSignals()
         coordinator.start()

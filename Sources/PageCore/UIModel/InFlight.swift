@@ -271,7 +271,8 @@ enum InFlightRows {
     static func build(_ s: Coordinator.Snapshot, hosts: [String: SessionHostInfo], activity: [String: String],
                       busySince: [String: Date] = [:], facts: [String: InFlightFacts] = [:], now: Date) -> [InFlightRow] {
         var rows: [InFlightRow] = s.sessions.filter { $0.state == .active }.map { a in
-            let project = NowModel.projectName(of: a)
+            let folder = NowModel.projectName(of: a)
+            let project = NowModel.displayName(of: a)
             let host = hosts[a.sessionId].map { SessionRemote.effectiveHost($0, backend: a.backend, state: a.state) }
             let f = facts[a.sessionId]
             let step = activity[a.sessionId] ?? f?.currentStep?.text
@@ -285,7 +286,7 @@ enum InFlightRows {
             return InFlightRow(
                 id: InFlightRow.idPrefix + a.sessionId, sessionId: a.sessionId, kind: .session, project: project,
                 backend: a.backend,
-                route: host.flatMap { TerminalFocus.routeLabel(host: $0.host, project: project) },
+                route: host.flatMap { TerminalFocus.routeLabel(host: $0.host, project: folder) },
                 doing: doing, since: since, elapsed: since.map { elapsed(since: $0, now: now) },
                 actions: .resolve(host: host), target: InFlightTarget(session: a),
                 card: .make(facts: known, backend: a.backend, stuckDetail: signals.stuck, rateLimitResetsAt: signals.rateLimit,
@@ -345,13 +346,14 @@ enum InFlightRows {
                     guard let h = host?.host, !["unknown", "desktop", "background", "VS Code"].contains(h) else { return nil }
                 }
             }
-            let project = NowModel.projectName(of: a)
+            let folder = NowModel.projectName(of: a)
+            let project = NowModel.displayName(of: a)
             let f = facts[a.sessionId]
             let card = InFlightCardInfo.makeIdle(facts: f, backend: a.backend, idleSince: a.lastActivityAt, now: now)
             let doing = card.lastTurn.map { InterventionDetector.clip($0, maxDoing) } ?? idleText
             return InFlightRow(
                 id: InFlightRow.idlePrefix + a.sessionId, sessionId: a.sessionId, kind: .session, project: project, backend: a.backend,
-                route: host.flatMap { TerminalFocus.routeLabel(host: $0.host, project: project) },
+                route: host.flatMap { TerminalFocus.routeLabel(host: $0.host, project: folder) },
                 doing: doing, since: a.lastActivityAt, elapsed: a.lastActivityAt.map { elapsed(since: $0, now: now) },
                 actions: .resolve(host: host), target: InFlightTarget(session: a), working: false, card: card)
         }
@@ -390,9 +392,21 @@ enum InFlightRows {
 }
 
 extension NowModel {
-    /// Pure. The name a working session goes by: its folder's project, else its title.
+    /// Pure. The folder a working session runs in: its project, else its title.
     static func projectName(of a: AgentSession) -> String {
         a.cwd.map { InterventionDetector.projectName(forCwd: $0, fallback: a.title) } ?? a.title ?? a.sessionId
+    }
+
+    /// Pure. What a card calls the session: the name the person gave it (`/rename`, a cmux workspace, a tmux
+    /// window), else its folder's project. The card's second line keeps the folder (`projectName(of:)`).
+    static func displayName(of a: AgentSession) -> String {
+        a.customName ?? projectName(of: a)
+    }
+
+    /// Pure. The folder a page's session runs in, for the route label: the page's `projectName` may be the name
+    /// the person gave the session.
+    static func folderName(of ev: InterventionEvent) -> String {
+        ev.cwd.isEmpty ? ev.projectName : InterventionDetector.projectName(forCwd: ev.cwd, fallback: nil)
     }
 }
 

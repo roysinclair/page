@@ -26,7 +26,8 @@ struct NWCopiesSlot: View {
     }
 }
 
-/// "⚠ Open in 2 terminals · close one" and, under it, [Close the other]. No button when Page Studio can't close the other.
+/// "⚠ Open in 2 terminals · close one" and, under it, [Close the other]. No button when Page Studio can't close the other,
+/// or while the confirm is open.
 struct NWCopiesLineView: View {
     var copies: SessionCopies
     var asking = false
@@ -46,16 +47,17 @@ struct NWCopiesLineView: View {
     }
 
     private var button: some View {
-        NWActionButton(title: SessionCopiesCopy.closeButton, emphasised: asking, help: SessionCopiesCopy.closeHelp) { onClose() }
+        NWActionButton(title: SessionCopiesCopy.closeButton, help: SessionCopiesCopy.closeHelp) { onClose() }
             .fixedSize()
     }
 
     var body: some View {
         // The sentence is the warning, so it is never cut or wrapped: the button goes on its own row under it,
-        // at the card's right edge like the editors' buttons.
+        // at the card's right edge like the editors' buttons. While its confirm is open the button goes: the
+        // confirm's own Close and Cancel are the only buttons then (the approved design, 2026-11-14).
         VStack(alignment: .leading, spacing: 7) {
             warning
-            if copies.canCloseOther {
+            if copies.canCloseOther && !asking {
                 HStack(spacing: 0) {
                     Spacer(minLength: 0)
                     button

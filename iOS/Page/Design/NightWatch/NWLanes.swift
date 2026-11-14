@@ -320,7 +320,9 @@ struct NWLanesScreen: View {
                             .scaleEffect(light.scale)
                     }
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(r.title).font(NightWatch.Typo.name).foregroundColor(NightWatch.Palette.textPrimary.color).lineLimit(1)
+                        // A long title (a renamed session) wraps onto a second line, then tail-truncates.
+                        Text(r.title).font(NightWatch.Typo.name).foregroundColor(NightWatch.Palette.textPrimary.color)
+                            .lineLimit(2).truncationMode(.tail).fixedSize(horizontal: false, vertical: true)
                         Text(NWSectionHeader.words(r.state.label)).font(NightWatch.Typo.captionStrong).foregroundColor(r.state.color.color)
                             .lineLimit(1)
                     }
@@ -328,7 +330,8 @@ struct NWLanesScreen: View {
                     NWActivityStrip(cells: r.strip)
                         .frame(height: 30)
                 }
-                .padding(.horizontal, 12).frame(minHeight: 60)
+                // The vertical padding only bites when the title wraps: a one-line row is shorter than 60 pt anyway.
+                .padding(.horizontal, 12).padding(.vertical, 8).frame(minHeight: 60)
                 // Open in more than one terminal: a small amber line under the title, aligned with it.
                 if let n = r.copies {
                     NWCopiesLine(copies: n).padding(.leading, 12 + 30 + 10).padding(.trailing, 12).padding(.bottom, 9).padding(.top, -6)

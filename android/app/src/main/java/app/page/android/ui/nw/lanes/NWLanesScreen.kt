@@ -412,7 +412,8 @@ private fun LaneRowView(r: LaneRow, actions: LanesScreenActions, power: PowerCon
                 }
             }
             Column(Modifier.width(100.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(r.title, style = NW.Typo.name, color = NW.Palette.textPrimary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                // A long title (a renamed session) wraps onto a second line, then ends in an ellipsis.
+                Text(r.title, style = NW.Typo.name, color = NW.Palette.textPrimary.color, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(SectionTitle.words(r.state.label), style = NW.Typo.captionStrong, color = r.state.color.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             ActivityStrip(r.strip, Modifier.weight(1f).height(30.dp))

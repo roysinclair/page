@@ -142,6 +142,11 @@ data class LiveSession(
      * (and, once a `list` is decoded, whenever the Mac's caps don't say `budget-v1`: [BudgetWire.gated]).
      */
     val budget: SessionBudget? = null,
+    /**
+     * How many live terminals have this conversation open (Designs/session-copies.md); null when one, or when the Mac
+     * does not say. Only ever 2 or more.
+     */
+    val copies: Int? = null,
 ) {
     val hostLabel: String
         get() {
@@ -205,9 +210,21 @@ data class LiveSession(
                 attachBlocker = c.str("attachBlocker")?.trim()?.takeIf { it.isNotEmpty() }?.capped(200),
                 // A row's budget that doesn't read is no budget, never a failed list.
                 budget = SessionBudget.decode(c["budget"]),
+                // Present only above 1. Anything else (absent, 1, junk) is one terminal.
+                copies = c.int("copies")?.takeIf { it >= 2 }?.coerceAtMost(99),
             )
         }
     }
+}
+
+/** What the phone says about a conversation open in more than one terminal (Designs/session-copies.md). */
+object SessionCopiesCopy {
+    /** Under the title in Lanes: "Open in 2 terminals". */
+    fun line(n: Int): String = "Open in $n terminals"
+
+    /** The room's notice: the bold lead, and the rest. */
+    fun roomTitle(n: Int): String = "Open in $n terminals on your Mac."
+    const val ROOM_MESSAGE = "Both write to this conversation and each remembers only its own part. Close the one you’re not using. Messages from here go to the one that’s working."
 }
 
 data class SessionSection(val group: SessionGroup, val sessions: List<LiveSession>)

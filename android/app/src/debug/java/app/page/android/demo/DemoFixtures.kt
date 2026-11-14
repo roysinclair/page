@@ -109,6 +109,18 @@ object DemoFixtures {
         s("w5", "web", "bottle-flip", LiveSessionState.ACTIVE, host = "Ghostty", ago = 31, preview = "npm run build"),
     )
 
+    /**
+     * A small fleet of generic demo projects, one of them open in two terminals (Designs/session-copies.md): the lanes-copies
+     * render only, so no other screen's list carries `copies`. The "workspace" session carries a name the person gave it.
+     */
+    val copiesSessions: List<LiveSession> = listOf(
+        s("cp-api", "api-server", "api-server", LiveSessionState.ACTIVE, host = "tmux", ago = 25, preview = "npm run build"),
+        s("cp-workspace", "Workspace-App", "workspace", LiveSessionState.ACTIVE, ago = 9, preview = "[Bash] swift test · 212 passed").copy(copies = 2),
+        s("cp-docs", "docs-site", "docs-site", LiveSessionState.IDLE, ago = 1_200),
+        s("cp-mobile", "mobile-app", "mobile-app", LiveSessionState.IDLE, ago = 3_000),
+        s("cp-data", "data-pipeline", "data-pipeline", LiveSessionState.IDLE, host = "tmux", ago = 7_400),
+    )
+
     /** A full fleet: 17 sessions over 11 projects, long names, several that need you, one stuck. */
     val crowdedSessions: List<LiveSession> = sessions + listOf(
         s("c1", "deploy", "relay-worker-edge-router-service", LiveSessionState.WAITING_ON_APPROVAL, ago = 90, preview = "wrangler deploy --env production"),

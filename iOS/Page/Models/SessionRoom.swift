@@ -504,6 +504,15 @@ struct RoomBanner: Equatable, Identifiable {
         }
         return []
     }
+
+    /// The conversation is open in more than one terminal on the Mac (Designs/session-copies.md): an amber notice
+    /// under the header, after whatever else the room has to say. nil for one terminal, and for an ended session.
+    static func copies(of session: LiveSession, ended: Bool) -> RoomBanner? {
+        guard !ended, let n = session.copies, n >= 2 else { return nil }
+        return RoomBanner(id: "copies", tone: .warning, symbol: "rectangle.on.rectangle",
+                          title: SessionCopiesCopy.roomTitle(n), message: SessionCopiesCopy.roomMessage,
+                          actionTitle: nil, action: nil)
+    }
 }
 
 // MARK: - Screen

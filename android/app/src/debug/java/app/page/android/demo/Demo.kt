@@ -75,12 +75,12 @@ object Demo {
         "decision-review", "decision-yesno", "decision-plan", "decision-standing", "decision-unknown", "decision-composer", "decision-delivered",
         "decision-failed", "decision-tip",
         "hold-stop", "stop-confirm", "stop-result", "stop-none",
-        "lanes", "lanes-crowded", "lanes-empty", "lanes-problem", "lanes-paused",
+        "lanes", "lanes-crowded", "lanes-empty", "lanes-problem", "lanes-paused", "lanes-copies",
         "tower", "tower-budget", "tower-budget-projects", "tower-budget-measuring", "tower-glow", "tower-terminals", "tower-gestures",
         "budget-sheet", "budget-sheet-session", "budget-sheet-default", "budget-sheet-offline", "now-budget", "now-budget-arming", "now-budget-flight", "now-budget-measuring", "decision-budget", "decision-budget-warning", "room-budget", "room-budget-measuring",
         "dispatch", "dispatch-sending", "dispatch-off",
         // Voice input: the mic and the line above the box, held at one phase (Designs/voice-input.md).
-        "room-voice", "room-voice-listening", "room-voice-server", "room-voice-download", "room-voice-denied", "room-voice-off",
+        "room-voice", "room-voice-listening", "room-voice-server", "room-voice-download", "room-voice-denied", "room-voice-off", "room-copies",
         "decision-review-voice", "dispatch-voice",
         // (Not captured: `room-voice-live` is the room with the real dictation controller, for trying the mic on an emulator or a phone.)
         "runway", "settled", "gallery", "glow-compare",
@@ -317,6 +317,7 @@ object Demo {
     private fun sessionsFor(screen: String): List<LiveSession> = when {
         screen == "lanes-empty" || screen == "stop-none" -> emptyList()
         screen == "lanes-crowded" -> DemoFixtures.crowdedSessions
+        screen == "lanes-copies" -> DemoFixtures.copiesSessions
         screen in setOf("now-quiet", "now-brief-quiet", "now-working") -> DemoFixtures.sessions.filter { it.state != LiveSessionState.WAITING_ON_APPROVAL }
         // Truly quiet: nothing running and nothing waiting, so the Horizon draws the quiet sky (now-quiet keeps its working sessions).
         screen == "now-still" -> DemoFixtures.sessions.filter { it.state != LiveSessionState.ACTIVE && it.state != LiveSessionState.WAITING_ON_APPROVAL }

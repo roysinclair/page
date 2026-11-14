@@ -78,6 +78,14 @@ final class NowStore: ObservableObject {
     @Published var swipe: Swipe?
     /// Bumped when a card group's scroller measures itself, so the panel fits its window again.
     @Published private(set) var layoutToken = 0
+    /// Conversations open in more than one terminal, by session id (Designs/session-copies.md). Set by the
+    /// logic that finds the copies; a session with no entry has one terminal.
+    @Published var copies: [String: SessionCopies] = [:]
+    /// The session whose "Close the other" is asking first (its confirm is open in the card).
+    @Published var copiesConfirm: String?
+    /// "Close" in that confirm, with the session id. A no-op for now: the logic that closes the other
+    /// terminal(s) wires it.
+    var onCloseOtherCopies: (_ sessionId: String) -> Void = { _ in }
     /// "Also close its terminal" is on (Preferences ▸ Terminals): the words and colours say so.
     @Published var dismissClosesTerminal = false
     /// Dismissals whose five seconds are over: still kept out until the Mac's ledger says so.
@@ -85,6 +93,15 @@ final class NowStore: ObservableObject {
     /// The card under the pointer (not published: moving over cards redraws nothing). The
     /// panel's scroll monitor swipes it when it can be dismissed.
     var hoveredCard: String?
+
+    /// "Close the other" tapped: ask first.
+    func askCloseOtherCopies(sessionId: String) { copiesConfirm = sessionId }
+    func cancelCloseOtherCopies() { copiesConfirm = nil }
+    func confirmCloseOtherCopies() {
+        guard let id = copiesConfirm else { return }
+        copiesConfirm = nil
+        onCloseOtherCopies(id)
+    }
 
     /// A card being swiped, by row id, and how far it has moved (either direction).
     struct Swipe: Equatable {

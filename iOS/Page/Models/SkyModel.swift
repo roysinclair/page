@@ -112,6 +112,8 @@ struct SkyStar: Equatable, Identifiable {
     let canType: Bool
     /// Seed for the star's own shape.
     let seed: UInt64
+    /// Open in this many terminals (2 or more); nil when one.
+    var copies: Int? = nil
 }
 
 struct Constellation: Equatable, Identifiable {
@@ -194,7 +196,7 @@ struct SkyModel: Equatable {
                 stars.append(SkyStar(
                     id: s.id, title: s.title, state: state,
                     lastAction: clip(s.preview, 28), interventionId: s.openPageId, agent: s.backend.displayName,
-                    canType: s.canType, seed: StableHash.fnv1a(s.cwd.isEmpty ? s.id : s.cwd + "|" + s.id)))
+                    canType: s.canType, seed: StableHash.fnv1a(s.cwd.isEmpty ? s.id : s.cwd + "|" + s.id), copies: s.copies))
             }
             let name = projectName(cwd: key, fallback: key)
             out.append(Constellation(key: key, name: name, hue: ProjectHue(key: key), stars: stars))
@@ -223,6 +225,8 @@ struct LaneRow: Equatable, Identifiable {
     let agent: String
     let seed: UInt64
     let lastAction: String
+    /// Open in this many terminals (2 or more); nil when one.
+    var copies: Int? = nil
 }
 
 struct LaneGroup: Equatable, Identifiable {
@@ -250,7 +254,7 @@ struct LanesModel: Equatable {
             for s in c.stars {
                 let strip = log.strip(for: s.id, now: now, hours: hours, current: s.state)
                 rows.append(LaneRow(id: s.id, title: s.title, state: s.state, strip: strip, interventionId: s.interventionId,
-                                    agent: s.agent, seed: s.seed, lastAction: s.lastAction))
+                                    agent: s.agent, seed: s.seed, lastAction: s.lastAction, copies: s.copies))
             }
             rows.sort(by: laneOrder)
             groups.append(LaneGroup(key: c.key, name: c.name, hue: c.hue, rows: rows))

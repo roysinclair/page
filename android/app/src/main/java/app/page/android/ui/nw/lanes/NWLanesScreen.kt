@@ -62,6 +62,7 @@ import app.page.android.model.DuskDawnLog
 import app.page.android.model.LaneGroup
 import app.page.android.model.LaneRow
 import app.page.android.model.LanesModel
+import app.page.android.model.SessionCopiesCopy
 import app.page.android.model.NowModel
 import app.page.android.model.NowBanner
 import app.page.android.model.SessionAvailabilityCopy
@@ -391,27 +392,38 @@ private fun Group(g: LaneGroup, actions: LanesScreenActions, power: PowerContext
 
 @Composable
 private fun LaneRowView(r: LaneRow, actions: LanesScreenActions, power: PowerContext) {
-    Row(
-        Modifier.fillMaxWidth().heightIn(min = 60.dp)
+    Column(
+        Modifier.fillMaxWidth()
             .clickable(role = Role.Button, onClickLabel = if (r.interventionId != null) "Opens the decision" else "Opens the session") { actions.openRow(r) }
-            .padding(horizontal = 12.dp)
             .semantics(mergeDescendants = true) {
-                contentDescription = "${r.title}, ${r.state.label.lowercase()}, ${r.agent}" + (if (r.lastAction.isEmpty()) "" else ", ${r.lastAction}")
+                contentDescription = "${r.title}, ${r.state.label.lowercase()}, ${r.agent}" + (if (r.lastAction.isEmpty()) "" else ", ${r.lastAction}") +
+                    (r.copies?.let { ", ${SessionCopiesCopy.line(it).lowercase()}" } ?: "")
             },
-        horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically,
     ) {
-        // In the power story the glyph exhales and dims with the pause, and relights at its own resume.
-        NWAnimated(fps = 20.0, active = power.moving) { _ ->
-            val (light, scale) = power.story.starLight(r.id, r.state, power.now, power.pin)
-            Box(Modifier.graphicsLayer { scaleX = scale.toFloat(); scaleY = scale.toFloat() }) {
-                NWStarGlyph(r.seed, r.state.color, size = 30.dp, brightness = light)
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = 60.dp).padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // In the power story the glyph exhales and dims with the pause, and relights at its own resume.
+            NWAnimated(fps = 20.0, active = power.moving) { _ ->
+                val (light, scale) = power.story.starLight(r.id, r.state, power.now, power.pin)
+                Box(Modifier.graphicsLayer { scaleX = scale.toFloat(); scaleY = scale.toFloat() }) {
+                    NWStarGlyph(r.seed, r.state.color, size = 30.dp, brightness = light)
+                }
             }
+            Column(Modifier.width(100.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(r.title, style = NW.Typo.name, color = NW.Palette.textPrimary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(SectionTitle.words(r.state.label), style = NW.Typo.captionStrong, color = r.state.color.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            ActivityStrip(r.strip, Modifier.weight(1f).height(30.dp))
         }
-        Column(Modifier.width(100.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(r.title, style = NW.Typo.name, color = NW.Palette.textPrimary.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(SectionTitle.words(r.state.label), style = NW.Typo.captionStrong, color = r.state.color.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        // Open in more than one terminal: a small amber line under the title, aligned with it.
+        r.copies?.let { n ->
+            Text(
+                SessionCopiesCopy.line(n), style = NW.Typo.captionStrong, color = NW.Palette.amber.color, maxLines = 1,
+                modifier = Modifier.padding(start = 12.dp + 30.dp + 10.dp, end = 12.dp, bottom = 9.dp).offset(y = (-6).dp),
+            )
         }
-        ActivityStrip(r.strip, Modifier.weight(1f).height(30.dp))
     }
 }
 

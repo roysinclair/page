@@ -116,6 +116,8 @@ data class SkyStar(
     val canType: Boolean,
     /** Seed for the star's own shape. */
     val seed: ULong,
+    /** Open in this many terminals (2 or more); null when one. */
+    val copies: Int? = null,
 )
 
 data class Constellation(
@@ -208,6 +210,7 @@ data class SkyModel(
                             id = s.id, title = s.title, state = state,
                             lastAction = clip(s.preview, 28), interventionId = s.openPageId, agent = s.backend.displayName,
                             canType = s.canType, seed = StableHash.fnv1a(if (s.cwd.isEmpty()) s.id else s.cwd + "|" + s.id),
+                            copies = s.copies,
                         ),
                     )
                 }
@@ -237,6 +240,8 @@ data class LaneRow(
     val agent: String,
     val seed: ULong,
     val lastAction: String,
+    /** Open in this many terminals (2 or more); null when one. */
+    val copies: Int? = null,
 )
 
 data class LaneGroup(
@@ -264,7 +269,7 @@ data class LanesModel(
                 val rows = ArrayList<LaneRow>()
                 for (s in c.stars) {
                     val strip = log.strip(s.id, now, hours, s.state)
-                    rows.add(LaneRow(s.id, s.title, s.state, strip, s.interventionId, s.agent, s.seed, s.lastAction))
+                    rows.add(LaneRow(s.id, s.title, s.state, strip, s.interventionId, s.agent, s.seed, s.lastAction, s.copies))
                 }
                 rows.sortWith(::laneOrder)
                 groups.add(LaneGroup(c.key, c.name, c.hue, rows))

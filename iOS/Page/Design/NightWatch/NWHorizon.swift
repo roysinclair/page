@@ -40,6 +40,8 @@ struct NWHorizon: View {
     @State private var dawnAt: Double?
     /// The palette the sky was on when it started changing.
     @State private var fromPalette: NightWatch.AuroraPalette?
+    /// The Horizon is in sight in the Now scroll view; scrolled away, its sky and orb hold their last frame.
+    @State private var visible = true
 
     private var orbSize: CGFloat { min(150, max(96, height - 112)) }
     private var pulseModel: PulseModel { model ?? pulse.defaultModel }
@@ -49,10 +51,10 @@ struct NWHorizon: View {
     var body: some View {
         ZStack(alignment: .top) {
             // A pause that has settled is a still night: no clock.
-            NWAnimated(active: !(isDusk && duskAt == nil)) { t in sky(t) }
+            NWAnimated(active: !(isDusk && duskAt == nil), holding: !visible) { t in sky(t) }
             VStack(spacing: 6) {
                 // The orb shrinks with a short Horizon so the headline never rides over it.
-                NWAnimated(fps: orbFPS, active: orbActive) { t in orb(t) }
+                NWAnimated(fps: orbFPS, active: orbActive, holding: !visible) { t in orb(t) }
                     .frame(width: orbSize, height: orbSize)
                     .padding(.top, topInset + 38)
                 Spacer(minLength: 0)
@@ -75,6 +77,7 @@ struct NWHorizon: View {
         }
         .frame(height: height + topInset)
         .clipped()
+        .modifier(NWOnScreen(visible: $visible))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("\(headline). \(subline)"))
         .accessibilityAddTraits(.isHeader)
@@ -236,7 +239,8 @@ struct NWHorizon: View {
                            startPoint: .top, endPoint: .bottom)
             // The watch's own scene, in the sky's colours of the moment (so it falls to dusk and
             // rises to dawn with them): mountains against the aurora, a still lake below.
-            NWNightScene(palette: pal, orbY: topInset + 38 + orbSize / 2)
+            // Equatable: with the sky settled it is the same picture every tick, so it is not drawn again.
+            NWNightScene(palette: pal, orbY: topInset + 38 + orbSize / 2).equatable()
             // Over the fade, so the line holds at full strength (it is all a paused sky shows).
             NWHorizonBand(opacity: band)
                 .offset(y: bandY - 6)
@@ -290,7 +294,7 @@ struct NWHorizon: View {
 /// lake below that mirrors the near range, with a thread of light along the
 /// waterline. Drawn from the sky's own colours, so it follows the mood and the
 /// hour; still (the aurora above it moves), and it holds no words.
-struct NWNightScene: View {
+struct NWNightScene: View, Equatable {
     var palette: NightWatch.AuroraPalette
     /// The pulse's centre, from the top of the Horizon.
     var orbY: CGFloat

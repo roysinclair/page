@@ -1441,3 +1441,27 @@ enum TerminalTone: Equatable {
         }
     }
 }
+
+/// The terminal mirror's per-line work, done once per change of the lines or the runs rather than on every redraw
+/// of the room (every 2 s, for its clocks): the tone of each line (`TerminalTone.classify`) and the workflow each
+/// footer row names (`TerminalRunLinks.match`). A reference type, held in the view's `@State`.
+final class TerminalLineCache {
+    private var lines: [String]?
+    private var runs: [WorkflowRun] = []
+    private var links: [Int: WorkflowRun] = [:]
+    private var tones: [TerminalTone] = []
+    /// How many times the lines were classified, for the tests.
+    private(set) var computations = 0
+
+    func resolve(lines: [String], runs: [WorkflowRun]) -> (links: [Int: WorkflowRun], tones: [TerminalTone]) {
+        if self.lines != lines || self.runs != runs {
+            let links = TerminalRunLinks.match(lines: lines, runs: runs)
+            tones = lines.enumerated().map { i, line in links[i] == nil ? TerminalTone.classify(line) : .footer }
+            self.links = links
+            self.lines = lines
+            self.runs = runs
+            computations += 1
+        }
+        return (links, tones)
+    }
+}

@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -148,12 +149,21 @@ object NowStore {
 
     private data class C(val frozen: Boolean, val release: Int, val now: Instant, val away: AwayStore.State, val notif: NotificationAccess.Authorization, val expanded: Boolean)
 
+    /**
+     * [SessionStore.state] as far as the Now model reads it: the sessions, whether a list has come, when, and the workflows.
+     * A terminal or transcript frame changes none of those, so it no longer rebuilds the whole screen (the model, the
+     * reversibility regexes and all) on every frame while a room is open.
+     */
+    private val sessionInputs = SessionStore.state.distinctUntilChanged { x, y ->
+        x.sessions == y.sessions && x.hasList == y.hasList && x.lastListAt == y.lastListAt && x.workflows == y.workflows
+    }
+
     private val a = combine(
         RelayClient.inbox, RelayClient.history, RelayClient.macStatus, RelayClient.deliveries, RelayClient.deliveryTimes,
     ) { inbox, history, status, deliveries, times -> A(inbox, history, status, deliveries, times) }
 
     private val b = combine(
-        RelayClient.inboxLoad, RelayClient.connection, RelayClient.authRejected, RelayClient.retiredWhy, SessionStore.state,
+        RelayClient.inboxLoad, RelayClient.connection, RelayClient.authRejected, RelayClient.retiredWhy, sessionInputs,
     ) { load, conn, auth, retired, sessions -> B(load, conn, auth, retired, sessions, null) }
 
     private val ui = combine(_frozen, _release, _inFlightExpanded) { frozen, release, expanded -> Triple(frozen, release, expanded) }
@@ -256,7 +266,7 @@ object NowStore {
             }
         }
         scope.launch {
-            combine(SessionStore.state, RelayClient.inbox) { s, inbox -> Pair(s, inbox) }.collect { (s, inbox) ->
+            combine(sessionInputs, RelayClient.inbox) { s, inbox -> Pair(s, inbox) }.collect { (s, inbox) ->
                 val paused = inbox.any { it.kind == InterventionKind.IDLE && it.subtype == "low_battery" }
                 ActivityStore.observe(s.sessions, inbox, paused)
                 ActivityStore.observePower(paused, s.sessions)

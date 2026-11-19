@@ -61,13 +61,33 @@ object SessionCrypto {
      */
     fun validRootKey(data: ByteArray?): ByteArray? = data?.takeIf { it.size == KEY_LENGTH }
 
-    /** HKDF-SHA256(ikm: root, salt: "page-sessions-v1", info: direction, 32 bytes). */
-    fun subkey(root: ByteArray, direction: Direction): ByteArray {
+    /** HKDF-SHA256(ikm: root, salt: "page-sessions-v1", info: direction, 32 bytes). A fresh array each call; derived once per key ([subkeySpec]). */
+    fun subkey(root: ByteArray, direction: Direction): ByteArray = hkdf(root, direction)
+
+    private fun hkdf(root: ByteArray, direction: Direction): ByteArray {
         // Extract: PRK = HMAC(salt, IKM).
         val prk = hmac(SALT, root)
         // Expand: one block is enough for 32 bytes. T(1) = HMAC(PRK, info || 0x01).
         val info = direction.info.toByteArray(Charsets.UTF_8)
         return hmac(prk, info + byteArrayOf(1)).copyOf(KEY_LENGTH)
+    }
+
+    /** A derived key and the root it came from (a private copy, compared by content). */
+    private class Derived(val root: ByteArray, val spec: SecretKeySpec)
+
+    /** The last key derived for each direction: a pairing has one root key for its whole life, so this is one HKDF per run, not two HMACs per frame. */
+    private val derived = arrayOfNulls<Derived>(Direction.entries.size)
+
+    /**
+     * The AES key for [direction] under [root], derived on the first use and kept while [root] stays the same (a new
+     * pairing's key replaces it). Any thread; frames decrypt on a worker.
+     */
+    internal fun subkeySpec(root: ByteArray, direction: Direction): SecretKeySpec {
+        val slot = direction.ordinal
+        synchronized(derived) { derived[slot] }?.let { if (it.root.contentEquals(root)) return it.spec }
+        val spec = SecretKeySpec(hkdf(root, direction), "AES")
+        synchronized(derived) { derived[slot] = Derived(root.copyOf(), spec) }
+        return spec
     }
 
     private fun hmac(key: ByteArray, data: ByteArray): ByteArray {
@@ -123,7 +143,7 @@ object SessionCrypto {
         // A fresh Cipher every time: GCM refuses to reuse a key + IV pair on
         // one instance, and instances aren't thread-safe anyway.
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(subkey(root, direction), "AES"), GCMParameterSpec(TAG_LENGTH * 8, nonce))
+        cipher.init(Cipher.ENCRYPT_MODE, subkeySpec(root, direction), GCMParameterSpec(TAG_LENGTH * 8, nonce))
         cipher.updateAAD(aad.toByteArray(Charsets.UTF_8))
         return Envelope(nonce, cipher.doFinal(plaintext))
     }
@@ -136,7 +156,7 @@ object SessionCrypto {
         if (envelope.sealed.size < TAG_LENGTH || envelope.nonce.size != NONCE_LENGTH) return null
         return try {
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-            cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(subkey(root, direction), "AES"), GCMParameterSpec(TAG_LENGTH * 8, envelope.nonce))
+            cipher.init(Cipher.DECRYPT_MODE, subkeySpec(root, direction), GCMParameterSpec(TAG_LENGTH * 8, envelope.nonce))
             cipher.updateAAD(aad.toByteArray(Charsets.UTF_8))
             cipher.doFinal(envelope.sealed)
         } catch (_: Exception) {

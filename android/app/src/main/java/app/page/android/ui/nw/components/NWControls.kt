@@ -231,7 +231,8 @@ fun NWButton(
                 val r = NW.Radius.button.toPx()
                 // A translucent body keeps its glow outside itself, or the glow would tint the fill.
                 val p = press.value
-                drawSoftGlow(look.glow, blur = (12f - 8f * p).dp.toPx(), dy = (6f - 4f * p).dp.toPx(), corner = r, outsideOnly = look.translucent)
+                // The press moves the glow's blur and drop every frame for 120 ms: only the resting and the pressed glows are bitmaps.
+                drawSoftGlow(look.glow, blur = (12f - 8f * p).dp.toPx(), dy = (6f - 4f * p).dp.toPx(), corner = r, outsideOnly = look.translucent, cache = p == 0f || p == 1f)
                 drawRoundRect(look.body(), cornerRadius = CornerRadius(r))
                 drawRoundRect(Brush.verticalGradient(0f to Color.White.copy(alpha = look.sheen), 0.55f to Color.White.copy(alpha = 0f)), cornerRadius = CornerRadius(r))
                 strokeBorder(Brush.verticalGradient(listOf(look.rimTop, look.border)), r)

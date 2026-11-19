@@ -13,11 +13,15 @@ struct NWAnimated<Content: View>: View {
     @Environment(\.scenePhase) private var scenePhase
     var fps: Double
     var active: Bool
+    /// Hold the last frame (nobody can see it: scrolled out of sight). Unlike `active: false`, which draws the
+    /// still frame, this keeps what was on screen, and the clock picks up again on the real time when it clears.
+    var holding: Bool
     var content: (Double) -> Content
 
-    init(fps: Double = 30, active: Bool = true, @ViewBuilder content: @escaping (Double) -> Content) {
+    init(fps: Double = 30, active: Bool = true, holding: Bool = false, @ViewBuilder content: @escaping (Double) -> Content) {
         self.fps = fps
         self.active = active
+        self.holding = holding
         self.content = content
     }
 
@@ -25,7 +29,7 @@ struct NWAnimated<Content: View>: View {
         if reduceMotion || fixed != nil || !active {
             content(fixed ?? 2.0)
         } else {
-            TimelineView(.animation(minimumInterval: 1.0 / max(1, min(fps, 30)), paused: covered || scenePhase != .active)) { tl in
+            TimelineView(.animation(minimumInterval: 1.0 / max(1, min(fps, 30)), paused: covered || holding || scenePhase != .active)) { tl in
                 content(tl.date.timeIntervalSinceReferenceDate)
             }
         }

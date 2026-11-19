@@ -68,6 +68,8 @@ import app.page.android.model.NowModel
 import app.page.android.model.NowMotion
 import app.page.android.model.PulseModel
 import app.page.android.ui.nw.components.NWAnimated
+import app.page.android.ui.nw.components.NWClocked
+import androidx.compose.ui.graphics.graphicsLayer
 import app.page.android.ui.nw.components.NWRollingWords
 import app.page.android.ui.nw.components.rememberNowChange
 import app.page.android.ui.nw.components.rememberNowClock
@@ -249,7 +251,14 @@ fun NWHorizon(
             },
     ) {
         // A pause that has settled is a still night: no clock.
-        NWAnimated(active = !(isDusk && duskAt == null) && pin.pinned(NWMotionPin.Kind.DUSK) == null) { t ->
+        NWClocked(active = !(isDusk && duskAt == null) && pin.pinned(NWMotionPin.Kind.DUSK) == null) { clock ->
+            // The sky is drawn from the clock (the aurora reads it in its draw lambda, in a layer of its own), so a tick redraws
+            // that layer and recomposes nothing. Only while one of the one-shots plays (the exhale, the dusk, the dawn) is
+            // the palette itself a function of the time: then the clock is read here too, and the tick recomposes, as before.
+            @Suppress("UNUSED_EXPRESSION")
+            if (exhaleAt != null || duskAt != null || dawnAt != null || pin.pinned(NWMotionPin.Kind.EXHALE) != null ||
+                pin.pinned(NWMotionPin.Kind.DUSK) != null || pin.pinned(NWMotionPin.Kind.DAWN) != null
+            ) clock.value
             var pal = palette
             var stars = daypart.stars
             var band = 0.0
@@ -281,7 +290,7 @@ fun NWHorizon(
                 }
             }
             Box(Modifier.fillMaxSize()) {
-                NWLivingAurora(pal, t, Modifier.fillMaxSize(), stars = stars)
+                NWLivingAurora(pal, { clock.value }, Modifier.fillMaxSize().graphicsLayer { }, stars = stars)
                 dawn?.let { d -> NWDawnLight(d.sweep, d.warmth, Modifier.fillMaxWidth().height(bandY)) }
                 // Fade into the page.
                 Box(

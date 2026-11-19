@@ -158,12 +158,82 @@ struct GlyphDrawing: Equatable {
 
 /// Draws a `GlyphDrawing` into a coloured (never template) `NSImage` for the
 /// status item.
+///
+/// The status item image is made of bitmap reps (1x and 2x) rendered once per
+/// distinct drawing, not a drawing handler: AppKit re-runs a handler for the
+/// button and for every menu-bar replicant on every update, which was nearly
+/// all of the app's idle CPU. Every colour in the drawing is an explicit sRGB
+/// value chosen from the menu-bar appearance (see `GlyphDrawing.colors`), so
+/// the pixels do not depend on the drawing appearance; a change of appearance
+/// arrives as a different `GlyphDrawing` and so as a different image.
 enum StatusGlyphRenderer {
     static let height: CGFloat = 18
+    /// Backing scales rendered for the status item (Mac displays are 1x or 2x).
+    static let backingScales: [Int] = [1, 2]
+    /// Distinct drawings kept (a breath cycle is 24 phases, a few states each).
+    static let cacheCapacity = 64
 
-    /// `scale` enlarges the same vector drawing (for the harness's close-ups);
-    /// the status item uses 1.
+    private static let cache = NSLock()
+    private static var cached: [(drawing: GlyphDrawing, image: NSImage)] = []
+
+    /// `scale` enlarges the same vector drawing (for the harness's close-ups,
+    /// which keep the vector path); the status item uses 1 and gets bitmap reps.
     static func image(_ d: GlyphDrawing, scale: CGFloat = 1) -> NSImage {
+        guard scale == 1 else { return vectorImage(d, scale: scale) }
+        cache.lock()
+        defer { cache.unlock() }
+        if let i = cached.firstIndex(where: { $0.drawing == d }) {
+            let hit = cached.remove(at: i)
+            cached.append(hit)   // most recently used goes last
+            return hit.image
+        }
+        let image = bitmapImage(d)
+        cached.append((d, image))
+        if cached.count > cacheCapacity { cached.removeFirst(cached.count - cacheCapacity) }
+        return image
+    }
+
+    /// Test hook.
+    static func clearCache() {
+        cache.lock(); cached.removeAll(); cache.unlock()
+    }
+
+    /// The glyph as an image backed by pre-rendered bitmap reps.
+    static func bitmapImage(_ d: GlyphDrawing) -> NSImage {
+        let size = NSSize(width: CGFloat(d.width), height: height)
+        let image = NSImage(size: size)
+        for s in backingScales {
+            if let rep = bitmapRep(d, size: size, scale: s) { image.addRepresentation(rep) }
+        }
+        if image.representations.isEmpty { return vectorImage(d, scale: 1) }
+        image.isTemplate = false
+        image.accessibilityDescription = "Page Studio"
+        return image
+    }
+
+    private static func bitmapRep(_ d: GlyphDrawing, size: NSSize, scale: Int) -> NSBitmapImageRep? {
+        let w = Int((size.width * CGFloat(scale)).rounded(.up))
+        let h = Int((size.height * CGFloat(scale)).rounded(.up))
+        guard let raw = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: w, pixelsHigh: h,
+                                         bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                         colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 32),
+              let rep = raw.retagging(with: .sRGB),
+              let ctx = NSGraphicsContext(bitmapImageRep: rep) else { return nil }
+        rep.size = size   // points; the pixel size gives the 1x/2x scale
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = ctx
+        let t = NSAffineTransform()
+        t.scale(by: CGFloat(scale))   // uniform: a half-point width rounds its last pixel up
+        t.concat()
+        draw(d, in: size)
+        ctx.flushGraphics()
+        NSGraphicsContext.restoreGraphicsState()
+        return rep
+    }
+
+    /// The original drawing-handler image (re-draws on every use). Kept for the
+    /// harness close-ups and as the reference the bitmap is tested against.
+    static func vectorImage(_ d: GlyphDrawing, scale: CGFloat = 1) -> NSImage {
         let size = NSSize(width: CGFloat(d.width), height: height)
         let image = NSImage(size: NSSize(width: size.width * scale, height: size.height * scale), flipped: false) { _ in
             let t = NSAffineTransform()
@@ -322,9 +392,16 @@ final class GlyphAnimator {
     private var lastDrawing: GlyphDrawing?
     private let reduceMotion: () -> Bool
     private var started = false
-    /// The screen is asleep or the session is not the active one.
-    private var suspended = false
+    /// Why the glyph is not ticking. Independent reasons, so waking the screen
+    /// does not restart the timer while the session is still locked.
+    enum SuspendReason: Hashable { case screensAsleep, sessionInactive, screenLocked }
+    private var suspendReasons: Set<SuspendReason> = []
+    /// The screen is asleep, locked, or the session is not the active one.
+    var suspended: Bool { !suspendReasons.isEmpty }
+    /// Whether the animation timer is running (test hook).
+    var isTicking: Bool { timer != nil }
     private var observers: [NSObjectProtocol] = []
+    private var distributedObservers: [NSObjectProtocol] = []
 
     init(reduceMotion: @escaping () -> Bool = { NightWatch.systemReduceMotion }) {
         self.reduceMotion = reduceMotion
@@ -334,10 +411,19 @@ final class GlyphAnimator {
                 if let self { body(self) }
             })
         }
-        watch(NSWorkspace.screensDidSleepNotification) { $0.setSuspended(true) }
-        watch(NSWorkspace.sessionDidResignActiveNotification) { $0.setSuspended(true) }
-        watch(NSWorkspace.screensDidWakeNotification) { $0.setSuspended(false) }
-        watch(NSWorkspace.sessionDidBecomeActiveNotification) { $0.setSuspended(false) }
+        watch(NSWorkspace.screensDidSleepNotification) { $0.setSuspended(.screensAsleep, true) }
+        watch(NSWorkspace.sessionDidResignActiveNotification) { $0.setSuspended(.sessionInactive, true) }
+        watch(NSWorkspace.screensDidWakeNotification) { $0.setSuspended(.screensAsleep, false) }
+        watch(NSWorkspace.sessionDidBecomeActiveNotification) { $0.setSuspended(.sessionInactive, false) }
+        // The lock screen announces itself on the distributed centre.
+        let dc = DistributedNotificationCenter.default()
+        func watchLock(_ name: String, _ locked: Bool) {
+            distributedObservers.append(dc.addObserver(forName: Notification.Name(name), object: nil, queue: .main) { [weak self] _ in
+                self?.setSuspended(.screenLocked, locked)
+            })
+        }
+        watchLock("com.apple.screenIsLocked", true)
+        watchLock("com.apple.screenIsUnlocked", false)
         // Reduce Motion flipped mid-session: pick the new behaviour up now.
         watch(NSWorkspace.accessibilityDisplayOptionsDidChangeNotification) { me in
             me.lastDrawing = nil
@@ -349,6 +435,7 @@ final class GlyphAnimator {
     deinit {
         timer?.invalidate()
         observers.forEach { NSWorkspace.shared.notificationCenter.removeObserver($0) }
+        distributedObservers.forEach { DistributedNotificationCenter.default().removeObserver($0) }
     }
 
     func start() {
@@ -363,10 +450,11 @@ final class GlyphAnimator {
         timer = nil
     }
 
-    private func setSuspended(_ value: Bool) {
-        guard suspended != value else { return }
-        suspended = value
-        if !value { redraw() }
+    func setSuspended(_ reason: SuspendReason, _ value: Bool) {
+        let was = suspended
+        if value { suspendReasons.insert(reason) } else { suspendReasons.remove(reason) }
+        guard suspended != was else { return }
+        if !suspended { redraw() }   // show the current frame the moment we are visible again
         updateTimer()
     }
 

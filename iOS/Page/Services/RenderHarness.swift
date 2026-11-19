@@ -608,8 +608,8 @@ struct RenderHarnessRoot: View {
         }
         .environment(\.nwCardGlow, glowStore.glow)
         .environment(\.nwDictation, RenderFixtures.dictation(args.screen))
-        .environment(\.nwFixedPhase, RenderHarnessMotion.phase(args))
-        .environment(\.nwMotion, RenderHarnessMotion.pin(args))
+        .environment(\.nwFixedPhase, args.live ? nil : RenderHarnessMotion.phase(args))
+        .environment(\.nwMotion, args.live ? nil : RenderHarnessMotion.pin(args))
         .environment(\.nwFixedNow, RenderHarness.now)
         .environment(\.nwReduceMotion, args.reduceMotion)
         // A local minute of the day, never an instant: 01:12 unless pinned.

@@ -76,23 +76,33 @@ fun nwAuroraPhase(seconds: Double, palette: AuroraPalette, clock: AuroraPhaseClo
  */
 @Composable
 fun NWAuroraCanvas(palette: AuroraPalette, seconds: Double, modifier: Modifier = Modifier.fillMaxSize(), starField: Double = 1.0) {
+    NWAuroraCanvas(palette, { seconds }, modifier, starField)
+}
+
+/**
+ * [NWAuroraCanvas] with the time given as a function, read only while drawing: a tick of the caller's clock redraws the
+ * canvases (all in one `graphicsLayer` of their own) and recomposes nothing.
+ */
+@Composable
+fun NWAuroraCanvas(palette: AuroraPalette, seconds: () -> Double, modifier: Modifier = Modifier.fillMaxSize(), starField: Double = 1.0) {
     val blur = Build.VERSION.SDK_INT >= 31 && !NWShaders.forceNoBlur
     val density = LocalDensity.current.density
-    // The ribbons' phase, accumulated so a change of speed never jumps them; read once per frame, outside the Canvases.
+    // The ribbons' phase, accumulated so a change of speed never jumps them. Asked for in each canvas that draws it: the
+    // second ask at the same time moves it by nothing, so every canvas of a frame draws the same phase.
     val clock = remember { AuroraPhaseClock() }
-    val t = nwAuroraPhase(seconds, palette, clock, still = LocalFixedPhase.current != null || LocalReduceMotion.current)
-    Box(modifier) {
+    val still = LocalFixedPhase.current != null || LocalReduceMotion.current
+    Box(modifier.graphicsLayer { }) {
         Canvas(Modifier.matchParentSize()) { drawRect(Brush.verticalGradient(listOf(palette.skyTop.color, palette.skyBottom.color))) }
         if (palette.intensity > 0) {
             Canvas(Modifier.matchParentSize().then(if (blur) Modifier.graphicsLayer { renderEffect = BlurEffect(16 * density, 16 * density, TileMode.Decal) } else Modifier)) {
-                drawRibbons(palette, t, soft = !blur)
+                drawRibbons(palette, nwAuroraPhase(seconds(), palette, clock, still), soft = !blur)
             }
             Canvas(Modifier.matchParentSize().then(if (blur) Modifier.graphicsLayer { renderEffect = BlurEffect(3 * density, 3 * density, TileMode.Decal) } else Modifier)) {
-                drawRays(palette, t, soft = !blur)
+                drawRays(palette, nwAuroraPhase(seconds(), palette, clock, still), soft = !blur)
             }
         }
         Canvas(Modifier.matchParentSize()) {
-            drawStars(seconds, size.width, size.height, (if (palette.intensity > 0) 0.4 + 0.6 * palette.intensity else 0.3) * starField)
+            drawStars(seconds(), size.width, size.height, (if (palette.intensity > 0) 0.4 + 0.6 * palette.intensity else 0.3) * starField)
         }
     }
 }
@@ -183,15 +193,26 @@ private fun DrawScope.drawStars(seconds: Double, w: Float, h: Float, strength: D
  */
 @Composable
 fun NWLivingAurora(palette: AuroraPalette, seconds: Double, modifier: Modifier = Modifier.fillMaxSize(), stars: Double = 1.0) {
+    NWLivingAurora(palette, { seconds }, modifier, stars)
+}
+
+/**
+ * [NWLivingAurora] with the time given as a function, read only while drawing: a tick of the caller's clock redraws this
+ * canvas and recomposes nothing. Give [modifier] a `graphicsLayer` of its own so the tick re-records just the sky.
+ */
+@Composable
+fun NWLivingAurora(palette: AuroraPalette, seconds: () -> Double, modifier: Modifier = Modifier.fillMaxSize(), stars: Double = 1.0) {
     if (NWShaders.available && Build.VERSION.SDK_INT >= 33) {
         val shader = remember { RuntimeShader(NWShaders.AURORA) }
         val density = LocalDensity.current.density
-        // The curtains' phase, accumulated so a change of speed never jumps them; read once per frame, outside the Canvas.
+        // The curtains' phase, accumulated so a change of speed never jumps them; advanced once per drawn frame.
         val clock = remember { AuroraPhaseClock() }
-        val phase = AuroraPhaseClock.shaderPhase(nwAuroraPhase(seconds, palette, clock, still = LocalFixedPhase.current != null || LocalReduceMotion.current))
+        val still = LocalFixedPhase.current != null || LocalReduceMotion.current
         Canvas(modifier) {
+            val now = seconds()
+            val phase = AuroraPhaseClock.shaderPhase(nwAuroraPhase(now, palette, clock, still))
             shader.setFloatUniform("size", size.width, size.height)
-            shader.setFloatUniform("time", nwShaderSeconds(seconds))
+            shader.setFloatUniform("time", nwShaderSeconds(now))
             // The boards' u_speed is 0.4 at a palette speed of 1 ([nwAuroraPhase]).
             shader.setFloatUniform("phase", phase)
             shader.setFloatUniform("starCell", 1.5f * density)

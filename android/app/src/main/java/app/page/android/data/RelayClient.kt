@@ -91,6 +91,20 @@ object RelayClient {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
+    /** Where a frame is parsed and decrypted: off the main thread (see [inbound]). */
+    private val workers = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /** The socket's callbacks, applied on the main thread in the order they came; frames are decoded on [workers] meanwhile. */
+    private val inbound = OrderedInbound<PreparedFrame>(scope, workers)
+
+    /** A frame already parsed, and for a `sessions.update` already decrypted and decoded: everything that needs no state of the store. */
+    private sealed interface PreparedFrame {
+        /** Not JSON, or no `type` (the Worker's "pong"): nothing to do. */
+        data object Ignored : PreparedFrame
+
+        class Frame(val type: String, val payload: JsonObject, val update: SessionStore.PreparedUpdate?) : PreparedFrame
+    }
+
     private val _inbox = MutableStateFlow<List<Intervention>>(emptyList())
     val inbox: StateFlow<List<Intervention>> = _inbox.asStateFlow()
     private val _history = MutableStateFlow<List<Intervention>>(emptyList())
@@ -889,23 +903,24 @@ object RelayClient {
     }
 
     private class Listener : WebSocketListener() {
+        // Every callback goes through [inbound], so they are applied on the main thread in the order they arrived.
         override fun onOpen(webSocket: WebSocket, response: Response) {
-            scope.launch { socketDidOpen(webSocket) }
+            inbound.post { socketDidOpen(webSocket) }
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
-            scope.launch { if (webSocket === socket) handleMessage(text) }
+            inbound.post(prepare = { prepareFrame(text) }) { prepared -> if (webSocket === socket) handleFrame(prepared, text) }
         }
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
             webSocket.close(1000, null)
             val saysRetired = TokenRetirement.socketCloseNeedsCheck(code, reason)
-            scope.launch { socketDidEnd(webSocket, closeSaysRetired = saysRetired) }
+            inbound.post { socketDidEnd(webSocket, closeSaysRetired = saysRetired) }
         }
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
             val saysRetired = TokenRetirement.socketCloseNeedsCheck(code, reason)
-            scope.launch { socketDidEnd(webSocket, closeSaysRetired = saysRetired) }
+            inbound.post { socketDidEnd(webSocket, closeSaysRetired = saysRetired) }
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
@@ -913,7 +928,7 @@ object RelayClient {
             // its status; read it before the response is gone.
             val handshakeStatus = response?.code
             Log.i(TAG, "socket ended: ${t.javaClass.simpleName}${handshakeStatus?.let { " (HTTP $it)" } ?: ""}")
-            scope.launch { socketDidEnd(webSocket, handshakeStatus = handshakeStatus) }
+            inbound.post { socketDidEnd(webSocket, handshakeStatus = handshakeStatus) }
         }
     }
 
@@ -976,12 +991,36 @@ object RelayClient {
         }
     }
 
+    /** On a worker thread: the parts of a frame that need no state of this object. Null when that went wrong (the frame is then handled the long way). */
+    private fun prepareFrame(text: String): PreparedFrame? {
+        // The Worker answers an application-level "ping" with "pong"; neither
+        // is JSON.
+        val envelope = parseJsonObject(text) ?: return PreparedFrame.Ignored
+        val type = envelope.str("type") ?: return PreparedFrame.Ignored
+        val payload = envelope.obj("payload") ?: JsonObject(emptyMap())
+        // Opaque to the relay: decrypted and decoded here, applied by SessionStore on the main thread.
+        val update = if (type == "sessions.update") SessionStore.prepareUpdate(payload) else null
+        return PreparedFrame.Frame(type, payload, update)
+    }
+
+    private fun handleFrame(prepared: PreparedFrame?, text: String) {
+        when (prepared) {
+            null -> handleMessage(text)
+            PreparedFrame.Ignored -> Unit
+            is PreparedFrame.Frame -> handleFrame(prepared.type, prepared.payload, prepared.update)
+        }
+    }
+
     private fun handleMessage(text: String) {
         // The Worker answers an application-level "ping" with "pong"; neither
         // is JSON.
         val envelope = parseJsonObject(text) ?: return
         val type = envelope.str("type") ?: return
         val payload = envelope.obj("payload") ?: JsonObject(emptyMap())
+        handleFrame(type, payload, null)
+    }
+
+    private fun handleFrame(type: String, payload: JsonObject, update: SessionStore.PreparedUpdate?) {
         TokenRetirement.whyFromFrame(type, payload)?.let {
             markRetired(it)
             return
@@ -1014,7 +1053,7 @@ object RelayClient {
                 if (snap.macConnected == true && !wasConnected) SessionStore.macCameOnline()
             }
             // Opaque to the relay; SessionStore decrypts and applies it.
-            "sessions.update" -> SessionStore.handleUpdate(payload)
+            "sessions.update" -> SessionStore.handleUpdate(payload, update)
             "reply.result" -> {
                 val id = payload.str("interventionId") ?: return
                 val detail = payload.str("detail")?.takeIf { it.isNotEmpty() }

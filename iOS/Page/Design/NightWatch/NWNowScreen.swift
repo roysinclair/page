@@ -94,9 +94,6 @@ struct NWNowScreen: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// "Review the finished" asks the stream to scroll to that section.
     @State private var scrollRequest: String?
-    /// A finger is down on the stream. A `GestureState` resets itself when the
-    /// scroll view takes the touch over, so the order freeze can never stick.
-    @GestureState private var pressing = false
     /// The rows already seen. Anything new descends from the pulse (Final
     /// approach); nil until the first look, which plays nothing.
     @State private var seen: Set<String>?
@@ -115,6 +112,8 @@ struct NWNowScreen: View {
     var body: some View {
         GeometryReader { geo in
             let inset = topInsetOverride ?? geo.safeAreaInsets.top
+            // Once per body: the stream asks for these per row.
+            let layout = streamLayout
             ScrollViewReader { proxy in
             ScrollView {
                 VStack(spacing: 16) {
@@ -122,7 +121,7 @@ struct NWNowScreen: View {
                     // Information stays in the sky: the Runway is read, not acted on.
                     sky
                     // What needs you, and what is working, sit on the desk below it.
-                    VStack(spacing: 16) { stream(inset: inset) }
+                    VStack(spacing: 16) { stream(inset: inset, layout: layout) }
                         .padding(.horizontal, NightWatch.Space.gutter)
                         .padding(.bottom, 136)
                         .frame(maxWidth: .infinity)
@@ -160,8 +159,7 @@ struct NWNowScreen: View {
             }
             .refreshable { await actions.refresh() }
             .ignoresSafeArea(edges: .top)
-            .simultaneousGesture(DragGesture(minimumDistance: 0).updating($pressing) { _, state, _ in state = true })
-            .onChange(of: pressing) { _, now in actions.touching(now) }
+            .modifier(NWTouchTracker(onChange: actions.touching))
             }
         }
     }
@@ -315,7 +313,8 @@ struct NWNowScreen: View {
 
     // MARK: Stream
 
-    @ViewBuilder private func stream(inset: CGFloat) -> some View {
+    @ViewBuilder private func stream(inset: CGFloat, layout: StreamLayout) -> some View {
+        let sections = layout.sections, order = layout.order
         if let p = data.problem { NWProblemCard(problem: p, onAction: actions.problem) }
         ForEach(data.banners.filter { b in !(data.problem?.replacesBanners.contains(b.id) ?? false) }) { b in NWBannerCard(banner: b, onAction: actions.banner) }
         if let b = data.brief, !b.hasUrgent {
@@ -329,27 +328,27 @@ struct NWNowScreen: View {
         }
         ForEach(sections, id: \.0) { section, rows in
             // In flight sits between what needs you and what has finished.
-            if section == .review { inFlight }
+            if section == .review { inFlight(layout) }
             NWSectionHeader(title: section.title, count: rows.filter { !data.ghosts.contains($0.id) }.count, color: section.color, symbol: section.symbol)
                 .id("section-\(section.title.lowercased())")
-                .offset(y: push(below: rows.first.flatMap { order.firstIndex(of: $0.id) }.map { $0 - 1 }))
+                .offset(y: push(below: rows.first.flatMap { layout.index[$0.id] }.map { $0 - 1 }, layout))
             ForEach(rows) { row in
-                arriving(row, inset: inset)
+                arriving(row, inset: inset, layout: layout)
                     .nwRecedes()
                     .id("row-\(row.id)")
-                    .offset(y: push(below: order.firstIndex(of: row.id).map { $0 - 1 }))
+                    .offset(y: push(below: layout.index[row.id].map { $0 - 1 }, layout))
                     // The approach draws an arrival itself; a departure has already folded or simply fades.
                     .transition(reduceMotion ? .opacity : .asymmetric(insertion: .identity, removal: .opacity))
-                if let tip = data.tip, tip.anchorId == row.id { tipCallout(tip, under: row).offset(y: push(below: order.firstIndex(of: row.id))) }
+                if let tip = data.tip, tip.anchorId == row.id { tipCallout(tip, under: row, layout: layout).offset(y: push(below: layout.index[row.id], layout)) }
             }
             // The Brief sits after Decide and Look when something needs you.
             if section == .look || (section == .decide && !sections.contains { $0.0 == .look }), let b = data.brief, b.hasUrgent {
                 NWBriefCard(brief: b, expanded: data.briefExpanded, onToggle: actions.toggleBrief,
                             onDismiss: actions.dismissBrief, onReview: reviewFinished)
-                    .offset(y: push(below: rows.last.flatMap { order.firstIndex(of: $0.id) }))
+                    .offset(y: push(below: rows.last.flatMap { layout.index[$0.id] }, layout))
             }
         }
-        if !sections.contains(where: { $0.0 == .review }) { inFlight }
+        if !sections.contains(where: { $0.0 == .review }) { inFlight(layout) }
         if let b = data.brief, b.hasUrgent, !sections.contains(where: { $0.0 == .decide || $0.0 == .look }) {
             NWBriefCard(brief: b, expanded: data.briefExpanded, onToggle: actions.toggleBrief,
                         onDismiss: actions.dismissBrief, onReview: reviewFinished)
@@ -372,7 +371,7 @@ struct NWNowScreen: View {
                 .id("section-settled")
         }
         .animation(queuedAnimation, value: QueuedKey(line: data.model.receiptLine != nil, delete: data.model.receiptRetract != nil))
-        .offset(y: push(below: order.count - 1))
+        .offset(y: push(below: order.count - 1, layout))
     }
 
     /// How what is queued comes and goes: rising 6 pt as it fades in, fading as what is below closes up.
@@ -410,23 +409,23 @@ struct NWNowScreen: View {
     }
 
     /// The In flight rows, between Decide/Look and Review (or after them when nothing has finished).
-    @ViewBuilder private var inFlight: some View {
+    @ViewBuilder private func inFlight(_ layout: StreamLayout) -> some View {
         if !data.inFlight.rows.isEmpty {
-            let before = sections.first { $0.0 == .review }?.1.first.flatMap { order.firstIndex(of: $0.id) }.map { $0 - 1 } ?? (order.count - 1)
+            let before = layout.sections.first { $0.0 == .review }?.1.first.flatMap { layout.index[$0.id] }.map { $0 - 1 } ?? (layout.order.count - 1)
             NWInFlightSection(section: data.inFlight, tip: data.tip.flatMap { $0.tip == .inFlight ? $0 : nil }, biometry: data.biometry,
                               onOpen: actions.openRoom, onBudget: actions.openSessionBudget, budgetControls: data.budgetControls,
                               onToggle: actions.toggleInFlight, onHeader: actions.toLanes, onDismissTip: actions.dismissTip)
                 .id("section-in flight")
-                .offset(y: push(below: before))
+                .offset(y: push(below: before, layout))
         }
     }
 
     /// A first-time tip under the row it explains. Under a card that is
     /// arriving it waits for the card to land (`NWArrivalTail`), and that
     /// fade is its entrance.
-    private func tipCallout(_ tip: NowTipTarget, under row: NowRow) -> some View {
-        let arriving = arrivalPlan[row.id] != nil && !data.ghosts.contains(row.id)
-        return NWArrivalTail(arriving: arriving, delay: arrivalPlan[row.id] ?? 0, pinned: approachPin(row)) {
+    private func tipCallout(_ tip: NowTipTarget, under row: NowRow, layout: StreamLayout) -> some View {
+        let arriving = layout.arrivalPlan[row.id] != nil && !data.ghosts.contains(row.id)
+        return NWArrivalTail(arriving: arriving, delay: layout.arrivalPlan[row.id] ?? 0, pinned: approachPin(row)) {
             NWTipCallout(text: tip.tip.text(biometry: data.biometry), symbol: tip.tip.symbol, onDismiss: { actions.dismissTip(tip.tip) })
         }
         .padding(.top, -6)
@@ -435,22 +434,36 @@ struct NWNowScreen: View {
 
     // MARK: Final approach
 
-    /// The rows in the order drawn.
-    private var order: [String] { sections.flatMap { $0.1.map(\.id) } }
+    /// What the stream draws, worked out once per body: the sections, the order of the rows, where each
+    /// sits and when each new one leaves the pulse.
+    struct StreamLayout {
+        let sections: [(NowRow.Section, [NowRow])]
+        /// The rows in the order drawn.
+        let order: [String]
+        let index: [String: Int]
+        let arrivalPlan: [String: TimeInterval]
+    }
+
+    private var streamLayout: StreamLayout {
+        let sections = [NowRow.Section.decide, .look, .review].compactMap { s -> (NowRow.Section, [NowRow])? in
+            let rows = data.model.rows.filter { $0.section == s }
+            return rows.isEmpty ? nil : (s, rows)
+        }
+        let order = sections.flatMap { $0.1.map(\.id) }
+        var index: [String: Int] = [:]
+        for (i, id) in order.enumerated() where index[id] == nil { index[id] = i }
+        // When each new row leaves the pulse: a few arrivals come down one after another; a flood just appears.
+        let plan = ApproachModel.schedule(ApproachModel.arrivals(previous: seen.map { Array($0) }, current: order), start: 0)
+        return StreamLayout(sections: sections, order: order, index: index, arrivalPlan: plan)
+    }
 
     /// The render harness draws the cards below a pinned arrival making room
     /// (live, the stream's own spring does it). `index` is the last row above
     /// the element; it moves when the arrival is at or above that row.
-    private func push(below index: Int?) -> CGFloat {
+    private func push(below index: Int?, _ layout: StreamLayout) -> CGFloat {
         guard let id = data.pinnedArrival, let t = motionPin.flatMap({ $0.kind == .approach ? $0.time : nil }),
-              let a = order.firstIndex(of: id), let i = index, i >= a else { return 0 }
+              let a = layout.index[id], let i = index, i >= a else { return 0 }
         return CGFloat(ApproachModel.pushOffset(height: Double(arrivalHeight) + 16, elapsed: t))
-    }
-
-    /// When each new row leaves the pulse: a few arrivals come down one after
-    /// another; a flood just appears.
-    private var arrivalPlan: [String: TimeInterval] {
-        ApproachModel.schedule(ApproachModel.arrivals(previous: seen.map { Array($0) }, current: order), start: 0)
     }
 
     /// The render harness's moment in the approach, for the row it pins.
@@ -460,9 +473,9 @@ struct NWNowScreen: View {
 
     /// A card, arriving from the pulse if it is new, or folding away if it
     /// has just been confirmed and has left.
-    @ViewBuilder private func arriving(_ row: NowRow, inset: CGFloat) -> some View {
+    @ViewBuilder private func arriving(_ row: NowRow, inset: CGFloat, layout: StreamLayout) -> some View {
         let pinned = approachPin(row)
-        let plan = arrivalPlan
+        let plan = layout.arrivalPlan
         if data.ghosts.contains(row.id) {
             card(row).modifier(NWResolveFold(changedAt: data.receipts[row.id]?.changedAt))
         } else {
@@ -474,13 +487,6 @@ struct NWNowScreen: View {
                         Color.clear.onAppear { if pinned != nil { arrivalHeight = g.size.height } }
                     })
             }
-        }
-    }
-
-    private var sections: [(NowRow.Section, [NowRow])] {
-        [NowRow.Section.decide, .look, .review].compactMap { s in
-            let rows = data.model.rows.filter { $0.section == s }
-            return rows.isEmpty ? nil : (s, rows)
         }
     }
 
@@ -510,6 +516,20 @@ struct NWNowScreen: View {
                          onLooksGood: { actions.looksGood(row) }, onSteer: { actions.steer(row) },
                          onOpen: { actions.open(row.id) }, onCancel: { actions.cancel(row.id) })
         }
+    }
+}
+
+/// Tells the container a finger is down on the stream or up again. The `GestureState` lives here, in a modifier,
+/// so a touch starting or ending redraws this wrapper and not the screen it wraps. A `GestureState` resets
+/// itself when the scroll view takes the touch over (or the touch is cancelled), so the order freeze can never stick.
+private struct NWTouchTracker: ViewModifier {
+    var onChange: (Bool) -> Void
+    @GestureState private var pressing = false
+
+    func body(content: Content) -> some View {
+        content
+            .simultaneousGesture(DragGesture(minimumDistance: 0).updating($pressing) { _, state, _ in state = true })
+            .onChange(of: pressing) { _, now in onChange(now) }
     }
 }
 

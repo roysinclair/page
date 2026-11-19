@@ -49,6 +49,24 @@ struct NWPhotoButton: View {
 
 // MARK: - The thumbnails
 
+/// Decoded thumbnails by photo, so a rebuild of the composer (every keystroke, every tick) doesn't decode the
+/// JPEGs again. Keyed by the item's id and the size of its data, which only change together.
+@MainActor private enum NWThumbnails {
+    private static let cache: NSCache<NSString, UIImage> = {
+        let c = NSCache<NSString, UIImage>()
+        c.countLimit = 24
+        return c
+    }()
+
+    static func image(id: String, data: Data) -> UIImage? {
+        let key = "\(id)#\(data.count)" as NSString
+        if let hit = cache.object(forKey: key) { return hit }
+        guard let image = UIImage(data: data) else { return nil }
+        cache.setObject(image, forKey: key)
+        return image
+    }
+}
+
 /// The photos waiting in the composer, each with its ×. A photo still being re-encoded shows a spinner; Send
 /// waits for it.
 struct NWPhotoStrip: View {
@@ -71,7 +89,7 @@ struct NWPhotoStrip: View {
     private func thumb(_ item: PhotoDraftItem, index: Int) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.white.opacity(0.08))
-            if let data = item.photo?.thumb, let image = UIImage(data: data) {
+            if let data = item.photo?.thumb, let image = NWThumbnails.image(id: item.id, data: data) {
                 Image(uiImage: image).resizable().scaledToFill()
                     .frame(width: Self.side, height: Self.side).clipped()
                     .accessibilityLabel(Text(PhotoDraft.photoLabel(index: index, count: items.count)))

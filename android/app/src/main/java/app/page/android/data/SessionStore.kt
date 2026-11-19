@@ -232,7 +232,8 @@ object SessionStore {
     private var watchedAgent: Pair<String, String>? = null
 
     private val gate = SessionUpdateGate()
-    private var rootKey: ByteArray? = null
+    // Written on the main thread only; read off it too ([prepareUpdate]), hence volatile.
+    @Volatile private var rootKey: ByteArray? = null
     private var undecryptableInARow = 0
     private val timeoutJobs = HashMap<String, Job>()
     private var waitJob: Job? = null
@@ -409,18 +410,48 @@ object SessionStore {
 
     // region Incoming
 
-    /** A `sessions.update` frame's payload: `{"e": <envelope>}`. */
-    fun handleUpdate(payload: JsonObject) {
+    /**
+     * A `sessions.update`'s parts that need no store state, done off the main thread ([prepareUpdate]): the envelope parsed,
+     * decrypted under [root], and the plaintext decoded. [handleUpdate] uses it only while [root] is still the key.
+     */
+    internal class PreparedUpdate(
+        val root: ByteArray,
+        val envelope: SessionCrypto.Envelope?,
+        /** Null when there was no envelope, or it did not authenticate. */
+        val data: ByteArray?,
+        /** Null when [data] is null, or malformed or of an unknown kind. */
+        val plaintext: SessionsPlaintext?,
+    )
+
+    /**
+     * Any thread. The envelope's parse, decryption and decode for [payload], with the key as it is now. Null when it can't
+     * be done without the store's own help (demo mode, no key loaded yet): [handleUpdate] then does everything itself.
+     */
+    internal fun prepareUpdate(payload: JsonObject): PreparedUpdate? {
+        if (_state.value.isDemoMode) return null
+        val root = rootKey ?: return null
+        val envelope = (payload["e"] as? JsonObject)?.let(SessionCrypto.Envelope::fromJson) ?: return PreparedUpdate(root, null, null, null)
+        val data = SessionCrypto.open(envelope, root, SessionCrypto.Direction.MAC_TO_PHONE, SessionFrameType.UPDATE)
+        return PreparedUpdate(root, envelope, data, data?.let { SessionsPlaintext.decode(it) })
+    }
+
+    /**
+     * A `sessions.update` frame's payload: `{"e": <envelope>}`, on the main thread. [prepared] is [prepareUpdate]'s work on
+     * it; it counts only while the key is still the one it was made with (the pairing may have changed in between), else
+     * the frame is decrypted here as ever.
+     */
+    internal fun handleUpdate(payload: JsonObject, prepared: PreparedUpdate? = null) {
         if (_state.value.isDemoMode) return
+        val ready = prepared?.takeIf { it.root === rootKey }
         val raw = payload["e"] as? JsonObject
-        val envelope = raw?.let(SessionCrypto.Envelope::fromJson)
+        val envelope = if (ready != null) ready.envelope else raw?.let(SessionCrypto.Envelope::fromJson)
         if (envelope == null) {
             Log.i(TAG, "dropped malformed update")
             return
         }
         if (rootKey == null) reloadKey()
         val root = rootKey ?: return
-        val data = SessionCrypto.open(envelope, root, SessionCrypto.Direction.MAC_TO_PHONE, SessionFrameType.UPDATE)
+        val data = if (ready != null) ready.data else SessionCrypto.open(envelope, root, SessionCrypto.Direction.MAC_TO_PHONE, SessionFrameType.UPDATE)
         if (data == null) {
             undecryptableInARow += 1
             // One bad frame could be noise; a run of them means the Mac's key
@@ -431,7 +462,7 @@ object SessionStore {
         }
         undecryptableInARow = 0
         if (_state.value.keyMismatch) update { it.copy(keyMismatch = false) }
-        val plaintext = SessionsPlaintext.decode(data) ?: return // unknown kind or malformed
+        val plaintext = (if (ready != null) ready.plaintext else SessionsPlaintext.decode(data)) ?: return // unknown kind or malformed
         when (gate.admit(plaintext, Instant.now())) {
             SessionUpdateGate.Verdict.TOO_OLD -> {
                 if (!_state.value.hasList) update { it.copy(onlyStaleFrames = true) }

@@ -16,7 +16,10 @@ struct NowContainer: View {
 
     /// Ids on screen, so the order never re-sorts under a finger.
     @State private var shown: [String] = []
-    @State private var touching = false
+    /// A finger is down on the stream (the order is frozen while it is). A reference read where the order is decided,
+    /// not `@State`: a touch starting or ending changes nothing that is drawn unless data came in meanwhile, so it must
+    /// not rebuild Now. What did come in is settled in `endTouch`.
+    @State private var touch = TouchGate()
     @EnvironmentObject var away: AwayStore
     @State private var briefExpanded = false
     /// The rows as last drawn (ghosts included), so a card whose reply was
@@ -48,20 +51,21 @@ struct NowContainer: View {
             // The first In flight look after it is a first look: nothing that ended meanwhile plays.
             if phase == .active { if old == .background { away.returned(); flightGrace.reset() }; Task { await api.refreshHistory() } }
         }
-        // A finger can be cancelled without an end event; never stay frozen for long.
-        .task(id: touching) {
-            guard touching else { return }
-            try? await Task.sleep(nanoseconds: 3_000_000_000)
-            if !Task.isCancelled { touching = false }
-        }
         .onChange(of: pairing.activeMacId) { _, _ in activity.reset(); coordinator.reset(); shown = []; flightGrace.reset() }
         .onChange(of: api.connection) { _, c in if c != .connected { flightGrace.reset(); flightStale = true } }
         // The first list since reconnecting, new or the same as before, is looked at silently; endings play again from the next.
-        .onChange(of: sessions.lastListAt) { _, _ in
+        .onReceive(sessions.listArrived) { _ in
             guard flightStale, api.connection == .connected else { return }
             flightGrace.observe(flightSection(now: Date()), at: Date(), silent: true)
             flightStale = false
         }
+    }
+
+    @MainActor private final class TouchGate {
+        var touching = false
+        /// The ranking as last built: what `shown` becomes once the finger is up.
+        var latestIds: [String] = []
+        var timeout: Task<Void, Never>?
     }
 
     private var macName: String { nwMacName(sessions: sessions, pairing: pairing) }
@@ -77,13 +81,14 @@ struct NowContainer: View {
         _ = flightTick
         let model = NowModel.build(inputs(now: now))
         let flight = flightSection(now: now)
-        let merged = StableOrder.merge(shown: shown, ranked: model.rows, frozen: touching)
+        let merged = StableOrder.merge(shown: shown, ranked: model.rows, frozen: touch.touching)
         // A card confirmed a moment ago stays, as a ghost, while its thread resolves.
         let departing = DepartingRows.merge(previous: lastRows, current: merged.rows, deliveries: api.deliveries,
                                             changedAt: api.deliveryTimes, now: Date())
         var shownModel = model
         shownModel.rows = departing.rows
         let ids = model.rows.map(\.id)
+        touch.latestIds = ids
         let drawn = departing.rows.map(\.id)
         var screen = data(model: shownModel, queued: merged.queuedNew, flight: flight, now: now)
         screen.ghosts = departing.ghosts
@@ -91,8 +96,7 @@ struct NowContainer: View {
         return NWNowScreen(data: screen, actions: actions(model: model))
             // Another Mac is another sky: nothing that changed here was news (no arrivals, exhale or dawn).
             .id(pairing.activeMacId)
-            .onChange(of: ids) { _, new in if !touching { shown = new } }
-            .onChange(of: touching) { _, t in if !t { shown = ids } }
+            .onChange(of: ids) { _, new in if !touch.touching { shown = new } }
             .onChange(of: drawn) { _, _ in lastRows = departing.rows }
             .onAppear {
                 shown = ids; lastRows = departing.rows; activity.observePower(paused: model.paused, sessions: sessions.sessions)
@@ -114,6 +118,30 @@ struct NowContainer: View {
                 try? await Task.sleep(nanoseconds: UInt64(max(0, at.timeIntervalSinceNow + 0.05) * 1_000_000_000))
                 if !Task.isCancelled { ghostTick += 1 }
             }
+    }
+
+    /// A finger went down on the stream or came up. A finger can be cancelled without an end event, so the freeze
+    /// ends by itself after 3 s.
+    private func touchChanged(_ down: Bool) {
+        touch.timeout?.cancel()
+        touch.timeout = nil
+        touch.touching = down
+        if down {
+            touch.timeout = Task {
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                guard !Task.isCancelled else { return }
+                touch.touching = false
+                endTouch()
+            }
+        } else {
+            endTouch()
+        }
+    }
+
+    /// The finger is up: what was held back while it was down (new rows, a new order) is drawn now. When nothing
+    /// came in, `shown` already is the ranking and nothing is rebuilt.
+    private func endTouch() {
+        if touch.latestIds != shown { shown = touch.latestIds }
     }
 
     /// The In flight lines as they now stand. An ending seen while Now is in
@@ -259,7 +287,7 @@ struct NowContainer: View {
             case .repair: router.requestUnpair()
             }
         }
-        a.showNew = { shown = model.rows.map(\.id); touching = false }
+        a.showNew = { shown = model.rows.map(\.id); touchChanged(false) }
         a.refresh = {
             // Pulling down re-syncs with the Mac; after 10 minutes away it also re-opens the last Brief.
             sessions.refresh()
@@ -267,7 +295,7 @@ struct NowContainer: View {
             await pairing.refreshOthers()
             away.reopenBrief(); briefExpanded = false
         }
-        a.touching = { touching = $0 }
+        a.touching = { touchChanged($0) }
         return a
     }
 }

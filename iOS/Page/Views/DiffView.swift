@@ -10,35 +10,42 @@ struct DiffView: View {
     let title: String
 
     @EnvironmentObject var sessions: SessionStore
+    @EnvironmentObject var content: SessionContent
     @Environment(\.dismiss) private var dismiss
     @State private var requestedAt = Date()
+    /// Bumped once the Mac has had `ChangesModel.noAnswerAfter` seconds to answer: the only moment the screen
+    /// changes with nothing new in hand, so nothing else ticks.
+    @State private var waited = 0
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 1)) { context in
-            let load = ChangesModel.load(hasDiff: sessions.diffs[sessionId] != nil, error: sessions.diffErrors[sessionId],
-                                         requestedAt: requestedAt, now: context.date)
-            ZStack {
-                NWBackdrop()
-                VStack(spacing: 0) {
-                    HStack(spacing: 12) {
-                        Button { dismiss() } label: {
-                            Image(systemName: "chevron.down").font(.system(.body, weight: .semibold))
-                                .foregroundColor(NightWatch.Palette.textPrimary.color)
-                                .frame(width: 48, height: 48).nwChromeGlass(in: Circle()) { Circle().fill(Color.white.opacity(0.09)) }
-                        }
-                        .buttonStyle(.plain).accessibilityLabel(Text("Close"))
-                        Text(title).font(.system(.title3, design: .monospaced, weight: .semibold))
-                            .foregroundColor(NightWatch.Palette.textPrimary.color).lineLimit(1)
-                        Spacer(minLength: 0)
+        _ = waited
+        let load = ChangesModel.load(hasDiff: content.diffs[sessionId] != nil, error: content.diffErrors[sessionId],
+                                     requestedAt: requestedAt, now: Date())
+        return ZStack {
+            NWBackdrop()
+            VStack(spacing: 0) {
+                HStack(spacing: 12) {
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.down").font(.system(.body, weight: .semibold))
+                            .foregroundColor(NightWatch.Palette.textPrimary.color)
+                            .frame(width: 48, height: 48).nwChromeGlass(in: Circle()) { Circle().fill(Color.white.opacity(0.09)) }
                     }
-                    .padding(.horizontal, NightWatch.Space.lg).padding(.top, 14).padding(.bottom, 6)
-                    NWChangesPanel(model: sessions.diffs[sessionId].map(ChangesModel.build), load: load,
-                                   onRefresh: request, onCopy: { UIPasteboard.general.string = $0 }) { EmptyView() }
+                    .buttonStyle(.plain).accessibilityLabel(Text("Close"))
+                    Text(title).font(.system(.title3, design: .monospaced, weight: .semibold))
+                        .foregroundColor(NightWatch.Palette.textPrimary.color).lineLimit(1)
+                    Spacer(minLength: 0)
                 }
+                .padding(.horizontal, NightWatch.Space.lg).padding(.top, 14).padding(.bottom, 6)
+                NWChangesPanel(model: content.diffs[sessionId].map(ChangesModel.build), load: load,
+                               onRefresh: request, onCopy: { UIPasteboard.general.string = $0 }) { EmptyView() }
             }
         }
         .preferredColorScheme(.dark)
         .onAppear { request() }
+        .task(id: requestedAt) {
+            try? await Task.sleep(nanoseconds: UInt64((ChangesModel.noAnswerAfter + 0.05) * 1_000_000_000))
+            if !Task.isCancelled { waited += 1 }
+        }
     }
 
     private func request() {

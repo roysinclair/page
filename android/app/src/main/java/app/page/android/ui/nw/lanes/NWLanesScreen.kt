@@ -71,6 +71,7 @@ import app.page.android.model.SkyModel
 import app.page.android.model.StarState
 import app.page.android.model.StripCell
 import app.page.android.ui.nw.components.NWAnimated
+import app.page.android.ui.nw.components.NWClocked
 import app.page.android.ui.nw.components.NWBannerCard
 import app.page.android.ui.nw.components.NWDawnLight
 import app.page.android.ui.nw.components.NWGlassEdgeLight
@@ -235,11 +236,15 @@ private fun LanesAurora(data: LanesScreenData, power: PowerContext, inset: Dp) {
     if (data.fleet.paused && !power.moving) return
     val palette = AuroraPalette.of(lanesFleetMood(data.lanes), data.daypart)
     val stars = data.daypart.stars
-    NWAnimated(fps = 15.0) { t ->
+    NWClocked(fps = 15.0) { clock ->
+        // The aurora reads the clock only as it draws (in its own layer), so a tick redraws that layer and recomposes nothing.
+        // While the power story plays, the band's cover is a function of the time as well: the clock is read here too.
+        @Suppress("UNUSED_EXPRESSION")
+        if (power.moving) clock.value
         val cover = power.story.skyLight(power.now, power.pin).cover
         val alpha = (LanesDayBand.opacity * (1 - cover)).toFloat()
         Box(Modifier.fillMaxWidth().height(inset + LanesDayBand.depth).clearAndSetSemantics {}) {
-            NWLivingAurora(palette, t, Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha }, stars = stars)
+            NWLivingAurora(palette, { clock.value }, Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha }, stars = stars)
             Canvas(Modifier.fillMaxSize()) {
                 val deep = NW.Palette.backgroundDeep
                 // The Horizon's own fade into the page.

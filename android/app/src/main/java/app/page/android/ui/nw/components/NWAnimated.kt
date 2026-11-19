@@ -132,6 +132,18 @@ fun NWAnimated(fps: Double = 30.0, active: Boolean = true, content: @Composable 
 }
 
 /**
+ * [NWAnimated] for a view that only DRAWS from the clock: [content] gets the clock as [State] and reads `.value` in a draw
+ * lambda (a `Canvas`, `drawBehind`, `drawWithCache`, `graphicsLayer`), so a tick redraws that one layer and recomposes
+ * nothing. Give the drawing its own `graphicsLayer` so the tick re-records only it. A view that also builds its
+ * composition from the time (a motion that is playing) reads `.value` in composition too, and recomposes as before.
+ * The same clock as [NWAnimated]: [fps], [active], Reduce Motion, the harness pin, covered and not-resumed all hold it.
+ */
+@Composable
+fun NWClocked(fps: Double = 30.0, active: Boolean = true, content: @Composable (State<Double>) -> Unit) {
+    content(rememberNWClock(fps, active))
+}
+
+/**
  * Plays a short one-shot from [startSeconds] (the [nwClockSeconds] base) for [duration], handing [content] the
  * seconds elapsed (negative while a staggered start is still to come), then holds the final frame with no clock at
  * all (`content(null)`). Short, so it may run at the display's full rate. [pinned] draws one moment (the render

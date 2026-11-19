@@ -184,14 +184,14 @@ fun NWGlassCard(
 
 // MARK: - Drawing helpers (no API 28 coloured shadows, no API 31 blur: every glow is drawn)
 
-private fun erf(x: Double): Double {
+internal fun erf(x: Double): Double {
     // Abramowitz and Stegun 7.1.26, good to 1.5e-7.
     val t = 1.0 / (1.0 + 0.3275911 * kotlin.math.abs(x))
     val y = 1.0 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * kotlin.math.exp(-x * x)
     return if (x >= 0) y else -y
 }
 
-private fun normalCdf(x: Double) = 0.5 * (1.0 + erf(x / kotlin.math.sqrt(2.0)))
+internal fun normalCdf(x: Double) = 0.5 * (1.0 + erf(x / kotlin.math.sqrt(2.0)))
 
 /**
  * A soft shadow or glow of a rounded rectangle, drawn in [color]: what SwiftUI's `.shadow(color, radius: blur, x, y)`
@@ -208,34 +208,31 @@ private fun normalCdf(x: Double) = 0.5 * (1.0 + erf(x / kotlin.math.sqrt(2.0)))
 fun DrawScope.drawSoftGlow(
     color: Color, blur: Float, dy: Float = 0f, dx: Float = 0f, corner: Float,
     outsideOnly: Boolean = false, topLeft: Offset = Offset.Zero, shapeSize: androidx.compose.ui.geometry.Size = size,
+    cache: Boolean = true,
 ) {
     val a = color.alpha
     if (a <= 0.004f || blur <= 0.5f) return
-    val sigma = blur / 2.0
-    val steps = (blur / 1.5f).toInt().coerceIn(8, 28)
-    fun layers() {
-        var covered = 0.0
-        for (i in 0 until steps) {
-            val e0 = blur - 2f * blur * i / steps
-            val e1 = blur - 2f * blur * (i + 1) / steps
-            // The cumulative alpha wanted in the band between this layer's edge and the next one's, at its middle.
-            val target = a * normalCdf(-((e0 + e1) / 2.0) / sigma)
-            val layerAlpha = (1.0 - (1.0 - target) / (1.0 - covered)).coerceIn(0.0, 1.0)
-            covered = target.coerceAtLeast(covered)
-            val w = shapeSize.width + 2 * e0
-            val h = shapeSize.height + 2 * e0
-            if (w <= 0f || h <= 0f || layerAlpha <= 0.0005) continue
-            drawRoundRect(
-                color.copy(alpha = layerAlpha.toFloat()), topLeft = Offset(topLeft.x + dx - e0, topLeft.y + dy - e0),
-                size = androidx.compose.ui.geometry.Size(w, h), cornerRadius = CornerRadius(max(0f, corner + e0)),
-            )
+    // Rendered once and drawn from pixels (NWGlowCache): a small shape's whole glow as one image, a big one's corners and edges
+    // stretched. Until that is ready (the first frame, or a glow too big for either) the layers are drawn as they always were.
+    // [cache] false is for a glow whose size changes every frame.
+    val gx = topLeft.x + dx
+    val gy = topLeft.y + dy
+    val key: GlowKey? = if (!cache) null else
+        GlowPatchSpec.of(color, blur, corner, gx, gy, shapeSize.width, shapeSize.height)
+            ?: GlowSpec.full(color, blur, dx, dy, corner, topLeft.x, topLeft.y, shapeSize.width, shapeSize.height)
+    val art = if (key != null) NWGlowCache.ready(key) else null
+    fun body() {
+        when {
+            art is GlowArt.Patches -> drawGlowPatches(art, gx, gy, shapeSize.width, shapeSize.height)
+            art is GlowArt.Whole && key is GlowSpec -> drawImage(art.image, topLeft = Offset(key.regionLeft.toFloat(), key.regionTop.toFloat()))
+            else -> glowLayers(color, blur, dy, dx, corner, topLeft, shapeSize)
         }
     }
     if (outsideOnly) {
         val hole = Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(topLeft.x, topLeft.y, topLeft.x + shapeSize.width, topLeft.y + shapeSize.height, CornerRadius(corner))) }
-        clipPath(hole, androidx.compose.ui.graphics.ClipOp.Difference) { layers() }
+        clipPath(hole, androidx.compose.ui.graphics.ClipOp.Difference) { body() }
     } else {
-        layers()
+        body()
     }
 }
 
@@ -443,6 +440,23 @@ fun Modifier.nwHueBand(jewel: NWJewel, radius: Dp = NW.Radius.card): Modifier = 
  */
 fun Modifier.nwDesk(light: Rgba, radius: Dp = NW.Radius.desk): Modifier = this.drawBehind { drawDesk(light, radius) }
 
+/**
+ * The desk's shadow: [drawSoftGlow] of its outline, but only its top strip is ever seen (above the edge and in the corners'
+ * cut-outs; below that it is under the desk, and the sides are off the screen). For a desk taller than the glow's reach that
+ * strip is the same whatever the height, so it is one cached bitmap for every scroll position, not 17 layers filled every
+ * frame the list scrolls. A short desk (the last bit of one rising off the bottom) is drawn layered, as it always was.
+ */
+private fun DrawScope.drawDeskShadow(r: Float, w: Float) {
+    val color = Color.Black.copy(alpha = 0.7f)
+    val blur = 26.dp.toPx()
+    val dy = (-6).dp.toPx()
+    val tallEnough = 4f * (r + blur)
+    val spec = if (size.height >= tallEnough) GlowSpec.topStrip(color, blur, dy, r, w, tallEnough, stripBottom = r + 2f) else null
+    val art = if (spec != null) NWGlowCache.ready(spec) else null
+    if (art is GlowArt.Whole && spec != null) drawImage(art.image, topLeft = Offset(spec.regionLeft.toFloat(), spec.regionTop.toFloat()))
+    else glowLayers(color, blur, dy, 0f, r, Offset.Zero, androidx.compose.ui.geometry.Size(w, size.height))
+}
+
 /** The desk drawn into this scope's whole size ([nwDesk]); wrap it in `inset(top = ...)` to draw it from a line down the scope. */
 fun DrawScope.drawDesk(light: Rgba, radius: Dp = NW.Radius.desk) {
     val r = radius.toPx()
@@ -456,9 +470,7 @@ fun DrawScope.drawDesk(light: Rgba, radius: Dp = NW.Radius.desk) {
         )
     }
     // The shadow goes up, over the sky: a glow of the desk's own outline, clear of the desk.
-    clipPath(shape, androidx.compose.ui.graphics.ClipOp.Difference) {
-        drawSoftGlow(Color.Black.copy(alpha = 0.7f), blur = 26.dp.toPx(), dy = (-6).dp.toPx(), corner = r, shapeSize = androidx.compose.ui.geometry.Size(w, size.height))
-    }
+    clipPath(shape, androidx.compose.ui.graphics.ClipOp.Difference) { drawDeskShadow(r, w) }
     drawPath(shape, Brush.verticalGradient(0f to Rgba.hex(0x0E1322).color, 0.1f to Rgba.hex(0x0A0E1A).color, 1f to Rgba.hex(0x070A13).color))
     // The mood's light, washing a little way down from the edge and gone before the wash's own edge.
     clipPath(shape) {

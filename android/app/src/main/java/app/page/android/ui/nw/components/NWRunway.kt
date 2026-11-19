@@ -312,7 +312,7 @@ private fun NWRunwayInstrument(model: RunwayModel, modifier: Modifier, motion: R
                         )
                     }
                     val tw = maxOf(th, tealAt)
-                    drawSoftGlow(NW.Palette.teal.opacity(0.65).color, blur = 6.dp.toPx(), corner = th / 2, topLeft = Offset(x0, y - th / 2), shapeSize = Size(tw, th))
+                    drawSoftGlow(NW.Palette.teal.opacity(0.65).color, blur = 6.dp.toPx(), corner = th / 2, topLeft = Offset(x0, y - th / 2), shapeSize = Size(tw, th), cache = false)
                     drawRoundRect(
                         Brush.horizontalGradient(listOf(NW.Palette.teal.color, NW.Palette.sky.color), startX = x0, endX = x0 + tw),
                         Offset(x0, y - th / 2), Size(tw, th), CornerRadius(th / 2),

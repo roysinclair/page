@@ -35,7 +35,13 @@ import app.page.android.ui.nw.components.nwRecede
 import app.page.android.ui.nw.theme.Rgba
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -143,7 +149,10 @@ fun NowScreen(modifier: Modifier = Modifier) {
     val deliveries by RelayClient.deliveries.collectAsStateWithLifecycle()
     val deliveryTimes by RelayClient.deliveryTimes.collectAsStateWithLifecycle()
     val inbox by RelayClient.inbox.collectAsStateWithLifecycle()
-    val sessionState by SessionStore.state.collectAsStateWithLifecycle()
+    // Only what Now shows of the session store (its sessions and what the Mac accepts), not the terminals and transcripts that
+    // stream while a room is open: those frames must not recompose Now.
+    val sessionFlow = remember { SessionStore.state.map(NowSessionSlice::of).distinctUntilChanged() }
+    val sessionState by sessionFlow.collectAsStateWithLifecycle(initialValue = NowSessionSlice.of(SessionStore.state.value))
     val retractNotes by RelayClient.retractNotes.collectAsStateWithLifecycle()
     val connection by RelayClient.connection.collectAsStateWithLifecycle()
     val book by TipStore.book.collectAsStateWithLifecycle()
@@ -152,6 +161,8 @@ fun NowScreen(modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    // Only a change of this answer recomposes, not every item the scroll passes.
+    val scrolledPastHorizon by remember(listState) { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
 
     var touching by remember { mutableStateOf(false) }
     var briefExpanded by remember { mutableStateOf(false) }
@@ -160,8 +171,11 @@ fun NowScreen(modifier: Modifier = Modifier) {
     var lastRows by remember { mutableStateOf(emptyList<NowRow>()) }
 
     // A card is never re-sorted under a finger: touching or scrolling freezes the order, arrivals wait behind the pill.
-    LaunchedEffect(touching) { if (touching) { delay(3000); touching = false } }
-    LaunchedEffect(touching, listState.isScrollInProgress) { NowStore.setFrozen(touching || listState.isScrollInProgress) }
+    // (Read as snapshot flows, not in composition: a touch or a scroll starting and ending recomposes nothing.)
+    LaunchedEffect(listState) {
+        launch { snapshotFlow { touching }.collectLatest { if (it) { delay(3000); touching = false } } }
+        snapshotFlow { touching || listState.isScrollInProgress }.collect { NowStore.setFrozen(it) }
+    }
 
     val armingUntil = pending.values.filter { it.armed }.maxOfOrNull { it.startedAt.plusSeconds(2) }
     // 10 Hz is enough for the cards' outcomes; the arm ring keeps its own 30 fps clock (ArmingStrip), so the whole
@@ -194,20 +208,26 @@ fun NowScreen(modifier: Modifier = Modifier) {
     val busy = pending.keys + problems.keys + rows.filter { r -> deliveries[r.id] != null }.map { it.id }
     val tip = book.nowTip(NowTipInputs(rows.filter { (it.chip != ChipKind.UNDOABLE && it.chip != ChipKind.IRREVERSIBLE) || it.action(RowAction.Kind.APPROVE) != null }.map { it.id to it.chip }, screen.inFlight.rows.map { it.id }, busy))
 
-    val answerable = rows.filter { r ->
-        val page = inbox.firstOrNull { it.id == r.id }
-        r.chip == ChipKind.QUESTION && AnswerPicker.ask(sessionState.session(r.sessionId), true, page?.isBlockingHook ?: false, page?.context) != null
-    }.map { it.id }.toSet()
+    val answerable = remember(rows, inbox, sessionState) {
+        rows.filter { r ->
+            val page = inbox.firstOrNull { it.id == r.id }
+            r.chip == ChipKind.QUESTION && AnswerPicker.ask(sessionState.session(r.sessionId), true, page?.isBlockingHook ?: false, page?.context) != null
+        }.map { it.id }.toSet()
+    }
 
+    @Composable
     fun statusOf(row: NowRow): RowStatus {
         val receipt = ReceiptThreadInput(pending[row.id], deliveries[row.id], problems[row.id], deliveryTimes[row.id])
         val outcome = problems[row.id]?.let { CardOutcome.Problem(it) } ?: CardOutcome.from(pending[row.id], deliveries[row.id], now)
         // Delete for a reply that is queued and not yet sent, where the relay (or the Mac) says it can take it back.
         val layer = QueuedDelete.reply(deliveries[row.id], inbox.firstOrNull { it.id == row.id }?.isBlockingHook ?: false, sessionState.relayFeatures, sessionState.caps)
-        val onDelete: (() -> Unit)? = when (layer) {
-            QueuedDelete.Layer.RELAY_QUEUE -> ({ scope.launch { RelayClient.retractReply(row.id) }; Unit })
-            QueuedDelete.Layer.MAC_RATE_LIMIT -> ({ RelayClient.deleteHeldReply(row.id) })
-            else -> null
+        // The same lambda while the row and the layer stand, so an unchanged card's status is equal to the last one's.
+        val onDelete: (() -> Unit)? = remember(row.id, layer, scope) {
+            when (layer) {
+                QueuedDelete.Layer.RELAY_QUEUE -> ({ scope.launch { RelayClient.retractReply(row.id) }; Unit })
+                QueuedDelete.Layer.MAC_RATE_LIMIT -> ({ RelayClient.deleteHeldReply(row.id) })
+                else -> null
+            }
         }
         return RowStatus(outcome, pending[row.id], receipt.takeIf { !it.isEmpty }, onDelete, retractNotes[row.id])
     }
@@ -407,7 +427,7 @@ fun NowScreen(modifier: Modifier = Modifier) {
                         onOpen = { id, entry -> TipStore.retire(NWTip.IN_FLIGHT); AppRouter.openSession(id, entry) },
                         onToggle = NowStore::toggleInFlightExpanded, onHeader = { AppRouter.selectDestination(NWDestination.LANES) }, onDismissTip = { TipStore.retire(it) },
                         // "Session budget...": only for a Mac that does budgets, with the session's own budget and share (never the binding cap).
-                        onBudget = if (sessionState.canBudget) { id -> sessionState.session(id)?.let { AppRouter.openBudget(app.page.android.model.BudgetSheetModel.session(it, sessionState.budget?.resetsAt)) }; Unit } else null,
+                        onBudget = if (sessionState.canBudget) { id -> sessionState.session(id)?.let { AppRouter.openBudget(app.page.android.model.BudgetSheetModel.session(it, sessionState.budgetResetsAt)) }; Unit } else null,
                     )
                 })
             }
@@ -420,7 +440,7 @@ fun NowScreen(modifier: Modifier = Modifier) {
                     val key = "row-${row.id}"
                     add(key) { im -> Box(im.nwRecede(listState, key).padding(horizontal = NW.Space.gutter)) {
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            val card: @Composable () -> Unit = { RowCard(row, now, statusOf(row), actionsOf(row), answerable, spec) }
+                            val card: @Composable () -> Unit = { RowCard(row, now, statusOf(row), remember(row, macName) { actionsOf(row) }, answerable, spec) }
                             if (row.id in ghosts) {
                                 ResolveFold(deliveryTimes[row.id]) { card() }
                             } else {
@@ -456,7 +476,7 @@ fun NowScreen(modifier: Modifier = Modifier) {
         }
         }
         // The stream scrolls under the status bar: a soft scrim keeps the clock readable once the Horizon has gone.
-        if (listState.firstVisibleItemIndex > 0) {
+        if (scrolledPastHorizon) {
             // Solid behind the clock, then a short fade: the content never prints over the status bar.
             val bg = NW.Palette.background.opacity(0.96).color
             Box(
@@ -573,5 +593,27 @@ private fun SettingsOrb(rings: List<app.page.android.model.RingStat>) {
     ) {
         if (rings.isEmpty()) Box(Modifier.size(40.dp).drawBehind { drawCircle(Color.White.copy(alpha = 0.28f), style = Stroke(4.dp.toPx()), radius = size.minDimension / 2 - 2.dp.toPx()) })
         else NWConcentricRings(rings, size = 46.dp)
+    }
+}
+
+/**
+ * What [NowScreen] reads of [SessionStore.State]: the sessions and what the Mac accepts, nothing of the terminals, transcripts,
+ * diffs or sent commands that stream while a room is open. Compared by value, so a frame that changes only those leaves the
+ * collected state as it was and Now does not recompose.
+ */
+@Immutable
+internal data class NowSessionSlice(
+    val sessions: List<app.page.android.model.LiveSession>,
+    val relayFeatures: Set<String>?,
+    val caps: Set<String>,
+    val budgetResetsAt: Instant?,
+) {
+    fun session(id: String): app.page.android.model.LiveSession? = sessions.firstOrNull { it.id == id }
+
+    /** The Mac measures and enforces budgets (`budget-v1`). */
+    val canBudget: Boolean get() = app.page.android.model.SessionCaps.canBudget(caps)
+
+    companion object {
+        fun of(s: SessionStore.State) = NowSessionSlice(s.sessions, s.relayFeatures, s.caps, s.budget?.resetsAt)
     }
 }

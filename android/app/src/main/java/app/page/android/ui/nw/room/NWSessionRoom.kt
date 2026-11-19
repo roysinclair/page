@@ -98,6 +98,7 @@ import app.page.android.model.YesNoQuestion
 import app.page.android.model.YesNoReply
 import app.page.android.model.SessionStopPlan
 import app.page.android.ui.nw.components.NWAnimated
+import app.page.android.ui.nw.components.NWClocked
 import app.page.android.ui.nw.components.NWAuroraCanvas
 import app.page.android.ui.nw.components.NWSendReceiptView
 import app.page.android.ui.nw.components.NWReceiptThreadView
@@ -216,7 +217,7 @@ fun NWSessionRoom(
         NWBackdrop()
         // The aurora behind the header, fading into the page.
         Box(Modifier.fillMaxWidth().height(230.dp + top)) {
-            NWAnimated { t -> NWAuroraCanvas(palette, t, Modifier.fillMaxSize()) }
+            NWClocked { clock -> NWAuroraCanvas(palette, { clock.value }, Modifier.fillMaxSize()) }
             Box(
                 Modifier.fillMaxSize().background(
                     Brush.verticalGradient(0f to Color.Transparent, 0.7f to NW.Palette.backgroundDeep.opacity(0.7).color, 1f to NW.Palette.backgroundDeep.color),

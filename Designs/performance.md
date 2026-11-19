@@ -109,6 +109,43 @@ differently while it's on screen. Work that nobody can see is skipped or moved o
 5. Parse and decrypt relay frames on `Dispatchers.Default`, and cache the HKDF subkey.
 6. NowScreen collects only what it shows, so screen and transcript frames don't recompose Now.
 
+## Phase 1 results (2026-11-19)
+
+**Mac**
+- The glyph is pixel-identical: the largest difference is 0/255 across 9 states (`GlyphBitmapTests`).
+- With the cache, drawing it costs about 0.04 ms per frame, against 0.09–0.12 ms before. That measures
+  only the bitmap draw.
+- The bigger saving is the replicant snapshots AppKit redrew from vectors. Measure that with `sample`
+  on an installed build.
+- The timer also stops while the screen is locked.
+
+**iPhone**
+- **Screenshots:** all 156 harness screens match a same-session baseline. The only differences are
+  regions that also differ between two baseline runs, where live clocks aren't pinned.
+- **Tests:** 3505 logic tests pass.
+- **CPU in the simulator:** no change (within ±1.5%), as expected. Every harness screen keeps the Horizon
+  on screen and gets no relay frames, so the harness can't show where the gains are: the Horizon
+  scrolled away, list frames every second, and touches.
+- **Not done:**
+  - The room aurora: `.drawingGroup()` was pixel-identical but gave no CPU gain in the simulator.
+  - The room's 2 s clock: `SessionRoomData` reads `now` throughout.
+  - These wait for a measurement on the device.
+
+**Android**
+- **Skies:** the Horizon, Lanes and Room sky regions are pixel-identical.
+- **Glow halos:** cached glows come out at most 9–10/255 darker in their faintest pixels (mean 0.0–0.36).
+  The old path rounded to 8 bits at every layer, and a cache can't reproduce that.
+- **Recompositions:** the Horizon sky went from about 150–300 per 10 s to about 2.
+- **Emulator `gfxinfo`:** a SwiftShader proxy only. Median frame time went from 300 ms to 150–200 ms,
+  and frames per 12 s from 90–102 to 122–152.
+- **Tests:** new tests pass. The 5 failures in FollowUpsTest, NavigationWireTest, QueuedMessagesTest and
+  ReversibilityGoldenTest also fail on `main`: they expect "Page Studio" where the app says "Page".
+
+**Still to measure on real devices:**
+- iPhone: Instruments Animation Hitches and Time Profiler, with the phone connected and Xcode signed
+  in.
+- Mac: CPU with an installed build and agents working.
+
 ## Phase 2: changes that alter the look (for the user to decide later)
 - Mac glyph: animate only for "needs you", or a slower breath.
 - Phone skies: lower frame rate or resolution, or stay still while things are quiet.

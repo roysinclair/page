@@ -118,6 +118,10 @@ differently while it's on screen. Work that nobody can see is skipped or moved o
 - The bigger saving is the replicant snapshots AppKit redrew from vectors. Measure that with `sample`
   on an installed build.
 - The timer also stops while the screen is locked.
+- **Installed build (2026-11-19, agents working, one minute each, same Mac):**
+  - The old build averaged 10.8% CPU (9.8–11.6% per 10 s). The new build averages 9.0% (8.7–9.8%).
+  - A 5 s `sample` of the new build shows the main thread idle 88% of the time.
+  - The glyph's remaining cost is AppKit's `_redrawReplicantSnapshot`. It runs about 4% of samples: AppKit re-snapshots the status button for each menu-bar replicant whenever the image changes. A cached bitmap can't remove that. Only changing the image less often (Phase 2) does.
 
 **iPhone**
 - **Screenshots:** all 156 harness screens match a same-session baseline. The only differences are

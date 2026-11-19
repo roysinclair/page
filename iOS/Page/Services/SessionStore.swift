@@ -25,15 +25,16 @@ final class SessionStore: ObservableObject {
     /// The last list said live sessions are turned off on the Mac.
     @Published private(set) var macDisabled = false
     @Published private(set) var macName: String?
-    @Published private(set) var lastListAt: Date?
-    @Published private(set) var transcripts: [String: SessionTranscript] = [:]
-    /// The watched session's terminal, from Macs that send it.
-    @Published private(set) var screens: [String: SessionScreen] = [:]
+    /// When the last `list` was applied. Not published: every list frame sets it, and a screen that wants to know a
+    /// list arrived (even an identical one) listens to `listArrived` instead of rebuilding with the whole store.
+    private(set) var lastListAt: Date?
+    /// Sent after each `list` has been applied, changed or not.
+    let listArrived = PassthroughSubject<Void, Never>()
+    /// The transcripts, terminal screens and diffs, apart from the store so that their frames (up to every 1.5 s)
+    /// rebuild only the room that reads them, never Now or Lanes.
+    let content = SessionContent()
     /// Each watched session's dynamic workflows, from Macs that send them.
     @Published private(set) var workflows: [String: [WorkflowRun]] = [:]
-    /// The latest `diff` per session, and why the last request failed.
-    @Published private(set) var diffs: [String: SessionDiff] = [:]
-    @Published private(set) var diffErrors: [String: String] = [:]
     /// Where a session may be started (`folders`), nil until asked.
     @Published private(set) var startFolders: StartFolders?
     @Published private(set) var startFoldersError: String?
@@ -216,11 +217,10 @@ final class SessionStore: ObservableObject {
         macDisabled = false
         macName = nil
         lastListAt = nil
-        transcripts = [:]
-        screens = [:]
-        diffs = [:]
-        diffErrors = [:]
+        content.reset()
         diffClients = [:]
+        // A frame still being decrypted belongs to the pairing that was just cleared.
+        frameEpoch += 1
         startFolders = nil
         startFoldersError = nil
         startedSessionId = nil
@@ -321,12 +321,32 @@ final class SessionStore: ObservableObject {
 
     /// A workflow agent's transcript, if the Mac sent it.
     func agentTranscript(sessionId: String, runId: String, agentId: String) -> SessionTranscript? {
-        transcripts[SessionTranscript.key(sessionId: sessionId, runId: runId, agentId: agentId)]
+        content.agentTranscript(sessionId: sessionId, runId: runId, agentId: agentId)
     }
 
     // MARK: Incoming
 
-    /// A `sessions.update` frame's payload: `{"e": <envelope>}`.
+    /// A frame on its way from the socket to `apply`.
+    private struct IncomingFrame: Sendable {
+        let envelope: SessionCrypto.Envelope
+        let root: Data
+        let epoch: Int
+    }
+
+    private struct DecodedFrame: Sendable {
+        let outcome: SessionFrameOutcome
+        let epoch: Int
+    }
+
+    /// Decrypts and decodes off the main actor, one frame at a time in the order they arrived, then applies each here.
+    private lazy var frames = OrderedOffMainPipeline<IncomingFrame, DecodedFrame>(
+        work: { DecodedFrame(outcome: SessionFrame.decode($0.envelope, root: $0.root), epoch: $0.epoch) },
+        deliver: { [weak self] in self?.applyDecoded($0) })
+    /// Bumped by `reset()`: a frame decoded after it belongs to the pairing that was cleared and is dropped.
+    private var frameEpoch = 0
+
+    /// A `sessions.update` frame's payload: `{"e": <envelope>}`. The envelope's shape is checked here; opening it
+    /// (AES-GCM) and decoding the JSON happen off the main actor (`applyDecoded` continues on it).
     func handleUpdate(payload: [String: Any]) {
         #if DEBUG
         if isDevMode { return }
@@ -337,17 +357,32 @@ final class SessionStore: ObservableObject {
         }
         if rootKey == nil { reloadKey() }
         guard let root = rootKey else { return }
-        guard let data = SessionCrypto.open(envelope, root: root, direction: .macToPhone, aad: SessionFrameType.update) else {
+        frames.submit(IncomingFrame(envelope: envelope, root: root, epoch: frameEpoch))
+    }
+
+    private func applyDecoded(_ frame: DecodedFrame) {
+        guard frame.epoch == frameEpoch else { return }
+        #if DEBUG
+        if isDevMode { return }
+        #endif
+        let plaintext: SessionsPlaintext
+        switch frame.outcome {
+        case .undecryptable(let bytes):
             undecryptableInARow += 1
             // One bad frame could be noise; a run of them means the Mac's
             // key no longer matches ours.
-            if undecryptableInARow >= 2 { keyMismatch = true }
-            print("[SessionStore] dropped undecryptable update (\(envelope.sealed.count) bytes)")
+            if undecryptableInARow >= 2, !keyMismatch { keyMismatch = true }
+            print("[SessionStore] dropped undecryptable update (\(bytes) bytes)")
             return
+        case .unreadable:
+            undecryptableInARow = 0
+            if keyMismatch { keyMismatch = false }
+            return  // unknown kind or malformed
+        case .plaintext(let p):
+            undecryptableInARow = 0
+            if keyMismatch { keyMismatch = false }
+            plaintext = p
         }
-        undecryptableInARow = 0
-        if keyMismatch { keyMismatch = false }
-        guard let plaintext = SessionsPlaintext.decode(data) else { return }  // unknown kind or malformed
         switch gate.admit(plaintext, now: Date()) {
         case .tooOld:
             if !hasList { onlyStaleFrames = true }
@@ -359,7 +394,7 @@ final class SessionStore: ObservableObject {
             if onlyStaleFrames { onlyStaleFrames = false }
         }
         if case .list = plaintext.update {
-            macDisabled = plaintext.macDisabled
+            if macDisabled != plaintext.macDisabled { macDisabled = plaintext.macDisabled }
             let caps = plaintext.caps ?? []
             if macCaps != caps { macCaps = caps }
             // Already gated on this frame's own caps: a Mac without `budget-v1` leaves no block and no row budget.
@@ -368,10 +403,11 @@ final class SessionStore: ObservableObject {
         apply(plaintext.update)
     }
 
+    /// Only a value that differs is assigned, so a frame that repeats what the store holds publishes nothing.
     private func apply(_ update: SessionsUpdate) {
         switch update {
         case .list(let name, let list):
-            sessions = list
+            if sessions != list { sessions = list }
             if let p = pendingStart {
                 if Date().timeIntervalSince(p.at) > 90 {
                     pendingStart = nil
@@ -381,48 +417,33 @@ final class SessionStore: ObservableObject {
                 }
             }
             reconcileHeld(list)
-            if name != nil { macName = name }
-            hasList = true
+            if let name, macName != name { macName = name }
+            if !hasList { hasList = true }
             lastListAt = Date()
-            macOfflineHint = false
+            if macOfflineHint { macOfflineHint = false }
             waitTask?.cancel()
             // Transcripts only for sessions that still exist (plus the one on
             // screen, which shows "ended" over its last transcript).
             let live = Set(list.map(\.id))
-            let stale = transcripts.filter { !live.contains($0.value.sessionId) && $0.value.sessionId != watchedSessionId }.keys
-            for id in stale { transcripts[id] = nil }
-            for id in screens.keys where !live.contains(id) && id != watchedSessionId { screens[id] = nil }
+            content.prune(live: live, watched: watchedSessionId)
             for id in workflows.keys where !live.contains(id) && id != watchedSessionId { workflows[id] = nil }
+            listArrived.send()
         case .workflows(let sid, let runs):
-            workflows[sid] = runs
-            if workflows.count > 4 {
-                for id in workflows.keys where id != sid && id != watchedSessionId { workflows[id] = nil; break }
+            var next = workflows
+            next[sid] = runs
+            if next.count > 4 {
+                for id in next.keys where id != sid && id != watchedSessionId { next[id] = nil; break }
             }
+            if next != workflows { workflows = next }
         case .screen(let s):
-            screens[s.sessionId] = s
-            if screens.count > 4 {
-                for id in screens.keys where id != s.sessionId && id != watchedSessionId { screens[id] = nil; break }
-            }
+            content.apply(screen: s, watched: watchedSessionId)
         case .transcript(let t):
-            transcripts[t.key] = t
-            // Keep what's on screen (the session's and the open agent's).
-            var keep: Set<String> = [t.key]
-            if let sid = watchedSessionId {
-                keep.insert(sid)
-                if let a = watchedAgent { keep.insert(SessionTranscript.key(sessionId: sid, runId: a.runId, agentId: a.agentId)) }
-            }
-            while transcripts.count > 12, let victim = transcripts.keys.first(where: { !keep.contains($0) }) {
-                transcripts[victim] = nil
-            }
+            content.apply(transcript: t, watched: watchedSessionId, watchedAgent: watchedAgent)
         case .diff(let d):
-            diffs[d.sessionId] = d
-            diffErrors[d.sessionId] = nil
-            if diffs.count > 4 {
-                for id in diffs.keys where id != d.sessionId && id != watchedSessionId { diffs[id] = nil; break }
-            }
+            content.apply(diff: d, watched: watchedSessionId)
         case .folders(let f):
-            startFolders = f
-            startFoldersError = nil
+            if startFolders != f { startFolders = f }
+            if startFoldersError != nil { startFoldersError = nil }
         case .result(let r):
             // An `inputImages` sent again after `attachment_missing`, or answered late, belongs to the first message.
             let key = photoRoutes.bubble(for: r.clientId, now: Date()) ?? r.clientId
@@ -432,7 +453,7 @@ final class SessionStore: ObservableObject {
                 return
             }
             if let sid = diffClients.removeValue(forKey: r.clientId) {
-                diffErrors[sid] = r.detail ?? "Your computer couldn't read the changes."
+                content.setDiffError(r.detail ?? "Your computer couldn't read the changes.", for: sid)
                 return
             }
             if let subject = retractSubjects.removeValue(forKey: r.clientId) {
@@ -1030,10 +1051,10 @@ final class SessionStore: ObservableObject {
 
     /// Asks the Mac for the session's changes (answered by a `diff`).
     func requestDiff(sessionId: String) {
-        diffErrors[sessionId] = nil
+        content.setDiffError(nil, for: sessionId)
         let clientId = UUID().uuidString.lowercased()
         guard let body = encrypt(.diff(sessionId: sessionId), clientId: clientId) else {
-            diffErrors[sessionId] = "This iPhone has no session key. Re-pair with your computer."
+            content.setDiffError("This iPhone has no session key. Re-pair with your computer.", for: sessionId)
             return
         }
         diffClients[clientId] = sessionId
@@ -1041,7 +1062,7 @@ final class SessionStore: ObservableObject {
         Task {
             let outcome = await APIClient.shared.postSessionCommand(body: body)
             noteOutcome(outcome)
-            if let why = outcome.failureMessage { diffErrors[sessionId] = why; diffClients[clientId] = nil }
+            if let why = outcome.failureMessage { content.setDiffError(why, for: sessionId); diffClients[clientId] = nil }
         }
     }
 
@@ -1180,7 +1201,7 @@ final class SessionStore: ObservableObject {
         let sentAt = Date()
         commands[clientId] = SentSessionCommand(clientId: clientId, sessionId: sessionId, kind: kind,
                                                 text: text, sentAt: sentAt, state: state,
-                                                priorEntryIds: transcripts[sessionId].map { Set($0.entries.map(\.id)) },
+                                                priorEntryIds: content.transcripts[sessionId].map { Set($0.entries.map(\.id)) },
                                                 target: target, promptKey: promptKey, subject: subject)
         pruneCommands()
         guard state.isPending, let timeout else { return }
@@ -1294,7 +1315,7 @@ final class SessionStore: ObservableObject {
         macCaps = [SendChoicePlan.holdCap, SendChoicePlan.retractCap, PhotoLimits.capability, BudgetWire.capability]
         macBudget = RenderFixtures.budget
         lastListAt = Date()
-        for t in seeded { transcripts[t.sessionId] = t }
+        for t in seeded { content.set(transcript: t, forKey: t.sessionId) }
     }
 
     /// Walks a DEV command through the states a real one goes through,
@@ -1346,11 +1367,11 @@ final class SessionStore: ObservableObject {
             guard kind == .input, result.ok else { return }
             try? await Task.sleep(nanoseconds: 600_000_000)
             guard self.isDevMode else { return }
-            let old = self.transcripts[sessionId]
+            let old = self.content.transcripts[sessionId]
             let entry = TranscriptEntry(id: "dev-\(clientId)", role: .user, text: text, at: Date(), tool: nil)
-            self.transcripts[sessionId] = SessionTranscript(sessionId: sessionId,
-                                                            entries: (old?.entries ?? []) + [entry],
-                                                            truncated: old?.truncated ?? false)
+            self.content.set(transcript: SessionTranscript(sessionId: sessionId,
+                                                           entries: (old?.entries ?? []) + [entry],
+                                                           truncated: old?.truncated ?? false), forKey: sessionId)
         }
     }
 
@@ -1372,10 +1393,10 @@ final class SessionStore: ObservableObject {
             c.photos?.attached = count
             c.state = .typed("Sent \(PhotoDraft.countLabel(count)) to Claude in \(c.target?.host ?? "the terminal") (simulated)")
             self.commands[clientId] = c
-            let old = self.transcripts[sessionId]
+            let old = self.content.transcripts[sessionId]
             let entry = TranscriptEntry(id: "dev-\(clientId)", role: .user,
                                         text: (0..<count).map { "[Image #\($0 + 1)]" }.joined(separator: " ") + text, at: Date(), tool: nil, images: count)
-            self.transcripts[sessionId] = SessionTranscript(sessionId: sessionId, entries: (old?.entries ?? []) + [entry], truncated: old?.truncated ?? false)
+            self.content.set(transcript: SessionTranscript(sessionId: sessionId, entries: (old?.entries ?? []) + [entry], truncated: old?.truncated ?? false), forKey: sessionId)
         }
     }
 

@@ -6797,5 +6797,166 @@ if let root = ProcessInfo.processInfo.environment["PAGE_IOS_ROOT"] {
     check(false, "PAGE_IOS_ROOT is not set: run through iOS/Tests/run-logic-tests.sh")
 }
 
+
+// The guards behind "assign only when changed" (SessionStore.apply): the same list decodes equal, and each kind of change
+// shows as a difference, so an identical frame is skipped and a real update never is.
+do {
+    func list(_ json: String) -> [LiveSession]? {
+        if let p = SessionsPlaintext.decode(Data(json.utf8)), case .list(_, let ss) = p.update { return ss }
+        return nil
+    }
+    let one = list(listJSON), two = list(listJSON)
+    check(one != nil && one == two, "the same list frame decodes to an equal list (so it is not assigned again)")
+    func changed(_ from: String, _ to: String, _ what: String) {
+        let c = list(listJSON.replacingOccurrences(of: from, with: to))
+        check(c != nil && c != one, "a changed \(what) is a different list")
+    }
+    changed(#""state":"waitingOnApproval""#, #""state":"active""#, "state")
+    changed(#""lastActivityAt":"2026-10-24T12:00:00Z""#, #""lastActivityAt":"2026-10-24T12:00:01Z""#, "lastActivityAt (it moves with every transcript write)")
+    changed(#""preview":"Bash: npm test""#, #""preview":"Bash: npm run""#, "preview")
+    changed(#""canType":true,"typeBlocker":"ignored when typable""#, #""canType":false,"typeBlocker":"ignored when typable""#, "canType")
+    changed(#""id":"s-min""#, #""id":"s-min2""#, "id")
+    let held = list(listJSON.replacingOccurrences(of: #""preview":"Bash: npm test""#, with: #""preview":"Bash: npm test","held":[{"clientId":"c1","text":"hi","queuedAt":"2026-10-24T12:00:00Z"}]"#))
+    check(held != nil && held != one, "a held message is a different list")
+    // Transcripts, screens and workflows are compared whole, too.
+    let e1 = TranscriptEntry(id: "e1", role: .user, text: "hi", at: nil, tool: nil)
+    check(SessionTranscript(sessionId: "A", entries: [e1], truncated: false) != SessionTranscript(sessionId: "A", entries: [e1], truncated: true), "truncated is part of a transcript's identity")
+    check(SessionTranscript(sessionId: "A", entries: [e1], truncated: false) != SessionTranscript(sessionId: "A", entries: [TranscriptEntry(id: "e1", role: .user, text: "hi!", at: nil, tool: nil)], truncated: false), "an edited entry is a different transcript")
+    let wA = WorkflowRun(id: "w", name: "n", status: "running", phase: nil, done: 1, total: 3, startedAt: nil, endedAt: nil, tokens: nil, agents: [])
+    let wB = WorkflowRun(id: "w", name: "n", status: "running", phase: nil, done: 2, total: 3, startedAt: nil, endedAt: nil, tokens: nil, agents: [])
+    check([wA] == [wA] && [wA] != [wB], "a workflow's progress is part of its identity")
+    check(SessionScreen(sessionId: "A", lines: ["x"], at: Date(timeIntervalSince1970: 1)) != SessionScreen(sessionId: "A", lines: ["y"], at: Date(timeIntervalSince1970: 1)), "a changed screen line is a different screen")
+}
+
+// MARK: Performance: relay frames and what publishes (Designs/performance.md, iPhone 3)
+
+// `SessionContent`: a frame that repeats what is held publishes nothing; one that changes something publishes once.
+MainActor.assumeIsolated {
+    let content = SessionContent()
+    var published = 0
+    let sub = content.objectWillChange.sink { published += 1 }
+    let entry = TranscriptEntry(id: "e1", role: .user, text: "hi", at: nil, tool: nil)
+    let t1 = SessionTranscript(sessionId: "A", entries: [entry], truncated: false)
+    content.apply(transcript: t1, watched: "A", watchedAgent: nil)
+    check(published == 1 && content.transcripts["A"] == t1, "a new transcript publishes once")
+    content.apply(transcript: t1, watched: "A", watchedAgent: nil)
+    check(published == 1, "the same transcript again publishes nothing")
+    let t2 = SessionTranscript(sessionId: "A", entries: [entry, TranscriptEntry(id: "e2", role: .assistant, text: "yo", at: nil, tool: nil)], truncated: false)
+    content.apply(transcript: t2, watched: "A", watchedAgent: nil)
+    check(published == 2 && content.transcripts["A"]?.entries.count == 2, "a changed transcript publishes once")
+
+    let scr = SessionScreen(sessionId: "A", lines: ["x"], at: Date(timeIntervalSince1970: 5))
+    content.apply(screen: scr, watched: "A")
+    content.apply(screen: scr, watched: "A")
+    check(published == 3 && content.screens["A"] == scr, "the same screen again publishes nothing")
+
+    let diff = SessionDiff(sessionId: "A", clientId: nil, scope: "turn", repo: nil, files: [], patch: "", truncated: false, note: nil)
+    content.apply(diff: diff, watched: "A")
+    check(published == 4, "a new diff publishes once (clearing a failure that isn't there adds nothing)")
+    content.apply(diff: diff, watched: "A")
+    content.setDiffError(nil, for: "A")
+    check(published == 4, "the same diff, and clearing no error, publish nothing")
+    content.setDiffError("no key", for: "A")
+    content.setDiffError("no key", for: "A")
+    check(published == 5 && content.diffErrors["A"] == "no key", "an error publishes once")
+    content.apply(diff: diff, watched: "A")
+    check(published == 6 && content.diffErrors["A"] == nil, "a diff clears the error")
+
+    // A list: transcripts and screens only for sessions that still exist, the watched one kept.
+    let before = published
+    content.prune(live: ["A"], watched: nil)
+    check(published == before, "a list that drops nothing publishes nothing")
+    content.apply(transcript: SessionTranscript(sessionId: "B", entries: [], truncated: false), watched: "A", watchedAgent: nil)
+    content.apply(screen: SessionScreen(sessionId: "B", lines: [], at: Date(timeIntervalSince1970: 5)), watched: "A")
+    content.prune(live: ["A"], watched: "A")
+    check(content.transcripts["B"] == nil && content.screens["B"] == nil && content.transcripts["A"] != nil, "a session that left the list loses its transcript and screen")
+    content.prune(live: [], watched: "A")
+    check(content.transcripts["A"] != nil && content.screens["A"] != nil, "the watched session keeps its last copy (it shows 'ended')")
+
+    // Cap: 12 transcripts, never the one just in, never the watched one.
+    let cap = SessionContent()
+    for i in 0..<20 { cap.apply(transcript: SessionTranscript(sessionId: "s\(i)", entries: [], truncated: false), watched: "s0", watchedAgent: nil) }
+    check(cap.transcripts.count == SessionContent.maxTranscripts && cap.transcripts["s0"] != nil && cap.transcripts["s19"] != nil, "transcripts are capped at 12, keeping the watched and the newest")
+    let agent = SessionTranscript(sessionId: "s0", entries: [], truncated: false, runId: "r", agentId: "g")
+    cap.apply(transcript: agent, watched: "s0", watchedAgent: (runId: "r", agentId: "g"))
+    check(cap.agentTranscript(sessionId: "s0", runId: "r", agentId: "g") == agent, "an agent's transcript is kept under its own key")
+    cap.reset()
+    check(cap.transcripts.isEmpty && cap.screens.isEmpty && cap.diffs.isEmpty && cap.diffErrors.isEmpty, "reset clears everything")
+    sub.cancel()
+}
+
+// `SessionFrame.decode`: the AES-GCM open and the JSON decode, in one pure step.
+do {
+    let listPT = #"{"kind":"list","seq":1,"ts":1761300000000,"sessions":[]}"#
+    let env = try! SessionCrypto.seal(Data(listPT.utf8), root: vecRoot, direction: .macToPhone, aad: SessionFrameType.update)
+    if case .plaintext(let p) = SessionFrame.decode(env, root: vecRoot) {
+        check(p.seq == 1 && { if case .list = p.update { return true } else { return false } }(), "a sealed list decodes to a list")
+    } else { check(false, "a sealed list decodes") }
+    check(SessionFrame.decode(env, root: Data(repeating: 9, count: 32)) == .undecryptable(bytes: env.sealed.count), "the wrong key is undecryptable")
+    let odd = try! SessionCrypto.seal(Data(#"{"kind":"nonsense","seq":1,"ts":1761300000000}"#.utf8), root: vecRoot, direction: .macToPhone, aad: SessionFrameType.update)
+    check(SessionFrame.decode(odd, root: vecRoot) == .unreadable, "an unknown kind is unreadable, not undecryptable")
+}
+
+// `OrderedOffMainPipeline`: the work runs off the main thread, the results come back on it, in the order submitted.
+do {
+    var worked: [Bool] = []          // was each `work` call on the main thread?
+    let lock = NSLock()
+    var delivered: [Int] = []
+    var deliveredOnMain = true
+    let pipe: OrderedOffMainPipeline<Int, Int> = MainActor.assumeIsolated {
+        OrderedOffMainPipeline<Int, Int>(
+            work: { n in
+                lock.lock(); worked.append(Thread.isMainThread); lock.unlock()
+                // The first frames are the slowest: a pipeline that raced them would deliver them last.
+                Thread.sleep(forTimeInterval: n < 3 ? 0.03 : 0.0)
+                return n
+            },
+            deliver: { n in delivered.append(n); if !Thread.isMainThread { deliveredOnMain = false } })
+    }
+    MainActor.assumeIsolated { for n in 0..<10 { pipe.submit(n) } }
+    let deadline = Date().addingTimeInterval(5)
+    while delivered.count < 10 && Date() < deadline { RunLoop.main.run(until: Date().addingTimeInterval(0.01)) }
+    check(delivered == Array(0..<10), "frames are delivered in the order they were submitted: \(delivered)")
+    check(worked.count == 10 && !worked.contains(true), "the decrypt and decode work never runs on the main thread")
+    check(deliveredOnMain, "results are applied on the main thread")
+}
+
+// `TerminalLineCache`: lines are classified once while the screen and the runs stand.
+do {
+    let cache = TerminalLineCache()
+    let lines = ["⏺ Read(x.swift)", "✻ Thinking… (esc to interrupt)", "plain text", "─────────────────"]
+    let a = cache.resolve(lines: lines, runs: [])
+    let b = cache.resolve(lines: lines, runs: [])
+    check(cache.computations == 1 && a.tones == b.tones, "the same lines are classified once")
+    check(a.tones == lines.map { TerminalTone.classify($0) } && a.links.isEmpty, "the cached tones are what classify gives")
+    _ = cache.resolve(lines: lines + ["more"], runs: [])
+    check(cache.computations == 2, "new lines are classified again")
+    let run = WorkflowRun(id: "w1", name: "review", status: "running", phase: nil, done: 1, total: 3, startedAt: nil, endedAt: nil, tokens: nil, agents: [])
+    let c = cache.resolve(lines: ["✻ review 1/3"], runs: [run])
+    check(c.links[0]?.id == "w1" && c.tones == [.footer], "a row naming a run is a footer row and carries the run")
+    _ = cache.resolve(lines: ["✻ review 1/3"], runs: [run])
+    check(cache.computations == 3, "unchanged runs are not matched again")
+}
+
+// The sources the performance work pins (Designs/performance.md, iPhone).
+if let root = ProcessInfo.processInfo.environment["PAGE_IOS_ROOT"] {
+    func src(_ path: String) -> String { (try? String(contentsOfFile: root + "/" + path, encoding: .utf8)) ?? "" }
+    let plist = src("Page/Info.plist")
+    check(plist.contains("<key>CADisableMinimumFrameDurationOnPhone</key>\n    <true/>"), "Info.plist enables 120 Hz (CADisableMinimumFrameDurationOnPhone)")
+    let store = src("Page/Services/SessionStore.swift")
+    for name in ["lastListAt", "transcripts", "screens", "diffs", "diffErrors"] {
+        check(!store.contains("@Published private(set) var \(name)"), "SessionStore does not publish \(name) (a frame for it must not rebuild Now)")
+    }
+    check(store.contains("let listArrived = PassthroughSubject<Void, Never>()") && store.contains("listArrived.send()"), "a list arriving is announced without publishing the store")
+    check(store.contains("if sessions != list { sessions = list }"), "an identical list does not reassign sessions")
+    check(!store.contains("SessionCrypto.open("), "the store does not decrypt itself: SessionFrame.decode does, off the main actor")
+    let frames = src("Page/Models/SessionFrames.swift")
+    check(frames.contains("Task.detached") && frames.contains("nonisolated static func decode"), "decrypting and decoding run off the main actor")
+    let now = src("Page/Views/NowContainer.swift")
+    check(!now.contains("@State private var touching") && now.contains("sessions.listArrived"), "Now does not rebuild for a touch or for a repeated list")
+    let horizon = src("Page/Design/NightWatch/NWHorizon.swift")
+    check(horizon.contains("holding: !visible") && horizon.contains("NWOnScreen(visible: $visible)"), "the Horizon's sky and orb hold while it is scrolled out of sight")
+}
+
 print("passes=\(passes) failures=\(failures)")
 exit(failures == 0 ? 0 : 1)

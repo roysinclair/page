@@ -29,6 +29,9 @@ struct NWRoomScreenLens: View {
     var data: SessionRoomData
     var actions: SessionRoomActions
     @AppStorage("page.terminal.wrap") private var wrap = true
+    /// Each line's tone and workflow link, kept while the screen and the runs are what they were: the room redraws
+    /// every 2 s for its clocks, and the lines are the same far more often than not.
+    @State private var lineCache = TerminalLineCache()
 
     private static let font = Font.system(size: 12, design: .monospaced)
 
@@ -88,12 +91,12 @@ struct NWRoomScreenLens: View {
     }
 
     private func terminal(_ screen: SessionScreen) -> some View {
-        let links = TerminalRunLinks.match(lines: screen.lines, runs: data.runs)
+        let (links, tones) = lineCache.resolve(lines: screen.lines, runs: data.runs)
         return ScrollViewReader { proxy in
             ScrollView(wrap ? [.vertical] : [.vertical, .horizontal]) {
                 VStack(alignment: .leading, spacing: 2) {
                     ForEach(Array(screen.lines.enumerated()), id: \.offset) { i, line in
-                        lineView(line, run: links[i]).id(i)
+                        lineView(line, run: links[i], tone: tones[i]).id(i)
                     }
                 }
                 .padding(16)
@@ -106,8 +109,7 @@ struct NWRoomScreenLens: View {
         }
     }
 
-    @ViewBuilder private func lineView(_ line: String, run: WorkflowRun?) -> some View {
-        let tone = run == nil ? TerminalTone.classify(line) : .footer
+    @ViewBuilder private func lineView(_ line: String, run: WorkflowRun?, tone: TerminalTone) -> some View {
         let text = Text(line.isEmpty ? " " : line)
             .font(Self.font)
             .foregroundColor(tone.color.color)

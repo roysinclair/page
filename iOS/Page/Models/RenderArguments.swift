@@ -25,6 +25,8 @@ struct RenderArguments: Equatable {
     var glass = true
     /// True draws the motions that honour it as Reduce Motion does.
     var reduceMotion = false
+    /// True lets every motion run on the real clock (performance measuring); screenshots leave it off.
+    var live = false
 
     static let screenFlag = "-NWRender"
     static let glowFlag = "-NWGlow"
@@ -33,6 +35,7 @@ struct RenderArguments: Equatable {
     static let dayTimeFlag = "-NWDayTime"
     static let glassFlag = "-NWGlass"
     static let reduceMotionFlag = "-NWReduceMotion"
+    static let liveFlag = "-NWLive"
 
     /// nil when `-NWRender` is absent or has no screen after it. A time that
     /// is not a finite, non-negative number is ignored. Pure.
@@ -47,7 +50,7 @@ struct RenderArguments: Equatable {
         // Only "off" turns the glass off; anything else leaves it as the system draws it.
         let glass = args.firstIndex(of: glassFlag).map { !(args.indices.contains($0 + 1) && args[$0 + 1] == "off") } ?? true
         return RenderArguments(screen: args[i + 1], glow: glow, time: time, dayTime: day, glass: glass,
-                               reduceMotion: args.contains(reduceMotionFlag))
+                               reduceMotion: args.contains(reduceMotionFlag), live: args.contains(liveFlag))
     }
 
     /// A time of day as a minute: a phase's name (the middle of its core),

@@ -50,6 +50,7 @@ struct LiveApp: View {
             .environmentObject(notifications)
             .environmentObject(router)
             .environmentObject(sessions)
+            .environmentObject(sessions.content)
             .environmentObject(glow)
             .environmentObject(coordinator)
             .environmentObject(stop)

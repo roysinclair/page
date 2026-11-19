@@ -24,6 +24,8 @@ struct SessionRoomContainer: View {
 
     @EnvironmentObject var api: APIClient
     @EnvironmentObject var sessions: SessionStore
+    /// The transcripts, screens and diffs: read here only, so Now never rebuilds for them.
+    @EnvironmentObject var content: SessionContent
     @EnvironmentObject var pairing: PairingStore
     @EnvironmentObject var router: AppRouter
     @EnvironmentObject var coordinator: ActionCoordinator
@@ -125,6 +127,7 @@ struct SessionRoomContainer: View {
         .sheet(item: $agent) { ref in
             AgentRoomContainer(sessionId: sessionId, runId: ref.runId, agentId: ref.agentId)
                 .environmentObject(sessions)
+                .environmentObject(content)
                 .presentationDragIndicator(.visible)
         }
         .sheet(item: $budgetSheet) { model in
@@ -154,12 +157,12 @@ struct SessionRoomContainer: View {
             else { outcome = CardOutcome.from(pending: coordinator.pending[row.id], delivery: api.deliveries[row.id], now: now) }
         }
         var inputs = SessionRoomData.Inputs(session: s, ended: ended, availability: availability, macName: macName, now: now)
-        inputs.transcript = sessions.transcripts[sessionId]
+        inputs.transcript = content.transcripts[sessionId]
         inputs.sent = sessions.sentMessages(for: sessionId)
-        inputs.screen = sessions.screens[sessionId]
+        inputs.screen = content.screens[sessionId]
         inputs.runs = sessions.workflows[sessionId] ?? []
-        inputs.diff = sessions.diffs[sessionId]
-        inputs.diffError = sessions.diffErrors[sessionId]
+        inputs.diff = content.diffs[sessionId]
+        inputs.diffError = content.diffErrors[sessionId]
         inputs.diffRequestedAt = diffRequestedAt
         inputs.fiveHourPct = UsageCardModel(api.macStatus?.usage, now: now)?.fiveHour?.pct
         inputs.pageRow = row
@@ -210,7 +213,7 @@ struct SessionRoomContainer: View {
 
     private func setLens(_ l: RoomLens) {
         lens = l
-        if l == .changes, sessions.diffs[sessionId] == nil { requestChanges() }
+        if l == .changes, content.diffs[sessionId] == nil { requestChanges() }
     }
 
     private func requestChanges() {
@@ -402,6 +405,7 @@ struct AgentRoomContainer: View {
     let agentId: String
 
     @EnvironmentObject var sessions: SessionStore
+    @EnvironmentObject var content: SessionContent
     @Environment(\.dismiss) private var dismiss
     /// Last known copy, so the screen stays readable if the run drops off.
     @State private var snapshot: WorkflowRun?
@@ -411,7 +415,7 @@ struct AgentRoomContainer: View {
     private var agent: WorkflowRun.Agent? { run?.agents.first { $0.id == agentId } }
 
     var body: some View {
-        let transcript = sessions.agentTranscript(sessionId: sessionId, runId: runId, agentId: agentId)
+        let transcript = content.agentTranscript(sessionId: sessionId, runId: runId, agentId: agentId)
         let state = agent.map(WorkflowOrbit.nodeState) ?? .stopped
         NWAgentRoomScreen(
             runName: run?.name ?? "Workflow", agentLabel: agent?.label ?? "Agent", state: state,
